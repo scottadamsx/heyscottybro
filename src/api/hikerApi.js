@@ -33,7 +33,7 @@ export async function loadStats() {
 
   const { data: imports } = await supabase
     .from("hiker_imports")
-    .select("id")
+    .select("id, returning_count")
     .eq("user_id", userId);
 
   const total = members.length;
@@ -173,7 +173,7 @@ export async function importCSV(fileText, filename) {
   await supabase.from("hiker_imports").insert({
     user_id: userId, filename,
     imported_at: new Date().toISOString().split("T")[0],
-    first_timers: firstTimers, returning, total: firstTimers + returning,
+    first_timers: firstTimers, returning_count: returning, total: firstTimers + returning,
   });
 
   return { first_timers: firstTimers, returning, total: firstTimers + returning, filename };
