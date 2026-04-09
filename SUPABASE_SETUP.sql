@@ -129,3 +129,35 @@ ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recur_times   INTEGER;
 -- Extend events with project and event type linkage
 ALTER TABLE events ADD COLUMN IF NOT EXISTS project_id    UUID REFERENCES projects(id) ON DELETE SET NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type_id UUID REFERENCES event_types(id) ON DELETE SET NULL;
+
+-- ═══════════════════════════════════════════
+-- SJHC Hiker Database
+-- ═══════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS hiker_members (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  first         TEXT NOT NULL,
+  last          TEXT NOT NULL,
+  email         TEXT DEFAULT '',
+  phone         TEXT DEFAULT '',
+  attendance    INTEGER DEFAULT 1,
+  joined_date   DATE,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, first, last)
+);
+ALTER TABLE hiker_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner only" ON hiker_members USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE TABLE IF NOT EXISTS hiker_imports (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  filename      TEXT,
+  imported_at   DATE,
+  first_timers  INTEGER DEFAULT 0,
+  returning     INTEGER DEFAULT 0,
+  total         INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE hiker_imports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner only" ON hiker_imports USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

@@ -24,16 +24,18 @@ export async function loadReminders() {
 
 export async function newReminder({ name, date, recurrence, project_id, recur_until, recur_times }) {
   const userId = await uid();
-  const { error } = await supabase.from("reminders").insert({
+  const row = {
     user_id: userId,
     name,
     date,
     recurrence: recurrence || "none",
     completed: false,
-    project_id: project_id || null,
-    recur_until: recur_until || null,
-    recur_times: recur_times || null,
-  });
+  };
+  // Only include new columns if they have values — avoids 400 if schema not yet migrated
+  if (project_id) row.project_id = project_id;
+  if (recur_until) row.recur_until = recur_until;
+  if (recur_times) row.recur_times = Number(recur_times);
+  const { error } = await supabase.from("reminders").insert(row);
   if (error) throw error;
 }
 
@@ -82,14 +84,10 @@ export async function loadEvents() {
 
 export async function newEvent({ title, description, date, project_id, event_type_id }) {
   const userId = await uid();
-  const { error } = await supabase.from("events").insert({
-    user_id: userId,
-    title,
-    description,
-    date,
-    project_id: project_id || null,
-    event_type_id: event_type_id || null,
-  });
+  const row = { user_id: userId, title, description, date };
+  if (project_id) row.project_id = project_id;
+  if (event_type_id) row.event_type_id = event_type_id;
+  const { error } = await supabase.from("events").insert(row);
   if (error) throw error;
 }
 

@@ -1567,6 +1567,73 @@ input, textarea, select { font-family: inherit; }
   40% { transform: scale(1); opacity: 1; }
 }
 
+/* ── Hiker Database ───────────────────────── */
+.hiker-drop-zone {
+  border: 2px dashed var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.hiker-drop-zone:hover, .hiker-drop-zone.dragover {
+  border-color: var(--green);
+  background: rgba(74,222,128,0.04);
+}
+.hiker-drop-zone.importing { opacity: 0.7; cursor: default; }
+.hiker-drop-icon { font-size: 2rem; margin-bottom: 0.375rem; }
+.hiker-drop-text { font-weight: 600; font-size: 0.9rem; }
+.hiker-drop-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+.hiker-import-result {
+  background: var(--bg-card);
+  border: 1px solid rgba(74,222,128,0.25);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+.hiker-import-result h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.875rem; }
+.hiker-import-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.hiker-import-card { background: var(--bg-raised); border-radius: var(--radius-sm); padding: 0.875rem 1.5rem; text-align: center; min-width: 100px; }
+.hiker-import-num { font-size: 2rem; font-weight: 800; }
+.hiker-import-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+.hiker-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
+.hiker-stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
+.hiker-stat-num { font-size: 1.75rem; font-weight: 800; background: var(--grad-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hiker-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.hiker-search {
+  flex: 1;
+  padding: 0.6rem 0.875rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.hiker-search:focus { border-color: var(--accent); }
+
+.hiker-table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+.hiker-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.hiker-table th {
+  text-align: left; padding: 0.625rem 0.875rem;
+  background: var(--bg-raised); border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.hiker-table th:hover { color: var(--text-secondary); }
+.hiker-table td { padding: 0.5rem 0.875rem; border-bottom: 1px solid var(--border-subtle); }
+.hiker-table tr:last-child td { border-bottom: none; }
+.hiker-table tr:hover td { background: var(--bg-raised); }
+
+.hiker-badge { padding: 2px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 700; }
+.hiker-badge-new { background: rgba(74,222,128,0.2); color: var(--green); }
+.hiker-badge-ret { background: rgba(251,146,60,0.2); color: var(--orange); }
+
 /* ── Mobile tweaks ────────────────────────── */
 @media (max-width: 480px) {
   .form-row { flex-direction: column; }
