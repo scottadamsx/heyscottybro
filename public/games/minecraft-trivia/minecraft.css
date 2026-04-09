@@ -1,0 +1,73 @@
+@font-face {
+    font-family: titleFont;
+    src: url('Minecrafter.Alt.ttf');
+}
+@font-face {
+    font-family: bodyFont;
+    src: url('Minecraftia-Regular.ttf');
+}
+
+h1 {
+    font-family: titleFont;
+    font-size: 600%;
+    text-align: center;  
+    margin: 0; /* ADD THIS */
+    padding: 2%;
+}
+
+body {
+    font-family: bodyFont;
+    background-image: url("dirtBackground.png");
+    margin: 0;
+    justify-content: center;
+}
+
+h1, h2, p, label {
+    color: aliceblue;
+}
+
+#questionBox {
+    background-color: green;
+    padding:15px; 
+    border: black 5px solid; 
+}
+
+button, input {
+    background-color:gray;
+    font-family: bodyFont;
+    padding:10px;
+    margin: 10px;
+
+}
+
+header {
+    background-color: #1ca736;
+    width: 100%;
+    margin-top: 0px;
+    align-items: center;
+    margin-bottom: 5%;
+
+}
+
+div {
+    text-align: center;
+    width:40%;
+    margin: 0 auto;
+}
+
+
+
+label {
+    margin-inline: 40px;;
+}
+
+select {
+    font-family: bodyFont;
+    width: 100px;
+    height: 50px;
+}
+
+#addNewDiv {
+    background-color:gray;
+    margin:5px auto;
+}

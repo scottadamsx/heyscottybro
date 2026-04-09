@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Trivia</title>
+    <link rel="stylesheet" href="minecraft.css">
+</head>
+<body>
+    <audio id="minecraftTheme" loop>
+        <source src="c418.mp3" type="audio/mpeg">
+    </audio>
+    <header>
+        <h1>Minecraft Trivia</h1>
+        <button type="button" id="addNew">Add New Question</button>
+    </header>
+    <main>
+        <div id="addNewDiv"></div>
+        <div><h2 id="result">Good Luck!</h2></div>
+        <div id="questionBox"></div>
+        <div id="gameStats">
+            
+            <label>Correct:  <span id="correct" style="color:green"></span></label>
+            <label>Incorrect:  <span id="incorrect" style="color:red"></span></label>
+            <label>Completed:  <span id="completed" style="color:white"></span></label>
+        </div>
+        <div id="gameResults">
+
+        </div>
+    </main>
+    <script src="app.js" type="module"></script>
+</body>
+</html>
