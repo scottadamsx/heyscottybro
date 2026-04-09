@@ -267,24 +267,21 @@ export async function getSession() {
 
 // ── AI Briefing ──────────────────────────────
 export async function getAIBriefing({ reminders, events, projects, initiatives }) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("VITE_ANTHROPIC_API_KEY not set");
-
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const todayIso = today.toISOString().split("T")[0];
 
-  // Build a concise context string
   const todayTasks = reminders
-    .filter(r => !r.completed && r.date === today.toISOString().split("T")[0])
-    .map(r => `- ${r.name}${r.project_id ? ` [project task]` : ""}`).join("\n") || "None";
+    .filter(r => !r.completed && r.date === todayIso)
+    .map(r => `- ${r.name}`).join("\n") || "None";
 
   const upcomingTasks = reminders
-    .filter(r => !r.completed && r.date > today.toISOString().split("T")[0])
+    .filter(r => !r.completed && r.date > todayIso)
     .slice(0, 10)
     .map(r => `- ${r.name} (${r.date})`).join("\n") || "None";
 
   const upcomingEvents = events
-    .filter(e => e.date >= today.toISOString().split("T")[0])
+    .filter(e => e.date >= todayIso)
     .slice(0, 8)
     .map(e => `- ${e.title} on ${e.date}${e.description ? `: ${e.description}` : ""}`).join("\n") || "None";
 
@@ -293,11 +290,9 @@ export async function getAIBriefing({ reminders, events, projects, initiatives }
 
   const initiativeList = initiatives
     .filter(i => i.active)
-    .map(i => `- ${i.name} (${i.recurrence})${i.description ? `: ${i.description}` : ""}`).join("\n") || "None";
+    .map(i => `- ${i.name} (${i.recurrence})`).join("\n") || "None";
 
   const prompt = `You are a personal assistant for Scott. Today is ${todayStr}.
-
-Here is his current data:
 
 TASKS DUE TODAY:
 ${todayTasks}
@@ -311,19 +306,15 @@ ${upcomingEvents}
 ACTIVE PROJECTS:
 ${projectList}
 
-RECURRING INITIATIVES (ongoing commitments):
+RECURRING INITIATIVES:
 ${initiativeList}
 
-Write Scott a short, friendly, personalised morning briefing (3-5 sentences max). Cover: what's on today, anything notable this week, and a brief heads-up on any project/initiative that needs attention. Be direct and practical. No bullet points — just natural conversational prose.`;
+Write Scott a short, friendly, personalised morning briefing (3-5 sentences). Cover what's on today, anything notable this week, and a brief heads-up on any project needing attention. Be direct and practical — no bullet points, just natural prose.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  // Calls our serverless proxy (/api/briefing in prod, Vite proxy in dev)
+  const response = await fetch("/api/briefing", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-request-browser": "true",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 300,

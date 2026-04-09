@@ -32,16 +32,19 @@ export default function ProjectsPage() {
   const [newAutoTask, setNewAutoTask] = useState({ offset_days: -3, name: "" });
 
   const loadAll = async () => {
-    const [p, et] = await Promise.all([loadProjects(), loadEventTypes()]);
+    const [p, et] = await Promise.all([
+      loadProjects().catch(() => []),
+      loadEventTypes().catch(() => []),
+    ]);
     setProjects(p);
     setEventTypes(et);
   };
 
   const loadProjectDetail = async (projectId) => {
     const [inits, reminders, events] = await Promise.all([
-      loadInitiatives(projectId),
-      loadReminders(),
-      loadEvents(),
+      loadInitiatives(projectId).catch(() => []),
+      loadReminders().catch(() => []),
+      loadEvents().catch(() => []),
     ]);
     setInitiatives(inits);
     setProjectTasks(reminders.filter(r => r.project_id === projectId && !r.completed));

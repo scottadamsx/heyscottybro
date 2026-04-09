@@ -11,12 +11,17 @@ export default function DashboardPage() {
   const [aiLoaded, setAiLoaded] = useState(false);
 
   useEffect(() => {
-    Promise.all([loadReminders(), loadJournal(), loadBudgetConfig(), loadEvents(), loadProjects(), loadInitiatives()])
-      .then(([reminders, journal, config, events, projects, initiatives]) => {
-        setData({ reminders, journal, config, events, projects, initiatives });
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    Promise.all([
+      loadReminders().catch(() => []),
+      loadJournal().catch(() => []),
+      loadBudgetConfig().catch(() => ({ categories: [], recurringBills: [] })),
+      loadEvents().catch(() => []),
+      loadProjects().catch(() => []),
+      loadInitiatives().catch(() => []),
+    ]).then(([reminders, journal, config, events, projects, initiatives]) => {
+      setData({ reminders, journal, config, events, projects, initiatives });
+      setLoading(false);
+    });
   }, []);
 
   const fetchBriefing = useCallback(async () => {
