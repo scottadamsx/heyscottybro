@@ -1,0 +1,361 @@
+import { useEffect, useState } from "react";
+import {
+  loadProjects, newProject, deleteProject,
+  loadInitiatives, newInitiative, deleteInitiative,
+  loadEventTypes, newEventType, deleteEventType, updateEventType,
+  loadReminders, loadEvents,
+} from "../../api/plannerApi";
+import { formatDisplayDate } from "../../utils/plannerUtils";
+
+const PROJECT_COLORS = ["#6366f1", "#22d3ee", "#4ade80", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
+
+const emptyProject = { name: "", description: "", color: "#6366f1" };
+const emptyInitiative = { name: "", description: "", recurrence: "weekly" };
+const emptyEventType = { name: "", color: "#22d3ee" };
+
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState([]);
+  const [selected, setSelected] = useState(null); // selected project id
+  const [initiatives, setInitiatives] = useState([]);
+  const [eventTypes, setEventTypes] = useState([]);
+  const [projectTasks, setProjectTasks] = useState([]);
+  const [projectEvents, setProjectEvents] = useState([]);
+
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showInitiativeForm, setShowInitiativeForm] = useState(false);
+  const [showEventTypeForm, setShowEventTypeForm] = useState(false);
+  const [editingAutoTasks, setEditingAutoTasks] = useState(null); // event_type being edited
+
+  const [projectForm, setProjectForm] = useState(emptyProject);
+  const [initiativeForm, setInitiativeForm] = useState(emptyInitiative);
+  const [eventTypeForm, setEventTypeForm] = useState(emptyEventType);
+  const [newAutoTask, setNewAutoTask] = useState({ offset_days: -3, name: "" });
+
+  const loadAll = async () => {
+    const [p, et] = await Promise.all([loadProjects(), loadEventTypes()]);
+    setProjects(p);
+    setEventTypes(et);
+  };
+
+  const loadProjectDetail = async (projectId) => {
+    const [inits, reminders, events] = await Promise.all([
+      loadInitiatives(projectId),
+      loadReminders(),
+      loadEvents(),
+    ]);
+    setInitiatives(inits);
+    setProjectTasks(reminders.filter(r => r.project_id === projectId && !r.completed));
+    setProjectEvents(events.filter(e => e.project_id === projectId));
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    if (selected) loadProjectDetail(selected);
+  }, [selected]);
+
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
+    if (!projectForm.name.trim()) return;
+    const p = await newProject(projectForm);
+    setProjectForm(emptyProject);
+    setShowProjectForm(false);
+    await loadAll();
+    setSelected(p.id);
+  };
+
+  const handleDeleteProject = async (id) => {
+    if (!confirm("Delete this project and all its tasks/initiatives?")) return;
+    await deleteProject(id);
+    if (selected === id) setSelected(null);
+    await loadAll();
+  };
+
+  const handleCreateInitiative = async (e) => {
+    e.preventDefault();
+    if (!initiativeForm.name.trim()) return;
+    await newInitiative({ ...initiativeForm, project_id: selected });
+    setInitiativeForm(emptyInitiative);
+    setShowInitiativeForm(false);
+    await loadProjectDetail(selected);
+  };
+
+  const handleCreateEventType = async (e) => {
+    e.preventDefault();
+    if (!eventTypeForm.name.trim()) return;
+    await newEventType({ ...eventTypeForm, auto_tasks: [] });
+    setEventTypeForm(emptyEventType);
+    setShowEventTypeForm(false);
+    await loadAll();
+  };
+
+  const addAutoTask = async () => {
+    if (!newAutoTask.name.trim() || !editingAutoTasks) return;
+    const et = eventTypes.find(x => x.id === editingAutoTasks);
+    if (!et) return;
+    const updated = [...(et.auto_tasks || []), { ...newAutoTask, offset_days: Number(newAutoTask.offset_days) }];
+    await updateEventType(editingAutoTasks, { auto_tasks: updated });
+    setNewAutoTask({ offset_days: -3, name: "" });
+    await loadAll();
+  };
+
+  const removeAutoTask = async (etId, idx) => {
+    const et = eventTypes.find(x => x.id === etId);
+    if (!et) return;
+    const updated = et.auto_tasks.filter((_, i) => i !== idx);
+    await updateEventType(etId, { auto_tasks: updated });
+    await loadAll();
+  };
+
+  const selectedProject = projects.find(p => p.id === selected);
+
+  return (
+    <div className="module-page">
+      {/* ── Header ── */}
+      <div className="module-header">
+        <h1>Projects</h1>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button className="btn btn-sm" onClick={() => setShowEventTypeForm(true)}>
+            <i className="fa-solid fa-tag" /> Event Types
+          </button>
+          <button className="btn btn-sm" onClick={() => setShowProjectForm(true)}>
+            <i className="fa-solid fa-plus" /> New Project
+          </button>
+        </div>
+      </div>
+
+      {/* ── Project List ── */}
+      {!selected && (
+        <div className="projects-grid">
+          {projects.length === 0 && (
+            <p className="no-entries">No projects yet. Create one to get started.</p>
+          )}
+          {projects.map(p => (
+            <div
+              key={p.id}
+              className="project-tile"
+              style={{ "--project-color": p.color }}
+              onClick={() => setSelected(p.id)}
+            >
+              <div className="project-tile-dot" style={{ background: p.color }} />
+              <div className="project-tile-body">
+                <div className="project-tile-name">{p.name}</div>
+                {p.description && <div className="project-tile-desc">{p.description}</div>}
+              </div>
+              <button
+                className="btn-sm btn-delete"
+                onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.id); }}
+                title="Delete project"
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Project Detail ── */}
+      {selected && selectedProject && (
+        <>
+          <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", width: "fit-content" }} onClick={() => setSelected(null)}>
+            ← All Projects
+          </button>
+
+          <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color }}>
+            <div>
+              <h2 style={{ color: selectedProject.color }}>{selectedProject.name}</h2>
+              {selectedProject.description && <p className="project-tile-desc">{selectedProject.description}</p>}
+            </div>
+          </div>
+
+          {/* Tasks */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title"><i className="fa-solid fa-list-check" /> Active Tasks</h3>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Add via Tasks page with project filter</span>
+            </div>
+            {projectTasks.length === 0 && <p className="no-entries">No active tasks for this project.</p>}
+            <div className="db-list">
+              {projectTasks.map(t => (
+                <div className="db-list-item" key={t.id}>
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{t.name}</div>
+                    <div className="db-list-item-subtitle">{formatDisplayDate(t.date)}{t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Upcoming Events */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title"><i className="fa-solid fa-calendar-days" /> Scheduled Events</h3>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Add via Calendar page</span>
+            </div>
+            {projectEvents.length === 0 && <p className="no-entries">No events linked to this project.</p>}
+            <div className="db-list">
+              {projectEvents.map(e => (
+                <div className="db-list-item" key={e.id}>
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{e.title}</div>
+                    <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{e.description ? ` — ${e.description}` : ""}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Initiatives */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title"><i className="fa-solid fa-rotate" /> Initiatives</h3>
+              <button className="btn btn-sm" onClick={() => setShowInitiativeForm(true)}>
+                <i className="fa-solid fa-plus" /> Add
+              </button>
+            </div>
+            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+              Recurring commitments for this project (e.g. post on Instagram every week).
+            </p>
+            {initiatives.length === 0 && <p className="no-entries">No initiatives yet.</p>}
+            <div className="db-list">
+              {initiatives.map(i => (
+                <div className="db-list-item" key={i.id}>
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{i.name}</div>
+                    <div className="db-list-item-subtitle">
+                      {i.recurrence} · {i.description || "no description"}
+                    </div>
+                  </div>
+                  <button className="btn-sm btn-delete" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected))}>✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Event Types Section (always shown, below projects) ── */}
+      {!selected && (
+        <div className="db-card" style={{ marginTop: "1rem" }}>
+          <div className="db-card-header">
+            <h3 className="db-card-title"><i className="fa-solid fa-tag" /> Event Types &amp; Auto-Tasks</h3>
+          </div>
+          <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+            When you create a calendar event with a type (e.g. "Hike"), tasks are auto-created based on the template below.
+          </p>
+          {eventTypes.length === 0 && <p className="no-entries">No event types yet.</p>}
+          {eventTypes.map(et => (
+            <div key={et.id} className="event-type-card">
+              <div className="event-type-header">
+                <span className="event-type-dot" style={{ background: et.color }} />
+                <span className="event-type-name">{et.name}</span>
+                <button className="btn-sm" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}
+                  onClick={() => setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id)}>
+                  {editingAutoTasks === et.id ? "Done" : "Edit Tasks"}
+                </button>
+                <button className="btn-sm btn-delete" onClick={() => deleteEventType(et.id).then(loadAll)}>✕</button>
+              </div>
+              {(et.auto_tasks || []).length > 0 && (
+                <div className="auto-tasks-list">
+                  {et.auto_tasks.map((task, idx) => (
+                    <div key={idx} className="auto-task-item">
+                      <span className="auto-task-offset">
+                        {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
+                      </span>
+                      <span className="auto-task-name">{task.name}</span>
+                      {editingAutoTasks === et.id && (
+                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, idx)}>✕</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {editingAutoTasks === et.id && (
+                <div className="auto-task-add">
+                  <input
+                    type="number"
+                    value={newAutoTask.offset_days}
+                    onChange={e => setNewAutoTask({ ...newAutoTask, offset_days: e.target.value })}
+                    placeholder="Days offset"
+                    style={{ width: "90px" }}
+                  />
+                  <input
+                    value={newAutoTask.name}
+                    onChange={e => setNewAutoTask({ ...newAutoTask, name: e.target.value })}
+                    placeholder="Task name (e.g. Post preview)"
+                    style={{ flex: 1 }}
+                  />
+                  <button className="btn btn-sm" onClick={addAutoTask}>Add</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Modals ── */}
+      {showProjectForm && (
+        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowProjectForm(false)}>
+          <form className="event-card" onSubmit={handleCreateProject}>
+            <h3>New Project</h3>
+            <input placeholder="Project name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} required />
+            <textarea placeholder="Description (optional)" value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} />
+            <div>
+              <label style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "block", marginBottom: "0.375rem" }}>Colour</label>
+              <div className="color-picker">
+                {PROJECT_COLORS.map(c => (
+                  <button key={c} type="button" className={`color-swatch ${projectForm.color === c ? "selected" : ""}`}
+                    style={{ background: c }} onClick={() => setProjectForm({ ...projectForm, color: c })} />
+                ))}
+              </div>
+            </div>
+            <div className="budget-widget-actions">
+              <button className="btn" type="submit">Create</button>
+              <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setShowProjectForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showInitiativeForm && (
+        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowInitiativeForm(false)}>
+          <form className="event-card" onSubmit={handleCreateInitiative}>
+            <h3>New Initiative</h3>
+            <input placeholder="Name (e.g. Post on Instagram)" value={initiativeForm.name} onChange={e => setInitiativeForm({ ...initiativeForm, name: e.target.value })} required />
+            <textarea placeholder="Description (optional)" value={initiativeForm.description} onChange={e => setInitiativeForm({ ...initiativeForm, description: e.target.value })} />
+            <select value={initiativeForm.recurrence} onChange={e => setInitiativeForm({ ...initiativeForm, recurrence: e.target.value })}>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+            <div className="budget-widget-actions">
+              <button className="btn" type="submit">Add Initiative</button>
+              <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setShowInitiativeForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showEventTypeForm && (
+        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowEventTypeForm(false)}>
+          <form className="event-card" onSubmit={handleCreateEventType}>
+            <h3>New Event Type</h3>
+            <input placeholder="Name (e.g. Hike, Meeting, Party)" value={eventTypeForm.name} onChange={e => setEventTypeForm({ ...eventTypeForm, name: e.target.value })} required />
+            <div>
+              <label style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "block", marginBottom: "0.375rem" }}>Colour</label>
+              <div className="color-picker">
+                {PROJECT_COLORS.map(c => (
+                  <button key={c} type="button" className={`color-swatch ${eventTypeForm.color === c ? "selected" : ""}`}
+                    style={{ background: c }} onClick={() => setEventTypeForm({ ...eventTypeForm, color: c })} />
+                ))}
+              </div>
+            </div>
+            <div className="budget-widget-actions">
+              <button className="btn" type="submit">Create</button>
+              <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setShowEventTypeForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}

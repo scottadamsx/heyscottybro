@@ -1,11 +1,7 @@
 /**
  * Planner API — wraps Supabase calls for all planner data.
- * Tables required in Supabase:
- *   reminders  (id, user_id, name, date, recurrence, completed, completed_date)
- *   journal    (id, user_id, title, entry, date)
- *   events     (id, user_id, title, description, date)
- *   transactions (id, user_id, description, amount, type, category, date, notes)
- *   budget_config (id, user_id, categories, income, recurring_bills)
+ * Tables: reminders, journal, events, transactions, budget_config,
+ *         projects, event_types, initiatives
  */
 import { supabase } from "../utils/supabase";
 
@@ -26,10 +22,17 @@ export async function loadReminders() {
   return data ?? [];
 }
 
-export async function newReminder({ name, date, recurrence }) {
+export async function newReminder({ name, date, recurrence, project_id, recur_until, recur_times }) {
   const userId = await uid();
   const { error } = await supabase.from("reminders").insert({
-    user_id: userId, name, date, recurrence: recurrence || "none", completed: false
+    user_id: userId,
+    name,
+    date,
+    recurrence: recurrence || "none",
+    completed: false,
+    project_id: project_id || null,
+    recur_until: recur_until || null,
+    recur_times: recur_times || null,
   });
   if (error) throw error;
 }
@@ -77,9 +80,21 @@ export async function loadEvents() {
   return data ?? [];
 }
 
-export async function newEvent({ title, description, date }) {
+export async function newEvent({ title, description, date, project_id, event_type_id }) {
   const userId = await uid();
-  const { error } = await supabase.from("events").insert({ user_id: userId, title, description, date });
+  const { error } = await supabase.from("events").insert({
+    user_id: userId,
+    title,
+    description,
+    date,
+    project_id: project_id || null,
+    event_type_id: event_type_id || null,
+  });
+  if (error) throw error;
+}
+
+export async function deleteEvent(id) {
+  const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -140,6 +155,100 @@ export async function addRecurringBill(bill) {
   await saveBudgetConfig(cfg);
 }
 
+// ── Projects ─────────────────────────────────
+export async function loadProjects() {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function newProject({ name, description, color }) {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({ user_id: userId, name, description: description || "", color: color || "#6366f1" })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProject(id, updates) {
+  const { error } = await supabase.from("projects").update(updates).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteProject(id) {
+  const { error } = await supabase.from("projects").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ── Event Types ──────────────────────────────
+export async function loadEventTypes() {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("event_types")
+    .select("*")
+    .eq("user_id", userId)
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function newEventType({ name, color, auto_tasks }) {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("event_types")
+    .insert({ user_id: userId, name, color: color || "#22d3ee", auto_tasks: auto_tasks || [] })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateEventType(id, updates) {
+  const { error } = await supabase.from("event_types").update(updates).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteEventType(id) {
+  const { error } = await supabase.from("event_types").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ── Initiatives ──────────────────────────────
+export async function loadInitiatives(projectId) {
+  const userId = await uid();
+  let query = supabase.from("initiatives").select("*").eq("user_id", userId);
+  if (projectId) query = query.eq("project_id", projectId);
+  const { data, error } = await query.order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function newInitiative({ project_id, name, description, recurrence }) {
+  const userId = await uid();
+  const { error } = await supabase.from("initiatives").insert({
+    user_id: userId,
+    project_id: project_id || null,
+    name,
+    description: description || "",
+    recurrence: recurrence || "weekly",
+    active: true,
+  });
+  if (error) throw error;
+}
+
+export async function deleteInitiative(id) {
+  const { error } = await supabase.from("initiatives").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ── Auth ─────────────────────────────────────
 export async function login(email, password) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -154,4 +263,79 @@ export async function logout() {
 export async function getSession() {
   const { data: { session } } = await supabase.auth.getSession();
   return session;
+}
+
+// ── AI Briefing ──────────────────────────────
+export async function getAIBriefing({ reminders, events, projects, initiatives }) {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("VITE_ANTHROPIC_API_KEY not set");
+
+  const today = new Date();
+  const todayStr = today.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  // Build a concise context string
+  const todayTasks = reminders
+    .filter(r => !r.completed && r.date === today.toISOString().split("T")[0])
+    .map(r => `- ${r.name}${r.project_id ? ` [project task]` : ""}`).join("\n") || "None";
+
+  const upcomingTasks = reminders
+    .filter(r => !r.completed && r.date > today.toISOString().split("T")[0])
+    .slice(0, 10)
+    .map(r => `- ${r.name} (${r.date})`).join("\n") || "None";
+
+  const upcomingEvents = events
+    .filter(e => e.date >= today.toISOString().split("T")[0])
+    .slice(0, 8)
+    .map(e => `- ${e.title} on ${e.date}${e.description ? `: ${e.description}` : ""}`).join("\n") || "None";
+
+  const projectList = projects
+    .map(p => `- ${p.name}${p.description ? `: ${p.description}` : ""}`).join("\n") || "None";
+
+  const initiativeList = initiatives
+    .filter(i => i.active)
+    .map(i => `- ${i.name} (${i.recurrence})${i.description ? `: ${i.description}` : ""}`).join("\n") || "None";
+
+  const prompt = `You are a personal assistant for Scott. Today is ${todayStr}.
+
+Here is his current data:
+
+TASKS DUE TODAY:
+${todayTasks}
+
+UPCOMING TASKS:
+${upcomingTasks}
+
+UPCOMING EVENTS:
+${upcomingEvents}
+
+ACTIVE PROJECTS:
+${projectList}
+
+RECURRING INITIATIVES (ongoing commitments):
+${initiativeList}
+
+Write Scott a short, friendly, personalised morning briefing (3-5 sentences max). Cover: what's on today, anything notable this week, and a brief heads-up on any project/initiative that needs attention. Be direct and practical. No bullet points — just natural conversational prose.`;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-request-browser": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 300,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${response.status}`);
+  }
+
+  const result = await response.json();
+  return result.content?.[0]?.text ?? "Unable to generate briefing.";
 }

@@ -77,3 +77,55 @@ CREATE TABLE budget_config (
 );
 ALTER TABLE budget_config ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "owner only" ON budget_config USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ═══════════════════════════════════════════
+-- Projects & Scheduling — run AFTER main setup
+-- ═══════════════════════════════════════════
+
+-- Projects (ongoing named initiatives)
+CREATE TABLE IF NOT EXISTS projects (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  color       TEXT DEFAULT '#6366f1',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner only" ON projects USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Event types (e.g. "hike", "meeting") with auto-task templates
+CREATE TABLE IF NOT EXISTS event_types (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name       TEXT NOT NULL,
+  color      TEXT DEFAULT '#22d3ee',
+  -- auto_tasks: [{offset_days: -3, name: "Post preview", kind: "social"}]
+  auto_tasks JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE event_types ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner only" ON event_types USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Initiatives (recurring project-level tasks, e.g. social media posts)
+CREATE TABLE IF NOT EXISTS initiatives (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  project_id  UUID REFERENCES projects(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  recurrence  TEXT DEFAULT 'weekly',   -- daily | weekly | monthly
+  active      BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE initiatives ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "owner only" ON initiatives USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Extend reminders with project linkage and limited recurrence
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS project_id    UUID REFERENCES projects(id) ON DELETE SET NULL;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recur_until   DATE;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recur_times   INTEGER;
+
+-- Extend events with project and event type linkage
+ALTER TABLE events ADD COLUMN IF NOT EXISTS project_id    UUID REFERENCES projects(id) ON DELETE SET NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type_id UUID REFERENCES event_types(id) ON DELETE SET NULL;

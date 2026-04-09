@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadReminders, loadEvents, loadTransactions, newEvent } from "../../api/plannerApi";
+import { loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent, loadProjects, loadEventTypes, newReminder } from "../../api/plannerApi";
 import { expandReminders, toDateStr } from "../../utils/plannerUtils";
 
 function monthLabel(year, month) {
@@ -13,15 +13,25 @@ export default function CalendarPage() {
   const [reminders, setReminders] = useState([]);
   const [events, setEvents] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [eventTypes, setEventTypes] = useState([]);
+
   const [selectedDate, setSelectedDate] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedEventType, setSelectedEventType] = useState("");
+  const [dayEvents, setDayEvents] = useState([]); // events on selected date
 
   const load = async () => {
-    const [r, e, t] = await Promise.all([loadReminders(), loadEvents(), loadTransactions()]);
+    const [r, e, t, p, et] = await Promise.all([
+      loadReminders(), loadEvents(), loadTransactions(), loadProjects(), loadEventTypes()
+    ]);
     setReminders(r);
     setEvents(e);
     setTransactions(t);
+    setProjects(p);
+    setEventTypes(et);
   };
 
   useEffect(() => { load(); }, []);
@@ -55,12 +65,45 @@ export default function CalendarPage() {
   const prevMonth = () => month === 0 ? (setMonth(11), setYear(year - 1)) : setMonth(month - 1);
   const nextMonth = () => month === 11 ? (setMonth(0), setYear(year + 1)) : setMonth(month + 1);
 
-  const saveEvent = async () => {
-    if (!selectedDate || !title.trim()) return;
-    await newEvent({ title: title.trim(), description: description.trim(), date: selectedDate });
-    setSelectedDate("");
+  const openDay = (date) => {
+    setSelectedDate(date);
     setTitle("");
     setDescription("");
+    setSelectedProject("");
+    setSelectedEventType("");
+    setDayEvents(events.filter(e => e.date === date));
+  };
+
+  const saveEvent = async () => {
+    if (!selectedDate || !title.trim()) return;
+    await newEvent({
+      title: title.trim(),
+      description: description.trim(),
+      date: selectedDate,
+      project_id: selectedProject || null,
+      event_type_id: selectedEventType || null,
+    });
+
+    // Auto-create tasks based on event type template
+    if (selectedEventType) {
+      const et = eventTypes.find(x => x.id === selectedEventType);
+      if (et?.auto_tasks?.length) {
+        const eventDate = new Date(selectedDate + "T00:00:00");
+        for (const task of et.auto_tasks) {
+          const taskDate = new Date(eventDate);
+          taskDate.setDate(eventDate.getDate() + Number(task.offset_days));
+          const taskDateStr = toDateStr(taskDate);
+          await newReminder({
+            name: `${task.name} — ${title.trim()}`,
+            date: taskDateStr,
+            recurrence: "none",
+            project_id: selectedProject || null,
+          });
+        }
+      }
+    }
+
+    setSelectedDate("");
     await load();
   };
 
@@ -90,7 +133,7 @@ export default function CalendarPage() {
                 type="button"
                 className="calendar-cell"
                 style={isToday ? { borderColor: "var(--accent)" } : {}}
-                onClick={() => setSelectedDate(date)}
+                onClick={() => openDay(date)}
               >
                 <span className="day-number" style={isToday ? { color: "var(--accent)" } : {}}>{day}</span>
                 {(itemsByDate[date] || []).slice(0, 3).map((item, idx) => (
@@ -105,9 +148,53 @@ export default function CalendarPage() {
       {selectedDate && (
         <div className="event-overlay" onClick={(e) => { if (e.target.className === "event-overlay") setSelectedDate(""); }}>
           <div className="event-card">
-            <h3>Add Event — {selectedDate}</h3>
-            <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <h3>
+              {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+            </h3>
+
+            {/* Existing events on this day */}
+            {dayEvents.length > 0 && (
+              <div style={{ marginBottom: "0.5rem" }}>
+                {dayEvents.map(e => (
+                  <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.375rem 0.5rem", background: "var(--bg-raised)", borderRadius: "6px", marginBottom: "4px", fontSize: "0.82rem" }}>
+                    <span>{e.title}{e.description ? ` — ${e.description}` : ""}</span>
+                    <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => deleteEvent(e.id).then(load).then(() => setDayEvents(prev => prev.filter(x => x.id !== e.id)))}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input placeholder="New event title" value={title} onChange={(e) => setTitle(e.target.value)} />
             <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+
+            {eventTypes.length > 0 && (
+              <select value={selectedEventType} onChange={e => setSelectedEventType(e.target.value)}>
+                <option value="">No event type</option>
+                {eventTypes.map(et => (
+                  <option key={et.id} value={et.id}>{et.name}</option>
+                ))}
+              </select>
+            )}
+
+            {selectedEventType && (() => {
+              const et = eventTypes.find(x => x.id === selectedEventType);
+              return et?.auto_tasks?.length ? (
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", background: "var(--bg-raised)", borderRadius: "6px", padding: "0.5rem" }}>
+                  <strong style={{ color: "var(--accent-light)" }}>Auto-tasks that will be created:</strong>
+                  {et.auto_tasks.map((t, i) => (
+                    <div key={i}>· {t.name} ({t.offset_days < 0 ? `${Math.abs(t.offset_days)}d before` : t.offset_days === 0 ? "day of" : `${t.offset_days}d after`})</div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
+
+            {projects.length > 0 && (
+              <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}>
+                <option value="">No project</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            )}
+
             <div className="budget-widget-actions">
               <button className="btn" onClick={saveEvent}>Save</button>
               <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setSelectedDate("")}>Cancel</button>

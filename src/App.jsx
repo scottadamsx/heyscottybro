@@ -17,6 +17,7 @@ import JournalPage from "./pages/admin/JournalPage.jsx";
 import RemindersPage from "./pages/admin/RemindersPage.jsx";
 import CalendarPage from "./pages/admin/CalendarPage.jsx";
 import BudgetPage from "./pages/admin/BudgetPage.jsx";
+import ProjectsPage from "./pages/admin/ProjectsPage.jsx";
 
 export default function App() {
   return (
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="budget" element={<BudgetPage />} />
+          <Route path="projects" element={<ProjectsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
