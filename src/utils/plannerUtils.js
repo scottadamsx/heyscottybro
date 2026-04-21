@@ -14,6 +14,14 @@ export function formatMoney(amount) {
   })}`;
 }
 
+export function getWeekRange(today = new Date()) {
+  const day = today.getDay(); // 0=Sun, 1=Mon, ...6=Sat
+  const daysFromMon = day === 0 ? 6 : day - 1;
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysFromMon);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return { start, end, startStr: toDateStr(start), endStr: toDateStr(end) };
+}
+
 export function formatDisplayDate(isoDate) {
   if (!isoDate) return "";
   try {

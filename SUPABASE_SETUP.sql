@@ -161,3 +161,98 @@ CREATE TABLE IF NOT EXISTS hiker_imports (
 );
 ALTER TABLE hiker_imports ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "owner only" ON hiker_imports USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ═══════════════════════════════════════════
+-- Budget Rewrite Migration (Apr 2026 — 9-month plan)
+-- Idempotent: safe to run multiple times.
+-- Resolves user_id from auth.users by email.
+-- ═══════════════════════════════════════════
+
+-- Rename income → income_sources if the old column still exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'budget_config' AND column_name = 'income'
+  ) THEN
+    ALTER TABLE budget_config RENAME COLUMN income TO income_sources;
+  END IF;
+END $$;
+
+-- Add projection/config columns
+ALTER TABLE budget_config ADD COLUMN IF NOT EXISTS income_sources   JSONB  DEFAULT '[]';
+ALTER TABLE budget_config ADD COLUMN IF NOT EXISTS tax_rate         NUMERIC DEFAULT 0.18;
+ALTER TABLE budget_config ADD COLUMN IF NOT EXISTS starting_balance NUMERIC DEFAULT 0;
+
+-- Link a real transaction to the recurring bill or income source it fulfills
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS fulfills_recurring_id TEXT;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS fulfills_income_id    TEXT;
+
+-- Seed the plan for scottadamsx@gmail.com
+DO $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  SELECT id INTO v_user_id FROM auth.users WHERE email = 'scottadamsx@gmail.com' LIMIT 1;
+  IF v_user_id IS NULL THEN
+    RAISE NOTICE 'User not found — skipping budget seed';
+    RETURN;
+  END IF;
+
+  -- Config (upsert)
+  INSERT INTO budget_config (user_id, categories, income_sources, recurring_bills, tax_rate, starting_balance)
+  VALUES (
+    v_user_id,
+    '["Food","Transport","Bills","Entertainment","Housing","Car","Subscriptions","Travel","Other"]'::jsonb,
+    '[
+      {"id":"inc-contract","name":"Contract (Phase 1)","amount":3075.00,"frequency":"monthly","startDate":"2026-05-01","endDate":"2026-08-31","notes":"$15k / 4mo, net 18% tax"},
+      {"id":"inc-salary","name":"Full-time salary (Phase 2)","amount":3408.58,"frequency":"monthly","startDate":"2026-09-01","endDate":null,"notes":"40hr/wk @ $24, net 18% tax"}
+    ]'::jsonb,
+    '[
+      {"id":"rb-rent","name":"Rent — Marine Institute","amount":875.00,"category":"Housing","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":"2-person room"},
+      {"id":"rb-spotify","name":"Spotify","amount":7.00,"category":"Subscriptions","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":true,"notes":""},
+      {"id":"rb-claude","name":"Claude Pro","amount":32.00,"category":"Subscriptions","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":true,"notes":""},
+      {"id":"rb-psn","name":"PlayStation Plus","amount":25.00,"category":"Subscriptions","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":true,"notes":""},
+      {"id":"rb-phone","name":"Phone Bill","amount":150.00,"category":"Bills","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":""},
+      {"id":"rb-carins","name":"Car Insurance","amount":200.00,"category":"Car","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":"Starts once moved in"},
+      {"id":"rb-gas","name":"Gas","amount":200.00,"category":"Transport","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":""},
+      {"id":"rb-groceries","name":"Groceries","amount":300.00,"category":"Food","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":""},
+      {"id":"rb-toiletries","name":"Toiletries","amount":100.00,"category":"Other","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":""},
+      {"id":"rb-fun","name":"Fun Money","amount":400.00,"category":"Entertainment","frequency":"monthly","startDate":"2026-05-01","endDate":null,"autoPay":false,"notes":"Discretionary"}
+    ]'::jsonb,
+    0.18,
+    5000.00
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    categories       = EXCLUDED.categories,
+    income_sources   = EXCLUDED.income_sources,
+    recurring_bills  = EXCLUDED.recurring_bills,
+    tax_rate         = EXCLUDED.tax_rate,
+    starting_balance = EXCLUDED.starting_balance;
+
+  -- Known one-time transactions (amounts signed: expense negative, income positive)
+  -- Each guarded with WHERE NOT EXISTS so re-runs don't duplicate.
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Car purchase', -4000.00, 'expense', 'Car', '2026-04-05', 'Bought before lump sum arrived'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Car purchase' AND date = '2026-04-05');
+
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Damage deposit — MI', -656.25, 'expense', 'Housing', '2026-04-10', '75% of $875 rent'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Damage deposit — MI' AND date = '2026-04-10');
+
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Lump sum #1', 3000.00, 'income', 'Other', '2026-04-30', 'End of April'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Lump sum #1' AND date = '2026-04-30');
+
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Lump sum #2', 3000.00, 'income', 'Other', '2026-05-31', 'End of May'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Lump sum #2' AND date = '2026-05-31');
+
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Trinidad flight', -1000.00, 'expense', 'Travel', '2026-05-15', 'August trip'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Trinidad flight' AND date = '2026-05-15');
+
+  INSERT INTO transactions (user_id, description, amount, type, category, date, notes)
+  SELECT v_user_id, 'Trinidad spending money', -500.00, 'expense', 'Travel', '2026-08-15', 'Last 2 weeks of August'
+  WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Trinidad spending money' AND date = '2026-08-15');
+END $$;

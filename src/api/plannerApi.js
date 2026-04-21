@@ -97,6 +97,15 @@ export async function deleteEvent(id) {
 }
 
 // ── Budget ───────────────────────────────────
+// Transactions are stored with SIGNED amounts (expense negative, income positive).
+// The projection engine relies on this convention.
+
+function signTx(tx) {
+  const n = Number(tx.amount || 0);
+  const signed = tx.type === "expense" ? -Math.abs(n) : tx.type === "income" ? Math.abs(n) : n;
+  return { ...tx, amount: signed };
+}
+
 export async function loadTransactions() {
   const userId = await uid();
   const { data, error } = await supabase
@@ -110,9 +119,46 @@ export async function loadTransactions() {
 
 export async function newTransaction(tx) {
   const userId = await uid();
-  const { error } = await supabase.from("transactions").insert({ user_id: userId, ...tx });
+  const row = signTx({ user_id: userId, ...tx });
+  const { data, error } = await supabase.from("transactions").insert(row).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateTransaction(id, updates) {
+  const patch = "type" in updates || "amount" in updates ? signTx(updates) : updates;
+  const { error } = await supabase.from("transactions").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+export async function deleteTransaction(id) {
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function linkTransactionToRecurring(txId, recurringId) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({ fulfills_recurring_id: recurringId, fulfills_income_id: null })
+    .eq("id", txId);
+  if (error) throw error;
+}
+
+export async function linkTransactionToIncome(txId, incomeId) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({ fulfills_income_id: incomeId, fulfills_recurring_id: null })
+    .eq("id", txId);
+  if (error) throw error;
+}
+
+const DEFAULT_CONFIG = {
+  categories: ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"],
+  incomeSources: [],
+  recurringBills: [],
+  taxRate: 0.18,
+  startingBalance: 0,
+};
 
 export async function loadBudgetConfig() {
   const userId = await uid();
@@ -122,11 +168,13 @@ export async function loadBudgetConfig() {
     .eq("user_id", userId)
     .single();
   if (error && error.code !== "PGRST116") throw error;
-  if (!data) return { categories: ["Food", "Transport", "Bills", "Entertainment", "Other"], income: [], recurringBills: [] };
+  if (!data) return { ...DEFAULT_CONFIG };
   return {
-    categories: data.categories ?? [],
-    income: data.income ?? [],
+    categories: data.categories ?? DEFAULT_CONFIG.categories,
+    incomeSources: data.income_sources ?? data.income ?? [],
     recurringBills: data.recurring_bills ?? [],
+    taxRate: data.tax_rate != null ? Number(data.tax_rate) : 0.18,
+    startingBalance: data.starting_balance != null ? Number(data.starting_balance) : 0,
   };
 }
 
@@ -135,22 +183,62 @@ export async function saveBudgetConfig(config) {
   const { error } = await supabase.from("budget_config").upsert({
     user_id: userId,
     categories: config.categories,
-    income: config.income,
+    income_sources: config.incomeSources,
     recurring_bills: config.recurringBills,
+    tax_rate: config.taxRate ?? 0.18,
+    starting_balance: config.startingBalance ?? 0,
   }, { onConflict: "user_id" });
   if (error) throw error;
 }
 
-export async function addIncome(income) {
+function genId(prefix = "id") {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export async function addIncomeSource(source) {
   const cfg = await loadBudgetConfig();
-  cfg.income = [...(cfg.income || []), income];
+  const row = { id: genId("inc"), frequency: "monthly", ...source };
+  cfg.incomeSources = [...(cfg.incomeSources || []), row];
+  await saveBudgetConfig(cfg);
+  return row;
+}
+
+export async function updateIncomeSource(id, updates) {
+  const cfg = await loadBudgetConfig();
+  cfg.incomeSources = (cfg.incomeSources || []).map(s => s.id === id ? { ...s, ...updates } : s);
+  await saveBudgetConfig(cfg);
+}
+
+export async function deleteIncomeSource(id) {
+  const cfg = await loadBudgetConfig();
+  cfg.incomeSources = (cfg.incomeSources || []).filter(s => s.id !== id);
   await saveBudgetConfig(cfg);
 }
 
 export async function addRecurringBill(bill) {
   const cfg = await loadBudgetConfig();
-  cfg.recurringBills = [...(cfg.recurringBills || []), bill];
+  const row = { id: genId("rb"), frequency: "monthly", autoPay: false, ...bill };
+  cfg.recurringBills = [...(cfg.recurringBills || []), row];
   await saveBudgetConfig(cfg);
+  return row;
+}
+
+export async function updateRecurringBill(id, updates) {
+  const cfg = await loadBudgetConfig();
+  cfg.recurringBills = (cfg.recurringBills || []).map(b => b.id === id ? { ...b, ...updates } : b);
+  await saveBudgetConfig(cfg);
+}
+
+export async function deleteRecurringBill(id) {
+  const cfg = await loadBudgetConfig();
+  cfg.recurringBills = (cfg.recurringBills || []).filter(b => b.id !== id);
+  await saveBudgetConfig(cfg);
+}
+
+// Back-compat shim — old code calls addIncome
+export async function addIncome(income) {
+  return addIncomeSource(income);
 }
 
 // ── Projects ─────────────────────────────────
