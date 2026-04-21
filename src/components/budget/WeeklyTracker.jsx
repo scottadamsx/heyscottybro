@@ -72,11 +72,35 @@ export default function WeeklyTracker({
       .filter(s => !s.fulfilled)
       .reduce((sum, s) => sum + Math.abs(Number(s.bill.amount)), 0);
 
+    // Later this month — bills due elsewhere in the current calendar month, unpaid
+    const viewingCurrentWeek = weekOffset === 0;
+    const laterThisMonth = [];
+    if (viewingCurrentWeek) {
+      const today = new Date();
+      const monthKey = toDateStr(today).slice(0, 7);
+      for (const b of recurringBills) {
+        if (isFunBill(b)) continue;
+        const dueDay = dueDayOf(b);
+        if (!dueDay) continue;
+        if (ym(b.startDate) > monthKey) continue;
+        if (b.endDate && ym(b.endDate) < monthKey) continue;
+        const already = transactions.some(t => t.fulfills_recurring_id === b.id && ym(t.date) === monthKey);
+        if (already) continue;
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), Math.min(dueDay, lastDay));
+        if (dueDate >= range.start && dueDate <= range.end) continue; // already in this-week scheduled
+        laterThisMonth.push({ bill: b, dueDate: toDateStr(dueDate) });
+      }
+      laterThisMonth.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    }
+    const laterTotal = laterThisMonth.reduce((s, x) => s + Math.abs(Number(x.bill.amount)), 0);
+
     return {
       ...range,
       weekTxs, spent, income,
       funMonthly, funWeekly, funSpent, funLeft: funWeekly - funSpent,
       scheduled, scheduledUnpaidTotal,
+      laterThisMonth, laterTotal,
     };
   }, [transactions, recurringBills, weekOffset]);
 
@@ -245,6 +269,41 @@ export default function WeeklyTracker({
               );
             })}
           </div>
+
+          {weekOffset === 0 && week.laterThisMonth.length > 0 && (
+            <div className="bud-week-later">
+              <div className="bud-week-later-head">
+                <h4 className="bud-week-col-head" style={{ margin: 0 }}>
+                  Coming up later this month ({week.laterThisMonth.length})
+                </h4>
+                <span className="bud-muted" style={{ fontSize: "0.78rem" }}>
+                  Total {formatMoney(week.laterTotal)} · pay early to log now
+                </span>
+              </div>
+              <div className="bud-week-later-list">
+                {week.laterThisMonth.map((s) => {
+                  const dueLabel = new Date(s.dueDate + "T00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+                  return (
+                    <div className="bud-src-row expense" key={`later-${s.bill.id}`}>
+                      <div className="bud-tx-main">
+                        <div className="bud-tx-desc">{s.bill.name}</div>
+                        <div className="bud-tx-meta">Due {dueLabel} · {s.bill.category || "Other"}</div>
+                      </div>
+                      <div className="bud-tx-amount">-{formatMoney(s.bill.amount)}</div>
+                      <button
+                        type="button"
+                        className="btn-mini accent"
+                        onClick={() => onLogBill(s.bill, toDateStr(new Date()))}
+                        title="Pay early — logs with today's date, lands in this week"
+                      >
+                        <i className="fa-solid fa-forward" /> Pay early
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
