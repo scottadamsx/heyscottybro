@@ -191,32 +191,31 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
       (email ? existingByEmail[email.toLowerCase()] : null) ||
       (phone ? existingByPhone[phone] : null);
 
-    if (match && !updatedIds.has(match.id)) {
+    if (match && match.id && !updatedIds.has(match.id)) {
+      // Existing DB member — increment attendance
       toUpdate.push({
         id: match.id,
         attendance: (match.attendance || 1) + 1,
-        // Fill in missing details from the new row
         first: match.first || first,
         last: match.last || last,
         email: email || match.email,
         phone: phone || match.phone,
       });
-      // Keep lookup maps fresh so same-import duplicates also merge
       existingByName[nameKey] = { ...match, attendance: (match.attendance || 1) + 1 };
       if (email) existingByEmail[email.toLowerCase()] = existingByName[nameKey];
       if (phone) existingByPhone[phone] = existingByName[nameKey];
       updatedIds.add(match.id);
       returning++;
     } else if (!match) {
+      // Brand new person — queue for insert
       const newMember = { user_id: userId, first, last, email, phone, attendance: 1, joined_date: new Date().toISOString().split("T")[0] };
       toInsert.push(newMember);
-      // Add to maps so within-file duplicates merge too
       existingByName[nameKey] = newMember;
       if (email) existingByEmail[email.toLowerCase()] = newMember;
       if (phone) existingByPhone[phone] = newMember;
       firstTimers++;
     }
-    // If match already in updatedIds — same person appeared twice in this file, skip
+    // else: same person appeared twice in this file (match has no id = pending insert, or already updated) — skip
   }
 
   // Batch upserts
