@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { logout } from "../../api/plannerApi";
+import ChatBot from "../../components/ChatBot";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ export default function AdminLayout() {
       <main className="admin-main">
         <Outlet />
       </main>
+
+      <ChatBot />
 
       {/* Mobile bottom tab bar */}
       <nav className="admin-bottom-nav">

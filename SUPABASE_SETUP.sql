@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON projects;
 CREATE POLICY "owner only" ON projects USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Event types (e.g. "hike", "meeting") with auto-task templates
@@ -105,6 +106,7 @@ CREATE TABLE IF NOT EXISTS event_types (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE event_types ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON event_types;
 CREATE POLICY "owner only" ON event_types USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Initiatives (recurring project-level tasks, e.g. social media posts)
@@ -119,6 +121,7 @@ CREATE TABLE IF NOT EXISTS initiatives (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE initiatives ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON initiatives;
 CREATE POLICY "owner only" ON initiatives USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Extend reminders with project linkage and limited recurrence
@@ -147,19 +150,21 @@ CREATE TABLE IF NOT EXISTS hiker_members (
   UNIQUE(user_id, first, last)
 );
 ALTER TABLE hiker_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON hiker_members;
 CREATE POLICY "owner only" ON hiker_members USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS hiker_imports (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  filename      TEXT,
-  imported_at   DATE,
-  first_timers  INTEGER DEFAULT 0,
-  returning     INTEGER DEFAULT 0,
-  total         INTEGER DEFAULT 0,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  filename        TEXT,
+  imported_at     DATE,
+  first_timers    INTEGER DEFAULT 0,
+  returning_count INTEGER DEFAULT 0,
+  total           INTEGER DEFAULT 0,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE hiker_imports ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON hiker_imports;
 CREATE POLICY "owner only" ON hiker_imports USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ═══════════════════════════════════════════
