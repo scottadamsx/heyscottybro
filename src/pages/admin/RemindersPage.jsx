@@ -11,7 +11,10 @@ export default function RemindersPage() {
   const [filter, setFilter] = useState("all"); // "all" | project id
 
   const load = async () => {
-    const [reminders, projs] = await Promise.all([loadReminders(), loadProjects()]);
+    const [reminders, projs] = await Promise.all([
+      loadReminders().catch(() => []),
+      loadProjects().catch(() => []),
+    ]);
     setList(reminders);
     setProjects(projs);
   };

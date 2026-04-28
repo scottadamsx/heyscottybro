@@ -4,6 +4,9 @@ import {
   newEvent,
   newTransaction,
   addRecurringBill,
+  addIncomeSource,
+  loadBudgetConfig,
+  saveBudgetConfig,
 } from "../api/plannerApi";
 
 const TODAY = new Date().toISOString().split("T")[0];
@@ -70,6 +73,32 @@ const TOOLS = [
     },
   },
   {
+    name: "add_income_source",
+    description: "Add a recurring income source (salary, contract, freelance) to the budget projection",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        amount: { type: "number", description: "Monthly net amount after tax" },
+        startDate: { type: "string", description: "YYYY-MM-DD" },
+        endDate: { type: "string", description: "YYYY-MM-DD or omit if ongoing" },
+        notes: { type: "string" },
+      },
+      required: ["name", "amount"],
+    },
+  },
+  {
+    name: "set_balance",
+    description: "Set Scott's current bank balance (the starting point for budget projections)",
+    input_schema: {
+      type: "object",
+      properties: {
+        balance: { type: "number", description: "How much money Scott currently has in his bank account" },
+      },
+      required: ["balance"],
+    },
+  },
+  {
     name: "add_recurring_bill",
     description: "Add a recurring monthly bill or subscription to the budget",
     input_schema: {
@@ -133,6 +162,23 @@ async function executeTool(name, input) {
           notes: input.notes || "",
         });
         return { success: true };
+
+      case "add_income_source":
+        await addIncomeSource({
+          name: input.name,
+          amount: input.amount,
+          frequency: "monthly",
+          startDate: input.startDate || TODAY,
+          endDate: input.endDate || null,
+          notes: input.notes || "",
+        });
+        return { success: true };
+
+      case "set_balance": {
+        const cfg = await loadBudgetConfig();
+        await saveBudgetConfig({ ...cfg, startingBalance: input.balance });
+        return { success: true };
+      }
 
       default:
         return { error: `Unknown tool: ${name}` };

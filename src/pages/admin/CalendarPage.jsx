@@ -25,7 +25,11 @@ export default function CalendarPage() {
 
   const load = async () => {
     const [r, e, t, p, et] = await Promise.all([
-      loadReminders(), loadEvents(), loadTransactions(), loadProjects(), loadEventTypes()
+      loadReminders().catch(() => []),
+      loadEvents().catch(() => []),
+      loadTransactions().catch(() => []),
+      loadProjects().catch(() => []),
+      loadEventTypes().catch(() => []),
     ]);
     setReminders(r);
     setEvents(e);

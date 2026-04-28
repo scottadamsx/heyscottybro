@@ -2281,3 +2281,46 @@ input, textarea, select { font-family: inherit; }
 }
 .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-send:not(:disabled):hover { background: #0070d8; }
+
+/* ── Editable balance hero card ── */
+.bud-hero-balance .bud-hero-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.bud-balance-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.bud-balance-edit-btn:hover { color: var(--accent); }
+.bud-balance-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+.bud-balance-dollar {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+.bud-balance-input {
+  width: 120px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: var(--bg-raised);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 0.2rem 0.5rem;
+}
+.bud-hero-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}

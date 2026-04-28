@@ -215,6 +215,30 @@ export default function BudgetPage() {
 
   const selected = projection.find(p => p.key === selectedMonth);
 
+  // Editable starting balance on the hero card
+  const [editingBalance, setEditingBalance] = useState(false);
+  const [balanceDraft, setBalanceDraft] = useState("");
+
+  const openBalanceEdit = () => {
+    setBalanceDraft(String(whatIf?.startingBalance ?? config?.startingBalance ?? 0));
+    setEditingBalance(true);
+  };
+  const commitBalance = async () => {
+    const val = parseFloat(balanceDraft);
+    if (isNaN(val)) { setEditingBalance(false); return; }
+    const next = { ...whatIf, startingBalance: val };
+    setWhatIf(next);
+    // Persist immediately
+    if (config) {
+      await saveBudgetConfig({ ...config, startingBalance: val });
+      await load();
+    }
+    setEditingBalance(false);
+  };
+
+  // Show sign on hero balance
+  const signedMoney = (v) => `${v < 0 ? "-" : ""}${formatMoney(v)}`;
+
   if (!config) {
     return <div className="module-page"><div className="module-header"><h1>Budget</h1></div><p>Loading…</p></div>;
   }
@@ -239,9 +263,39 @@ export default function BudgetPage() {
       {/* ── Hero strip */}
       {heroStats && (
         <div className="bud-hero">
-          <div className="bud-hero-card">
-            <div className="bud-hero-label">Current balance</div>
-            <div className="bud-hero-value">{formatMoney(heroStats.currentBalance)}</div>
+          <div className="bud-hero-card bud-hero-balance">
+            <div className="bud-hero-label">
+              Current balance
+              <button type="button" className="bud-balance-edit-btn" onClick={openBalanceEdit} title="Set your actual bank balance">
+                <i className="fa-solid fa-pen" />
+              </button>
+            </div>
+            {editingBalance ? (
+              <div className="bud-balance-edit-row">
+                <span className="bud-balance-dollar">$</span>
+                <input
+                  autoFocus
+                  type="number"
+                  step="0.01"
+                  className="bud-balance-input"
+                  value={balanceDraft}
+                  onChange={e => setBalanceDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") commitBalance(); if (e.key === "Escape") setEditingBalance(false); }}
+                />
+                <button type="button" className="btn-mini accent" onClick={commitBalance}><i className="fa-solid fa-check" /></button>
+                <button type="button" className="btn-mini muted" onClick={() => setEditingBalance(false)}><i className="fa-solid fa-xmark" /></button>
+              </div>
+            ) : (
+              <div
+                className="bud-hero-value"
+                style={{ color: heroStats.currentBalance < 0 ? "var(--bud-red)" : "var(--text-primary)", cursor: "pointer" }}
+                onClick={openBalanceEdit}
+                title="Click to update your balance"
+              >
+                {signedMoney(heroStats.currentBalance)}
+              </div>
+            )}
+            <div className="bud-hero-sub">starting {formatMoney(whatIf?.startingBalance ?? 0)} + txns</div>
           </div>
           <div className="bud-hero-card">
             <div className="bud-hero-label">This month net</div>
@@ -251,7 +305,7 @@ export default function BudgetPage() {
           </div>
           <div className="bud-hero-card">
             <div className="bud-hero-label">Projected end of Dec</div>
-            <div className="bud-hero-value" style={{ color: "var(--bud-gold)" }}>{formatMoney(heroStats.projectedEnd)}</div>
+            <div className="bud-hero-value" style={{ color: "var(--bud-gold)" }}>{signedMoney(heroStats.projectedEnd)}</div>
           </div>
           {status && <div className="bud-status-line">{status.label}</div>}
         </div>
