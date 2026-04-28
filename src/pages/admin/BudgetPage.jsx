@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  loadBudgetConfig, loadTransactions, saveBudgetConfig,
+  loadBudgetConfig, loadTransactions, loadEvents, saveBudgetConfig,
   newTransaction, updateTransaction, deleteTransaction,
   linkTransactionToRecurring, linkTransactionToIncome,
   addRecurringBill, updateRecurringBill, deleteRecurringBill,
@@ -20,6 +20,7 @@ const newTxDefaults = () => ({ description: "", amount: "", type: "expense", cat
 export default function BudgetPage() {
   const [config, setConfig] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [events, setEvents] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [tx, setTx] = useState(newTxDefaults());
   const [billForm, setBillForm] = useState({ name: "", amount: "", category: "Other", startDate: toDateStr(new Date()), endDate: "", notes: "" });
@@ -30,12 +31,14 @@ export default function BudgetPage() {
   const [whatIf, setWhatIf] = useState(null); // { contractTotal, hourlyRate, hoursPerWeek, taxRate, startingBalance }
 
   const load = async () => {
-    const [cfg, txs] = await Promise.all([
+    const [cfg, txs, evts] = await Promise.all([
       loadBudgetConfig().catch(() => null),
       loadTransactions().catch(() => []),
+      loadEvents().catch(() => []),
     ]);
     setConfig(cfg);
     setTransactions(txs);
+    setEvents(evts);
     if (cfg && !whatIf) {
       const contract = cfg.incomeSources?.find(s => s.id === "inc-contract");
       const salary = cfg.incomeSources?.find(s => s.id === "inc-salary");
@@ -219,6 +222,22 @@ export default function BudgetPage() {
   const [editingBalance, setEditingBalance] = useState(false);
   const [balanceDraft, setBalanceDraft] = useState("");
 
+  // Quick income log on the hero card
+  const [quickIncome, setQuickIncome] = useState(false);
+  const [incomeDraft, setIncomeDraft] = useState({ description: "", amount: "", date: toDateStr(new Date()), mode: "once" });
+  const submitQuickIncome = async (e) => {
+    e.preventDefault();
+    if (!incomeDraft.description.trim() || !Number(incomeDraft.amount)) return;
+    if (incomeDraft.mode === "recurring") {
+      await addIncomeSource({ name: incomeDraft.description, amount: Number(incomeDraft.amount), startDate: incomeDraft.date });
+    } else {
+      await newTransaction({ description: incomeDraft.description, amount: Number(incomeDraft.amount), type: "income", category: "Other", date: incomeDraft.date, notes: "" });
+    }
+    setIncomeDraft({ description: "", amount: "", date: toDateStr(new Date()), mode: "once" });
+    setQuickIncome(false);
+    await load();
+  };
+
   const openBalanceEdit = () => {
     setBalanceDraft(String(whatIf?.startingBalance ?? config?.startingBalance ?? 0));
     setEditingBalance(true);
@@ -253,6 +272,8 @@ export default function BudgetPage() {
       <WeeklyTracker
         transactions={transactions}
         recurringBills={config.recurringBills || []}
+        incomeSources={config.incomeSources || []}
+        events={events}
         categories={config.categories}
         onQuickLog={handleQuickLogCategory}
         onUpdateTx={handleUpdateTx}
@@ -296,6 +317,54 @@ export default function BudgetPage() {
               </div>
             )}
             <div className="bud-hero-sub">starting {formatMoney(whatIf?.startingBalance ?? 0)} + txns</div>
+
+            {/* Quick income log */}
+            {!editingBalance && !quickIncome && (
+              <button type="button" className="btn accent bud-quick-income-btn" onClick={() => setQuickIncome(true)}>
+                <i className="fa-solid fa-plus" /> Log income
+              </button>
+            )}
+            {quickIncome && (
+              <form className="bud-quick-income-form" onSubmit={submitQuickIncome}>
+                <div className="bud-income-mode-toggle">
+                  <button type="button" className={`bud-mode-btn ${incomeDraft.mode === "once" ? "active" : ""}`} onClick={() => setIncomeDraft({ ...incomeDraft, mode: "once" })}>
+                    One-time
+                  </button>
+                  <button type="button" className={`bud-mode-btn ${incomeDraft.mode === "recurring" ? "active" : ""}`} onClick={() => setIncomeDraft({ ...incomeDraft, mode: "recurring" })}>
+                    Recurring / month
+                  </button>
+                </div>
+                <input
+                  autoFocus
+                  placeholder={incomeDraft.mode === "once" ? "e.g. Tax refund, Lump sum" : "e.g. Freelance retainer"}
+                  value={incomeDraft.description}
+                  onChange={e => setIncomeDraft({ ...incomeDraft, description: e.target.value })}
+                  required
+                />
+                <div className="bud-quick-income-row">
+                  <input
+                    type="number"
+                    placeholder={incomeDraft.mode === "once" ? "Amount" : "Monthly amount"}
+                    min="0.01"
+                    step="0.01"
+                    value={incomeDraft.amount}
+                    onChange={e => setIncomeDraft({ ...incomeDraft, amount: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="date"
+                    value={incomeDraft.date}
+                    onChange={e => setIncomeDraft({ ...incomeDraft, date: e.target.value })}
+                  />
+                </div>
+                <div className="bud-quick-income-actions">
+                  <button type="submit" className="btn accent">
+                    <i className="fa-solid fa-check" /> {incomeDraft.mode === "once" ? "Log income" : "Add recurring"}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={() => setQuickIncome(false)}>Cancel</button>
+                </div>
+              </form>
+            )}
           </div>
           <div className="bud-hero-card">
             <div className="bud-hero-label">This month net</div>

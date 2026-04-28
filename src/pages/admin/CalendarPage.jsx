@@ -19,6 +19,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [cost, setCost] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedEventType, setSelectedEventType] = useState("");
   const [dayEvents, setDayEvents] = useState([]); // events on selected date
@@ -73,6 +74,7 @@ export default function CalendarPage() {
     setSelectedDate(date);
     setTitle("");
     setDescription("");
+    setCost("");
     setSelectedProject("");
     setSelectedEventType("");
     setDayEvents(events.filter(e => e.date === date));
@@ -84,6 +86,7 @@ export default function CalendarPage() {
       title: title.trim(),
       description: description.trim(),
       date: selectedDate,
+      cost: cost ? Number(cost) : 0,
       project_id: selectedProject || null,
       event_type_id: selectedEventType || null,
     });
@@ -170,6 +173,18 @@ export default function CalendarPage() {
 
             <input placeholder="New event title" value={title} onChange={(e) => setTitle(e.target.value)} />
             <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.82rem", whiteSpace: "nowrap" }}>💰 Cost? (optional)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 25.00"
+                value={cost}
+                onChange={e => setCost(e.target.value)}
+                style={{ flex: 1 }}
+              />
+            </div>
 
             {eventTypes.length > 0 && (
               <select value={selectedEventType} onChange={e => setSelectedEventType(e.target.value)}>

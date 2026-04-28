@@ -82,9 +82,9 @@ export async function loadEvents() {
   return data ?? [];
 }
 
-export async function newEvent({ title, description, date, project_id, event_type_id }) {
+export async function newEvent({ title, description, date, project_id, event_type_id, cost }) {
   const userId = await uid();
-  const row = { user_id: userId, title, description, date };
+  const row = { user_id: userId, title, description, date, cost: Number(cost || 0) };
   if (project_id) row.project_id = project_id;
   if (event_type_id) row.event_type_id = event_type_id;
   const { error } = await supabase.from("events").insert(row);

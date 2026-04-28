@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { loadMembers, loadStats, importCSV, exportCSV } from "../../api/hikerApi";
+import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
 
 export default function HikerPage() {
-  const [view, setView] = useState("dashboard"); // dashboard | members
+  const [view, setView] = useState("dashboard"); // dashboard | members | history | hike-detail
   const [stats, setStats] = useState(null);
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState("");
@@ -13,25 +13,49 @@ export default function HikerPage() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef();
 
+  // Hike name/date modal
+  const [pendingFiles, setPendingFiles] = useState(null);
+  const [hikeModal, setHikeModal] = useState(false);
+  const [hikeName, setHikeName] = useState("");
+  const [hikeDate, setHikeDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // History
+  const [hikes, setHikes] = useState([]);
+  const [selectedHike, setSelectedHike] = useState(null);
+  const [hikeAttendees, setHikeAttendees] = useState([]);
+  const [copyAnim, setCopyAnim] = useState(false);
+
   const reload = async () => {
     const [s, m] = await Promise.all([loadStats(), loadMembers(search)]);
     setStats(s);
     setMembers(m);
   };
 
-  useEffect(() => { reload(); }, []);
-  useEffect(() => {
-    loadMembers(search).then(setMembers);
-  }, [search]);
+  const reloadHistory = async () => {
+    const h = await loadHikeHistory().catch(() => []);
+    setHikes(h);
+  };
 
-  const handleFiles = async (files) => {
+  useEffect(() => { reload(); reloadHistory(); }, []);
+  useEffect(() => { loadMembers(search).then(setMembers); }, [search]);
+
+  const handleFiles = (files) => {
     if (!files.length) return;
+    setPendingFiles(files);
+    setHikeName("");
+    setHikeDate(new Date().toISOString().split("T")[0]);
+    setHikeModal(true);
+  };
+
+  const runImport = async () => {
+    if (!hikeName.trim()) return;
+    setHikeModal(false);
     setImporting(true);
     setImportResult(null);
-    let totals = { first_timers: 0, returning: 0, total: 0, files: files.length };
-    for (const file of Array.from(files)) {
+    let totals = { first_timers: 0, returning: 0, total: 0, files: pendingFiles.length };
+    for (const file of Array.from(pendingFiles)) {
       const text = await file.text();
-      const result = await importCSV(text, file.name);
+      const result = await importCSV(text, file.name, hikeName.trim(), hikeDate);
       totals.first_timers += result.first_timers;
       totals.returning += result.returning;
       totals.total += result.total;
@@ -39,7 +63,23 @@ export default function HikerPage() {
     setImportResult(totals);
     setImporting(false);
     await reload();
+    await reloadHistory();
     setView("dashboard");
+  };
+
+  const openHike = async (hike) => {
+    setSelectedHike(hike);
+    const attendees = await loadHikeAttendees(hike.id).catch(() => []);
+    setHikeAttendees(attendees);
+    setView("hike-detail");
+  };
+
+  const copyEmails = () => {
+    const emails = hikeAttendees.filter(m => m.email).map(m => m.email).join(", ");
+    navigator.clipboard.writeText(emails).then(() => {
+      setCopyAnim(true);
+      setTimeout(() => setCopyAnim(false), 2000);
+    });
   };
 
   const sorted = [...members].sort((a, b) => {
@@ -60,15 +100,44 @@ export default function HikerPage() {
     <div className="module-page">
       <div className="module-header">
         <h1>⛰️ SJHC Hiker Database</h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button className={`filter-chip ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
             Dashboard
           </button>
           <button className={`filter-chip ${view === "members" ? "active" : ""}`} onClick={() => setView("members")}>
             Members {members.length > 0 && `(${members.length})`}
           </button>
+          <button className={`filter-chip ${view === "history" || view === "hike-detail" ? "active" : ""}`} onClick={() => { setView("history"); setSelectedHike(null); }}>
+            Hike History {hikes.length > 0 && `(${hikes.length})`}
+          </button>
         </div>
       </div>
+
+      {/* Hike Name Modal */}
+      {hikeModal && (
+        <div className="event-overlay" onClick={e => { if (e.target.className === "event-overlay") setHikeModal(false); }}>
+          <div className="event-card">
+            <h3>Name This Hike</h3>
+            <input
+              placeholder="e.g. Blue Mountains Day Hike"
+              value={hikeName}
+              onChange={e => setHikeName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && hikeName.trim() && runImport()}
+              autoFocus
+            />
+            <label style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Hike date</label>
+            <input
+              type="date"
+              value={hikeDate}
+              onChange={e => setHikeDate(e.target.value)}
+            />
+            <div className="budget-widget-actions">
+              <button className="btn" onClick={runImport} disabled={!hikeName.trim()}>Import</button>
+              <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setHikeModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Drop Zone */}
       <div
@@ -203,6 +272,92 @@ export default function HikerPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </>
+      )}
+
+      {/* Hike History List */}
+      {view === "history" && (
+        <div className="db-card">
+          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>🗓️ Hike History</h3>
+          {hikes.length === 0 && (
+            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>No hikes recorded yet. Import a CSV to get started.</p>
+          )}
+          {hikes.map(h => (
+            <button key={h.id} className="hiker-hike-row" onClick={() => openHike(h)}>
+              <div>
+                <div className="hiker-hike-name">{h.hike_name || h.filename}</div>
+                <div className="hiker-hike-meta">
+                  {h.hike_date ? new Date(h.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : h.imported_at}
+                  {" · "}{h.total} hiker{h.total !== 1 ? "s" : ""}
+                  {h.first_timers > 0 && ` · ${h.first_timers} new`}
+                </div>
+              </div>
+              <span style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>›</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Hike Detail */}
+      {view === "hike-detail" && selectedHike && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <button className="btn-sm btn-secondary-sm btn" onClick={() => setView("history")}>← Back</button>
+            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{selectedHike.hike_name || selectedHike.filename}</h2>
+          </div>
+
+          <div className="db-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                  {selectedHike.hike_date ? new Date(selectedHike.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : selectedHike.imported_at}
+                </div>
+                <div style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                  {hikeAttendees.length} attendee{hikeAttendees.length !== 1 ? "s" : ""}
+                  {" · "}{hikeAttendees.filter(m => m.email).length} with email
+                </div>
+              </div>
+              <button
+                className={`btn hiker-copy-btn ${copyAnim ? "copied" : ""}`}
+                onClick={copyEmails}
+                disabled={hikeAttendees.filter(m => m.email).length === 0}
+              >
+                {copyAnim ? "✓ Copied!" : "📋 Copy Emails"}
+              </button>
+            </div>
+
+            <div className="hiker-table-wrap">
+              <table className="hiker-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Total Check-ins</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hikeAttendees.length === 0 && (
+                    <tr><td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                      No attendee data for this hike.
+                    </td></tr>
+                  )}
+                  {hikeAttendees.map(m => (
+                    <tr key={m.id}>
+                      <td>{m.first} {m.last}</td>
+                      <td style={{ color: m.email ? "var(--text-primary)" : "var(--text-muted)" }}>{m.email || "—"}</td>
+                      <td style={{ color: m.phone ? "var(--text-primary)" : "var(--text-muted)" }}>{m.phone || "—"}</td>
+                      <td>
+                        <span className={`hiker-badge ${m.attendance > 1 ? "hiker-badge-ret" : "hiker-badge-new"}`}>
+                          {m.attendance}×
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
