@@ -23,6 +23,17 @@ export async function loadMembers(search = "") {
   return data ?? [];
 }
 
+export async function deleteMember(id) {
+  const { error } = await supabase.from("hiker_members").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function clearAllMembers() {
+  const userId = await uid();
+  const { error } = await supabase.from("hiker_members").delete().eq("user_id", userId);
+  if (error) throw error;
+}
+
 export async function loadStats() {
   const userId = await uid();
   const { data: members, error } = await supabase

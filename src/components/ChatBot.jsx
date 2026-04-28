@@ -8,15 +8,18 @@ import {
   loadBudgetConfig,
   saveBudgetConfig,
 } from "../api/plannerApi";
+import { loadMembers, deleteMember, clearAllMembers } from "../api/hikerApi";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
 const SYSTEM = `You are a smart personal assistant embedded in Scott's personal planner app (heyScottyBro). Today is ${TODAY}.
 
-You can add reminders, events, transactions, and recurring bills directly to Scott's planner by calling tools. Keep responses short. After performing an action, confirm briefly what you did. If something is ambiguous (like a date), ask one short clarifying question before acting.
+You can add reminders, events, transactions, recurring bills, and manage the hiker database by calling tools. Keep responses short. After performing an action, confirm briefly what you did. If something is ambiguous (like a date), ask one short clarifying question before acting.
 
 Transaction categories: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other.
-"Fun money" or "entertainment" expenses use category Entertainment.`;
+"Fun money" or "entertainment" expenses use category Entertainment.
+
+For hiker deletion: if asked to delete a specific hiker, use delete_hiker (search by name first to find the ID). If asked to delete ALL hikers or clear the entire database, use clear_all_hikers — but always confirm first by asking "Are you sure you want to delete all hikers? This can't be undone." before calling it.`;
 
 const TOOLS = [
   {
@@ -120,6 +123,40 @@ const TOOLS = [
       required: ["name", "amount", "category"],
     },
   },
+  {
+    name: "search_hikers",
+    description: "Search hikers by name or email to find their IDs before deleting",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Name or email to search for" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "delete_hiker",
+    description: "Delete a specific hiker from the database by their ID",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "The hiker's UUID from search_hikers" },
+        name: { type: "string", description: "The hiker's name (for confirmation message)" },
+      },
+      required: ["id", "name"],
+    },
+  },
+  {
+    name: "clear_all_hikers",
+    description: "Delete ALL hikers from the database. Only call this after the user has explicitly confirmed.",
+    input_schema: {
+      type: "object",
+      properties: {
+        confirmed: { type: "boolean", description: "Must be true — only set after user explicitly confirms" },
+      },
+      required: ["confirmed"],
+    },
+  },
 ];
 
 async function executeTool(name, input) {
@@ -179,6 +216,20 @@ async function executeTool(name, input) {
         await saveBudgetConfig({ ...cfg, startingBalance: input.balance });
         return { success: true };
       }
+
+      case "search_hikers": {
+        const results = await loadMembers(input.query);
+        return { results: results.slice(0, 10).map(m => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) };
+      }
+
+      case "delete_hiker":
+        await deleteMember(input.id);
+        return { success: true, deleted: input.name };
+
+      case "clear_all_hikers":
+        if (!input.confirmed) return { error: "confirmed must be true" };
+        await clearAllMembers();
+        return { success: true };
 
       default:
         return { error: `Unknown tool: ${name}` };
