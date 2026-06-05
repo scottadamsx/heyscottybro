@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   loadBudgetConfig, loadTransactions, loadEvents, saveBudgetConfig,
   newTransaction, updateTransaction, deleteTransaction,
@@ -18,6 +19,7 @@ const HORIZON = defaultHorizon("2026-04", 9);
 const newTxDefaults = () => ({ description: "", amount: "", type: "expense", category: "Other", date: toDateStr(new Date()), notes: "", fulfills_recurring_id: null, fulfills_income_id: null });
 
 export default function BudgetPage() {
+  const [params] = useSearchParams();
   const [config, setConfig] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [events, setEvents] = useState([]);
@@ -53,6 +55,14 @@ export default function BudgetPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Sidebar "jump to" — scroll to the chosen budget section
+  useEffect(() => {
+    const s = params.get("section");
+    if (!s || !config) return;
+    const el = document.getElementById(`bud-${s}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [params, config]);
 
   // Derive the projection — uses what-if overrides if edited.
   const projection = useMemo(() => {
@@ -381,7 +391,7 @@ export default function BudgetPage() {
       )}
 
       {/* ── Projection chart */}
-      <div className="db-card">
+      <div className="db-card" id="bud-projection">
         <h3 className="db-card-title">9-month projection</h3>
         <ProjectionChart
           projection={projection}
@@ -463,7 +473,7 @@ export default function BudgetPage() {
       </div>
 
       {/* ── Recurring bills */}
-      <div className="db-card">
+      <div className="db-card" id="bud-recurring">
         <h3 className="db-card-title">Recurring bills</h3>
         <div className="bud-card-grid">
           {(config.recurringBills || []).map(b => (
@@ -490,7 +500,7 @@ export default function BudgetPage() {
       </div>
 
       {/* ── Income sources */}
-      <div className="db-card">
+      <div className="db-card" id="bud-income">
         <h3 className="db-card-title">Income sources</h3>
         <div className="bud-card-grid">
           {(config.incomeSources || []).map(s => (
@@ -514,7 +524,7 @@ export default function BudgetPage() {
       </div>
 
       {/* ── Budget vs Actual */}
-      <div className="db-card">
+      <div className="db-card" id="bud-bva">
         <h3 className="db-card-title">Budget vs actual <span className="bud-muted" style={{ fontWeight: 400, fontSize: "0.78rem" }}>— past + current only</span></h3>
         <BudgetVsActual projection={projection} recurringBills={config.recurringBills || []} />
       </div>

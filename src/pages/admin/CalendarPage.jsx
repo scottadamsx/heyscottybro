@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent, loadProjects, loadEventTypes, newReminder } from "../../api/plannerApi";
 import { expandReminders, toDateStr } from "../../utils/plannerUtils";
 
@@ -8,6 +9,7 @@ function monthLabel(year, month) {
 
 export default function CalendarPage() {
   const now = new Date();
+  const [params] = useSearchParams();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [reminders, setReminders] = useState([]);
@@ -41,10 +43,26 @@ export default function CalendarPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Sidebar "jump to date" — navigate the grid to that month and open the day
+  useEffect(() => {
+    const d = params.get("date");
+    if (!d) return;
+    const [y, m, day] = d.split("-").map(Number);
+    if (y && m) {
+      setYear(y);
+      setMonth(m - 1);
+      setSelectedDate(d);
+      setTitle(""); setDescription(""); setCost(""); setSelectedProject(""); setSelectedEventType("");
+      setDayEvents(events.filter(e => e.date === d));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   const itemsByDate = useMemo(() => {
     const first = new Date(year, month, 1);
     const last = new Date(year, month + 1, 0);
-    const expanded = expandReminders(reminders, toDateStr(first), toDateStr(last));
+    const visible = reminders.filter((r) => r.show_on_calendar !== false);
+    const expanded = expandReminders(visible, toDateStr(first), toDateStr(last));
     const map = {};
     expanded.forEach((item) => {
       map[item.date] = map[item.date] || [];

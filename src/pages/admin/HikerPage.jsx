@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
 
 export default function HikerPage() {
+  const [params] = useSearchParams();
   const [view, setView] = useState("dashboard"); // dashboard | members | history | hike-detail
   const [stats, setStats] = useState(null);
   const [members, setMembers] = useState([]);
@@ -74,6 +76,20 @@ export default function HikerPage() {
     setView("hike-detail");
   };
 
+  // Sidebar drives view / selected hike via URL params
+  useEffect(() => {
+    const hikeId = params.get("hike");
+    const v = params.get("view");
+    if (hikeId) {
+      const h = hikes.find((x) => String(x.id) === hikeId);
+      if (h && selectedHike?.id !== h.id) openHike(h);
+    } else if (v) {
+      setView(v);
+      setSelectedHike(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, hikes]);
+
   const copyEmails = () => {
     const emails = hikeAttendees.filter(m => m.email).map(m => m.email).join(", ");
     navigator.clipboard.writeText(emails).then(() => {
@@ -100,17 +116,6 @@ export default function HikerPage() {
     <div className="module-page">
       <div className="module-header">
         <h1>⛰️ SJHC Hiker Database</h1>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          <button className={`filter-chip ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
-            Dashboard
-          </button>
-          <button className={`filter-chip ${view === "members" ? "active" : ""}`} onClick={() => setView("members")}>
-            Members {members.length > 0 && `(${members.length})`}
-          </button>
-          <button className={`filter-chip ${view === "history" || view === "hike-detail" ? "active" : ""}`} onClick={() => { setView("history"); setSelectedHike(null); }}>
-            Hike History {hikes.length > 0 && `(${hikes.length})`}
-          </button>
-        </div>
       </div>
 
       {/* Hike Name Modal */}

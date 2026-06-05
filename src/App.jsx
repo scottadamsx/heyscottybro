@@ -19,6 +19,7 @@ import CalendarPage from "./pages/admin/CalendarPage.jsx";
 import BudgetPage from "./pages/admin/BudgetPage.jsx";
 import ProjectsPage from "./pages/admin/ProjectsPage.jsx";
 import HikerPage from "./pages/admin/HikerPage.jsx";
+import DatePlannerPage from "./pages/admin/DatePlannerPage.jsx";
 
 export default function App() {
   return (
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="budget" element={<BudgetPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="hikers" element={<HikerPage />} />
+          <Route path="dates" element={<DatePlannerPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

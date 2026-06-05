@@ -22,12 +22,12 @@ export async function loadReminders() {
   return data ?? [];
 }
 
-export async function newReminder({ name, date, recurrence, project_id, recur_until, recur_times }) {
+export async function newReminder({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar }) {
   const userId = await uid();
   const row = {
     user_id: userId,
     name,
-    date,
+    date: date || null,
     recurrence: recurrence || "none",
     completed: false,
   };
@@ -35,6 +35,10 @@ export async function newReminder({ name, date, recurrence, project_id, recur_un
   if (project_id) row.project_id = project_id;
   if (recur_until) row.recur_until = recur_until;
   if (recur_times) row.recur_times = Number(recur_times);
+  if (time) row.time = time;
+  if (description) row.description = description;
+  // Default is true; only persist when explicitly turned off (keeps base schema working)
+  if (show_on_calendar === false) row.show_on_calendar = false;
   const { error } = await supabase.from("reminders").insert(row);
   if (error) throw error;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   loadProjects, newProject, deleteProject,
   loadInitiatives, newInitiative, deleteInitiative,
@@ -14,8 +15,16 @@ const emptyInitiative = { name: "", description: "", recurrence: "weekly" };
 const emptyEventType = { name: "", color: "#22d3ee" };
 
 export default function ProjectsPage() {
+  const [params, setParams] = useSearchParams();
+  const selected = params.get("id"); // selected project id (from URL)
+  const setSelected = (id) => {
+    const next = new URLSearchParams(params);
+    if (id) next.set("id", String(id)); else next.delete("id");
+    next.delete("new");
+    setParams(next);
+  };
+
   const [projects, setProjects] = useState([]);
-  const [selected, setSelected] = useState(null); // selected project id
   const [initiatives, setInitiatives] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
   const [projectTasks, setProjectTasks] = useState([]);
@@ -47,8 +56,8 @@ export default function ProjectsPage() {
       loadEvents().catch(() => []),
     ]);
     setInitiatives(inits);
-    setProjectTasks(reminders.filter(r => r.project_id === projectId && !r.completed));
-    setProjectEvents(events.filter(e => e.project_id === projectId));
+    setProjectTasks(reminders.filter(r => String(r.project_id) === String(projectId) && !r.completed));
+    setProjectEvents(events.filter(e => String(e.project_id) === String(projectId)));
   };
 
   useEffect(() => { loadAll(); }, []);
@@ -56,6 +65,18 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (selected) loadProjectDetail(selected);
   }, [selected]);
+
+  // Open the create form when arriving via the sidebar's "New project"
+  useEffect(() => {
+    if (params.get("new") === "1") setShowProjectForm(true);
+  }, [params]);
+
+  const closeProjectForm = () => {
+    setShowProjectForm(false);
+    const next = new URLSearchParams(params);
+    next.delete("new");
+    setParams(next);
+  };
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
@@ -110,7 +131,7 @@ export default function ProjectsPage() {
     await loadAll();
   };
 
-  const selectedProject = projects.find(p => p.id === selected);
+  const selectedProject = projects.find(p => String(p.id) === String(selected));
 
   return (
     <div className="module-page">
@@ -127,32 +148,13 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* ── Project List ── */}
+      {/* Empty / overview state — project list now lives in the side panel */}
       {!selected && (
-        <div className="projects-grid">
-          {projects.length === 0 && (
-            <p className="no-entries">No projects yet. Create one to get started.</p>
-          )}
-          {projects.map(p => (
-            <div
-              key={p.id}
-              className="project-tile"
-              style={{ "--project-color": p.color }}
-              onClick={() => setSelected(p.id)}
-            >
-              <div className="project-tile-dot" style={{ background: p.color }} />
-              <div className="project-tile-body">
-                <div className="project-tile-name">{p.name}</div>
-                {p.description && <div className="project-tile-desc">{p.description}</div>}
-              </div>
-              <button
-                className="btn-sm btn-delete"
-                onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.id); }}
-                title="Delete project"
-              >✕</button>
-            </div>
-          ))}
-        </div>
+        <p className="no-entries">
+          {projects.length === 0
+            ? "No projects yet. Create one from the panel to get started."
+            : "Select a project from the panel to view its details."}
+        </p>
       )}
 
       {/* ── Project Detail ── */}
@@ -162,11 +164,14 @@ export default function ProjectsPage() {
             ← All Projects
           </button>
 
-          <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color }}>
+          <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
             <div>
               <h2 style={{ color: selectedProject.color }}>{selectedProject.name}</h2>
               {selectedProject.description && <p className="project-tile-desc">{selectedProject.description}</p>}
             </div>
+            <button className="btn-sm btn-delete" onClick={() => handleDeleteProject(selectedProject.id)} title="Delete project">
+              <i className="fa-solid fa-trash" /> Delete
+            </button>
           </div>
 
           {/* Tasks */}
@@ -297,7 +302,7 @@ export default function ProjectsPage() {
 
       {/* ── Modals ── */}
       {showProjectForm && (
-        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowProjectForm(false)}>
+        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && closeProjectForm()}>
           <form className="event-card" onSubmit={handleCreateProject}>
             <h3>New Project</h3>
             <input placeholder="Project name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} required />
@@ -313,7 +318,7 @@ export default function ProjectsPage() {
             </div>
             <div className="budget-widget-actions">
               <button className="btn" type="submit">Create</button>
-              <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setShowProjectForm(false)}>Cancel</button>
+              <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={closeProjectForm}>Cancel</button>
             </div>
           </form>
         </div>
