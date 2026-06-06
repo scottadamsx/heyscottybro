@@ -1527,6 +1527,66 @@ input, textarea, select { font-family: inherit; }
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ═══ Calendar day modal ═══ */
+.day-modal {
+  width: 100%;
+  max-width: 440px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -28px rgba(0,0,0,0.7);
+  animation: picker-rise 0.18s cubic-bezier(.2,.8,.2,1) both;
+}
+.day-modal-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1.1rem 1.2rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.day-modal-dow { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.day-modal-date { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+.day-modal-body { padding: 1rem 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+
+.day-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+.day-section-head i { color: var(--text-muted); margin-right: 0.35rem; }
+.day-count { background: var(--bg-raised); color: var(--text-muted); font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
+.day-empty { font-size: 0.82rem; color: var(--text-muted); padding: 0.15rem 0; }
+
+.day-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.7rem; background: var(--bg-raised); border-radius: 10px; margin-bottom: 5px; }
+.day-item-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.day-item-body { flex: 1; min-width: 0; }
+.day-item-title { font-size: 0.88rem; font-weight: 600; }
+.day-item-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 1px; text-transform: capitalize; }
+.day-check { width: 26px; height: 26px; border: none; background: none; color: var(--text-muted); cursor: pointer; border-radius: 50%; flex-shrink: 0; transition: color 0.15s; }
+.day-check:hover { color: var(--green); }
+.icon-x.sm { width: 24px; height: 24px; font-size: 0.76rem; }
+
+.day-add { border-top: 1px solid var(--border-subtle); padding: 0.9rem 1.2rem 1.1rem; background: var(--bg-surface); }
+.day-add-trigger { width: 100%; justify-content: center; }
+.day-add-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.day-add-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+.day-seg { display: flex; gap: 4px; background: var(--bg-raised); border-radius: 10px; padding: 3px; margin-bottom: 0.7rem; }
+.day-seg button {
+  flex: 1; border: none; background: none; color: var(--text-muted);
+  font-weight: 600; font-size: 0.84rem; padding: 0.45rem; border-radius: 8px;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  transition: background 0.15s, color 0.15s;
+}
+.day-seg button.active { background: var(--accent); color: #fff; }
+.day-add-form { display: flex; flex-direction: column; gap: 0.5rem; }
+.day-add-form input, .day-add-form select, .day-add-form textarea {
+  width: 100%; padding: 0.55rem 0.7rem; border-radius: 8px;
+  border: 1px solid var(--border-subtle); background: var(--bg-raised);
+  color: var(--text-primary); font-size: 0.85rem; outline: none; font-family: inherit;
+}
+.day-add-form input:focus, .day-add-form select:focus, .day-add-form textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,124,255,0.35);
+}
+.day-add-form .btn { margin-top: 0.2rem; }
+
 .form-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.15rem; }
 .form-panel-head h3 { font-size: 0.95rem; font-weight: 700; }
 .icon-x {
@@ -1665,7 +1725,7 @@ input, textarea, select { font-family: inherit; }
 }
 .admin-shell ::-webkit-scrollbar-thumb:hover,
 .picker-pop ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,34,51,0.55);
+  background: rgba(79,124,255,0.55);
   background-clip: padding-box;
 }
 .admin-shell ::-webkit-scrollbar-corner,
@@ -2988,102 +3048,94 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* ═══════════════════════════════════════════
-   COMMAND CENTER — dark terminal theme (admin only)
-   Scoped to .admin-shell so the public site stays light.
+   COMMAND CENTER — crisp dark dashboard theme (admin only)
+   Matches the Overview look. Scoped to .admin-shell.
    ═══════════════════════════════════════════ */
 .admin-shell {
-  --bg-base: #0b0b0e;
-  --bg-surface: #141419;
-  --bg-card: #141419;
-  --bg-raised: #1c1c23;
-  --bg-hover: #26262f;
-  --border-subtle: rgba(255,255,255,0.09);
-  --border-primary: rgba(255,255,255,0.16);
-  --border-accent: rgba(255,34,51,0.5);
-  --text-primary: #f4f4f6;
-  --text-secondary: rgba(244,244,246,0.62);
-  --text-muted: rgba(244,244,246,0.38);
-  --grad-accent: linear-gradient(180deg, #ff3b46, #cf1124);
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  background: #0b0b0e;
+  --bg-base: #0d1016;
+  --bg-surface: #161b24;
+  --bg-card: #161b24;
+  --bg-raised: #1c2230;
+  --bg-hover: #262d3b;
+  --border-subtle: rgba(255,255,255,0.07);
+  --border-primary: rgba(255,255,255,0.12);
+  --border-accent: rgba(79,124,255,0.5);
+  --text-primary: #e7e9ee;
+  --text-secondary: #b4bac6;
+  --text-muted: #868d9e;
+  --accent: #4f7cff;
+  --accent-deep: #3f6cf0;
+  --accent-light: #6f93ff;
+  --grad-accent: linear-gradient(180deg, #6f93ff, #4f7cff);
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  background: var(--bg-base);
   color: var(--text-primary);
-  background-image:
-    radial-gradient(1100px 520px at 100% -10%, rgba(207,17,36,0.10) 0%, transparent 55%),
-    linear-gradient(180deg, #0c0c10, #08080a);
 }
 .admin-shell .admin-main { color: var(--text-primary); }
 
-/* Surfaces → translucent black */
-.admin-shell .admin-rail { background: rgba(15,15,19,0.86); }
-.admin-shell .admin-subbar { background: rgba(12,12,16,0.8); }
-.admin-shell .admin-topbar { background: rgba(11,11,14,0.9); }
-.admin-shell .admin-bottom-nav { background: rgba(11,11,14,0.96); }
+/* Surfaces */
+.admin-shell .admin-rail { background: var(--bg-surface); }
+.admin-shell .admin-subbar { background: #12161e; }
+.admin-shell .admin-topbar { background: var(--bg-surface); }
+.admin-shell .admin-bottom-nav { background: var(--bg-surface); }
 .admin-shell .admin-rail-reopen {
-  background: rgba(20,20,26,0.92);
+  background: var(--bg-raised);
   color: var(--text-primary);
-  border-color: rgba(255,255,255,0.14);
+  border-color: var(--border-primary);
 }
-.admin-shell .admin-rail-pop { background: #141419; border-color: rgba(255,255,255,0.1); }
+.admin-shell .admin-rail-pop { background: var(--bg-surface); border-color: var(--border-primary); }
 
-/* Terminal-style brand mark: black box, red glyph */
+/* Drop the flag stripes for the clean dashboard look */
+.admin-shell .admin-rail::after,
+.admin-shell .admin-topbar::before { display: none; }
+
+/* Brand mark → blue/violet gradient tile */
 .admin-shell .admin-rail-mark {
-  background: #000;
-  border: 1px solid rgba(255,255,255,0.18);
-  box-shadow: 0 0 0 1px rgba(207,17,36,0.25), 0 6px 16px -8px rgba(0,0,0,0.8);
+  background: linear-gradient(135deg, #4f7cff, #9b5cff);
+  border: none;
+  box-shadow: 0 6px 16px -8px rgba(79,124,255,0.7);
 }
-.admin-shell .admin-rail-mark span { color: var(--red-flag); }
+.admin-shell .admin-rail-mark span { color: #fff; }
 
-/* Monospace, command-line typography */
-.admin-shell .admin-rail-word,
-.admin-shell .admin-rail-label,
-.admin-shell .admin-sub-link,
-.admin-shell .admin-subbar-title,
-.admin-shell .admin-sub-label,
-.admin-shell .admin-side-label,
-.admin-shell .module-header h1,
-.admin-shell .db-card-title,
+/* Nav active states → blue tint */
+.admin-shell .admin-rail-link.active { background: rgba(79,124,255,0.14); color: #c4d1ff; }
+.admin-shell .admin-rail-link.active i { color: var(--accent); }
+.admin-shell .admin-sub-link.active { background: rgba(79,124,255,0.12); color: #c4d1ff; }
+.admin-shell .admin-sub-link.active i { color: var(--accent); }
+.admin-shell .bottom-tab.active { color: var(--accent); }
+
+/* Crisp buttons: solid blue primary */
 .admin-shell .btn,
 .admin-shell .btn-primary {
-  font-family: var(--font-mono);
-  letter-spacing: -0.01em;
-}
-
-/* Prompt flourishes */
-.admin-shell .admin-subbar-title::before { content: "› "; color: var(--red-flag); }
-.admin-shell .module-header h1::before {
-  content: "~/ ";
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-.admin-shell .admin-rail-link.active { color: #fff; }
-.admin-shell .admin-rail-link.active i { color: var(--red-flag); }
-.admin-shell .admin-sub-link.active { color: #fff; }
-
-/* Snazzy flat terminal buttons */
-.admin-shell .btn,
-.admin-shell .btn-primary {
-  background: #17171c;
-  border: 1px solid rgba(255,255,255,0.16);
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #fff;
   box-shadow: none;
+  border-radius: 10px;
   font-weight: 600;
 }
 .admin-shell .btn:hover,
 .admin-shell .btn-primary:hover {
-  background: #20202a;
-  border-color: var(--red-flag);
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
   transform: none;
-  box-shadow: 0 0 0 1px rgba(207,17,36,0.45), 0 0 18px -6px rgba(207,17,36,0.5);
+  box-shadow: 0 8px 20px -10px rgba(79,124,255,0.6);
+}
+.admin-shell .btn-secondary-sm,
+.admin-shell .btn.btn-secondary-sm {
+  background: var(--bg-raised) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-secondary) !important;
 }
 
-/* Cards get a hairline top accent like a console panel */
-.admin-shell .db-card { box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
+/* Cards */
+.admin-shell .db-card { border-radius: 16px; box-shadow: none; }
 .admin-shell .db-card-title { color: #fff; }
 
-/* Inputs: red focus ring instead of blue */
+/* Inputs: blue focus ring */
 .admin-shell .form-card input:focus,
 .admin-shell .form-card select:focus,
 .admin-shell .form-card textarea:focus,
 .admin-shell .event-card input:focus,
-.admin-shell .event-card textarea:focus { box-shadow: 0 0 0 2px var(--red-flag); }
+.admin-shell .event-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,124,255,0.4); }

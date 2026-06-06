@@ -4,9 +4,10 @@ import {
   loadProjects, newProject, deleteProject,
   loadInitiatives, newInitiative, deleteInitiative,
   loadEventTypes, newEventType, deleteEventType, updateEventType,
-  loadReminders, loadEvents,
+  loadReminders, loadEvents, newReminder,
 } from "../../api/plannerApi";
 import { formatDisplayDate } from "../../utils/plannerUtils";
+import DatePicker from "../../components/DatePicker";
 
 const PROJECT_COLORS = ["#6366f1", "#22d3ee", "#4ade80", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
 
@@ -39,6 +40,8 @@ export default function ProjectsPage() {
   const [initiativeForm, setInitiativeForm] = useState(emptyInitiative);
   const [eventTypeForm, setEventTypeForm] = useState(emptyEventType);
   const [newAutoTask, setNewAutoTask] = useState({ offset_days: -3, name: "" });
+  const [parentForCreate, setParentForCreate] = useState(null); // parent project id when adding a sub-project
+  const [quickTask, setQuickTask] = useState({ name: "", date: "", recurrence: "none" });
 
   const loadAll = async () => {
     const [p, et] = await Promise.all([
@@ -73,19 +76,45 @@ export default function ProjectsPage() {
 
   const closeProjectForm = () => {
     setShowProjectForm(false);
+    setParentForCreate(null);
     const next = new URLSearchParams(params);
     next.delete("new");
     setParams(next);
   };
 
+  const openNewSub = () => {
+    setParentForCreate(selected);
+    setProjectForm({ ...emptyProject, color: selectedProject?.color || emptyProject.color });
+    setShowProjectForm(true);
+  };
+
   const handleCreateProject = async (e) => {
     e.preventDefault();
     if (!projectForm.name.trim()) return;
-    const p = await newProject(projectForm);
+    const p = await newProject({ ...projectForm, parent_id: parentForCreate || null });
     setProjectForm(emptyProject);
     setShowProjectForm(false);
     await loadAll();
-    setSelected(p.id);
+    if (parentForCreate) {
+      // created a sub-project — stay on the parent and refresh
+      loadProjectDetail(parentForCreate);
+      setParentForCreate(null);
+    } else {
+      setSelected(p.id);
+    }
+  };
+
+  const addQuickTask = async (e) => {
+    e.preventDefault();
+    if (!quickTask.name.trim()) return;
+    await newReminder({
+      name: quickTask.name.trim(),
+      date: quickTask.date || null,
+      recurrence: quickTask.recurrence,
+      project_id: selected,
+    });
+    setQuickTask({ name: "", date: "", recurrence: "none" });
+    await loadProjectDetail(selected);
   };
 
   const handleDeleteProject = async (id) => {
@@ -132,6 +161,11 @@ export default function ProjectsPage() {
   };
 
   const selectedProject = projects.find(p => String(p.id) === String(selected));
+  const children = selected ? projects.filter(p => String(p.parent_id) === String(selected)) : [];
+  const parentProject = selectedProject?.parent_id
+    ? projects.find(p => String(p.id) === String(selectedProject.parent_id))
+    : null;
+  const taskCountFor = (pid) => projectTasks.filter(t => String(t.project_id) === String(pid)).length;
 
   return (
     <div className="module-page">
@@ -160,12 +194,20 @@ export default function ProjectsPage() {
       {/* ── Project Detail ── */}
       {selected && selectedProject && (
         <>
-          <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", width: "fit-content" }} onClick={() => setSelected(null)}>
-            ← All Projects
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", width: "fit-content" }} onClick={() => setSelected(null)}>
+              ← All Projects
+            </button>
+            {parentProject && (
+              <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: parentProject.color, width: "fit-content" }} onClick={() => setSelected(parentProject.id)}>
+                ↑ {parentProject.name}
+              </button>
+            )}
+          </div>
 
           <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
             <div>
+              {parentProject && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "2px" }}>{parentProject.name} /</div>}
               <h2 style={{ color: selectedProject.color }}>{selectedProject.name}</h2>
               {selectedProject.description && <p className="project-tile-desc">{selectedProject.description}</p>}
             </div>
@@ -174,12 +216,48 @@ export default function ProjectsPage() {
             </button>
           </div>
 
+          {/* Sub-projects (e.g. classes under a school project) */}
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title"><i className="fa-solid fa-diagram-project" /> Sub-projects</h3>
+              <button className="btn btn-sm" onClick={openNewSub}><i className="fa-solid fa-plus" /> Add</button>
+            </div>
+            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+              Group work into sub-projects (e.g. classes). Each has its own tasks, events &amp; recurring reminders.
+            </p>
+            {children.length === 0 && <p className="no-entries">No sub-projects yet.</p>}
+            <div className="projects-grid">
+              {children.map(c => (
+                <button key={c.id} className="project-tile" style={{ "--project-color": c.color }} onClick={() => setSelected(c.id)}>
+                  <span className="project-tile-dot" style={{ background: c.color }} />
+                  <div className="project-tile-body">
+                    <div className="project-tile-name">{c.name}</div>
+                    {c.description && <div className="project-tile-desc">{c.description}</div>}
+                  </div>
+                  <i className="fa-solid fa-chevron-right" style={{ color: "var(--text-muted)", fontSize: "0.75rem" }} />
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Tasks */}
           <div className="db-card">
             <div className="db-card-header">
-              <h3 className="db-card-title"><i className="fa-solid fa-list-check" /> Active Tasks</h3>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Add via Tasks page with project filter</span>
+              <h3 className="db-card-title"><i className="fa-solid fa-list-check" /> Tasks &amp; Due Dates</h3>
             </div>
+            <form className="form-card form-inline" style={{ background: "transparent", border: "none", padding: 0, marginBottom: "0.75rem" }} onSubmit={addQuickTask}>
+              <div className="form-row">
+                <input className="field-grow" placeholder="Task / test (e.g. Midterm)" value={quickTask.name} onChange={e => setQuickTask({ ...quickTask, name: e.target.value })} required />
+                <DatePicker value={quickTask.date} onChange={(v) => setQuickTask({ ...quickTask, date: v })} placeholder="Due date" />
+                <select value={quickTask.recurrence} onChange={e => setQuickTask({ ...quickTask, recurrence: e.target.value })}>
+                  <option value="none">One-time</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+                <button className="btn" type="submit"><i className="fa-solid fa-plus" /> Add</button>
+              </div>
+            </form>
             {projectTasks.length === 0 && <p className="no-entries">No active tasks for this project.</p>}
             <div className="db-list">
               {projectTasks.map(t => (
@@ -304,8 +382,8 @@ export default function ProjectsPage() {
       {showProjectForm && (
         <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && closeProjectForm()}>
           <form className="event-card" onSubmit={handleCreateProject}>
-            <h3>New Project</h3>
-            <input placeholder="Project name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} required />
+            <h3>{parentForCreate ? `New sub-project in ${selectedProject?.name || ""}` : "New Project"}</h3>
+            <input placeholder={parentForCreate ? "Sub-project name (e.g. Math 101)" : "Project name"} value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} required />
             <textarea placeholder="Description (optional)" value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} />
             <div>
               <label style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "block", marginBottom: "0.375rem" }}>Colour</label>

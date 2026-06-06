@@ -88,6 +88,7 @@ export default function AdminSubSidebar() {
 
   if (section === "projects") {
     const activeId = params.get("id");
+    const topLevel = projects.filter((p) => !p.parent_id);
     body = (
       <>
         <button className={`admin-sub-link ${!activeId ? "active" : ""}`} onClick={() => setParam({ id: null, new: null })}>
@@ -95,8 +96,8 @@ export default function AdminSubSidebar() {
           <span className="admin-sub-link-body"><div className="admin-sub-link-title">All projects</div></span>
         </button>
         <div className="admin-sub-label">Your projects</div>
-        {projects.length === 0 && <div className="admin-sub-empty">No projects yet.</div>}
-        {projects.map((p) => (
+        {topLevel.length === 0 && <div className="admin-sub-empty">No projects yet.</div>}
+        {topLevel.map((p) => (
           <button key={p.id} className={`admin-sub-link ${activeId === String(p.id) ? "active" : ""}`} onClick={() => setParam({ id: p.id, new: null })}>
             <span className="dot" style={{ background: p.color }} />
             <span className="admin-sub-link-body">

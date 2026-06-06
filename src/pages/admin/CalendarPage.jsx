@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent, loadProjects, loadEventTypes, newReminder } from "../../api/plannerApi";
+import {
+  loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
+  loadProjects, loadEventTypes, newReminder, completeReminder, deleteReminder,
+} from "../../api/plannerApi";
 import { expandReminders, toDateStr } from "../../utils/plannerUtils";
 
 function monthLabel(year, month) {
@@ -19,12 +22,18 @@ export default function CalendarPage() {
   const [eventTypes, setEventTypes] = useState([]);
 
   const [selectedDate, setSelectedDate] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [addMode, setAddMode] = useState("event"); // "event" | "task"
+
+  // event form
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedEventType, setSelectedEventType] = useState("");
-  const [dayEvents, setDayEvents] = useState([]); // events on selected date
+  // task form
+  const [taskName, setTaskName] = useState("");
+  const [taskRecur, setTaskRecur] = useState("none");
 
   const load = async () => {
     const [r, e, t, p, et] = await Promise.all([
@@ -47,13 +56,11 @@ export default function CalendarPage() {
   useEffect(() => {
     const d = params.get("date");
     if (!d) return;
-    const [y, m, day] = d.split("-").map(Number);
+    const [y, m] = d.split("-").map(Number);
     if (y && m) {
       setYear(y);
       setMonth(m - 1);
-      setSelectedDate(d);
-      setTitle(""); setDescription(""); setCost(""); setSelectedProject(""); setSelectedEventType("");
-      setDayEvents(events.filter(e => e.date === d));
+      openDay(d);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
@@ -88,15 +95,23 @@ export default function CalendarPage() {
   const prevMonth = () => month === 0 ? (setMonth(11), setYear(year - 1)) : setMonth(month - 1);
   const nextMonth = () => month === 11 ? (setMonth(0), setYear(year + 1)) : setMonth(month + 1);
 
+  const resetForms = () => {
+    setTitle(""); setDescription(""); setCost(""); setSelectedProject(""); setSelectedEventType("");
+    setTaskName(""); setTaskRecur("none");
+  };
+
   const openDay = (date) => {
     setSelectedDate(date);
-    setTitle("");
-    setDescription("");
-    setCost("");
-    setSelectedProject("");
-    setSelectedEventType("");
-    setDayEvents(events.filter(e => e.date === date));
+    setShowAdd(false);
+    setAddMode("event");
+    resetForms();
   };
+
+  // Derived day data — auto-refreshes after load()
+  const dayEvents = selectedDate ? events.filter((e) => e.date === selectedDate) : [];
+  const dayTasks = selectedDate ? expandReminders(reminders, selectedDate, selectedDate) : [];
+
+  const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
   const saveEvent = async () => {
     if (!selectedDate || !title.trim()) return;
@@ -111,16 +126,15 @@ export default function CalendarPage() {
 
     // Auto-create tasks based on event type template
     if (selectedEventType) {
-      const et = eventTypes.find(x => x.id === selectedEventType);
+      const et = eventTypes.find((x) => x.id === selectedEventType);
       if (et?.auto_tasks?.length) {
         const eventDate = new Date(selectedDate + "T00:00:00");
         for (const task of et.auto_tasks) {
           const taskDate = new Date(eventDate);
           taskDate.setDate(eventDate.getDate() + Number(task.offset_days));
-          const taskDateStr = toDateStr(taskDate);
           await newReminder({
             name: `${task.name} — ${title.trim()}`,
-            date: taskDateStr,
+            date: toDateStr(taskDate),
             recurrence: "none",
             project_id: selectedProject || null,
           });
@@ -128,9 +142,25 @@ export default function CalendarPage() {
       }
     }
 
-    setSelectedDate("");
+    setTitle(""); setDescription(""); setCost(""); setSelectedEventType("");
     await load();
   };
+
+  const saveTask = async () => {
+    if (!selectedDate || !taskName.trim()) return;
+    await newReminder({
+      name: taskName.trim(),
+      date: selectedDate,
+      recurrence: taskRecur,
+      project_id: selectedProject || null,
+    });
+    setTaskName(""); setTaskRecur("none");
+    await load();
+  };
+
+  const longDate = selectedDate
+    ? new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
+    : "";
 
   return (
     <div className="module-page">
@@ -145,7 +175,7 @@ export default function CalendarPage() {
       <div className="db-card">
         <h3 className="db-card-title" style={{ marginBottom: "1rem" }}>{monthLabel(year, month)}</h3>
         <div className="calendar-grid-react">
-          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((name) => (
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
             <div key={name} className="calendar-day-name">{name}</div>
           ))}
           {cells.map((day, i) => {
@@ -171,70 +201,116 @@ export default function CalendarPage() {
       </div>
 
       {selectedDate && (
-        <div className="event-overlay" onClick={(e) => { if (e.target.className === "event-overlay") setSelectedDate(""); }}>
-          <div className="event-card">
-            <h3>
-              {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-            </h3>
+        <div className="event-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
+          <div className="day-modal">
+            <div className="day-modal-head">
+              <div>
+                <div className="day-modal-dow">{longDate.split(",")[0]}</div>
+                <div className="day-modal-date">{longDate.split(", ").slice(1).join(", ") || longDate}</div>
+              </div>
+              <button className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+            </div>
 
-            {/* Existing events on this day */}
-            {dayEvents.length > 0 && (
-              <div style={{ marginBottom: "0.5rem" }}>
-                {dayEvents.map(e => (
-                  <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.375rem 0.5rem", background: "var(--bg-raised)", borderRadius: "6px", marginBottom: "4px", fontSize: "0.82rem" }}>
-                    <span>{e.title}{e.description ? ` — ${e.description}` : ""}</span>
-                    <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => deleteEvent(e.id).then(load).then(() => setDayEvents(prev => prev.filter(x => x.id !== e.id)))}>✕</button>
+            <div className="day-modal-body">
+              {/* Events */}
+              <div className="day-section">
+                <div className="day-section-head">
+                  <span><i className="fa-regular fa-calendar" /> Events</span>
+                  <span className="day-count">{dayEvents.length}</span>
+                </div>
+                {dayEvents.length === 0 && <p className="day-empty">Nothing scheduled.</p>}
+                {dayEvents.map((e) => (
+                  <div className="day-item" key={e.id}>
+                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
+                    <div className="day-item-body">
+                      <div className="day-item-title">{e.title}</div>
+                      {e.description && <div className="day-item-sub">{e.description}</div>}
+                    </div>
+                    <button className="icon-x sm" onClick={() => deleteEvent(e.id).then(load)} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
                   </div>
                 ))}
               </div>
-            )}
 
-            <input placeholder="New event title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ color: "var(--text-muted)", fontSize: "0.82rem", whiteSpace: "nowrap" }}>💰 Cost? (optional)</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 25.00"
-                value={cost}
-                onChange={e => setCost(e.target.value)}
-                style={{ flex: 1 }}
-              />
+              {/* Tasks */}
+              <div className="day-section">
+                <div className="day-section-head">
+                  <span><i className="fa-solid fa-list-check" /> Tasks</span>
+                  <span className="day-count">{dayTasks.length}</span>
+                </div>
+                {dayTasks.length === 0 && <p className="day-empty">No tasks due.</p>}
+                {dayTasks.map((t) => (
+                  <div className="day-item" key={`${t.id}-${t.date}`}>
+                    <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Complete"><i className="fa-regular fa-circle" /></button>
+                    <div className="day-item-body">
+                      <div className="day-item-title">{t.name}</div>
+                      {t.recurrence && t.recurrence !== "none" && <div className="day-item-sub">{t.recurrence}</div>}
+                    </div>
+                    <button className="icon-x sm" onClick={() => deleteReminder(t.id).then(load)} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {eventTypes.length > 0 && (
-              <select value={selectedEventType} onChange={e => setSelectedEventType(e.target.value)}>
-                <option value="">No event type</option>
-                {eventTypes.map(et => (
-                  <option key={et.id} value={et.id}>{et.name}</option>
-                ))}
-              </select>
-            )}
+            {/* Add */}
+            <div className="day-add">
+              {!showAdd ? (
+                <button className="btn day-add-trigger" onClick={() => setShowAdd(true)}>
+                  <i className="fa-solid fa-plus" /> Add event or task
+                </button>
+              ) : (
+              <>
+              <div className="day-add-top">
+                <span className="day-add-label">Add to this day</span>
+                <button className="icon-x sm" onClick={() => setShowAdd(false)} aria-label="Close add"><i className="fa-solid fa-xmark" /></button>
+              </div>
+              <div className="day-seg">
+                <button className={addMode === "event" ? "active" : ""} onClick={() => setAddMode("event")}><i className="fa-regular fa-calendar" /> Event</button>
+                <button className={addMode === "task" ? "active" : ""} onClick={() => setAddMode("task")}><i className="fa-solid fa-list-check" /> Task</button>
+              </div>
 
-            {selectedEventType && (() => {
-              const et = eventTypes.find(x => x.id === selectedEventType);
-              return et?.auto_tasks?.length ? (
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", background: "var(--bg-raised)", borderRadius: "6px", padding: "0.5rem" }}>
-                  <strong style={{ color: "var(--accent-light)" }}>Auto-tasks that will be created:</strong>
-                  {et.auto_tasks.map((t, i) => (
-                    <div key={i}>· {t.name} ({t.offset_days < 0 ? `${Math.abs(t.offset_days)}d before` : t.offset_days === 0 ? "day of" : `${t.offset_days}d after`})</div>
-                  ))}
+              {addMode === "event" ? (
+                <div className="day-add-form">
+                  <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ resize: "vertical" }} />
+                  <div className="form-row">
+                    <input type="number" min="0" step="0.01" placeholder="Cost (optional)" value={cost} onChange={(e) => setCost(e.target.value)} />
+                    {eventTypes.length > 0 && (
+                      <select value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>
+                        <option value="">No event type</option>
+                        {eventTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  {projects.length > 0 && (
+                    <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
+                      <option value="">No project</option>
+                      {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  )}
+                  <button className="btn" onClick={saveEvent}><i className="fa-solid fa-plus" /> Add event</button>
                 </div>
-              ) : null;
-            })()}
-
-            {projects.length > 0 && (
-              <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}>
-                <option value="">No project</option>
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            )}
-
-            <div className="budget-widget-actions">
-              <button className="btn" onClick={saveEvent}>Save</button>
-              <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setSelectedDate("")}>Cancel</button>
+              ) : (
+                <div className="day-add-form">
+                  <input placeholder="Task name" value={taskName} onChange={(e) => setTaskName(e.target.value)} />
+                  <div className="form-row">
+                    <select value={taskRecur} onChange={(e) => setTaskRecur(e.target.value)}>
+                      <option value="none">One-time</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                    {projects.length > 0 && (
+                      <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
+                        <option value="">No project</option>
+                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  <button className="btn" onClick={saveTask}><i className="fa-solid fa-plus" /> Add task</button>
+                </div>
+              )}
+              </>
+              )}
             </div>
           </div>
         </div>

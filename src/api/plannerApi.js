@@ -257,11 +257,14 @@ export async function loadProjects() {
   return data ?? [];
 }
 
-export async function newProject({ name, description, color }) {
+export async function newProject({ name, description, color, parent_id }) {
   const userId = await uid();
+  const row = { user_id: userId, name, description: description || "", color: color || "#6366f1" };
+  // Only include parent_id when set — avoids 400 if the column isn't migrated yet
+  if (parent_id) row.parent_id = parent_id;
   const { data, error } = await supabase
     .from("projects")
-    .insert({ user_id: userId, name, description: description || "", color: color || "#6366f1" })
+    .insert(row)
     .select()
     .single();
   if (error) throw error;

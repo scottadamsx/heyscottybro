@@ -9,6 +9,7 @@ import SJHCPage from "./pages/SJHCPage.jsx";
 import GamesPage from "./pages/GamesPage.jsx";
 import GameEmbed from "./pages/GameEmbed.jsx";
 import TicTacToePage from "./pages/TicTacToePage.jsx";
+import OverviewDashboard from "./pages/OverviewDashboard.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -84,6 +85,9 @@ export default function App() {
             </>
           }
         />
+
+        {/* Standalone dark dashboard demo */}
+        <Route path="/overview" element={<OverviewDashboard />} />
 
         {/* Admin login */}
         <Route path="/admin/login" element={<AdminLogin />} />
