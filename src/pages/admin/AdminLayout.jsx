@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: "/admin/budget", icon: "fa-wallet", label: "Budget" },
   { to: "/admin/hikers", icon: "fa-person-hiking", label: "Hikers" },
   { to: "/admin/dates", icon: "fa-heart", label: "Date Night" },
+  { to: "/admin/accountability", icon: "fa-fire", label: "Accountability" },
 ];
 
 export default function AdminLayout() {

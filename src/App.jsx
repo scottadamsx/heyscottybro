@@ -21,6 +21,7 @@ import BudgetPage from "./pages/admin/BudgetPage.jsx";
 import ProjectsPage from "./pages/admin/ProjectsPage.jsx";
 import HikerPage from "./pages/admin/HikerPage.jsx";
 import DatePlannerPage from "./pages/admin/DatePlannerPage.jsx";
+import AccountabilityPage from "./pages/admin/AccountabilityPage.jsx";
 
 export default function App() {
   return (
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="hikers" element={<HikerPage />} />
           <Route path="dates" element={<DatePlannerPage />} />
+          <Route path="accountability" element={<AccountabilityPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

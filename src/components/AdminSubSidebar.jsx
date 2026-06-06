@@ -48,7 +48,13 @@ const TITLES = {
   budget: "Budget",
   hikers: "Hikers",
   dates: "Date Night",
+  accountability: "Accountability",
 };
+
+function readAccountabilityTrackers() {
+  try { return JSON.parse(localStorage.getItem("accountability"))?.trackers || []; }
+  catch { return []; }
+}
 
 export default function AdminSubSidebar() {
   const location = useLocation();
@@ -209,6 +215,21 @@ export default function AdminSubSidebar() {
               <div className="admin-sub-link-title">{h.hike_name || h.filename}</div>
               <div className="admin-sub-link-meta">{h.hike_date ? formatDisplayDate(h.hike_date) : ""}{h.total ? ` · ${h.total}` : ""}</div>
             </span>
+          </button>
+        ))}
+      </>
+    );
+  } else if (section === "accountability") {
+    const focus = params.get("focus");
+    const trackers = readAccountabilityTrackers();
+    body = (
+      <>
+        <div className="admin-sub-label">Trackers</div>
+        {trackers.length === 0 && <div className="admin-sub-empty">No trackers yet.</div>}
+        {trackers.map((t) => (
+          <button key={t.id} className={`admin-sub-link ${focus === t.id ? "active" : ""}`} onClick={() => setParam({ focus: t.id })}>
+            <span className="dot" style={{ background: t.color }} />
+            <span className="admin-sub-link-body"><div className="admin-sub-link-title">{t.emoji} {t.name}</div></span>
           </button>
         ))}
       </>

@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "../utils/supabase";
+import { isLocalMode } from "../api/plannerApi";
 
 export default function ProtectedRoute({ children }) {
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
+    if (isLocalMode()) { setStatus("authed"); return undefined; }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setStatus(session ? "authed" : "unauthed");
     });

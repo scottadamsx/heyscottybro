@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
@@ -68,7 +68,7 @@ export default function CalendarPage() {
   const itemsByDate = useMemo(() => {
     const first = new Date(year, month, 1);
     const last = new Date(year, month + 1, 0);
-    const visible = reminders.filter((r) => r.show_on_calendar !== false);
+    const visible = reminders.filter((r) => r.show_on_calendar !== false && !r.completed);
     const expanded = expandReminders(visible, toDateStr(first), toDateStr(last));
     const map = {};
     expanded.forEach((item) => {
@@ -105,6 +105,25 @@ export default function CalendarPage() {
     setShowAdd(false);
     setAddMode("event");
     resetForms();
+  };
+
+  const goToDay = (offset) => {
+    if (!selectedDate) return;
+    const d = new Date(selectedDate + "T00:00:00");
+    d.setDate(d.getDate() + offset);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth());
+    openDay(toDateStr(d));
+  };
+
+  // swipe between days on touch devices
+  const touchX = useRef(null);
+  const onTouchStart = (e) => { touchX.current = e.changedTouches[0].clientX; };
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) > 55) goToDay(dx < 0 ? 1 : -1);
   };
 
   // Derived day data — auto-refreshes after load()
@@ -202,12 +221,14 @@ export default function CalendarPage() {
 
       {selectedDate && (
         <div className="event-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
-          <div className="day-modal">
+          <div className="day-modal" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="day-modal-head">
-              <div>
+              <button className="day-nav" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" /></button>
+              <div className="day-modal-titles">
                 <div className="day-modal-dow">{longDate.split(",")[0]}</div>
                 <div className="day-modal-date">{longDate.split(", ").slice(1).join(", ") || longDate}</div>
               </div>
+              <button className="day-nav" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" /></button>
               <button className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
             </div>
 
@@ -235,15 +256,27 @@ export default function CalendarPage() {
               <div className="day-section">
                 <div className="day-section-head">
                   <span><i className="fa-solid fa-list-check" /> Tasks</span>
-                  <span className="day-count">{dayTasks.length}</span>
+                  <span className="day-count">{dayTasks.filter((t) => !t.completed).length}</span>
                 </div>
                 {dayTasks.length === 0 && <p className="day-empty">No tasks due.</p>}
-                {dayTasks.map((t) => (
+
+                {dayTasks.filter((t) => !t.completed).map((t) => (
                   <div className="day-item" key={`${t.id}-${t.date}`}>
-                    <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Complete"><i className="fa-regular fa-circle" /></button>
+                    <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
                       {t.recurrence && t.recurrence !== "none" && <div className="day-item-sub">{t.recurrence}</div>}
+                    </div>
+                    <button className="icon-x sm" onClick={() => deleteReminder(t.id).then(load)} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                  </div>
+                ))}
+
+                {dayTasks.filter((t) => t.completed).map((t) => (
+                  <div className="day-item done" key={`${t.id}-${t.date}`}>
+                    <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" /></span>
+                    <div className="day-item-body">
+                      <div className="day-item-title">{t.name}</div>
+                      <div className="day-item-sub">Completed{t.completed_date ? ` · ${t.completed_date}` : ""}</div>
                     </div>
                     <button className="icon-x sm" onClick={() => deleteReminder(t.id).then(load)} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
                   </div>

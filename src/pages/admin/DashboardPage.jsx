@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, getAIBriefing } from "../../api/plannerApi";
 import { expandReminders, formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
+import ConnectionStatus from "../../components/ConnectionStatus";
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -234,6 +235,8 @@ export default function DashboardPage() {
           Tracking <strong>{data.config?.recurringBills?.length || 0}</strong> recurring bills.
         </p>
       </div>
+
+      <ConnectionStatus />
     </div>
   );
 }

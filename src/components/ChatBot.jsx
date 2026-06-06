@@ -1,57 +1,115 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  newReminder,
-  newEvent,
-  newTransaction,
-  addRecurringBill,
-  addIncomeSource,
-  loadBudgetConfig,
-  saveBudgetConfig,
+  loadReminders, newReminder, completeReminder, deleteReminder,
+  loadEvents, newEvent, deleteEvent,
+  loadProjects, newProject, updateProject, deleteProject,
+  loadJournal, newJournalEntry,
+  loadInitiatives, newInitiative,
+  loadEventTypes, newEventType, updateEventType,
+  loadTransactions, newTransaction, deleteTransaction,
+  addRecurringBill, addIncomeSource, loadBudgetConfig, saveBudgetConfig,
 } from "../api/plannerApi";
 import { loadMembers, deleteMember, clearAllMembers } from "../api/hikerApi";
+import { renderMarkdown } from "../utils/markdown";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
-const SYSTEM = `You are a smart personal assistant embedded in Scott's personal planner app (heyScottyBro). Today is ${TODAY}.
+const SYSTEM = `You are a smart, capable personal assistant embedded in Scott's planner app (heyScottyBro). Today is ${TODAY}.
 
-You can add reminders, events, transactions, recurring bills, and manage the hiker database by calling tools. Keep responses short. After performing an action, confirm briefly what you did. If something is ambiguous (like a date), ask one short clarifying question before acting.
+You have FULL read/write access to Scott's data and can make complex, multi-step changes. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act.
 
-Transaction categories: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other.
-"Fun money" or "entertainment" expenses use category Entertainment.
+Capabilities: reminders/tasks (incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, and the hiker database.
 
-For hiker deletion: if asked to delete a specific hiker, use delete_hiker (search by name first to find the ID). If asked to delete ALL hikers or clear the entire database, use clear_all_hikers — but always confirm first by asking "Are you sure you want to delete all hikers? This can't be undone." before calling it.`;
+Formatting: reply in Markdown. Use **bold** for emphasis, bullet lists for steps, and Markdown TABLES whenever you present multiple records to the user (e.g. listing tasks, projects, search results) so they render as a grid. Keep prose short.
+
+Dates: resolve relative dates ("tomorrow", "next Monday") to YYYY-MM-DD before calling tools.
+Transaction categories: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other. "Fun money" = Entertainment.
+
+Safety: before any destructive bulk action (deleting all hikers, deleting a project with its tasks, etc.) ask one short confirmation question first and wait for a clear yes.`;
 
 const TOOLS = [
   {
-    name: "add_reminder",
-    description: "Add a reminder or recurring task to Scott's planner",
+    name: "list_items",
+    description: "Read Scott's current data. Returns records with their IDs (needed for update/delete). Use before making changes.",
     input_schema: {
       type: "object",
       properties: {
-        name: { type: "string", description: "The reminder text" },
-        date: { type: "string", description: "Due date YYYY-MM-DD. Resolve relative dates like 'tomorrow', 'next Monday' before calling." },
-        recurrence: {
-          type: "string",
-          enum: ["none", "daily", "weekly", "monthly"],
-          description: "How often it repeats. Default none.",
-        },
+        type: { type: "string", enum: ["reminders", "events", "projects", "journal", "transactions", "initiatives", "event_types"], description: "Which collection to read" },
       },
-      required: ["name", "date"],
+      required: ["type"],
     },
   },
   {
+    name: "add_reminder",
+    description: "Add a reminder/task (optionally recurring, with a due date and/or project)",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        date: { type: "string", description: "Due date YYYY-MM-DD (optional)" },
+        time: { type: "string", description: "HH:MM (optional)" },
+        description: { type: "string" },
+        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
+        project_id: { type: "string", description: "Attach to a project/sub-project (from list_items projects)" },
+        show_on_calendar: { type: "boolean" },
+      },
+      required: ["name"],
+    },
+  },
+  { name: "complete_reminder", description: "Mark a reminder/task complete", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "delete_reminder", description: "Delete a reminder/task by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  {
     name: "add_event",
-    description: "Add a calendar event to Scott's planner",
+    description: "Add a calendar event. If an event_type with auto-tasks is given, dependency reminders are auto-created.",
     input_schema: {
       type: "object",
       properties: {
         title: { type: "string" },
-        date: { type: "string", description: "Date YYYY-MM-DD" },
-        description: { type: "string", description: "Optional details about the event" },
+        date: { type: "string", description: "YYYY-MM-DD" },
+        description: { type: "string" },
+        project_id: { type: "string" },
+        event_type_id: { type: "string" },
+        cost: { type: "number" },
       },
       required: ["title", "date"],
     },
   },
+  { name: "delete_event", description: "Delete a calendar event by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  {
+    name: "add_project",
+    description: "Create a project, or a sub-project (e.g. a class) by passing parent_id",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+        color: { type: "string", description: "Hex colour like #4f7cff" },
+        parent_id: { type: "string", description: "Parent project id to nest under (optional)" },
+      },
+      required: ["name"],
+    },
+  },
+  { name: "update_project", description: "Rename or recolour a project", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, description: { type: "string" }, color: { type: "string" } }, required: ["id"] } },
+  { name: "delete_project", description: "Delete a project (and its tasks/sub-projects). Confirm first.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  {
+    name: "add_event_type",
+    description: "Create an event type with auto-task dependencies that fire relative to an event's date",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        color: { type: "string" },
+        auto_tasks: {
+          type: "array",
+          description: "Dependency reminders. offset_days negative = before, 0 = day of, positive = after.",
+          items: { type: "object", properties: { offset_days: { type: "number" }, name: { type: "string" } }, required: ["offset_days", "name"] },
+        },
+      },
+      required: ["name"],
+    },
+  },
+  { name: "add_journal_entry", description: "Add a journal entry", input_schema: { type: "object", properties: { title: { type: "string" }, entry: { type: "string" }, date: { type: "string" } }, required: ["title", "entry"] } },
+  { name: "add_initiative", description: "Add a recurring initiative/commitment to a project", input_schema: { type: "object", properties: { project_id: { type: "string" }, name: { type: "string" }, description: { type: "string" }, recurrence: { type: "string", enum: ["daily", "weekly", "monthly"] } }, required: ["name"] } },
   {
     name: "add_transaction",
     description: "Log a financial transaction (expense, income, or future planned spend)",
@@ -59,180 +117,62 @@ const TOOLS = [
       type: "object",
       properties: {
         description: { type: "string" },
-        amount: { type: "number", description: "Positive number — sign is derived from type" },
-        type: {
-          type: "string",
-          enum: ["expense", "income", "future"],
-          description: "expense = money out, income = money in, future = planned future spend",
-        },
-        category: {
-          type: "string",
-          description: "One of: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other",
-        },
-        date: { type: "string", description: "YYYY-MM-DD. Default to today if not specified." },
+        amount: { type: "number", description: "Positive — sign derived from type" },
+        type: { type: "string", enum: ["expense", "income", "future"] },
+        category: { type: "string" },
+        date: { type: "string" },
         notes: { type: "string" },
       },
       required: ["description", "amount", "type", "category", "date"],
     },
   },
-  {
-    name: "add_income_source",
-    description: "Add a recurring income source (salary, contract, freelance) to the budget projection",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        amount: { type: "number", description: "Monthly net amount after tax" },
-        startDate: { type: "string", description: "YYYY-MM-DD" },
-        endDate: { type: "string", description: "YYYY-MM-DD or omit if ongoing" },
-        notes: { type: "string" },
-      },
-      required: ["name", "amount"],
-    },
-  },
-  {
-    name: "set_balance",
-    description: "Set Scott's current bank balance (the starting point for budget projections)",
-    input_schema: {
-      type: "object",
-      properties: {
-        balance: { type: "number", description: "How much money Scott currently has in his bank account" },
-      },
-      required: ["balance"],
-    },
-  },
-  {
-    name: "add_recurring_bill",
-    description: "Add a recurring monthly bill or subscription to the budget",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        amount: { type: "number", description: "Monthly amount" },
-        category: {
-          type: "string",
-          description: "One of: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other",
-        },
-        startDate: { type: "string", description: "YYYY-MM-DD start date. Default to today." },
-        dueDay: {
-          type: "number",
-          description: "Day of month the bill is due (1–31). Omit for continuous bills like groceries or gas.",
-        },
-        notes: { type: "string" },
-      },
-      required: ["name", "amount", "category"],
-    },
-  },
-  {
-    name: "search_hikers",
-    description: "Search hikers by name or email to find their IDs before deleting",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: "Name or email to search for" },
-      },
-      required: ["query"],
-    },
-  },
-  {
-    name: "delete_hiker",
-    description: "Delete a specific hiker from the database by their ID",
-    input_schema: {
-      type: "object",
-      properties: {
-        id: { type: "string", description: "The hiker's UUID from search_hikers" },
-        name: { type: "string", description: "The hiker's name (for confirmation message)" },
-      },
-      required: ["id", "name"],
-    },
-  },
-  {
-    name: "clear_all_hikers",
-    description: "Delete ALL hikers from the database. Only call this after the user has explicitly confirmed.",
-    input_schema: {
-      type: "object",
-      properties: {
-        confirmed: { type: "boolean", description: "Must be true — only set after user explicitly confirms" },
-      },
-      required: ["confirmed"],
-    },
-  },
+  { name: "delete_transaction", description: "Delete a transaction by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "add_income_source", description: "Add a recurring income source", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, startDate: { type: "string" }, endDate: { type: "string" }, notes: { type: "string" } }, required: ["name", "amount"] } },
+  { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
+  { name: "add_recurring_bill", description: "Add a recurring monthly bill or subscription", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, category: { type: "string" }, startDate: { type: "string" }, dueDay: { type: "number" }, notes: { type: "string" } }, required: ["name", "amount", "category"] } },
+  { name: "search_hikers", description: "Search hikers by name or email to find IDs", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
+  { name: "delete_hiker", description: "Delete a specific hiker by id", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } }, required: ["id", "name"] } },
+  { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
 ];
 
 async function executeTool(name, input) {
   try {
     switch (name) {
+      case "list_items": {
+        const t = input.type;
+        if (t === "reminders") return { items: (await loadReminders()).map((r) => ({ id: r.id, name: r.name, date: r.date, time: r.time, recurrence: r.recurrence, completed: r.completed, project_id: r.project_id })) };
+        if (t === "events") return { items: (await loadEvents()).map((e) => ({ id: e.id, title: e.title, date: e.date, project_id: e.project_id })) };
+        if (t === "projects") return { items: (await loadProjects()).map((p) => ({ id: p.id, name: p.name, color: p.color, parent_id: p.parent_id })) };
+        if (t === "journal") return { items: (await loadJournal()).map((j) => ({ id: j.id, title: j.title, date: j.date })) };
+        if (t === "transactions") return { items: (await loadTransactions()).slice(0, 40).map((x) => ({ id: x.id, description: x.description, amount: x.amount, category: x.category, date: x.date })) };
+        if (t === "initiatives") return { items: (await loadInitiatives()).map((i) => ({ id: i.id, name: i.name, recurrence: i.recurrence, project_id: i.project_id })) };
+        if (t === "event_types") return { items: (await loadEventTypes()).map((e) => ({ id: e.id, name: e.name, auto_tasks: e.auto_tasks })) };
+        return { error: "unknown type" };
+      }
       case "add_reminder":
-        await newReminder({
-          name: input.name,
-          date: input.date,
-          recurrence: input.recurrence || "none",
-        });
+        await newReminder({ name: input.name, date: input.date || null, time: input.time || null, description: input.description || null, recurrence: input.recurrence || "none", project_id: input.project_id || null, show_on_calendar: input.show_on_calendar });
         return { success: true };
-
+      case "complete_reminder": await completeReminder(input.id); return { success: true };
+      case "delete_reminder": await deleteReminder(input.id); return { success: true };
       case "add_event":
-        await newEvent({
-          title: input.title,
-          date: input.date,
-          description: input.description || "",
-        });
+        await newEvent({ title: input.title, date: input.date, description: input.description || "", project_id: input.project_id || null, event_type_id: input.event_type_id || null, cost: input.cost || 0 });
         return { success: true };
-
-      case "add_transaction":
-        await newTransaction({
-          description: input.description,
-          amount: input.amount,
-          type: input.type,
-          category: input.category,
-          date: input.date,
-          notes: input.notes || "",
-        });
-        return { success: true };
-
-      case "add_recurring_bill":
-        await addRecurringBill({
-          name: input.name,
-          amount: input.amount,
-          category: input.category,
-          startDate: input.startDate || TODAY,
-          dueDay: input.dueDay ?? null,
-          notes: input.notes || "",
-        });
-        return { success: true };
-
-      case "add_income_source":
-        await addIncomeSource({
-          name: input.name,
-          amount: input.amount,
-          frequency: "monthly",
-          startDate: input.startDate || TODAY,
-          endDate: input.endDate || null,
-          notes: input.notes || "",
-        });
-        return { success: true };
-
-      case "set_balance": {
-        const cfg = await loadBudgetConfig();
-        await saveBudgetConfig({ ...cfg, startingBalance: input.balance });
-        return { success: true };
-      }
-
-      case "search_hikers": {
-        const results = await loadMembers(input.query);
-        return { results: results.slice(0, 10).map(m => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) };
-      }
-
-      case "delete_hiker":
-        await deleteMember(input.id);
-        return { success: true, deleted: input.name };
-
-      case "clear_all_hikers":
-        if (!input.confirmed) return { error: "confirmed must be true" };
-        await clearAllMembers();
-        return { success: true };
-
-      default:
-        return { error: `Unknown tool: ${name}` };
+      case "delete_event": await deleteEvent(input.id); return { success: true };
+      case "add_project": { const p = await newProject({ name: input.name, description: input.description || "", color: input.color || "#4f7cff", parent_id: input.parent_id || null }); return { success: true, id: p?.id }; }
+      case "update_project": { const u = {}; if (input.name != null) u.name = input.name; if (input.description != null) u.description = input.description; if (input.color != null) u.color = input.color; await updateProject(input.id, u); return { success: true }; }
+      case "delete_project": await deleteProject(input.id); return { success: true };
+      case "add_event_type": { const e = await newEventType({ name: input.name, color: input.color || "#22d3ee", auto_tasks: input.auto_tasks || [] }); return { success: true, id: e?.id }; }
+      case "add_journal_entry": await newJournalEntry({ title: input.title, entry: input.entry, date: input.date || TODAY }); return { success: true };
+      case "add_initiative": await newInitiative({ project_id: input.project_id || null, name: input.name, description: input.description || "", recurrence: input.recurrence || "weekly" }); return { success: true };
+      case "add_transaction": await newTransaction({ description: input.description, amount: input.amount, type: input.type, category: input.category, date: input.date, notes: input.notes || "" }); return { success: true };
+      case "delete_transaction": await deleteTransaction(input.id); return { success: true };
+      case "add_income_source": await addIncomeSource({ name: input.name, amount: input.amount, frequency: "monthly", startDate: input.startDate || TODAY, endDate: input.endDate || null, notes: input.notes || "" }); return { success: true };
+      case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
+      case "add_recurring_bill": await addRecurringBill({ name: input.name, amount: input.amount, category: input.category, startDate: input.startDate || TODAY, dueDay: input.dueDay ?? null, notes: input.notes || "" }); return { success: true };
+      case "search_hikers": { const results = await loadMembers(input.query); return { results: results.slice(0, 10).map((m) => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) }; }
+      case "delete_hiker": await deleteMember(input.id); return { success: true, deleted: input.name };
+      case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
+      default: return { error: `Unknown tool: ${name}` };
     }
   } catch (err) {
     return { error: err.message };
@@ -241,6 +181,7 @@ async function executeTool(name, input) {
 
 export default function ChatBot() {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [displayMsgs, setDisplayMsgs] = useState([]);
   const [apiHistory, setApiHistory] = useState([]);
   const [input, setInput] = useState("");
@@ -248,26 +189,17 @@ export default function ChatBot() {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [displayMsgs, loading]);
-
-  useEffect(() => {
-    if (open) textareaRef.current?.focus();
-  }, [open]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
+  useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
 
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
-
     setInput("");
     setLoading(true);
 
-    const userDisplay = { role: "user", text };
-    const userApi = { role: "user", content: text };
-
-    const nextDisplay = [...displayMsgs, userDisplay];
-    const nextApi = [...apiHistory, userApi];
+    const nextDisplay = [...displayMsgs, { role: "user", text }];
+    const nextApi = [...apiHistory, { role: "user", content: text }];
     setDisplayMsgs(nextDisplay);
 
     try {
@@ -278,42 +210,21 @@ export default function ChatBot() {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-haiku-4-5-20251001",
-            max_tokens: 1024,
-            system: SYSTEM,
-            tools: TOOLS,
-            messages: msgs,
-          }),
+          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2048, system: SYSTEM, tools: TOOLS, messages: msgs }),
         });
-
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error?.message || `API error ${res.status}`);
-        }
+        if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
 
         if (data.stop_reason === "tool_use") {
           const toolBlocks = data.content.filter((b) => b.type === "tool_use");
           const toolResults = [];
-
           for (const block of toolBlocks) {
             const result = await executeTool(block.name, block.input);
-            toolResults.push({
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: JSON.stringify(result),
-            });
+            toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
           }
-
-          msgs = [
-            ...msgs,
-            { role: "assistant", content: data.content },
-            { role: "user", content: toolResults },
-          ];
+          msgs = [...msgs, { role: "assistant", content: data.content }, { role: "user", content: toolResults }];
         } else {
-          const replyText =
-            data.content?.find((b) => b.type === "text")?.text ?? "Done.";
+          const replyText = data.content?.find((b) => b.type === "text")?.text ?? "Done.";
           finalDisplay = [...finalDisplay, { role: "assistant", text: replyText }];
           setDisplayMsgs(finalDisplay);
           setApiHistory([...msgs, { role: "assistant", content: data.content }]);
@@ -321,88 +232,60 @@ export default function ChatBot() {
         }
       }
     } catch (err) {
-      setDisplayMsgs((prev) => [
-        ...prev,
-        { role: "assistant", text: `Something went wrong: ${err.message}` },
-      ]);
+      setDisplayMsgs((prev) => [...prev, { role: "assistant", text: `Something went wrong: ${err.message}` }]);
     } finally {
       setLoading(false);
     }
   };
 
   const onKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
   return (
     <>
-      <button
-        className={`chat-fab ${open ? "open" : ""}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close assistant" : "Open assistant"}
-      >
+      <button className={`chat-fab ${open ? "open" : ""}`} onClick={() => setOpen((v) => !v)} aria-label={open ? "Close assistant" : "Open assistant"}>
         <i className={`fa-solid ${open ? "fa-xmark" : "fa-comment-dots"}`} />
       </button>
 
       {open && (
-        <div className="chat-panel">
+        <div className={`chat-panel ${expanded ? "expanded" : ""}`}>
           <div className="chat-panel-header">
             <span><i className="fa-solid fa-wand-magic-sparkles" /> Assistant</span>
-            <button
-              type="button"
-              className="btn-mini muted"
-              onClick={() => { setDisplayMsgs([]); setApiHistory([]); }}
-              title="Clear conversation"
-            >
-              <i className="fa-solid fa-rotate-left" /> Clear
-            </button>
+            <div className="chat-header-actions">
+              <button type="button" className="btn-mini muted" onClick={() => setExpanded((v) => !v)} title={expanded ? "Shrink" : "Full screen"}>
+                <i className={`fa-solid ${expanded ? "fa-compress" : "fa-expand"}`} />
+              </button>
+              <button type="button" className="btn-mini muted" onClick={() => { setDisplayMsgs([]); setApiHistory([]); }} title="Clear conversation">
+                <i className="fa-solid fa-rotate-left" /> Clear
+              </button>
+            </div>
           </div>
 
           <div className="chat-messages">
             {displayMsgs.length === 0 && (
               <div className="chat-empty">
-                <p>Try asking me to:</p>
+                <p>I can read and change anything. Try:</p>
                 <ul>
-                  <li>"Add a reminder to take meds every day"</li>
-                  <li>"Log $45 at a restaurant as food today"</li>
-                  <li>"Add a hike event on May 10"</li>
-                  <li>"Add Netflix $18 recurring bill due on the 5th"</li>
+                  <li>"List my projects as a table"</li>
+                  <li>"Make a School project with Math, English &amp; Science classes"</li>
+                  <li>"Add a Test event type with study reminders 7 and 2 days before"</li>
+                  <li>"Complete all my gym tasks from this week"</li>
                 </ul>
               </div>
             )}
             {displayMsgs.map((m, i) => (
-              <div key={i} className={`chat-msg ${m.role}`}>
-                {m.text}
-              </div>
+              m.role === "assistant"
+                ? <div key={i} className="chat-msg assistant chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                : <div key={i} className="chat-msg user">{m.text}</div>
             ))}
-            {loading && (
-              <div className="chat-msg assistant chat-typing">
-                <span /><span /><span />
-              </div>
-            )}
+            {loading && <div className="chat-msg assistant chat-typing"><span /><span /><span /></div>}
             <div ref={bottomRef} />
           </div>
 
           <div className="chat-input-row">
-            <textarea
-              ref={textareaRef}
-              className="chat-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKey}
-              placeholder="Add anything to your planner..."
-              rows={1}
-            />
-            <button
-              type="button"
-              className="chat-send"
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-              aria-label="Send"
-            >
+            <textarea ref={textareaRef} className="chat-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} placeholder="Ask me to do anything..." rows={1} />
+            <button type="button" className="chat-send" onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />
             </button>
           </div>
