@@ -49,7 +49,18 @@ const TITLES = {
   hikers: "Hikers",
   dates: "Date Night",
   accountability: "Accountability",
+  snippets: "Vault",
 };
+
+const VAULT_TYPES = [
+  { key: "all", label: "All", icon: "fa-vault" },
+  { key: "wifi", label: "Wi-Fi", icon: "fa-wifi" },
+  { key: "card", label: "Cards", icon: "fa-credit-card" },
+  { key: "login", label: "Logins", icon: "fa-user-lock" },
+  { key: "link", label: "Links", icon: "fa-link" },
+  { key: "location", label: "Locations", icon: "fa-location-dot" },
+  { key: "note", label: "Notes", icon: "fa-note-sticky" },
+];
 
 function readAccountabilityTrackers() {
   try { return JSON.parse(localStorage.getItem("accountability"))?.trackers || []; }
@@ -230,6 +241,19 @@ export default function AdminSubSidebar() {
           <button key={t.id} className={`admin-sub-link ${focus === t.id ? "active" : ""}`} onClick={() => setParam({ focus: t.id })}>
             <span className="dot" style={{ background: t.color }} />
             <span className="admin-sub-link-body"><div className="admin-sub-link-title">{t.emoji} {t.name}</div></span>
+          </button>
+        ))}
+      </>
+    );
+  } else if (section === "snippets") {
+    const active = params.get("type") || "all";
+    body = (
+      <>
+        <div className="admin-sub-label">Filter</div>
+        {VAULT_TYPES.map((t) => (
+          <button key={t.key} className={`admin-sub-link ${active === t.key ? "active" : ""}`} onClick={() => setParam({ type: t.key === "all" ? null : t.key })}>
+            <i className={`fa-solid ${t.icon}`} />
+            <span className="admin-sub-link-body"><div className="admin-sub-link-title">{t.label}</div></span>
           </button>
         ))}
       </>

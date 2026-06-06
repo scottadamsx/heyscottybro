@@ -144,8 +144,8 @@ export async function loadEvents() {
   );
 }
 
-export async function newEvent({ title, description, date, project_id, event_type_id, cost }) {
-  const row = { title, description, date, cost: Number(cost || 0) };
+export async function newEvent({ title, description, date, project_id, event_type_id }) {
+  const row = { title, description, date };
   if (project_id) row.project_id = project_id;
   if (event_type_id) row.event_type_id = event_type_id;
   return op(
@@ -414,6 +414,15 @@ export async function deleteInitiative(id) {
 export async function login(email, password) {
   if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } return; }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+export async function loginWithGoogle() {
+  if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } window.location.href = "/admin/dashboard"; return; }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/admin/dashboard` },
+  });
   if (error) throw error;
 }
 

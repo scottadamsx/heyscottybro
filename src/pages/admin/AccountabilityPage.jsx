@@ -31,7 +31,7 @@ export default function AccountabilityPage() {
   const { trackers, logs } = data;
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff" });
+  const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff", mode: "count" });
 
   const todayStr = toDateStr(new Date());
 
@@ -49,8 +49,8 @@ export default function AccountabilityPage() {
   const addTracker = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    update((d) => { d.trackers.push({ id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, created: todayStr }); return d; });
-    setForm({ name: "", emoji: "🔥", color: "#4f7cff" });
+    update((d) => { d.trackers.push({ id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr }); return d; });
+    setForm({ name: "", emoji: "🔥", color: "#4f7cff", mode: form.mode });
     setShowAdd(false);
   };
   const deleteTracker = (id) => {
@@ -59,6 +59,21 @@ export default function AccountabilityPage() {
   };
   const logOn = (trackerId, date) => update((d) => { d.logs.push({ id: genId(), trackerId, date, at: Date.now() }); return d; });
   const deleteLog = (id) => update((d) => { d.logs = d.logs.filter((l) => l.id !== id); return d; });
+
+  const countOn = (t, date) => (logsByTracker[t.id] || []).filter((l) => l.date === date).length;
+  // Checkbox trackers = once/day (toggle). Counter trackers = increment each tap.
+  const logToday = (t) => {
+    if (t.mode === "check") {
+      const todays = (logsByTracker[t.id] || []).filter((l) => l.date === todayStr);
+      if (todays.length) { deleteLog(todays[0].id); return; }
+    }
+    logOn(t.id, todayStr);
+  };
+  const logPast = (t, date) => {
+    if (!date) return;
+    if (t.mode === "check" && (logsByTracker[t.id] || []).some((l) => l.date === date)) return;
+    logOn(t.id, date);
+  };
 
   const logsByTracker = useMemo(() => {
     const map = {};
@@ -74,9 +89,11 @@ export default function AccountabilityPage() {
     let d = todayStr;
     if (!dateSet.has(d)) { const y = addDays(todayStr, -1); if (dateSet.has(y)) d = y; else d = null; }
     while (d && dateSet.has(d)) { s++; d = addDays(d, -1); }
-    // last 7 days strip
+    // per-day counts + last 7 days strip
+    const counts = {};
+    tl.forEach((l) => { counts[l.date] = (counts[l.date] || 0) + 1; });
     const week = [];
-    for (let i = 6; i >= 0; i--) { const ds = addDays(todayStr, -i); week.push({ ds, on: dateSet.has(ds), dow: DOW[new Date(ds + "T00:00:00").getDay()] }); }
+    for (let i = 6; i >= 0; i--) { const ds = addDays(todayStr, -i); week.push({ ds, count: counts[ds] || 0, on: dateSet.has(ds), dow: DOW[new Date(ds + "T00:00:00").getDay()] }); }
     const weekCount = tl.filter((l) => l.date >= addDays(todayStr, -6)).length;
     return { total: tl.length, streak: s, week, weekCount, recent: tl.slice(0, 6), lastDate: tl[0]?.date };
   };
@@ -103,6 +120,17 @@ export default function AccountabilityPage() {
               <button key={c} type="button" className={`color-swatch ${form.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} />
             ))}
           </div>
+          <div className="day-seg" style={{ maxWidth: 320 }}>
+            <button type="button" className={form.mode === "count" ? "active" : ""} onClick={() => setForm({ ...form, mode: "count" })}>
+              <i className="fa-solid fa-hashtag" /> Counter
+            </button>
+            <button type="button" className={form.mode === "check" ? "active" : ""} onClick={() => setForm({ ...form, mode: "check" })}>
+              <i className="fa-solid fa-check" /> Once a day
+            </button>
+          </div>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+            {form.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done."}
+          </p>
           <button className="btn" type="submit" style={{ width: "fit-content" }}>Create tracker</button>
         </form>
       )}
@@ -131,17 +159,26 @@ export default function AccountabilityPage() {
               <div className="acc-week">
                 {st.week.map((w, i) => (
                   <div key={i} className="acc-day">
-                    <span className={`acc-dot ${w.on ? "on" : ""} ${w.ds === todayStr ? "today" : ""}`} />
+                    <span className={`acc-dot ${w.on ? "on" : ""} ${w.ds === todayStr ? "today" : ""}`}>
+                      {t.mode === "count" && w.count > 0 ? w.count : ""}
+                    </span>
                     <span className="acc-day-lbl">{w.dow}</span>
                   </div>
                 ))}
               </div>
 
               <div className="acc-actions">
-                <button className="btn" onClick={() => logOn(t.id, todayStr)} disabled={false}>
-                  <i className="fa-solid fa-plus" /> Log today
-                </button>
-                <DatePicker value="" onChange={(v) => v && logOn(t.id, v)} placeholder="Log a past day" />
+                {(() => {
+                  const done = t.mode === "check" && countOn(t, todayStr) > 0;
+                  return (
+                    <button className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
+                      {t.mode === "check"
+                        ? (done ? <><i className="fa-solid fa-check" /> Done today</> : <><i className="fa-solid fa-plus" /> Mark done</>)
+                        : <><i className="fa-solid fa-plus" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
+                    </button>
+                  );
+                })()}
+                <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" />
               </div>
 
               {st.recent.length > 0 && (

@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: "/admin/hikers", icon: "fa-person-hiking", label: "Hikers" },
   { to: "/admin/dates", icon: "fa-heart", label: "Date Night" },
   { to: "/admin/accountability", icon: "fa-fire", label: "Accountability" },
+  { to: "/admin/snippets", icon: "fa-key", label: "Vault" },
 ];
 
 export default function AdminLayout() {
@@ -26,6 +27,7 @@ export default function AdminLayout() {
     () => localStorage.getItem("adminSubCollapsed") === "1"
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const hidden = railCollapsed && subCollapsed;
 
@@ -172,27 +174,33 @@ export default function AdminLayout() {
 
       <ChatBot />
 
-      {/* Mobile bottom tab bar */}
-      <nav className="admin-bottom-nav">
-        <NavLink to="/admin/dashboard" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-house" /><span>Home</span>
-        </NavLink>
-        <NavLink to="/admin/reminders" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-list-check" /><span>Tasks</span>
-        </NavLink>
-        <NavLink to="/admin/calendar" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-calendar-days" /><span>Calendar</span>
-        </NavLink>
-        <NavLink to="/admin/projects" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-folder-open" /><span>Projects</span>
-        </NavLink>
-        <NavLink to="/admin/hikers" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-person-hiking" /><span>Hikers</span>
-        </NavLink>
-        <NavLink to="/admin/journal" className={({ isActive }) => isActive ? "bottom-tab active" : "bottom-tab"}>
-          <i className="fa-solid fa-book" /><span>Journal</span>
-        </NavLink>
-      </nav>
+      {/* Mobile menu — floating button (bottom-left), opposite the chat button */}
+      <button className="admin-mobile-fab" onClick={() => setMobileMenuOpen((o) => !o)} aria-label="Menu">
+        <i className={`fa-solid ${mobileMenuOpen ? "fa-xmark" : "fa-bars"}`} />
+      </button>
+      {mobileMenuOpen && (
+        <>
+          <div className="admin-pop-backdrop" onClick={() => setMobileMenuOpen(false)} />
+          <div className="admin-mobile-sheet">
+            <div className="admin-sub-label">Menu</div>
+            {NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)}>
+                <i className={`fa-solid ${item.icon}`} />
+                <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
+              </NavLink>
+            ))}
+            <div className="admin-pop-divider" />
+            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)}>
+              <i className="fa-solid fa-globe" />
+              <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
+            </NavLink>
+            <button className="admin-sub-link admin-side-logout" onClick={handleLogout}>
+              <i className="fa-solid fa-right-from-bracket" />
+              <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

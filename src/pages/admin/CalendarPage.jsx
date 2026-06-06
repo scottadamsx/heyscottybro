@@ -28,7 +28,6 @@ export default function CalendarPage() {
   // event form
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [cost, setCost] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedEventType, setSelectedEventType] = useState("");
   // task form
@@ -96,7 +95,7 @@ export default function CalendarPage() {
   const nextMonth = () => month === 11 ? (setMonth(0), setYear(year + 1)) : setMonth(month + 1);
 
   const resetForms = () => {
-    setTitle(""); setDescription(""); setCost(""); setSelectedProject(""); setSelectedEventType("");
+    setTitle(""); setDescription(""); setSelectedProject(""); setSelectedEventType("");
     setTaskName(""); setTaskRecur("none");
   };
 
@@ -138,7 +137,6 @@ export default function CalendarPage() {
       title: title.trim(),
       description: description.trim(),
       date: selectedDate,
-      cost: cost ? Number(cost) : 0,
       project_id: selectedProject || null,
       event_type_id: selectedEventType || null,
     });
@@ -305,15 +303,12 @@ export default function CalendarPage() {
                 <div className="day-add-form">
                   <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
                   <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ resize: "vertical" }} />
-                  <div className="form-row">
-                    <input type="number" min="0" step="0.01" placeholder="Cost (optional)" value={cost} onChange={(e) => setCost(e.target.value)} />
-                    {eventTypes.length > 0 && (
-                      <select value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>
-                        <option value="">No event type</option>
-                        {eventTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
-                      </select>
-                    )}
-                  </div>
+                  {eventTypes.length > 0 && (
+                    <select value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>
+                      <option value="">No event type</option>
+                      {eventTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
+                    </select>
+                  )}
                   {projects.length > 0 && (
                     <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
                       <option value="">No project</option>

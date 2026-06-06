@@ -14,7 +14,9 @@ import { renderMarkdown } from "../utils/markdown";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
-const SYSTEM = `You are a smart, capable personal assistant embedded in Scott's planner app (heyScottyBro). Today is ${TODAY}.
+const SYSTEM = `You are Frodo, Scott's loyal personal assistant living inside his planner app (heyScottyBro). Today is ${TODAY}.
+
+Personality: warm, upbeat, and a touch adventurous — you treat keeping Scott organised like a quest you're happy to be on. Light humour and the occasional cheeky aside are welcome ("consider it done", "one does not simply forget leg day"), but never at the expense of being genuinely useful and concise. Address Scott directly, sign off warmly now and then, and go easy on emojis.
 
 You have FULL read/write access to Scott's data and can make complex, multi-step changes. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act.
 
@@ -69,7 +71,6 @@ const TOOLS = [
         description: { type: "string" },
         project_id: { type: "string" },
         event_type_id: { type: "string" },
-        cost: { type: "number" },
       },
       required: ["title", "date"],
     },
@@ -155,7 +156,7 @@ async function executeTool(name, input) {
       case "complete_reminder": await completeReminder(input.id); return { success: true };
       case "delete_reminder": await deleteReminder(input.id); return { success: true };
       case "add_event":
-        await newEvent({ title: input.title, date: input.date, description: input.description || "", project_id: input.project_id || null, event_type_id: input.event_type_id || null, cost: input.cost || 0 });
+        await newEvent({ title: input.title, date: input.date, description: input.description || "", project_id: input.project_id || null, event_type_id: input.event_type_id || null });
         return { success: true };
       case "delete_event": await deleteEvent(input.id); return { success: true };
       case "add_project": { const p = await newProject({ name: input.name, description: input.description || "", color: input.color || "#4f7cff", parent_id: input.parent_id || null }); return { success: true, id: p?.id }; }
@@ -251,7 +252,7 @@ export default function ChatBot() {
       {open && (
         <div className={`chat-panel ${expanded ? "expanded" : ""}`}>
           <div className="chat-panel-header">
-            <span><i className="fa-solid fa-wand-magic-sparkles" /> Assistant</span>
+            <span><i className="fa-solid fa-ring" /> Frodo</span>
             <div className="chat-header-actions">
               <button type="button" className="btn-mini muted" onClick={() => setExpanded((v) => !v)} title={expanded ? "Shrink" : "Full screen"}>
                 <i className={`fa-solid ${expanded ? "fa-compress" : "fa-expand"}`} />
@@ -265,7 +266,7 @@ export default function ChatBot() {
           <div className="chat-messages">
             {displayMsgs.length === 0 && (
               <div className="chat-empty">
-                <p>I can read and change anything. Try:</p>
+                <p>Hi, I'm <strong>Frodo</strong> 🧭 — your planner sidekick. I can read and change anything. Try:</p>
                 <ul>
                   <li>"List my projects as a table"</li>
                   <li>"Make a School project with Math, English &amp; Science classes"</li>
@@ -284,7 +285,7 @@ export default function ChatBot() {
           </div>
 
           <div className="chat-input-row">
-            <textarea ref={textareaRef} className="chat-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} placeholder="Ask me to do anything..." rows={1} />
+            <textarea ref={textareaRef} className="chat-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} placeholder="Ask Frodo anything..." rows={1} />
             <button type="button" className="chat-send" onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />
             </button>

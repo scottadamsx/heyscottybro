@@ -20,7 +20,9 @@ export default defineConfig(({ mode }) => {
               const key = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
               if (key) proxyReq.setHeader("x-api-key", key);
               proxyReq.setHeader("anthropic-version", "2023-06-01");
-              proxyReq.removeHeader("anthropic-dangerous-request-browser");
+              proxyReq.setHeader("anthropic-dangerous-direct-browser-access", "true");
+              proxyReq.removeHeader("origin");
+              proxyReq.removeHeader("referer");
             });
           },
         },
@@ -33,7 +35,9 @@ export default defineConfig(({ mode }) => {
               const key = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
               if (key) proxyReq.setHeader("x-api-key", key);
               proxyReq.setHeader("anthropic-version", "2023-06-01");
-              proxyReq.removeHeader("anthropic-dangerous-request-browser");
+              proxyReq.setHeader("anthropic-dangerous-direct-browser-access", "true");
+              proxyReq.removeHeader("origin");
+              proxyReq.removeHeader("referer");
             });
           },
         },
