@@ -15,10 +15,12 @@ export default function JournalPage() {
   const load = async () => setEntries(await loadJournal());
   useEffect(() => { load(); }, []);
 
+  const todayLong = formatDisplayDate(toDateStr(new Date()));
+
   const submit = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !entry.trim()) return;
-    await newJournalEntry({ title: title.trim(), entry: entry.trim(), date: toDateStr(new Date()) });
+    if (!entry.trim()) return;
+    await newJournalEntry({ title: title.trim() || todayLong, entry: entry.trim(), date: toDateStr(new Date()) });
     setTitle("");
     setEntry("");
     await load();
@@ -52,7 +54,7 @@ export default function JournalPage() {
         </div>
       ) : (
         <form className="form-card" onSubmit={submit}>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Entry title" required />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Title (defaults to “${todayLong}”)`} />
           <textarea
             value={entry}
             onChange={(e) => setEntry(e.target.value)}

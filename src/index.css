@@ -3543,3 +3543,55 @@ input, textarea, select { font-family: inherit; }
 .admin-shell .form-card textarea:focus,
 .admin-shell .event-card input:focus,
 .admin-shell .event-card textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,124,255,0.4); }
+
+/* ═══════════════════════════════════════════
+   Motion polish — micro-interactions
+   (entrance/route motion handled by framer-motion;
+    these are the tactile hover/press cues)
+   ═══════════════════════════════════════════ */
+
+/* Dashboard cards: gentle lift + hairline glow on hover */
+.db-card {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.16s ease;
+  will-change: transform;
+}
+.db-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-primary);
+  box-shadow: 0 12px 28px -18px rgba(14, 14, 16, 0.45);
+}
+.admin-shell .db-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 30px -18px rgba(0, 0, 0, 0.6);
+}
+
+/* List rows: subtle indent + tint on hover */
+.db-list-item {
+  transition: transform 0.14s ease, background-color 0.14s ease;
+  border-radius: var(--radius-sm);
+}
+.db-list-item:hover {
+  transform: translateX(3px);
+  background: var(--bg-hover);
+}
+.admin-shell .db-list-item:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* Buttons: tactile press */
+.btn { transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.16s ease, border-color 0.16s ease; }
+.btn:active { transform: scale(0.97); }
+
+/* Nav rail / sub links: smooth state changes */
+.admin-rail-link, .admin-sub-link {
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+.admin-rail-link:active, .admin-sub-link:active { transform: scale(0.98); }
+
+@media (prefers-reduced-motion: reduce) {
+  .db-card, .db-list-item, .btn, .admin-rail-link, .admin-sub-link {
+    transition: none;
+  }
+  .db-card:hover, .db-list-item:hover { transform: none; }
+  .btn:active, .admin-rail-link:active, .admin-sub-link:active { transform: none; }
+}

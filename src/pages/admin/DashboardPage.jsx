@@ -3,6 +3,7 @@ import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects,
 import { expandReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
+import { Stagger, Item } from "../../components/motion/Stagger";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const weekdayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
@@ -151,9 +152,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="db-grid">
+    <Stagger className="db-grid">
       {/* ── AI Briefing Card ── */}
-      <div className="db-card col-12 ai-briefing-card">
+      <Item className="db-card col-12 ai-briefing-card">
         <div className="ai-briefing-header">
           <div>
             <div className="ai-briefing-date">{todayFormatted}</div>
@@ -186,10 +187,10 @@ export default function DashboardPage() {
         {aiText && !aiLoading && (
           <p className="ai-briefing-text">{aiText}</p>
         )}
-      </div>
+      </Item>
 
       {/* ── Tasks & Reminders (compact + expand) ── */}
-      <div className="db-card col-8">
+      <Item className="db-card col-8">
         <div className="db-card-header">
           <h3 className="db-card-title">Tasks &amp; Reminders</h3>
           <button className="btn btn-sm btn-secondary-sm" onClick={() => setShowWeek(true)}>
@@ -212,10 +213,10 @@ export default function DashboardPage() {
             +{upcomingAll.length - 4} more · view the week
           </button>
         )}
-      </div>
+      </Item>
 
       {/* ── Right Column ── */}
-      <div className="db-card col-4">
+      <Item className="db-card col-4">
         <h3 className="db-card-title">Quick Stats</h3>
         <div className="stat-grid">
           <div className="stat-item">
@@ -235,11 +236,11 @@ export default function DashboardPage() {
             <div className="stat-value">{data.config?.categories?.length || 0}</div>
           </div>
         </div>
-      </div>
+      </Item>
 
       {/* ── Upcoming Events ── */}
       {upcomingEvents.length > 0 && (
-        <div className="db-card col-6">
+        <Item className="db-card col-6">
           <h3 className="db-card-title">Upcoming Events</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
             {upcomingEvents.map(e => (
@@ -251,12 +252,12 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </Item>
       )}
 
       {/* ── Active Projects ── */}
       {data.projects.length > 0 && (
-        <div className={`db-card ${upcomingEvents.length > 0 ? "col-6" : "col-12"}`}>
+        <Item className={`db-card ${upcomingEvents.length > 0 ? "col-6" : "col-12"}`}>
           <h3 className="db-card-title">Active Projects</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
             {data.projects.map(p => (
@@ -271,11 +272,11 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </Item>
       )}
 
       {/* ── Recent Journal ── */}
-      <div className="db-card col-6">
+      <Item className="db-card col-6">
         <h3 className="db-card-title">Recent Journal</h3>
         {lastEntry ? (
           <div className="db-list-item journal-snippet" style={{ flexDirection: "column", alignItems: "flex-start" }}>
@@ -286,10 +287,10 @@ export default function DashboardPage() {
         ) : (
           <p className="no-entries">No journal entries yet.</p>
         )}
-      </div>
+      </Item>
 
       {/* ── Free to spend this week ── */}
-      <div className="db-card col-6">
+      <Item className="db-card col-6">
         <h3 className="db-card-title">Free to spend this week</h3>
         <div style={{ fontSize: "2.1rem", fontWeight: 800, marginTop: "0.25rem", color: freeThisWeek >= 0 ? "var(--green)" : "var(--red)" }}>
           {formatMoney(freeThisWeek)}
@@ -300,10 +301,10 @@ export default function DashboardPage() {
           <div className="stat-item"><div className="stat-label">Spent so far</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(spentThisWeek)}</div></div>
           <div className="stat-item"><div className="stat-label">Week of</div><div style={{ fontWeight: 700, marginTop: "0.2rem", fontSize: "0.9rem" }}>{formatDisplayDate(range.startStr)}</div></div>
         </div>
-      </div>
+      </Item>
 
       {/* ── Upcoming bills ── */}
-      <div className="db-card col-6">
+      <Item className="db-card col-6">
         <h3 className="db-card-title">Upcoming bills</h3>
         {upcomingBills.length === 0 && <p className="no-entries">No scheduled bills with a due date. Add a due day to a bill in Budget.</p>}
         <div className="db-list" style={{ marginTop: "0.5rem" }}>
@@ -319,7 +320,7 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
-      </div>
+      </Item>
 
       <AccountabilitySummary />
 
@@ -356,6 +357,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-    </div>
+    </Stagger>
   );
 }

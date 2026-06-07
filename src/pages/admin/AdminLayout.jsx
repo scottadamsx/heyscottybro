@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
 import ChatBot from "../../components/ChatBot";
 import AdminSubSidebar from "../../components/AdminSubSidebar";
+import PageTransition from "../../components/motion/PageTransition";
 
 const NAV_ITEMS = [
   { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
@@ -19,6 +21,8 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const outlet = useOutlet();
   // Two independent toggles. When BOTH are collapsed → fully hidden (burger).
   const [railCollapsed, setRailCollapsed] = useState(
     () => localStorage.getItem("adminRailCollapsed") === "1"
@@ -169,7 +173,9 @@ export default function AdminLayout() {
       </header>
 
       <main className="admin-main">
-        <Outlet />
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.pathname}>{outlet}</PageTransition>
+        </AnimatePresence>
       </main>
 
       <ChatBot />
