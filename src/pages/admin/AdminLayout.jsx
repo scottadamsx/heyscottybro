@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: "/admin/projects", icon: "fa-folder-open", label: "Projects" },
   { to: "/admin/journal", icon: "fa-book", label: "Journal" },
   { to: "/admin/budget", icon: "fa-wallet", label: "Budget" },
+  { to: "/admin/finance", icon: "fa-chart-line", label: "Finance" },
   { to: "/admin/hikers", icon: "fa-person-hiking", label: "Hikers" },
   { to: "/admin/dates", icon: "fa-heart", label: "Date Night" },
   { to: "/admin/accountability", icon: "fa-fire", label: "Accountability" },
