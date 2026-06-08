@@ -6,6 +6,7 @@ import App from "./App.jsx";
 import "./index.css";
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
 import "./styles/admin-terminal.css"; // hacker-terminal skin for /admin (loads last)
+import "./styles/features.css"; // documents · nutrition · recipes (loads after admin theme)
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

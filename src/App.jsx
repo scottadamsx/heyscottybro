@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
@@ -10,6 +11,15 @@ import GamesPage from "./pages/GamesPage.jsx";
 import GameEmbed from "./pages/GameEmbed.jsx";
 import TicTacToePage from "./pages/TicTacToePage.jsx";
 import OverviewDashboard from "./pages/OverviewDashboard.jsx";
+
+// Heavier / less-frequently used pages are code-split. DocumentsPage and
+// SharedDocPage pull in react-pdf, so lazy-loading keeps it out of the main bundle.
+const SharedDocPage = lazy(() => import("./pages/SharedDocPage.jsx"));
+const DocumentsPage = lazy(() => import("./pages/admin/DocumentsPage.jsx"));
+const NutritionPage = lazy(() => import("./pages/admin/NutritionPage.jsx"));
+const RecipesPage = lazy(() => import("./pages/admin/RecipesPage.jsx"));
+
+const Lazy = (el) => <Suspense fallback={<div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>}>{el}</Suspense>;
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -92,6 +102,9 @@ export default function App() {
         {/* Standalone dark dashboard demo */}
         <Route path="/overview" element={<OverviewDashboard />} />
 
+        {/* Public document share — no auth required */}
+        <Route path="/doc/:token" element={Lazy(<SharedDocPage />)} />
+
         {/* Admin login */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
@@ -116,6 +129,9 @@ export default function App() {
           <Route path="dates" element={<DatePlannerPage />} />
           <Route path="accountability" element={<AccountabilityPage />} />
           <Route path="snippets" element={<SnippetsPage />} />
+          <Route path="documents" element={Lazy(<DocumentsPage />)} />
+          <Route path="nutrition" element={Lazy(<NutritionPage />)} />
+          <Route path="recipes" element={Lazy(<RecipesPage />)} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

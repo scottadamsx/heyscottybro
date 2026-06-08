@@ -50,16 +50,31 @@ const TITLES = {
   dates: "Date Night",
   accountability: "Accountability",
   snippets: "Vault",
+  documents: "Documents",
+  nutrition: "Nutrition",
+  recipes: "Recipes",
 };
+
+const NUTRITION_VIEWS = [
+  { key: "today", label: "Today", icon: "fa-bowl-food" },
+  { key: "trends", label: "Trends & insights", icon: "fa-chart-line" },
+  { key: "weight", label: "Weight", icon: "fa-weight-scale" },
+];
+
+const RECIPE_FILTERS = [
+  { key: "all", label: "All recipes", icon: "fa-list" },
+  { key: "favorites", label: "Favorites", icon: "fa-star" },
+  { key: "ai", label: "AI generated", icon: "fa-wand-magic-sparkles" },
+];
 
 const VAULT_TYPES = [
   { key: "all", label: "All", icon: "fa-vault" },
+  { key: "code", label: "Codes / Combos", icon: "fa-hashtag" },
+  { key: "password", label: "Passwords", icon: "fa-key" },
   { key: "wifi", label: "Wi-Fi", icon: "fa-wifi" },
   { key: "card", label: "Cards", icon: "fa-credit-card" },
-  { key: "login", label: "Logins", icon: "fa-user-lock" },
-  { key: "link", label: "Links", icon: "fa-link" },
-  { key: "location", label: "Locations", icon: "fa-location-dot" },
   { key: "note", label: "Notes", icon: "fa-note-sticky" },
+  { key: "other", label: "Other", icon: "fa-circle-dot" },
 ];
 
 function readAccountabilityTrackers() {
@@ -254,6 +269,32 @@ export default function AdminSubSidebar() {
           <button key={t.key} className={`admin-sub-link ${active === t.key ? "active" : ""}`} onClick={() => setParam({ type: t.key === "all" ? null : t.key })}>
             <i className={`fa-solid ${t.icon}`} />
             <span className="admin-sub-link-body"><div className="admin-sub-link-title">{t.label}</div></span>
+          </button>
+        ))}
+      </>
+    );
+  } else if (section === "nutrition") {
+    const active = params.get("view") || "today";
+    body = (
+      <>
+        <div className="admin-sub-label">View</div>
+        {NUTRITION_VIEWS.map((v) => (
+          <button key={v.key} className={`admin-sub-link ${active === v.key ? "active" : ""}`} onClick={() => setParam({ view: v.key === "today" ? null : v.key })}>
+            <i className={`fa-solid ${v.icon}`} />
+            <span className="admin-sub-link-body"><div className="admin-sub-link-title">{v.label}</div></span>
+          </button>
+        ))}
+      </>
+    );
+  } else if (section === "recipes") {
+    const active = params.get("filter") || "all";
+    body = (
+      <>
+        <div className="admin-sub-label">Filter</div>
+        {RECIPE_FILTERS.map((f) => (
+          <button key={f.key} className={`admin-sub-link ${active === f.key ? "active" : ""}`} onClick={() => setParam({ filter: f.key === "all" ? null : f.key })}>
+            <i className={`fa-solid ${f.icon}`} />
+            <span className="admin-sub-link-body"><div className="admin-sub-link-title">{f.label}</div></span>
           </button>
         ))}
       </>

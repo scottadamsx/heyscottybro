@@ -10,6 +10,11 @@ import {
   addRecurringBill, addIncomeSource, loadBudgetConfig, saveBudgetConfig,
 } from "../api/plannerApi";
 import { loadMembers, deleteMember, clearAllMembers } from "../api/hikerApi";
+import {
+  loadProfiles as loadNutritionProfiles,
+  createFoodLog, loadFoodLogs, saveWeight,
+} from "../api/nutritionApi";
+import { todayStr as nutritionToday } from "../utils/nutrition";
 import { renderMarkdown } from "../utils/markdown";
 import { toDateStr } from "../utils/plannerUtils";
 
@@ -40,7 +45,7 @@ Personality: warm, upbeat, and a touch adventurous — you treat keeping Scott o
 
 You have FULL read/write access to Scott's data and can make complex, multi-step changes end to end without asking permission for routine work — just do it, then confirm what you did. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act. When Scott asks for several items at once (e.g. "reminders for Monday, Wednesday and Friday"), create EVERY one in the same turn.
 
-Capabilities: reminders/tasks (add, edit, complete, delete — incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, and the hiker database.
+Capabilities: reminders/tasks (add, edit, complete, delete — incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, the hiker database, and nutrition tracking (log food + weight for Scott or his partner). For nutrition, ALWAYS call list_nutrition_profiles first to get the profile id, then log_food / log_weight. If Scott describes a meal without calories, estimate sensible calories and macros (protein/carbs/fat in grams) yourself before logging.
 
 Formatting: reply in Markdown. Use **bold** for emphasis, bullet lists for steps, and Markdown TABLES whenever you present multiple records to the user (e.g. listing tasks, projects, search results) so they render as a grid. Keep prose short.
 
@@ -174,6 +179,48 @@ const TOOLS = [
   { name: "add_income_source", description: "Add a recurring income source", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, startDate: { type: "string" }, endDate: { type: "string" }, notes: { type: "string" } }, required: ["name", "amount"] } },
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
   { name: "add_recurring_bill", description: "Add a recurring monthly bill or subscription", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, category: { type: "string" }, startDate: { type: "string" }, dueDay: { type: "number" }, notes: { type: "string" } }, required: ["name", "amount", "category"] } },
+  { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
+  {
+    name: "log_food",
+    description: "Log a meal/snack to a nutrition profile. Estimate calories + macros if Scott didn't give them.",
+    input_schema: {
+      type: "object",
+      properties: {
+        profile_id: { type: "string" },
+        name: { type: "string" },
+        calories: { type: "number" },
+        protein_g: { type: "number" },
+        carbs_g: { type: "number" },
+        fat_g: { type: "number" },
+        meal_type: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack"] },
+        date: { type: "string", description: "YYYY-MM-DD (defaults to today)" },
+      },
+      required: ["profile_id", "name", "calories"],
+    },
+  },
+  {
+    name: "log_weight",
+    description: "Record a weigh-in (in kg) for a nutrition profile on a date.",
+    input_schema: {
+      type: "object",
+      properties: {
+        profile_id: { type: "string" },
+        weight_kg: { type: "number" },
+        date: { type: "string", description: "YYYY-MM-DD (defaults to today)" },
+        note: { type: "string" },
+      },
+      required: ["profile_id", "weight_kg"],
+    },
+  },
+  {
+    name: "list_food",
+    description: "List food logged for a nutrition profile on a given date (defaults to today).",
+    input_schema: {
+      type: "object",
+      properties: { profile_id: { type: "string" }, date: { type: "string" } },
+      required: ["profile_id"],
+    },
+  },
   { name: "search_hikers", description: "Search hikers by name or email to find IDs", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
   { name: "delete_hiker", description: "Delete a specific hiker by id", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } }, required: ["id", "name"] } },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
@@ -218,6 +265,32 @@ async function executeTool(name, input) {
       case "add_income_source": await addIncomeSource({ name: input.name, amount: input.amount, frequency: "monthly", startDate: input.startDate || today(), endDate: input.endDate || null, notes: input.notes || "" }); return { success: true };
       case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
       case "add_recurring_bill": await addRecurringBill({ name: input.name, amount: input.amount, category: input.category, startDate: input.startDate || today(), dueDay: input.dueDay ?? null, notes: input.notes || "" }); return { success: true };
+      case "list_nutrition_profiles": {
+        const ps = await loadNutritionProfiles();
+        return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) };
+      }
+      case "log_food": {
+        await createFoodLog(input.profile_id, {
+          name: input.name,
+          calories: input.calories,
+          protein_g: input.protein_g || 0,
+          carbs_g: input.carbs_g || 0,
+          fat_g: input.fat_g || 0,
+          meal_type: input.meal_type || "snack",
+          date: input.date || nutritionToday(),
+          source: "ai",
+        });
+        return { success: true };
+      }
+      case "log_weight": {
+        await saveWeight(input.profile_id, { weight_kg: input.weight_kg, date: input.date || nutritionToday(), note: input.note || "" });
+        return { success: true };
+      }
+      case "list_food": {
+        const d = input.date || nutritionToday();
+        const logs = await loadFoodLogs(input.profile_id, { from: d, to: d });
+        return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
+      }
       case "search_hikers": { const results = await loadMembers(input.query); return { results: results.slice(0, 10).map((m) => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) }; }
       case "delete_hiker": await deleteMember(input.id); return { success: true, deleted: input.name };
       case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };

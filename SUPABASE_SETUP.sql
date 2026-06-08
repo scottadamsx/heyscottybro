@@ -261,3 +261,207 @@ BEGIN
   SELECT v_user_id, 'Trinidad spending money', -500.00, 'expense', 'Travel', '2026-08-15', 'Last 2 weeks of August'
   WHERE NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = v_user_id AND description = 'Trinidad spending money' AND date = '2026-08-15');
 END $$;
+
+-- ═══════════════════════════════════════════
+-- Shared trigger helper (used by several features below)
+-- ═══════════════════════════════════════════
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+$$;
+
+-- ═══════════════════════════════════════════
+-- Vault / Snippets  (June 2026)
+-- ═══════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS snippets (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title       TEXT        NOT NULL CHECK (char_length(title) >= 1 AND char_length(title) <= 200),
+  value       TEXT        NOT NULL CHECK (char_length(value) >= 1),
+  type        TEXT        NOT NULL DEFAULT 'other'
+                          CHECK (type IN ('code','password','wifi','card','note','other')),
+  secret      BOOLEAN     NOT NULL DEFAULT true,
+  notes       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE snippets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON snippets;
+CREATE POLICY "owner only" ON snippets USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP TRIGGER IF EXISTS snippets_updated_at ON snippets;
+CREATE TRIGGER snippets_updated_at BEFORE UPDATE ON snippets FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE INDEX IF NOT EXISTS snippets_user_id_idx    ON snippets (user_id);
+CREATE INDEX IF NOT EXISTS snippets_user_type_idx  ON snippets (user_id, type);
+CREATE INDEX IF NOT EXISTS snippets_created_at_idx ON snippets (user_id, created_at DESC);
+
+-- ═══════════════════════════════════════════
+-- Documents + share links  (June 2026)
+-- Private storage bucket 'documents'; public shares served via Vercel function
+-- /api/doc-signed-url using the service-role key.
+-- ═══════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS documents (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name          TEXT NOT NULL,
+  filename      TEXT NOT NULL,
+  storage_path  TEXT NOT NULL,
+  mime_type     TEXT NOT NULL,
+  size_bytes    BIGINT NOT NULL,
+  description   TEXT DEFAULT '',
+  tags          TEXT[] DEFAULT '{}',
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON documents;
+CREATE POLICY "owner only" ON documents USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP TRIGGER IF EXISTS documents_updated_at ON documents;
+CREATE TRIGGER documents_updated_at BEFORE UPDATE ON documents FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE IF NOT EXISTS document_shares (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id       UUID REFERENCES documents(id) ON DELETE CASCADE NOT NULL,
+  token             TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  created_by        UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  shared_with_email TEXT,
+  expires_at        TIMESTAMPTZ,
+  accessed_at       TIMESTAMPTZ,
+  access_count      INTEGER DEFAULT 0,
+  revoked           BOOLEAN DEFAULT FALSE,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE document_shares ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner manage shares" ON document_shares;
+CREATE POLICY "owner manage shares" ON document_shares USING (auth.uid() = created_by) WITH CHECK (auth.uid() = created_by);
+CREATE INDEX IF NOT EXISTS document_shares_token_idx ON document_shares (token);
+CREATE INDEX IF NOT EXISTS document_shares_doc_idx   ON document_shares (document_id);
+CREATE INDEX IF NOT EXISTS documents_user_idx        ON documents (user_id, created_at DESC);
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('documents', 'documents', false, 52428800,
+  ARRAY['application/pdf','image/png','image/jpeg','image/gif','image/webp',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain'])
+ON CONFLICT (id) DO UPDATE SET file_size_limit = EXCLUDED.file_size_limit, allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "documents owner upload" ON storage.objects;
+CREATE POLICY "documents owner upload" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "documents owner read" ON storage.objects;
+CREATE POLICY "documents owner read" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "documents owner delete" ON storage.objects;
+CREATE POLICY "documents owner delete" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ═══════════════════════════════════════════
+-- Nutrition: profiles, food logs, weight logs  (June 2026)
+-- Two profiles (you + partner) under one account. Private 'nutrition' bucket for photos.
+-- ═══════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS nutrition_profiles (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name            TEXT NOT NULL,
+  emoji           TEXT DEFAULT '🙂',
+  color           TEXT DEFAULT '#6366f1',
+  sex             TEXT CHECK (sex IN ('male','female','other')),
+  height_cm       NUMERIC,
+  birth_year      INTEGER,
+  activity_level  TEXT DEFAULT 'moderate' CHECK (activity_level IN ('sedentary','light','moderate','active','very_active')),
+  goal            TEXT DEFAULT 'maintain' CHECK (goal IN ('lose','maintain','gain')),
+  target_calories INTEGER,
+  start_weight_kg NUMERIC,
+  goal_weight_kg  NUMERIC,
+  sort_order      INTEGER DEFAULT 0,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE nutrition_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON nutrition_profiles;
+CREATE POLICY "owner only" ON nutrition_profiles USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE TABLE IF NOT EXISTS food_logs (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  profile_id   UUID REFERENCES nutrition_profiles(id) ON DELETE CASCADE NOT NULL,
+  date         DATE NOT NULL DEFAULT CURRENT_DATE,
+  meal_type    TEXT DEFAULT 'snack' CHECK (meal_type IN ('breakfast','lunch','dinner','snack')),
+  name         TEXT NOT NULL,
+  description  TEXT DEFAULT '',
+  calories     NUMERIC NOT NULL DEFAULT 0,
+  protein_g    NUMERIC DEFAULT 0,
+  carbs_g      NUMERIC DEFAULT 0,
+  fat_g        NUMERIC DEFAULT 0,
+  quantity     NUMERIC DEFAULT 1,
+  source       TEXT DEFAULT 'manual' CHECK (source IN ('manual','ai','photo','recipe')),
+  image_path   TEXT,
+  items        JSONB DEFAULT '[]',
+  recipe_id    UUID,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE food_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON food_logs;
+CREATE POLICY "owner only" ON food_logs USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS food_logs_profile_date_idx ON food_logs (profile_id, date DESC);
+CREATE INDEX IF NOT EXISTS food_logs_user_idx ON food_logs (user_id, date DESC);
+
+CREATE TABLE IF NOT EXISTS weight_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  profile_id  UUID REFERENCES nutrition_profiles(id) ON DELETE CASCADE NOT NULL,
+  date        DATE NOT NULL DEFAULT CURRENT_DATE,
+  weight_kg   NUMERIC NOT NULL,
+  note        TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (profile_id, date)
+);
+ALTER TABLE weight_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON weight_logs;
+CREATE POLICY "owner only" ON weight_logs USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS weight_logs_profile_date_idx ON weight_logs (profile_id, date DESC);
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('nutrition', 'nutrition', false, 10485760,
+        ARRAY['image/png','image/jpeg','image/webp','image/gif','image/heic'])
+ON CONFLICT (id) DO UPDATE SET file_size_limit = EXCLUDED.file_size_limit, allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "nutrition owner upload" ON storage.objects;
+CREATE POLICY "nutrition owner upload" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'nutrition' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "nutrition owner read" ON storage.objects;
+CREATE POLICY "nutrition owner read" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'nutrition' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "nutrition owner delete" ON storage.objects;
+CREATE POLICY "nutrition owner delete" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'nutrition' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ═══════════════════════════════════════════
+-- Recipes (AI + manual)  (June 2026)
+-- ═══════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS recipes (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id              UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title                TEXT NOT NULL,
+  description          TEXT DEFAULT '',
+  servings             INTEGER DEFAULT 1,
+  prep_minutes         INTEGER DEFAULT 0,
+  cook_minutes         INTEGER DEFAULT 0,
+  ingredients          JSONB DEFAULT '[]',
+  steps                JSONB DEFAULT '[]',
+  calories_per_serving NUMERIC DEFAULT 0,
+  protein_g            NUMERIC DEFAULT 0,
+  carbs_g              NUMERIC DEFAULT 0,
+  fat_g                NUMERIC DEFAULT 0,
+  tags                 TEXT[] DEFAULT '{}',
+  image_path           TEXT,
+  source               TEXT DEFAULT 'manual' CHECK (source IN ('manual','ai')),
+  favorite             BOOLEAN DEFAULT FALSE,
+  created_at           TIMESTAMPTZ DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON recipes;
+CREATE POLICY "owner only" ON recipes USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+DROP TRIGGER IF EXISTS recipes_updated_at ON recipes;
+CREATE TRIGGER recipes_updated_at BEFORE UPDATE ON recipes FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE INDEX IF NOT EXISTS recipes_user_idx ON recipes (user_id, created_at DESC);
