@@ -104,6 +104,19 @@ export async function completeReminder(id) {
   );
 }
 
+export async function updateReminder(id, fields) {
+  // Only persist keys that were actually provided (so partial edits don't wipe columns).
+  const patch = {};
+  ["name", "date", "time", "description", "recurrence", "project_id", "recur_until", "recur_times", "show_on_calendar", "completed"].forEach((k) => {
+    if (fields[k] !== undefined) patch[k] = fields[k];
+  });
+  if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
+  return op(
+    async () => { const { error } = await supabase.from("reminders").update(patch).eq("id", id); if (error) throw error; },
+    () => local.update("reminders", id, patch),
+  );
+}
+
 export async function deleteReminder(id) {
   return op(
     async () => { const { error } = await supabase.from("reminders").delete().eq("id", id); if (error) throw error; },

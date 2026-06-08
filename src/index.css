@@ -2227,10 +2227,20 @@ input, textarea, select { font-family: inherit; }
   width: 52px; height: 52px;
   align-items: center; justify-content: center;
   border: none; border-radius: 50%;
-  background: #ededed; color: #0a0a0c;
+  background: #0d1117; color: #61dafb;
   font-size: 1.25rem; cursor: pointer;
-  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.7), 0 0 18px -4px rgba(97,218,251,0.55);
+  transition: transform 0.2s cubic-bezier(.2,.8,.2,1), box-shadow 0.2s;
 }
+.admin-mobile-fab:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 10px 28px -8px rgba(0,0,0,0.7), 0 0 26px -2px rgba(97,218,251,0.7); }
+.admin-mobile-fab:active { transform: scale(0.94); }
+.admin-mobile-fab.open { background: var(--bg-raised, #1b1b1f); color: #ededed; }
+
+/* The real React atom — slow spin, faster on hover */
+.admin-fab-react { width: 30px; height: 30px; animation: react-spin 9s linear infinite; }
+.admin-mobile-fab:hover .admin-fab-react { animation-duration: 2.2s; }
+@keyframes react-spin { to { transform: rotate(360deg); } }
+
 .admin-mobile-sheet {
   position: fixed;
   left: 1rem;
@@ -2245,6 +2255,24 @@ input, textarea, select { font-family: inherit; }
   border-radius: 16px;
   box-shadow: 0 22px 48px -22px rgba(0,0,0,0.7);
   animation: rise 0.16s cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* Rolodex flip-in: each row tumbles down on a hinge, staggered top→bottom */
+.admin-rolodex { perspective: 800px; }
+.admin-rolodex .admin-sub-link {
+  transform-origin: top center;
+  backface-visibility: hidden;
+  animation: rolodex-flip 0.5s cubic-bezier(.2,.85,.3,1.1) both;
+  animation-delay: calc(var(--roll, 0) * 55ms + 60ms);
+}
+@keyframes rolodex-flip {
+  0%   { opacity: 0; transform: rotateX(-92deg) translateY(-6px); }
+  60%  { opacity: 1; transform: rotateX(12deg); }
+  100% { opacity: 1; transform: rotateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-fab-react { animation: none; }
+  .admin-rolodex .admin-sub-link { animation: none; }
 }
 
 /* ── Project Filter Bar ───────────────────── */

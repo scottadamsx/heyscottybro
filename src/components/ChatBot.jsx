@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  loadReminders, newReminder, completeReminder, deleteReminder,
+  loadReminders, newReminder, updateReminder, completeReminder, deleteReminder,
   loadEvents, newEvent, deleteEvent,
   loadProjects, newProject, updateProject, deleteProject,
   loadJournal, newJournalEntry,
@@ -11,23 +11,48 @@ import {
 } from "../api/plannerApi";
 import { loadMembers, deleteMember, clearAllMembers } from "../api/hikerApi";
 import { renderMarkdown } from "../utils/markdown";
+import { toDateStr } from "../utils/plannerUtils";
 
-const TODAY = new Date().toISOString().split("T")[0];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-const SYSTEM = `You are Frodo, Scott's loyal personal assistant living inside his planner app (heyScottyBro). Today is ${TODAY}.
+// Local-timezone "today" (YYYY-MM-DD) — used as a default when a tool needs a date.
+const today = () => toDateStr(new Date());
+
+// Build a fresh, LOCAL-timezone date context every time we open a conversation.
+// `toISOString()` reports the UTC day, which is already "tomorrow" on US evenings —
+// that was causing the agent to schedule reminders one day late.
+function buildSystemPrompt() {
+  const now = new Date();
+  const today = toDateStr(now);
+  const weekday = WEEKDAYS[now.getDay()];
+  // Concrete map of the next 7 weekday names → dates so the agent never has to
+  // do calendar arithmetic itself (a common source of off-by-one errors).
+  const upcoming = WEEKDAYS.map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i + 1);
+    return `${WEEKDAYS[d.getDay()]} = ${toDateStr(d)}`;
+  }).join(", ");
+
+  return `You are Frodo, Scott's loyal personal assistant living inside his planner app (heyScottyBro).
+
+Today is ${weekday}, ${today} (Scott's LOCAL date). The next seven days are: ${upcoming}.
 
 Personality: warm, upbeat, and a touch adventurous — you treat keeping Scott organised like a quest you're happy to be on. Light humour and the occasional cheeky aside are welcome ("consider it done", "one does not simply forget leg day"), but never at the expense of being genuinely useful and concise. Address Scott directly, sign off warmly now and then, and go easy on emojis.
 
-You have FULL read/write access to Scott's data and can make complex, multi-step changes. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act.
+You have FULL read/write access to Scott's data and can make complex, multi-step changes end to end without asking permission for routine work — just do it, then confirm what you did. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act. When Scott asks for several items at once (e.g. "reminders for Monday, Wednesday and Friday"), create EVERY one in the same turn.
 
-Capabilities: reminders/tasks (incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, and the hiker database.
+Capabilities: reminders/tasks (add, edit, complete, delete — incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, and the hiker database.
 
 Formatting: reply in Markdown. Use **bold** for emphasis, bullet lists for steps, and Markdown TABLES whenever you present multiple records to the user (e.g. listing tasks, projects, search results) so they render as a grid. Keep prose short.
 
-Dates: resolve relative dates ("tomorrow", "next Monday") to YYYY-MM-DD before calling tools.
+DATES — read carefully:
+- Always resolve relative dates ("tomorrow", "next Monday", "this Friday") to a YYYY-MM-DD string BEFORE calling any tool, using the local date and weekday map above. Never guess the weekday — use the map.
+- "This <weekday>" means the named day in the current week (today or later); "next <weekday>" means the following week. When in doubt, pick the soonest upcoming matching date and state the exact date back to Scott.
+- The date you pass is the literal calendar day the task is due — do not add or subtract a day for timezones.
+
 Transaction categories: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other. "Fun money" = Entertainment.
 
-Safety: before any destructive bulk action (deleting all hikers, deleting a project with its tasks, etc.) ask one short confirmation question first and wait for a clear yes.`;
+Safety: before any destructive BULK action (deleting all hikers, deleting a project with its tasks, etc.) ask one short confirmation question first and wait for a clear yes. Single, easily-reversible changes need no confirmation.`;
+}
 
 const TOOLS = [
   {
@@ -56,6 +81,24 @@ const TOOLS = [
         show_on_calendar: { type: "boolean" },
       },
       required: ["name"],
+    },
+  },
+  {
+    name: "update_reminder",
+    description: "Edit an existing reminder/task (change its name, date, time, recurrence, project, etc). Get the id from list_items first. Only pass the fields you want to change.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        name: { type: "string" },
+        date: { type: "string", description: "Due date YYYY-MM-DD" },
+        time: { type: "string", description: "HH:MM" },
+        description: { type: "string" },
+        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
+        project_id: { type: "string" },
+        show_on_calendar: { type: "boolean" },
+      },
+      required: ["id"],
     },
   },
   { name: "complete_reminder", description: "Mark a reminder/task complete", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
@@ -153,6 +196,11 @@ async function executeTool(name, input) {
       case "add_reminder":
         await newReminder({ name: input.name, date: input.date || null, time: input.time || null, description: input.description || null, recurrence: input.recurrence || "none", project_id: input.project_id || null, show_on_calendar: input.show_on_calendar });
         return { success: true };
+      case "update_reminder": {
+        const { id, ...fields } = input;
+        await updateReminder(id, fields);
+        return { success: true };
+      }
       case "complete_reminder": await completeReminder(input.id); return { success: true };
       case "delete_reminder": await deleteReminder(input.id); return { success: true };
       case "add_event":
@@ -163,13 +211,13 @@ async function executeTool(name, input) {
       case "update_project": { const u = {}; if (input.name != null) u.name = input.name; if (input.description != null) u.description = input.description; if (input.color != null) u.color = input.color; await updateProject(input.id, u); return { success: true }; }
       case "delete_project": await deleteProject(input.id); return { success: true };
       case "add_event_type": { const e = await newEventType({ name: input.name, color: input.color || "#22d3ee", auto_tasks: input.auto_tasks || [] }); return { success: true, id: e?.id }; }
-      case "add_journal_entry": await newJournalEntry({ title: input.title, entry: input.entry, date: input.date || TODAY }); return { success: true };
+      case "add_journal_entry": await newJournalEntry({ title: input.title, entry: input.entry, date: input.date || today() }); return { success: true };
       case "add_initiative": await newInitiative({ project_id: input.project_id || null, name: input.name, description: input.description || "", recurrence: input.recurrence || "weekly" }); return { success: true };
       case "add_transaction": await newTransaction({ description: input.description, amount: input.amount, type: input.type, category: input.category, date: input.date, notes: input.notes || "" }); return { success: true };
       case "delete_transaction": await deleteTransaction(input.id); return { success: true };
-      case "add_income_source": await addIncomeSource({ name: input.name, amount: input.amount, frequency: "monthly", startDate: input.startDate || TODAY, endDate: input.endDate || null, notes: input.notes || "" }); return { success: true };
+      case "add_income_source": await addIncomeSource({ name: input.name, amount: input.amount, frequency: "monthly", startDate: input.startDate || today(), endDate: input.endDate || null, notes: input.notes || "" }); return { success: true };
       case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
-      case "add_recurring_bill": await addRecurringBill({ name: input.name, amount: input.amount, category: input.category, startDate: input.startDate || TODAY, dueDay: input.dueDay ?? null, notes: input.notes || "" }); return { success: true };
+      case "add_recurring_bill": await addRecurringBill({ name: input.name, amount: input.amount, category: input.category, startDate: input.startDate || today(), dueDay: input.dueDay ?? null, notes: input.notes || "" }); return { success: true };
       case "search_hikers": { const results = await loadMembers(input.query); return { results: results.slice(0, 10).map((m) => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) }; }
       case "delete_hiker": await deleteMember(input.id); return { success: true, deleted: input.name };
       case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
@@ -180,11 +228,30 @@ async function executeTool(name, input) {
   }
 }
 
+// Chat history survives page refreshes / closing the panel for up to an hour.
+const CHAT_STORE_KEY = "frodo_chat_session";
+const CHAT_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function loadSavedChat() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORE_KEY);
+    if (!raw) return { displayMsgs: [], apiHistory: [] };
+    const saved = JSON.parse(raw);
+    if (!saved.savedAt || Date.now() - saved.savedAt > CHAT_TTL_MS) {
+      localStorage.removeItem(CHAT_STORE_KEY);
+      return { displayMsgs: [], apiHistory: [] };
+    }
+    return { displayMsgs: saved.displayMsgs || [], apiHistory: saved.apiHistory || [] };
+  } catch {
+    return { displayMsgs: [], apiHistory: [] };
+  }
+}
+
 export default function ChatBot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [displayMsgs, setDisplayMsgs] = useState([]);
-  const [apiHistory, setApiHistory] = useState([]);
+  const [displayMsgs, setDisplayMsgs] = useState(() => loadSavedChat().displayMsgs);
+  const [apiHistory, setApiHistory] = useState(() => loadSavedChat().apiHistory);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -192,6 +259,17 @@ export default function ChatBot() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
   useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
+
+  // Persist the conversation (with a timestamp for the 1-hour TTL) on every change.
+  useEffect(() => {
+    try {
+      if (displayMsgs.length === 0 && apiHistory.length === 0) {
+        localStorage.removeItem(CHAT_STORE_KEY);
+      } else {
+        localStorage.setItem(CHAT_STORE_KEY, JSON.stringify({ savedAt: Date.now(), displayMsgs, apiHistory }));
+      }
+    } catch { /* storage full or unavailable — non-fatal */ }
+  }, [displayMsgs, apiHistory]);
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -211,7 +289,7 @@ export default function ChatBot() {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2048, system: SYSTEM, tools: TOOLS, messages: msgs }),
+          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2048, system: buildSystemPrompt(), tools: TOOLS, messages: msgs }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);

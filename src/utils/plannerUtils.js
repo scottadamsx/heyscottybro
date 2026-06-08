@@ -25,7 +25,11 @@ export function getWeekRange(today = new Date()) {
 export function formatDisplayDate(isoDate) {
   if (!isoDate) return "";
   try {
-    return new Date(isoDate).toLocaleDateString(undefined, {
+    // Parse "YYYY-MM-DD" as a LOCAL date. `new Date("YYYY-MM-DD")` parses as
+    // UTC midnight, which renders as the previous day in negative-offset
+    // timezones — use the local-safe parser to keep the calendar day correct.
+    const local = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? parseDate(isoDate) : new Date(isoDate);
+    return local.toLocaleDateString(undefined, {
       weekday: "long", year: "numeric", month: "long", day: "numeric"
     });
   } catch {

@@ -6,6 +6,20 @@ import ChatBot from "../../components/ChatBot";
 import AdminSubSidebar from "../../components/AdminSubSidebar";
 import PageTransition from "../../components/motion/PageTransition";
 
+// The real React logo — an inline SVG so it can spin and inherit colour.
+function ReactLogo({ className }) {
+  return (
+    <svg className={className} viewBox="-11.5 -10.23174 23 20.46348" aria-hidden="true">
+      <circle cx="0" cy="0" r="2.05" fill="currentColor" />
+      <g fill="none" stroke="currentColor" strokeWidth="1">
+        <ellipse rx="11" ry="4.2" />
+        <ellipse rx="11" ry="4.2" transform="rotate(60)" />
+        <ellipse rx="11" ry="4.2" transform="rotate(120)" />
+      </g>
+    </svg>
+  );
+}
+
 const NAV_ITEMS = [
   { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
   { to: "/admin/reminders", icon: "fa-list-check", label: "Tasks" },
@@ -181,27 +195,39 @@ export default function AdminLayout() {
 
       <ChatBot />
 
-      {/* Mobile menu — floating button (bottom-left), opposite the chat button */}
-      <button className="admin-mobile-fab" onClick={() => setMobileMenuOpen((o) => !o)} aria-label="Menu">
-        <i className={`fa-solid ${mobileMenuOpen ? "fa-xmark" : "fa-bars"}`} />
+      {/* Mobile menu — floating React-logo button (bottom-left), opposite the chat button */}
+      <button
+        className={`admin-mobile-fab${mobileMenuOpen ? " open" : ""}`}
+        onClick={() => setMobileMenuOpen((o) => !o)}
+        aria-label="Menu"
+      >
+        {mobileMenuOpen
+          ? <i className="fa-solid fa-xmark" />
+          : <ReactLogo className="admin-fab-react" />}
       </button>
       {mobileMenuOpen && (
         <>
           <div className="admin-pop-backdrop" onClick={() => setMobileMenuOpen(false)} />
-          <div className="admin-mobile-sheet">
+          <div className="admin-mobile-sheet admin-rolodex">
             <div className="admin-sub-label">Menu</div>
-            {NAV_ITEMS.map((item) => (
-              <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)}>
+            {NAV_ITEMS.map((item, i) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={popClass}
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ "--roll": i }}
+              >
                 <i className={`fa-solid ${item.icon}`} />
                 <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
               </NavLink>
             ))}
             <div className="admin-pop-divider" />
-            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)}>
+            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": NAV_ITEMS.length }}>
               <i className="fa-solid fa-globe" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
             </NavLink>
-            <button className="admin-sub-link admin-side-logout" onClick={handleLogout}>
+            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": NAV_ITEMS.length + 1 }}>
               <i className="fa-solid fa-right-from-bracket" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
             </button>
