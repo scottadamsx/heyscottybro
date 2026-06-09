@@ -1,88 +1,90 @@
 import { useState, useEffect, useMemo } from "react";
 
-const STORAGE_KEY = "weed_tracker_v1";
+const STORAGE_KEY = "weed_tracker_v3";
+const DAY = 86400000;
 
-const PROFILES = [
-  { id: "scott", name: "Scott", color: "#4f7cff", initial: "S" },
-  { id: "maria", name: "Maria", color: "#f472b6", initial: "M" },
-];
+// Scotty gram presets
+const GRAM_PRESETS = [0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5];
 
-// 33-day plan: 4 reduction weeks + 5-day reset
-const PLAN = [
-  {
-    phase: 0,
-    label: "Week 1 — Baseline",
-    duration: 7,
-    startDay: 0,
-    dailyGrams: 1.5,
-    smokeDays: 7,
-    desc: "Track your current use together. 1.5g shared per session, every day.",
-  },
-  {
-    phase: 1,
-    label: "Week 2 — Pull Back",
-    duration: 7,
-    startDay: 7,
-    dailyGrams: 1.0,
-    smokeDays: 5,
-    desc: "Drop to 5 days this week. Share a gram each time you smoke.",
-  },
-  {
-    phase: 2,
-    label: "Week 3 — Cutting Down",
-    duration: 7,
-    startDay: 14,
-    dailyGrams: 0.75,
-    smokeDays: 4,
-    desc: "4 smoking days max this week. ¾g shared per session.",
-  },
-  {
-    phase: 3,
-    label: "Week 4 — Goal Pace",
-    duration: 7,
-    startDay: 21,
-    dailyGrams: 0.5,
-    smokeDays: 3,
-    desc: "3 days this week — this is your target! ½g shared per session.",
-  },
-  {
-    phase: 4,
-    label: "Reset — 5 Days Clean",
-    duration: 5,
-    startDay: 28,
-    dailyGrams: 0,
-    smokeDays: 0,
-    desc: "No weed for 5 days straight. Clears tolerance and breaks the habit loop.",
-  },
-];
+// Taper schedule: every N days reduce by amount
+// Scott: every 3 days drop 0.2g. Maria: every 3 days drop 1 hit/day
+const SCOTT_TAPER_INTERVAL = 3;  // days
+const SCOTT_TAPER_STEP = 0.2;    // grams
+const MARIA_TAPER_INTERVAL = 3;  // days
+const MARIA_TAPER_STEP = 1;      // hits/day
 
-const TOTAL_PLAN_DAYS = 33;
-const GRAM_PRESETS = [0.1, 0.2, 0.25, 0.3, 0.5, 0.75, 1.0];
+// ── Context classifier ────────────────────────────────────
+const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
+const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays"];
+const TOPICS = { gardening: "Gardening", garden: "Gardening", work: "Work", school: "School", music: "Music", food: "Food", family: "Family", health: "Health", weed: "Cannabis", pen: "Cannabis", smoke: "Cannabis", joint: "Cannabis", birthday: "Date", anniversary: "Date" };
 
-function toDateStr(d) {
-  return d.toISOString().slice(0, 10);
+function classify(raw) {
+  const t = raw.trim();
+  if (!t) return { kind: "idle" };
+  const lower = t.toLowerCase();
+  let why = "", keep = false;
+  const hitTrig = TRIGGERS.find(k => lower.startsWith(k) || lower.includes(` ${k} `) || lower.includes(`${k} `));
+  if (hitTrig) { keep = true; why = `you said "${hitTrig}"`; }
+  if (!keep) {
+    const fw = FACTWORDS.find(w => lower.includes(w));
+    if (fw) { keep = true; why = `reads like a fact ("${fw}")`; }
+  }
+  let fact = t.replace(/^(please\s+)?(remember(\s+that)?|note(\s+that)?|don'?t forget(\s+that)?|keep in mind(\s+that)?|fyi[\s,:-]*|important[\s,:-]*|for the record[\s,:-]*)\s*/i, "").trim();
+  if (!fact) fact = t;
+  fact = fact.charAt(0).toUpperCase() + fact.slice(1);
+  const tags = [];
+  ["scott", "maria"].forEach(n => {
+    if (lower.includes(n)) { const T = n === "scott" ? "Scott" : "Maria"; if (!tags.includes(T)) tags.push(T); }
+  });
+  (t.match(/(?<!^)(?<![.!?]\s)\b[A-Z][a-z]{2,}\b/g) || []).forEach(c => {
+    if (!tags.includes(c) && !["Remember", "Note"].includes(c)) tags.push(c);
+  });
+  Object.keys(TOPICS).forEach(k => {
+    if (lower.includes(k)) { const T = TOPICS[k]; if (!tags.includes(T)) tags.push(T); }
+  });
+  return { kind: keep ? "keep" : "maybe", why, fact, tags: tags.slice(0, 6) };
 }
 
-function addDays(dateStr, n) {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
-
-function daysBetween(a, b) {
-  const da = new Date(a + "T12:00:00");
-  const db = new Date(b + "T12:00:00");
-  return Math.round((db - da) / 86400000);
+// ── State ─────────────────────────────────────────────────
+function freshState() {
+  return {
+    activeProfile: "scott",
+    activeTab: "tracker",
+    scott: {
+      dailyCapG: 1.5,
+      weeklyStepDown: 0.25,
+      taperEnabled: true,
+      taperStart: null, // timestamp when taper began
+      logs: [], // { id, ts, grams }
+    },
+    maria: {
+      cartridgeMg: 1000,
+      mgPerSec: 1.5,
+      hitSec: 6,
+      daysTarget: 14,
+      hitsPerDayCap: null, // null = auto from daysTarget
+      taperEnabled: true,
+      taperStart: null,
+      penStart: Date.now(),
+      logs: [], // { id, ts, sec, mg }
+    },
+    context: [],
+  };
 }
 
 function loadData() {
   try {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (d && Array.isArray(d.logs)) return d;
-  } catch {
-    /* ignore */
-  }
-  return { startDate: null, logs: [] };
+    if (d) {
+      const fresh = freshState();
+      return {
+        ...fresh, ...d,
+        scott: { ...fresh.scott, ...(d.scott || {}) },
+        maria: { ...fresh.maria, ...(d.maria || {}) },
+      };
+    }
+  } catch { /* ignore */ }
+  return freshState();
 }
 
 function genId() {
@@ -90,451 +92,628 @@ function genId() {
   return `w${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
-export default function WeedTrackerPage() {
-  const [data, setData] = useState(loadData);
-  const [logModal, setLogModal] = useState(null); // { profileId }
-  const [selectedGrams, setSelectedGrams] = useState(null);
-  const [customGrams, setCustomGrams] = useState("");
+function toDateStr(ts) {
+  return new Date(ts).toLocaleDateString("en-CA");
+}
 
-  const today = toDateStr(new Date());
+function today() { return toDateStr(Date.now()); }
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return "just now";
+  if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
+  const dk = toDateStr(ts);
+  if (dk === today()) return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (dk === toDateStr(Date.now() - DAY)) return "yesterday";
+  return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
+}
 
-  const save = (fn) =>
-    setData((d) => {
-      const next = { ...d, logs: [...d.logs] };
-      fn(next);
-      return next;
-    });
+// Days elapsed since taperStart (or 0 if not started)
+function taperDays(taperStart) {
+  if (!taperStart) return 0;
+  return Math.floor((Date.now() - taperStart) / DAY);
+}
 
-  const startPlan = () => save((d) => { d.startDate = today; });
+// ── Scott taper cap calculation ────────────────────────────
+// Reduces by SCOTT_TAPER_STEP every SCOTT_TAPER_INTERVAL days
+function scottTaperedCap(scott) {
+  if (!scott.taperEnabled || !scott.taperStart) return scott.dailyCapG;
+  const intervals = Math.floor(taperDays(scott.taperStart) / SCOTT_TAPER_INTERVAL);
+  return Math.max(0.1, +(scott.dailyCapG - intervals * SCOTT_TAPER_STEP).toFixed(2));
+}
 
-  const resetPlan = () => {
-    if (!confirm("Reset the entire plan? This clears all logs.")) return;
-    setData({ startDate: null, logs: [] });
-  };
+// ── Maria taper hits/day calculation ──────────────────────
+function mariaTaperedHitsPerDay(maria, baseHitsPerDay) {
+  if (!maria.taperEnabled || !maria.taperStart) return baseHitsPerDay;
+  const intervals = Math.floor(taperDays(maria.taperStart) / MARIA_TAPER_INTERVAL);
+  return Math.max(1, baseHitsPerDay - intervals * MARIA_TAPER_STEP);
+}
 
-  const { startDate, logs } = data;
+// ── Scotty View ───────────────────────────────────────────
+function ScottyView({ state, onUpdate }) {
+  const [logModal, setLogModal] = useState(false);
+  const [selectedG, setSelectedG] = useState(null);
+  const [customG, setCustomG] = useState("");
 
-  // How many full days since plan started (0 = first day)
-  const planDay = startDate ? daysBetween(startDate, today) : null;
+  const s = state.scott;
+  const effectiveCap = scottTaperedCap(s);
+  const daysElapsed = taperDays(s.taperStart);
+  const nextReduction = s.taperEnabled && s.taperStart
+    ? SCOTT_TAPER_INTERVAL - (daysElapsed % SCOTT_TAPER_INTERVAL)
+    : null;
 
-  const currentPhase = useMemo(() => {
-    if (planDay === null || planDay < 0) return null;
-    for (let i = PLAN.length - 1; i >= 0; i--) {
-      if (planDay >= PLAN[i].startDay) return PLAN[i];
-    }
-    return null;
-  }, [planDay]);
+  const todayLogs = useMemo(() => s.logs.filter(l => toDateStr(l.ts) === today()), [s.logs]);
+  const todayTotal = useMemo(() => todayLogs.reduce((a, l) => a + l.grams, 0), [todayLogs]);
+  const weekLogs = useMemo(() => {
+    const cut = Date.now() - 7 * DAY;
+    return s.logs.filter(l => l.ts >= cut);
+  }, [s.logs]);
+  const weekTotal = weekLogs.reduce((a, l) => a + l.grams, 0);
 
-  const planComplete = planDay !== null && planDay >= TOTAL_PLAN_DAYS;
-
-  // Today's logs + total
-  const todayLogs = useMemo(() => logs.filter((l) => l.date === today), [logs, today]);
-  const todayTotal = useMemo(() => todayLogs.reduce((s, l) => s + l.grams, 0), [todayLogs]);
-
-  // This week's unique smoking days
-  const weekSmokeDays = useMemo(() => {
-    if (!startDate || !currentPhase) return 0;
-    const weekStart = addDays(startDate, currentPhase.startDay);
-    const weekEnd = addDays(weekStart, currentPhase.duration);
-    const days = new Set(logs.filter((l) => l.date >= weekStart && l.date < weekEnd).map((l) => l.date));
-    return days.size;
-  }, [logs, startDate, currentPhase]);
-
-  const profileTodayGrams = (profileId) =>
-    todayLogs.filter((l) => l.profile === profileId).reduce((s, l) => s + l.grams, 0);
-
-  const recentLogs = useMemo(
-    () => [...logs].sort((a, b) => b.at - a.at).slice(0, 25),
-    [logs]
-  );
+  const progressPct = effectiveCap > 0 ? Math.min(100, (todayTotal / effectiveCap) * 100) : 0;
+  const remaining = Math.max(0, effectiveCap - todayTotal);
+  const isOver = todayTotal > effectiveCap;
 
   const doLog = () => {
-    const grams =
-      selectedGrams !== null ? selectedGrams : parseFloat(customGrams);
-    if (!grams || grams <= 0 || !logModal) return;
-    save((d) => {
-      d.logs.push({
-        id: genId(),
-        profile: logModal.profileId,
-        date: today,
-        grams,
-        at: Date.now(),
-      });
-    });
-    setLogModal(null);
-    setSelectedGrams(null);
-    setCustomGrams("");
+    const g = selectedG !== null ? selectedG : parseFloat(customG);
+    if (!g || g <= 0) return;
+    onUpdate(d => { d.scott.logs.push({ id: genId(), ts: Date.now(), grams: g }); });
+    setLogModal(false);
+    setSelectedG(null);
+    setCustomG("");
   };
 
-  const deleteLog = (id) => save((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
+  const startTaper = () => {
+    onUpdate(d => { d.scott.taperStart = Date.now(); });
+  };
 
-  const todaySmoked = todayLogs.length > 0;
-  const daysAllowed = currentPhase?.smokeDays ?? 0;
-  const canSmokeToday =
-    currentPhase &&
-    currentPhase.smokeDays > 0 &&
-    (todaySmoked || weekSmokeDays < daysAllowed);
-  const isResetPhase = currentPhase?.phase === 4;
-  const dailyLimit = currentPhase?.dailyGrams ?? 0;
-  const progressPct = dailyLimit > 0 ? Math.min((todayTotal / dailyLimit) * 100, 100) : 0;
-  const planProgressPct =
-    planDay !== null ? Math.min((Math.max(planDay, 0) / TOTAL_PLAN_DAYS) * 100, 100) : 0;
-
-  // Week dots for current phase
-  const weekDots = useMemo(() => {
-    if (!startDate || !currentPhase) return [];
-    const weekStart = addDays(startDate, currentPhase.startDay);
-    return Array.from({ length: currentPhase.duration }, (_, i) => {
-      const ds = addDays(weekStart, i);
-      return {
-        date: ds,
-        smoked: logs.some((l) => l.date === ds),
-        isToday: ds === today,
-        isFuture: ds > today,
-      };
-    });
-  }, [startDate, currentPhase, logs, today]);
-
-  // ── Setup / completion screen ────────────────────────────
-  if (!startDate || planComplete) {
-    return (
-      <div className="module-page">
-        <div className="module-header">
-          <h1>🌿 Smoke Tracker</h1>
-        </div>
-        {planComplete ? (
-          <div className="wt-setup-card">
-            <div className="wt-setup-icon">🎉</div>
-            <h2>Plan Complete!</h2>
-            <p>
-              You finished the 33-day reduction plan. Tolerance is reset — you&apos;re at
-              the target pace of 3&times;/week, ½g shared.
-            </p>
-            <button className="btn" onClick={resetPlan}>
-              Start a New Plan
-            </button>
-          </div>
-        ) : (
-          <div className="wt-setup-card">
-            <div className="wt-setup-icon">🌿</div>
-            <h2>Scott &amp; Maria&apos;s Reduction Plan</h2>
-            <p>
-              33 days to go from daily to 3&times;/week — then a full 5-day tolerance
-              reset. Track who smoked what and stay on pace together.
-            </p>
-            <div className="wt-plan-preview">
-              {PLAN.map((p) => (
-                <div key={p.phase} className="wt-plan-row">
-                  <div className="wt-plan-week">{p.label}</div>
-                  <div className="wt-plan-detail">
-                    {p.smokeDays === 0
-                      ? "0 days — full reset"
-                      : `${p.smokeDays} day${p.smokeDays > 1 ? "s" : ""}/wk · ${p.dailyGrams}g shared per session`}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="btn" onClick={startPlan}>
-              Start Plan Today
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Active plan screen ───────────────────────────────────
   return (
-    <div className="module-page">
-      <div className="module-header">
-        <h1>🌿 Smoke Tracker</h1>
-        <button className="btn-sm btn-secondary-sm" onClick={resetPlan}>
-          Reset Plan
-        </button>
-      </div>
-
-      {/* Overall plan progress */}
-      <div className="wt-plan-bar">
-        <div className="wt-plan-bar-header">
-          <span className="wt-phase-name">
-            {currentPhase ? currentPhase.label : "Plan Complete"}
-          </span>
-          <span className="wt-plan-day">
-            Day {Math.max(planDay + 1, 1)} / {TOTAL_PLAN_DAYS}
-          </span>
-        </div>
-        <div className="wt-progress-track">
-          <div
-            className="wt-progress-fill wt-plan-fill"
-            style={{ width: `${planProgressPct}%` }}
-          />
-          {PLAN.map((p) => (
-            <div
-              key={p.phase}
-              className={`wt-phase-marker ${planDay >= p.startDay ? "passed" : ""}`}
-              style={{ left: `${(p.startDay / TOTAL_PLAN_DAYS) * 100}%` }}
-              title={p.label}
-            />
-          ))}
-        </div>
-        <div className="wt-phase-labels">
-          {PLAN.map((p) => (
-            <span
-              key={p.phase}
-              style={{ left: `${(p.startDay / TOTAL_PLAN_DAYS) * 100}%` }}
-            >
-              {p.phase < 4 ? `W${p.phase + 1}` : "R"}
-            </span>
-          ))}
-        </div>
-        {currentPhase && (
-          <p className="wt-phase-desc">{currentPhase.desc}</p>
-        )}
-      </div>
-
-      {isResetPhase ? (
-        /* ── Reset phase ─────────────────────── */
-        <div className="wt-reset-card">
-          <div className="wt-reset-icon">🚫</div>
-          <h2>Reset Week</h2>
-          <p>{currentPhase.desc}</p>
-          <div className="wt-reset-days">
-            {Array.from({ length: 5 }, (_, i) => {
-              const ds = addDays(startDate, 28 + i);
-              const isToday = ds === today;
-              const isPast = ds < today;
-              return (
-                <div
-                  key={i}
-                  className={`wt-reset-day${isToday ? " today" : ""}${isPast ? " clean" : ""}${ds > today ? " future" : ""}`}
-                >
-                  <span className="wt-rd-num">{i + 1}</span>
-                  <span className="wt-rd-label">
-                    {isPast ? "✓" : isToday ? "Today" : ""}
-                  </span>
-                </div>
-              );
-            })}
+    <>
+      {/* Today */}
+      <div className="wt-card">
+        <div className="wt-card-head">
+          <div>
+            <div className="wt-card-title">Today</div>
+            <div className="wt-card-sub">Track grams — stay under your daily cap.</div>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* ── Today's status ────────────────────── */}
-          <div className="wt-today-card">
-            <div className="wt-today-header">
-              <div>
-                <div className="wt-today-label">Today&apos;s Limit</div>
-                <div className="wt-today-limit">{dailyLimit}g shared</div>
-              </div>
-              <div className="wt-today-stats">
-                <div className="wt-stat">
-                  <div className="wt-stat-val">{todayTotal.toFixed(2)}g</div>
-                  <div className="wt-stat-lbl">smoked</div>
-                </div>
-                <div className="wt-stat">
-                  <div
-                    className="wt-stat-val"
-                    style={{
-                      color:
-                        dailyLimit - todayTotal < 0
-                          ? "var(--red, #f87171)"
-                          : undefined,
-                    }}
-                  >
-                    {Math.max(0, dailyLimit - todayTotal).toFixed(2)}g
-                  </div>
-                  <div className="wt-stat-lbl">left</div>
-                </div>
-                <div className="wt-stat">
-                  <div className="wt-stat-val">
-                    {Math.max(0, daysAllowed - weekSmokeDays + (todaySmoked ? 1 : 0))}
-                  </div>
-                  <div className="wt-stat-lbl">days left</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Daily progress bar */}
-            <div className="wt-progress-track" style={{ marginTop: "0.875rem" }}>
-              <div
-                className={`wt-progress-fill${progressPct >= 100 ? " wt-fill-over" : ""}`}
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-            <div className="wt-progress-labels">
-              <span>0g</span>
-              <span
-                style={{
-                  color: progressPct >= 100 ? "var(--red, #f87171)" : undefined,
-                }}
-              >
-                {todayTotal.toFixed(2)}g / {dailyLimit}g
-              </span>
-            </div>
-
-            {/* Week smoking days */}
-            <div className="wt-week-status">
-              <div className="wt-week-label">
-                This week:{" "}
-                <b>
-                  {weekSmokeDays} of {daysAllowed}
-                </b>{" "}
-                allowed smoking days used
-              </div>
-              <div className="wt-week-dots">
-                {weekDots.map((dot, i) => (
-                  <div
-                    key={i}
-                    className={`wt-dot${dot.smoked ? " smoked" : ""}${dot.isToday ? " today" : ""}${dot.isFuture ? " future" : ""}`}
-                    title={dot.date}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Profile cards ─────────────────────── */}
-          <div className="wt-profiles">
-            {PROFILES.map((p) => {
-              const grams = profileTodayGrams(p.id);
-              return (
-                <div
-                  key={p.id}
-                  className="wt-profile-card"
-                  style={{ "--pc": p.color }}
-                >
-                  <div className="wt-avatar">{p.initial}</div>
-                  <div className="wt-profile-info">
-                    <div className="wt-profile-name">{p.name}</div>
-                    <div className="wt-profile-sub">
-                      {grams > 0 ? `${grams.toFixed(2)}g today` : "Nothing yet today"}
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn-sm"
-                    onClick={() => {
-                      setLogModal({ profileId: p.id });
-                      setSelectedGrams(null);
-                      setCustomGrams("");
-                    }}
-                    disabled={!canSmokeToday}
-                    title={!canSmokeToday ? "Rest day — no more days allowed this week" : `Log session for ${p.name}`}
-                  >
-                    <i className="fa-solid fa-plus" /> Log
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {!canSmokeToday && (
-            <div className="wt-rest-banner">
-              <i className="fa-solid fa-moon" /> Rest day — you&apos;ve used all{" "}
-              {daysAllowed} smoking days for this week.
+          {s.taperEnabled && s.taperStart && (
+            <div className="wt-taper-badge">
+              Day {daysElapsed + 1}
+              {nextReduction === 1 && <span className="wt-taper-soon">↓ tomorrow</span>}
             </div>
           )}
-        </>
-      )}
-
-      {/* ── Recent sessions ───────────────────────── */}
-      {recentLogs.length > 0 && (
-        <div className="wt-history">
-          <div className="section-label-sm">Recent Sessions</div>
-          {recentLogs.map((l) => {
-            const profile = PROFILES.find((p) => p.id === l.profile);
-            return (
-              <div
-                key={l.id}
-                className="wt-log-row"
-                style={{ "--pc": profile?.color }}
-              >
-                <div className="wt-log-avatar">{profile?.initial}</div>
-                <div className="wt-log-info">
-                  <span className="wt-log-name">{profile?.name}</span>
-                  <span className="wt-log-date">
-                    {l.date === today ? "Today" : l.date}
-                  </span>
-                </div>
-                <div className="wt-log-grams">{l.grams}g</div>
-                <button
-                  className="icon-x sm"
-                  onClick={() => deleteLog(l.id)}
-                  aria-label="Remove"
-                >
-                  <i className="fa-solid fa-xmark" />
-                </button>
-              </div>
-            );
-          })}
         </div>
-      )}
+        <div className="wt-stats-row">
+          <div className="wt-stat">
+            <div className="wt-stat-val">{todayTotal.toFixed(2)}g</div>
+            <div className="wt-stat-lbl">smoked today</div>
+          </div>
+          <div className="wt-stat">
+            <div className="wt-stat-val" style={{ color: isOver ? "var(--red,#f87171)" : "var(--accent,#4ade80)" }}>
+              {remaining.toFixed(2)}g
+            </div>
+            <div className="wt-stat-lbl">remaining</div>
+          </div>
+          <div className="wt-stat">
+            <div className="wt-stat-val">{weekTotal.toFixed(2)}g</div>
+            <div className="wt-stat-lbl">this week</div>
+          </div>
+        </div>
+        <div className="wt-bar-wrap">
+          <div className="wt-bar-track">
+            <div className="wt-bar-fill" style={{
+              width: `${progressPct}%`,
+              background: isOver ? "linear-gradient(90deg,#f59e0b,#f87171)" : undefined
+            }} />
+          </div>
+          <div className="wt-bar-labels">
+            <span>{todayTotal.toFixed(2)}g of {effectiveCap.toFixed(2)}g cap</span>
+            <span style={{ color: isOver ? "#f87171" : todayTotal >= effectiveCap ? "#f59e0b" : "#4ade80" }}>
+              {isOver ? "over cap" : todayTotal >= effectiveCap ? "at cap" : "under cap"}
+            </span>
+          </div>
+        </div>
+      </div>
 
-      {/* ── Log session modal ─────────────────────── */}
+      {/* Log */}
+      <div className="wt-card">
+        <button className="wt-logbtn" onClick={() => setLogModal(true)}>
+          Log a session
+          <small>tap to record how much you smoked</small>
+        </button>
+        <button className="wt-undo-btn" onClick={() => {
+          if (s.logs.length) onUpdate(d => { d.scott.logs.pop(); });
+        }}>Undo last</button>
+      </div>
+
+      {/* Taper plan */}
+      <div className="wt-card">
+        <div className="wt-card-title">Taper plan</div>
+        <div className="wt-card-sub">
+          Auto-reduces your cap by {SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days.
+        </div>
+
+        <div className="wt-ctrl">
+          <div>
+            <div className="wt-ctrl-label">Starting daily cap</div>
+            <div className="wt-ctrl-sub">grams per day</div>
+          </div>
+          <div className="wt-stepper">
+            <button onClick={() => onUpdate(d => { d.scott.dailyCapG = Math.max(0.25, +(d.scott.dailyCapG - 0.25).toFixed(2)); })}>−</button>
+            <span>{s.dailyCapG}g</span>
+            <button onClick={() => onUpdate(d => { d.scott.dailyCapG = +(d.scott.dailyCapG + 0.25).toFixed(2); })}>+</button>
+          </div>
+        </div>
+
+        <div className="wt-ctrl">
+          <div>
+            <div className="wt-ctrl-label">Auto-taper</div>
+            <div className="wt-ctrl-sub">−{SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days</div>
+          </div>
+          <button
+            className={`wt-toggle${s.taperEnabled ? " on" : ""}`}
+            onClick={() => onUpdate(d => { d.scott.taperEnabled = !d.scott.taperEnabled; })}
+          >
+            {s.taperEnabled ? "On" : "Off"}
+          </button>
+        </div>
+
+        {s.taperEnabled && !s.taperStart && (
+          <button className="btn" style={{ marginTop: "0.75rem", width: "100%" }} onClick={startTaper}>
+            Start taper from today
+          </button>
+        )}
+
+        {s.taperEnabled && s.taperStart && (
+          <div className="wt-taper-status">
+            <div className="wt-taper-row">
+              <span>Current cap</span>
+              <strong>{effectiveCap.toFixed(2)}g/day</strong>
+            </div>
+            <div className="wt-taper-row">
+              <span>Next reduction</span>
+              <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
+            </div>
+            <div className="wt-taper-row">
+              <span>Goal (in {Math.ceil(s.dailyCapG / SCOTT_TAPER_STEP) * SCOTT_TAPER_INTERVAL}d)</span>
+              <strong>0.1g/day</strong>
+            </div>
+            <button className="wt-ghost-btn" style={{ marginTop: "0.5rem" }}
+              onClick={() => { if (confirm("Reset taper timer?")) onUpdate(d => { d.scott.taperStart = null; }); }}>
+              Reset taper
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* History */}
+      <div className="wt-card">
+        <div className="wt-card-title">History</div>
+        {s.logs.length === 0 ? (
+          <p className="wt-empty">No sessions logged yet.</p>
+        ) : (
+          <ul className="wt-hist">
+            {[...s.logs].reverse().slice(0, 25).map(l => (
+              <li key={l.id} className="wt-hist-item">
+                <span className="wt-hist-ic">🌿</span>
+                <span className="wt-hist-desc">{l.grams}g</span>
+                <span className="wt-hist-time">{timeAgo(l.ts)}</span>
+                <button className="wt-hist-del"
+                  onClick={() => onUpdate(d => { d.scott.logs = d.scott.logs.filter(x => x.id !== l.id); })}>
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Log modal */}
       {logModal && (
         <>
-          <div
-            className="admin-pop-backdrop"
-            onClick={() => setLogModal(null)}
-          />
-          <div className="wt-log-modal">
+          <div className="admin-pop-backdrop" onClick={() => setLogModal(false)} />
+          <div className="wt-modal">
             <div className="wt-modal-header">
-              <div className="wt-modal-title">
-                Log Session —{" "}
-                {PROFILES.find((p) => p.id === logModal.profileId)?.name}
-              </div>
-              <button
-                className="icon-x"
-                onClick={() => setLogModal(null)}
-                aria-label="Close"
-              >
-                <i className="fa-solid fa-xmark" />
-              </button>
+              <span className="wt-modal-title">Log session — Scott</span>
+              <button className="icon-x" onClick={() => setLogModal(false)}><i className="fa-solid fa-xmark" /></button>
             </div>
             <div className="wt-modal-body">
               <div className="wt-gram-grid">
-                {GRAM_PRESETS.map((g) => (
-                  <button
-                    key={g}
-                    className={`wt-gram-btn${selectedGrams === g ? " active" : ""}`}
-                    onClick={() => {
-                      setSelectedGrams(g);
-                      setCustomGrams("");
-                    }}
-                  >
+                {GRAM_PRESETS.map(g => (
+                  <button key={g}
+                    className={`wt-gram-btn${selectedG === g ? " active" : ""}`}
+                    onClick={() => { setSelectedG(g); setCustomG(""); }}>
                     {g}g
                   </button>
                 ))}
               </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                max="5"
-                className="field"
-                placeholder="Custom amount (g)..."
-                value={customGrams}
-                onChange={(e) => {
-                  setCustomGrams(e.target.value);
-                  setSelectedGrams(null);
-                }}
-              />
-              <button
-                className="btn"
-                style={{ width: "100%" }}
-                onClick={doLog}
-                disabled={selectedGrams === null && !customGrams}
-              >
-                <i className="fa-solid fa-leaf" /> Log{" "}
-                {selectedGrams ?? (customGrams || "?")}g for{" "}
-                {PROFILES.find((p) => p.id === logModal.profileId)?.name}
+              <input type="number" step="0.01" min="0.01" max="5" className="field"
+                placeholder="Custom (g)…"
+                value={customG}
+                onChange={e => { setCustomG(e.target.value); setSelectedG(null); }} />
+              <button className="btn" style={{ width: "100%" }} onClick={doLog}
+                disabled={selectedG === null && !customG}>
+                <i className="fa-solid fa-leaf" /> Log {selectedG ?? customG || "?"}g
               </button>
             </div>
           </div>
         </>
+      )}
+    </>
+  );
+}
+
+// ── Maria View ────────────────────────────────────────────
+function MariaView({ state, onUpdate }) {
+  const m = state.maria;
+  const mgPerHit = +(m.mgPerSec * m.hitSec).toFixed(1);
+
+  const usedThisPen = useMemo(
+    () => m.logs.filter(l => l.ts >= m.penStart).reduce((a, l) => a + l.mg, 0),
+    [m.logs, m.penStart]
+  );
+
+  const remain = Math.max(0, m.cartridgeMg - usedThisPen);
+  const pct = Math.max(0, Math.min(100, (remain / m.cartridgeMg) * 100));
+
+  // Base hits/day from cartridge math, then apply taper
+  const baseHitsPerDay = Math.max(1, Math.round((m.cartridgeMg / mgPerHit) / m.daysTarget));
+  const effectiveHitsPerDay = mariaTaperedHitsPerDay(m, baseHitsPerDay);
+
+  const daysElapsed = taperDays(m.taperStart);
+  const nextReduction = m.taperEnabled && m.taperStart
+    ? MARIA_TAPER_INTERVAL - (daysElapsed % MARIA_TAPER_INTERVAL)
+    : null;
+
+  const todayHitLogs = useMemo(() => m.logs.filter(l => toDateStr(l.ts) === today()), [m.logs]);
+  const todayHitCount = todayHitLogs.length;
+  const todayMg = todayHitLogs.reduce((a, l) => a + l.mg, 0);
+  const hitBarPct = Math.min(100, (todayHitCount / effectiveHitsPerDay) * 100);
+  const isOver = todayHitCount > effectiveHitsPerDay;
+
+  // Pace
+  const elapsed = Math.max(0, (Date.now() - m.penStart) / DAY);
+  const idealRemain = m.cartridgeMg * Math.max(0, 1 - elapsed / m.daysTarget);
+  const diff = remain - idealRemain;
+  let paceLabel, paceColor;
+  if (remain <= 0) { paceLabel = "pen empty"; paceColor = "#f87171"; }
+  else if (diff >= m.cartridgeMg * 0.06) { paceLabel = "ahead — nicely paced"; paceColor = "#4ade80"; }
+  else if (diff >= -m.cartridgeMg * 0.06) { paceLabel = "on track"; paceColor = "#4ade80"; }
+  else if (diff >= -m.cartridgeMg * 0.18) { paceLabel = "a bit fast"; paceColor = "#f59e0b"; }
+  else { paceLabel = "burning too fast"; paceColor = "#f87171"; }
+
+  // Projected empty
+  let emptyTxt = "Runs out ~—";
+  const daysUsed = Math.max(0.5, elapsed);
+  const ratePerDay = usedThisPen / daysUsed;
+  if (usedThisPen > 0 && ratePerDay > 0) {
+    const daysLeft = remain / ratePerDay;
+    const when = new Date(Date.now() + daysLeft * DAY);
+    emptyTxt = `At this rate, empties ${when.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} (~${daysLeft.toFixed(1)}d)`;
+  } else if (remain <= 0) {
+    emptyTxt = "Pen is empty — start a fresh one.";
+  }
+
+  const startTaper = () => onUpdate(d => { d.maria.taperStart = Date.now(); });
+
+  return (
+    <>
+      {/* Reservoir */}
+      <div className="wt-card">
+        <div className="wt-card-head">
+          <div>
+            <div className="wt-card-title">The pen</div>
+            <div className="wt-card-sub">{m.cartridgeMg}mg cartridge · making it last {m.daysTarget} days.</div>
+          </div>
+          {m.taperEnabled && m.taperStart && (
+            <div className="wt-taper-badge" style={{ "--tb": "#b68bd6" }}>
+              Day {daysElapsed + 1}
+              {nextReduction === 1 && <span className="wt-taper-soon">↓ tomorrow</span>}
+            </div>
+          )}
+        </div>
+        <div className="wt-reservoir">
+          <div className="wt-tank" style={{ "--tank-color": "#b68bd6", "--tank-glow": "#cda6e8" }}>
+            <div className="wt-tank-pct">{Math.round(pct)}%</div>
+            <div className="wt-tank-ticks">{[0,1,2,3,4].map(i => <span key={i} />)}</div>
+            <div className="wt-tank-fill" style={{ height: `${pct}%` }} />
+          </div>
+          <div className="wt-gauge-info">
+            <div className="wt-stat">
+              <div className="wt-stat-val" style={{ color: "#b68bd6" }}>{Math.round(remain)}mg</div>
+              <div className="wt-stat-lbl">oil left of {m.cartridgeMg}mg</div>
+            </div>
+            <div className="wt-pace-pill" style={{ color: paceColor, borderColor: `${paceColor}66`, background: `${paceColor}14` }}>
+              <span className="wt-pace-dot" style={{ background: paceColor }} />
+              {paceLabel}
+            </div>
+            <div className="wt-empty-txt">{emptyTxt}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's hits */}
+      <div className="wt-card">
+        <div className="wt-card-title">Today&apos;s hits</div>
+        <div className="wt-card-sub">
+          Aim for <strong>{effectiveHitsPerDay}</strong> hits/day
+          {m.taperEnabled && m.taperStart && effectiveHitsPerDay < baseHitsPerDay && (
+            <span className="wt-taper-reduced"> (tapered down from {baseHitsPerDay})</span>
+          )}
+          {" "} to stretch {m.cartridgeMg}mg over {m.daysTarget} days.
+        </div>
+        <div className="wt-bar-wrap">
+          <div className="wt-bar-track">
+            <div className="wt-bar-fill" style={{
+              width: `${hitBarPct}%`,
+              background: isOver
+                ? "linear-gradient(90deg,#f59e0b,#f87171)"
+                : "linear-gradient(90deg,#b68bd6,#cda6e8)"
+            }} />
+          </div>
+          <div className="wt-bar-labels">
+            <span>{todayHitCount} of {effectiveHitsPerDay} hits</span>
+            <span>{Math.round(todayMg)}mg today</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Log */}
+      <div className="wt-card">
+        <button className="wt-logbtn" style={{ "--lb": "#b68bd6", "--lb-glow": "#cda6e8" }}
+          onClick={() => onUpdate(d => { d.maria.logs.push({ id: genId(), ts: Date.now(), sec: m.hitSec, mg: mgPerHit }); })}>
+          Log a hit
+          <small>{m.hitSec}s @ 3.5V · ≈{mgPerHit}mg per hit</small>
+        </button>
+        <button className="wt-undo-btn" onClick={() => {
+          if (m.logs.length) onUpdate(d => { d.maria.logs.pop(); });
+        }}>Undo last</button>
+      </div>
+
+      {/* Taper */}
+      <div className="wt-card">
+        <div className="wt-card-title">Hit taper</div>
+        <div className="wt-card-sub">
+          Auto-reduces daily hit allowance by {MARIA_TAPER_STEP} hit every {MARIA_TAPER_INTERVAL} days.
+        </div>
+        <div className="wt-ctrl">
+          <div>
+            <div className="wt-ctrl-label">Auto-taper</div>
+            <div className="wt-ctrl-sub">−{MARIA_TAPER_STEP} hit every {MARIA_TAPER_INTERVAL} days</div>
+          </div>
+          <button
+            className={`wt-toggle${m.taperEnabled ? " on" : ""}`}
+            style={m.taperEnabled ? { "--tg": "#b68bd6" } : undefined}
+            onClick={() => onUpdate(d => { d.maria.taperEnabled = !d.maria.taperEnabled; })}
+          >
+            {m.taperEnabled ? "On" : "Off"}
+          </button>
+        </div>
+        {m.taperEnabled && !m.taperStart && (
+          <button className="btn" style={{ marginTop: "0.75rem", width: "100%", background: "#b68bd6" }} onClick={startTaper}>
+            Start taper from today
+          </button>
+        )}
+        {m.taperEnabled && m.taperStart && (
+          <div className="wt-taper-status">
+            <div className="wt-taper-row">
+              <span>Current daily limit</span>
+              <strong>{effectiveHitsPerDay} hits</strong>
+            </div>
+            <div className="wt-taper-row">
+              <span>Next reduction</span>
+              <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
+            </div>
+            <button className="wt-ghost-btn" style={{ marginTop: "0.5rem" }}
+              onClick={() => { if (confirm("Reset taper timer?")) onUpdate(d => { d.maria.taperStart = null; }); }}>
+              Reset taper
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Settings */}
+      <div className="wt-card">
+        <div className="wt-card-title">Settings &amp; calibration</div>
+        <div className="wt-card-sub">Nudge these until the gauge matches reality.</div>
+
+        {[
+          { label: "Make it last", sub: "days per cartridge", val: `${m.daysTarget}d`, dec: () => onUpdate(d => { d.maria.daysTarget = Math.max(1, d.maria.daysTarget - 1); }), inc: () => onUpdate(d => { d.maria.daysTarget++; }) },
+          { label: "Average hit length", sub: "seconds", val: `${m.hitSec}s`, dec: () => onUpdate(d => { d.maria.hitSec = Math.max(1, d.maria.hitSec - 1); }), inc: () => onUpdate(d => { d.maria.hitSec++; }) },
+          { label: "mg per second", sub: "at 3.5V — calibration", val: `${m.mgPerSec.toFixed(1)}`, dec: () => onUpdate(d => { d.maria.mgPerSec = Math.max(0.1, +(d.maria.mgPerSec - 0.1).toFixed(1)); }), inc: () => onUpdate(d => { d.maria.mgPerSec = +(d.maria.mgPerSec + 0.1).toFixed(1); }) },
+          { label: "Cartridge size", sub: "milligrams of oil", val: `${m.cartridgeMg}mg`, dec: () => onUpdate(d => { d.maria.cartridgeMg = Math.max(100, d.maria.cartridgeMg - 100); }), inc: () => onUpdate(d => { d.maria.cartridgeMg += 100; }) },
+        ].map(row => (
+          <div key={row.label} className="wt-ctrl">
+            <div><div className="wt-ctrl-label">{row.label}</div><div className="wt-ctrl-sub">{row.sub}</div></div>
+            <div className="wt-stepper">
+              <button onClick={row.dec}>−</button>
+              <span>{row.val}</span>
+              <button onClick={row.inc}>+</button>
+            </div>
+          </div>
+        ))}
+
+        <button className="wt-ghost-btn" style={{ marginTop: "0.875rem" }}
+          onClick={() => { if (confirm("Start a fresh pen? This resets the reservoir.")) onUpdate(d => { d.maria.penStart = Date.now(); }); }}>
+          Start a fresh pen
+        </button>
+      </div>
+
+      {/* History */}
+      <div className="wt-card">
+        <div className="wt-card-title">History</div>
+        {m.logs.length === 0 ? (
+          <p className="wt-empty">No hits logged on this pen yet.</p>
+        ) : (
+          <ul className="wt-hist">
+            {[...m.logs].reverse().slice(0, 25).map(l => (
+              <li key={l.id} className="wt-hist-item">
+                <span className="wt-hist-ic">💨</span>
+                <span className="wt-hist-desc">{l.sec}s hit · {Math.round(l.mg)}mg</span>
+                <span className="wt-hist-time">{timeAgo(l.ts)}</span>
+                <button className="wt-hist-del"
+                  onClick={() => onUpdate(d => { d.maria.logs = d.maria.logs.filter(x => x.id !== l.id); })}>
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── Context View ──────────────────────────────────────────
+function ContextView({ state, onUpdate, activeProfile }) {
+  const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const verdict = useMemo(() => classify(input), [input]);
+
+  const saveCtx = () => {
+    if (!input.trim()) return;
+    const c = classify(input.trim());
+    onUpdate(d => {
+      d.context.push({ id: genId(), ts: Date.now(), by: activeProfile, text: c.fact, tags: c.tags, why: c.why || "saved manually" });
+    });
+    setInput("");
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const items = [...state.context].reverse();
+    return q ? items.filter(i => i.text.toLowerCase().includes(q) || i.tags.join(" ").toLowerCase().includes(q)) : items;
+  }, [state.context, search]);
+
+  const verdictColor = { idle: "var(--text-muted)", keep: "var(--accent,#4ade80)", maybe: "#f59e0b" };
+
+  return (
+    <>
+      <div className="wt-card">
+        <div className="wt-card-title">Add to context</div>
+        <div className="wt-card-sub">Type anything worth remembering — say &ldquo;remember that…&rdquo; to force-save it.</div>
+        <textarea
+          className="wt-ctx-textarea"
+          rows={3}
+          placeholder={`e.g. "remember that ${activeProfile === "scott" ? "Scott" : "Maria"} prefers sativa strains"`}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+        />
+        <div className="wt-verdict" style={{ color: verdictColor[verdict.kind] }}>
+          {verdict.kind === "idle" && "Start typing…"}
+          {verdict.kind === "keep" && <><strong>Worth keeping</strong> — {verdict.why}</>}
+          {verdict.kind === "maybe" && <><strong>Looks like chatter</strong> — save it anyway if it matters</>}
+        </div>
+        {verdict.kind !== "idle" && verdict.fact && (
+          <div className="wt-chips">
+            <span className="wt-chip">will store: &ldquo;{verdict.fact.slice(0, 48)}{verdict.fact.length > 48 ? "…" : ""}&rdquo;</span>
+            {(verdict.tags || []).map(tag => (
+              <span key={tag} className={`wt-chip${["Scott", "Maria"].includes(tag) ? " accent" : ""}`}>#{tag}</span>
+            ))}
+          </div>
+        )}
+        <div className="wt-ctx-actions">
+          <button className="btn" onClick={saveCtx} disabled={verdict.kind === "idle"}>
+            {verdict.kind === "keep" ? "Save to context" : "Save anyway"}
+          </button>
+          <button className="wt-ghost-btn" onClick={() => setInput("")}>Clear</button>
+        </div>
+      </div>
+
+      <div className="wt-card">
+        <div className="wt-card-title">Saved context</div>
+        <div className="wt-card-sub">Facts worth remembering about you both. Shared across profiles.</div>
+        <input className="wt-search" placeholder="Search context…" value={search} onChange={e => setSearch(e.target.value)} />
+        {filtered.length === 0 ? (
+          <p className="wt-empty">{search ? "Nothing matches." : "No context saved yet."}</p>
+        ) : filtered.map(item => (
+          <div key={item.id} className="wt-ctx-item">
+            <div className="wt-ctx-fact">{item.text}</div>
+            {item.tags.length > 0 && (
+              <div className="wt-chips" style={{ marginTop: "0.5rem" }}>
+                {item.tags.map(tag => (
+                  <span key={tag} className={`wt-chip${["Scott", "Maria"].includes(tag) ? " accent" : ""}`}>#{tag}</span>
+                ))}
+              </div>
+            )}
+            <div className="wt-ctx-meta">
+              <span style={{ color: item.by === "scott" ? "#e8915b" : "#b68bd6", display: "flex", alignItems: "center", gap: "5px" }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+                {item.by === "scott" ? "Scott" : "Maria"}
+              </span>
+              <span>{timeAgo(item.ts)}</span>
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.why}</span>
+              <button className="wt-ctx-del"
+                onClick={() => onUpdate(d => { d.context = d.context.filter(x => x.id !== item.id); })}>
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────
+export default function WeedTrackerPage() {
+  const [state, setState] = useState(loadData);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
+
+  const onUpdate = (fn) => {
+    setState(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      fn(next);
+      return next;
+    });
+  };
+
+  const { activeProfile, activeTab } = state;
+
+  return (
+    <div className="module-page">
+      <div className="module-header" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
+        <h1>🌿 Wind Down</h1>
+        <div className="wt-profile-switcher">
+          <button
+            className={`wt-profile-btn scott${activeProfile === "scott" ? " active" : ""}`}
+            onClick={() => onUpdate(d => { d.activeProfile = "scott"; })}
+          >
+            <span className="wt-profile-dot" />
+            Scott
+          </button>
+          <button
+            className={`wt-profile-btn maria${activeProfile === "maria" ? " active" : ""}`}
+            onClick={() => onUpdate(d => { d.activeProfile = "maria"; })}
+          >
+            <span className="wt-profile-dot" />
+            Maria
+          </button>
+        </div>
+      </div>
+
+      <div className="wt-tabs">
+        <button className={activeTab === "tracker" ? "active" : ""}
+          onClick={() => onUpdate(d => { d.activeTab = "tracker"; })}>
+          Tracker
+        </button>
+        <button className={activeTab === "context" ? "active" : ""}
+          onClick={() => onUpdate(d => { d.activeTab = "context"; })}>
+          Context
+        </button>
+      </div>
+
+      {activeTab === "tracker" && activeProfile === "scott" && (
+        <ScottyView state={state} onUpdate={onUpdate} />
+      )}
+      {activeTab === "tracker" && activeProfile === "maria" && (
+        <MariaView state={state} onUpdate={onUpdate} />
+      )}
+      {activeTab === "context" && (
+        <ContextView state={state} onUpdate={onUpdate} activeProfile={activeProfile} />
       )}
     </div>
   );
