@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { to: "/admin/recipes", icon: "fa-utensils", label: "Recipes" },
   { to: "/admin/snippets", icon: "fa-key", label: "Vault" },
   { to: "/admin/documents", icon: "fa-file-lines", label: "Documents" },
+  { to: "/admin/smoke", icon: "fa-leaf", label: "Smoke Tracker" },
 ];
 
 export default function AdminLayout() {
@@ -206,7 +207,7 @@ export default function AdminLayout() {
       >
         {mobileMenuOpen
           ? <i className="fa-solid fa-xmark" />
-          : <ReactLogo className="admin-fab-react" />}
+          : <i className="fa-solid fa-bars" />}
       </button>
       {mobileMenuOpen && (
         <>

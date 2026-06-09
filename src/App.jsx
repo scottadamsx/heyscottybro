@@ -34,6 +34,7 @@ import HikerPage from "./pages/admin/HikerPage.jsx";
 import DatePlannerPage from "./pages/admin/DatePlannerPage.jsx";
 import AccountabilityPage from "./pages/admin/AccountabilityPage.jsx";
 import SnippetsPage from "./pages/admin/SnippetsPage.jsx";
+import WeedTrackerPage from "./pages/admin/WeedTrackerPage.jsx";
 
 export default function App() {
   return (
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="dates" element={<DatePlannerPage />} />
           <Route path="accountability" element={<AccountabilityPage />} />
           <Route path="snippets" element={<SnippetsPage />} />
+          <Route path="smoke" element={<WeedTrackerPage />} />
           <Route path="documents" element={Lazy(<DocumentsPage />)} />
           <Route path="nutrition" element={Lazy(<NutritionPage />)} />
           <Route path="recipes" element={Lazy(<RecipesPage />)} />
