@@ -6,12 +6,11 @@ const DAY = 86400000;
 // Scotty gram presets
 const GRAM_PRESETS = [0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5];
 
-// Taper schedule: every N days reduce by amount
-// Scott: every 3 days drop 0.2g. Maria: every 3 days drop 1 hit/day
-const SCOTT_TAPER_INTERVAL = 3;  // days
-const SCOTT_TAPER_STEP = 0.2;    // grams
-const MARIA_TAPER_INTERVAL = 3;  // days
-const MARIA_TAPER_STEP = 1;      // hits/day
+// Taper schedule
+const SCOTT_TAPER_INTERVAL = 3;
+const SCOTT_TAPER_STEP = 0.2;
+const MARIA_TAPER_INTERVAL = 3;
+const MARIA_TAPER_STEP = 1;
 
 // ── Context classifier ────────────────────────────────────
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
@@ -50,14 +49,16 @@ function freshState() {
   return {
     activeProfile: "scott",
     activeTab: "tracker",
+    // Shared conversion: how many grams equals one pen hit
+    penGramEquiv: 0.1,
     scott: {
-      dailyCapG: 1.5,        // Scott's personal daily cap in grams
+      dailyCapG: 1.5,
       taperEnabled: true,
       taperStart: null,
-      logs: [],              // { id, ts, grams }
+      logs: [],  // { id, ts, type: "joint"|"pen", grams, penHits? }
     },
     maria: {
-      hitsPerDayCap: 8,      // Maria's personal daily hit cap
+      hitsPerDayCap: 8,
       cartridgeMg: 1000,
       mgPerSec: 1.5,
       hitSec: 6,
@@ -65,7 +66,7 @@ function freshState() {
       taperEnabled: true,
       taperStart: null,
       penStart: Date.now(),
-      logs: [],              // { id, ts, sec, mg }
+      logs: [],  // { id, ts, type: "hit"|"joint", hits, mg?, sec?, grams? }
     },
     context: [],
   };
@@ -78,6 +79,7 @@ function loadData() {
       const fresh = freshState();
       return {
         ...fresh, ...d,
+        penGramEquiv: d.penGramEquiv ?? fresh.penGramEquiv,
         scott: { ...fresh.scott, ...(d.scott || {}) },
         maria: { ...fresh.maria, ...(d.maria || {}) },
       };
@@ -91,10 +93,7 @@ function genId() {
   return `w${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
-function toDateStr(ts) {
-  return new Date(ts).toLocaleDateString("en-CA");
-}
-
+function toDateStr(ts) { return new Date(ts).toLocaleDateString("en-CA"); }
 function today() { return toDateStr(Date.now()); }
 
 function timeAgo(ts) {
@@ -107,64 +106,70 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-// Days elapsed since taperStart (or 0 if not started)
 function taperDays(taperStart) {
   if (!taperStart) return 0;
   return Math.floor((Date.now() - taperStart) / DAY);
 }
 
-// ── Scott taper cap calculation ────────────────────────────
-// Reduces by SCOTT_TAPER_STEP every SCOTT_TAPER_INTERVAL days
 function scottTaperedCap(scott) {
   if (!scott.taperEnabled || !scott.taperStart) return scott.dailyCapG;
   const intervals = Math.floor(taperDays(scott.taperStart) / SCOTT_TAPER_INTERVAL);
   return Math.max(0.1, +(scott.dailyCapG - intervals * SCOTT_TAPER_STEP).toFixed(2));
 }
 
-// ── Maria taper hits/day calculation ──────────────────────
-function mariaTaperedHitsPerDay(maria, baseHitsPerDay) {
-  if (!maria.taperEnabled || !maria.taperStart) return baseHitsPerDay;
+function mariaTaperedHitsPerDay(maria, base) {
+  if (!maria.taperEnabled || !maria.taperStart) return base;
   const intervals = Math.floor(taperDays(maria.taperStart) / MARIA_TAPER_INTERVAL);
-  return Math.max(1, baseHitsPerDay - intervals * MARIA_TAPER_STEP);
+  return Math.max(1, base - intervals * MARIA_TAPER_STEP);
 }
 
 // ── Scotty View ───────────────────────────────────────────
 function ScottyView({ state, onUpdate }) {
   const [logModal, setLogModal] = useState(false);
+  const [logType, setLogType] = useState("joint"); // "joint" | "pen"
   const [selectedG, setSelectedG] = useState(null);
   const [customG, setCustomG] = useState("");
+  const [penHits, setPenHits] = useState(1);
 
   const s = state.scott;
+  const conv = state.penGramEquiv;
   const effectiveCap = scottTaperedCap(s);
   const daysElapsed = taperDays(s.taperStart);
   const nextReduction = s.taperEnabled && s.taperStart
     ? SCOTT_TAPER_INTERVAL - (daysElapsed % SCOTT_TAPER_INTERVAL)
     : null;
 
+  // All logs count by grams (pen hits are pre-converted to gram-equiv when logged)
   const todayLogs = useMemo(() => s.logs.filter(l => toDateStr(l.ts) === today()), [s.logs]);
-  const todayTotal = useMemo(() => todayLogs.reduce((a, l) => a + l.grams, 0), [todayLogs]);
-  const weekLogs = useMemo(() => {
-    const cut = Date.now() - 7 * DAY;
-    return s.logs.filter(l => l.ts >= cut);
-  }, [s.logs]);
-  const weekTotal = weekLogs.reduce((a, l) => a + l.grams, 0);
+  const todayTotal = useMemo(() => todayLogs.reduce((a, l) => a + (l.grams || 0), 0), [todayLogs]);
+  const weekLogs = useMemo(() => s.logs.filter(l => l.ts >= Date.now() - 7 * DAY), [s.logs]);
+  const weekTotal = weekLogs.reduce((a, l) => a + (l.grams || 0), 0);
 
   const progressPct = effectiveCap > 0 ? Math.min(100, (todayTotal / effectiveCap) * 100) : 0;
   const remaining = Math.max(0, effectiveCap - todayTotal);
   const isOver = todayTotal > effectiveCap;
 
+  const closeModal = () => { setLogModal(false); setSelectedG(null); setCustomG(""); setPenHits(1); setLogType("joint"); };
+
   const doLog = () => {
-    const g = selectedG !== null ? selectedG : parseFloat(customG);
-    if (!g || g <= 0) return;
-    onUpdate(d => { d.scott.logs.push({ id: genId(), ts: Date.now(), grams: g }); });
-    setLogModal(false);
-    setSelectedG(null);
-    setCustomG("");
+    if (logType === "joint") {
+      const g = selectedG !== null ? selectedG : parseFloat(customG);
+      if (!g || g <= 0) return;
+      onUpdate(d => { d.scott.logs.push({ id: genId(), ts: Date.now(), type: "joint", grams: g }); });
+    } else {
+      const n = Math.max(1, parseInt(penHits) || 1);
+      const g = +(n * conv).toFixed(3);
+      onUpdate(d => { d.scott.logs.push({ id: genId(), ts: Date.now(), type: "pen", penHits: n, grams: g }); });
+    }
+    closeModal();
   };
 
-  const startTaper = () => {
-    onUpdate(d => { d.scott.taperStart = Date.now(); });
-  };
+  const startTaper = () => onUpdate(d => { d.scott.taperStart = Date.now(); });
+
+  // What the log button label should show
+  const logLabel = logType === "pen"
+    ? `Log ${penHits} hit${penHits !== 1 ? "s" : ""} (≈${+(penHits * conv).toFixed(2)}g)`
+    : `Log ${(selectedG ?? customG) || "?"}g`;
 
   return (
     <>
@@ -173,7 +178,9 @@ function ScottyView({ state, onUpdate }) {
         <div className="wt-card-head">
           <div>
             <div className="wt-card-title">Today</div>
-            <div className="wt-card-sub">Track grams — stay under your daily cap.</div>
+            <div className="wt-card-sub">
+              Cap is <strong>{effectiveCap.toFixed(2)}g</strong> — joints + pen hits counted together.
+            </div>
           </div>
           {s.taperEnabled && s.taperStart && (
             <div className="wt-taper-badge">
@@ -212,13 +219,29 @@ function ScottyView({ state, onUpdate }) {
             </span>
           </div>
         </div>
+        {/* Today's log breakdown by type */}
+        {todayLogs.length > 0 && (
+          <div className="wt-today-types">
+            {todayLogs.filter(l => !l.type || l.type === "joint").length > 0 && (
+              <span className="wt-type-chip joint">
+                🌿 {todayLogs.filter(l => !l.type || l.type === "joint").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g joints
+              </span>
+            )}
+            {todayLogs.filter(l => l.type === "pen").length > 0 && (
+              <span className="wt-type-chip pen">
+                💨 {todayLogs.filter(l => l.type === "pen").reduce((a,l)=>a+(l.penHits||0),0)} hits
+                {" "}(≈{todayLogs.filter(l => l.type === "pen").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Log */}
       <div className="wt-card">
         <button className="wt-logbtn" onClick={() => setLogModal(true)}>
           Log a session
-          <small>tap to record how much you smoked</small>
+          <small>joint or pen hit — all on one bar</small>
         </button>
         <button className="wt-undo-btn" onClick={() => {
           if (s.logs.length) onUpdate(d => { d.scott.logs.pop(); });
@@ -228,9 +251,7 @@ function ScottyView({ state, onUpdate }) {
       {/* Taper plan */}
       <div className="wt-card">
         <div className="wt-card-title">Taper plan</div>
-        <div className="wt-card-sub">
-          Auto-reduces your cap by {SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days.
-        </div>
+        <div className="wt-card-sub">Auto-reduces your cap by {SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days.</div>
 
         <div className="wt-ctrl">
           <div>
@@ -241,6 +262,18 @@ function ScottyView({ state, onUpdate }) {
             <button onClick={() => onUpdate(d => { d.scott.dailyCapG = Math.max(0.25, +(d.scott.dailyCapG - 0.25).toFixed(2)); })}>−</button>
             <span>{s.dailyCapG}g</span>
             <button onClick={() => onUpdate(d => { d.scott.dailyCapG = +(d.scott.dailyCapG + 0.25).toFixed(2); })}>+</button>
+          </div>
+        </div>
+
+        <div className="wt-ctrl">
+          <div>
+            <div className="wt-ctrl-label">1 pen hit =</div>
+            <div className="wt-ctrl-sub">grams equivalent (shared setting)</div>
+          </div>
+          <div className="wt-stepper">
+            <button onClick={() => onUpdate(d => { d.penGramEquiv = Math.max(0.05, +(d.penGramEquiv - 0.05).toFixed(2)); })}>−</button>
+            <span>{conv.toFixed(2)}g</span>
+            <button onClick={() => onUpdate(d => { d.penGramEquiv = +(d.penGramEquiv + 0.05).toFixed(2); })}>+</button>
           </div>
         </div>
 
@@ -265,10 +298,7 @@ function ScottyView({ state, onUpdate }) {
 
         {s.taperEnabled && s.taperStart && (
           <div className="wt-taper-status">
-            <div className="wt-taper-row">
-              <span>Current cap</span>
-              <strong>{effectiveCap.toFixed(2)}g/day</strong>
-            </div>
+            <div className="wt-taper-row"><span>Current cap</span><strong>{effectiveCap.toFixed(2)}g/day</strong></div>
             <div className="wt-taper-row">
               <span>Next reduction</span>
               <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
@@ -294,8 +324,12 @@ function ScottyView({ state, onUpdate }) {
           <ul className="wt-hist">
             {[...s.logs].reverse().slice(0, 25).map(l => (
               <li key={l.id} className="wt-hist-item">
-                <span className="wt-hist-ic">🌿</span>
-                <span className="wt-hist-desc">{l.grams}g</span>
+                <span className="wt-hist-ic">{l.type === "pen" ? "💨" : "🌿"}</span>
+                <span className="wt-hist-desc">
+                  {l.type === "pen"
+                    ? `${l.penHits} hit${l.penHits !== 1 ? "s" : ""} · ≈${(l.grams || 0).toFixed(2)}g`
+                    : `${l.grams}g`}
+                </span>
                 <span className="wt-hist-time">{timeAgo(l.ts)}</span>
                 <button className="wt-hist-del"
                   onClick={() => onUpdate(d => { d.scott.logs = d.scott.logs.filter(x => x.id !== l.id); })}>
@@ -310,29 +344,67 @@ function ScottyView({ state, onUpdate }) {
       {/* Log modal */}
       {logModal && (
         <>
-          <div className="admin-pop-backdrop" onClick={() => setLogModal(false)} />
+          <div className="admin-pop-backdrop" onClick={closeModal} />
           <div className="wt-modal">
             <div className="wt-modal-header">
               <span className="wt-modal-title">Log session — Scott</span>
-              <button className="icon-x" onClick={() => setLogModal(false)}><i className="fa-solid fa-xmark" /></button>
+              <button className="icon-x" onClick={closeModal}><i className="fa-solid fa-xmark" /></button>
             </div>
             <div className="wt-modal-body">
-              <div className="wt-gram-grid">
-                {GRAM_PRESETS.map(g => (
-                  <button key={g}
-                    className={`wt-gram-btn${selectedG === g ? " active" : ""}`}
-                    onClick={() => { setSelectedG(g); setCustomG(""); }}>
-                    {g}g
-                  </button>
-                ))}
+              {/* Type toggle */}
+              <div className="wt-log-type-toggle">
+                <button
+                  className={`wt-log-type-btn${logType === "joint" ? " active" : ""}`}
+                  onClick={() => setLogType("joint")}
+                >
+                  🌿 Joint (grams)
+                </button>
+                <button
+                  className={`wt-log-type-btn${logType === "pen" ? " active pen" : ""}`}
+                  onClick={() => setLogType("pen")}
+                >
+                  💨 Pen hit
+                </button>
               </div>
-              <input type="number" step="0.01" min="0.01" max="5" className="field"
-                placeholder="Custom (g)…"
-                value={customG}
-                onChange={e => { setCustomG(e.target.value); setSelectedG(null); }} />
-              <button className="btn" style={{ width: "100%" }} onClick={doLog}
-                disabled={selectedG === null && !customG}>
-                <i className="fa-solid fa-leaf" /> Log {(selectedG ?? customG) || "?"}g
+
+              {logType === "joint" && (
+                <>
+                  <div className="wt-gram-grid">
+                    {GRAM_PRESETS.map(g => (
+                      <button key={g}
+                        className={`wt-gram-btn${selectedG === g ? " active" : ""}`}
+                        onClick={() => { setSelectedG(g); setCustomG(""); }}>
+                        {g}g
+                      </button>
+                    ))}
+                  </div>
+                  <input type="number" step="0.01" min="0.01" max="5" className="field"
+                    placeholder="Custom (g)…"
+                    value={customG}
+                    onChange={e => { setCustomG(e.target.value); setSelectedG(null); }} />
+                </>
+              )}
+
+              {logType === "pen" && (
+                <div className="wt-pen-hits-wrap">
+                  <div className="wt-ctrl-label" style={{ textAlign: "center", marginBottom: "0.5rem" }}>
+                    How many hits?
+                  </div>
+                  <div className="wt-stepper lg">
+                    <button onClick={() => setPenHits(h => Math.max(1, h - 1))}>−</button>
+                    <span>{penHits}</span>
+                    <button onClick={() => setPenHits(h => h + 1)}>+</button>
+                  </div>
+                  <div className="wt-pen-conv-note">
+                    {penHits} hit{penHits !== 1 ? "s" : ""} ≈ <strong>{+(penHits * conv).toFixed(2)}g</strong> equivalent
+                    <span className="wt-pen-conv-sub"> (1 hit = {conv.toFixed(2)}g)</span>
+                  </div>
+                </div>
+              )}
+
+              <button className="btn" style={{ width: "100%", marginTop: "0.25rem" }} onClick={doLog}
+                disabled={logType === "joint" && selectedG === null && !customG}>
+                <i className="fa-solid fa-leaf" /> {logLabel}
               </button>
             </div>
           </div>
@@ -344,29 +416,38 @@ function ScottyView({ state, onUpdate }) {
 
 // ── Maria View ────────────────────────────────────────────
 function MariaView({ state, onUpdate }) {
+  const [showJointLog, setShowJointLog] = useState(false);
+  const [jointGrams, setJointGrams] = useState("");
+
   const m = state.maria;
+  const conv = state.penGramEquiv;
   const mgPerHit = +(m.mgPerSec * m.hitSec).toFixed(1);
 
   const usedThisPen = useMemo(
-    () => m.logs.filter(l => l.ts >= m.penStart).reduce((a, l) => a + l.mg, 0),
+    () => m.logs.filter(l => l.ts >= m.penStart && (l.type === "hit" || !l.type)).reduce((a, l) => a + (l.mg || 0), 0),
     [m.logs, m.penStart]
   );
 
   const remain = Math.max(0, m.cartridgeMg - usedThisPen);
   const pct = Math.max(0, Math.min(100, (remain / m.cartridgeMg) * 100));
 
-  // Base hits/day is Maria's personal cap, taper reduces it over time
   const baseHitsPerDay = m.hitsPerDayCap;
   const effectiveHitsPerDay = mariaTaperedHitsPerDay(m, baseHitsPerDay);
-
   const daysElapsed = taperDays(m.taperStart);
   const nextReduction = m.taperEnabled && m.taperStart
     ? MARIA_TAPER_INTERVAL - (daysElapsed % MARIA_TAPER_INTERVAL)
     : null;
 
-  const todayHitLogs = useMemo(() => m.logs.filter(l => toDateStr(l.ts) === today()), [m.logs]);
-  const todayHitCount = todayHitLogs.length;
-  const todayMg = todayHitLogs.reduce((a, l) => a + l.mg, 0);
+  // Count hits: pen entries = 1 hit each, joint entries = grams / conv
+  const todayLogs = useMemo(() => m.logs.filter(l => toDateStr(l.ts) === today()), [m.logs]);
+  const todayHitCount = useMemo(() =>
+    todayLogs.reduce((a, l) => {
+      if (l.type === "joint") return a + (l.hits || 0);
+      return a + 1; // legacy or type="hit"
+    }, 0),
+    [todayLogs]
+  );
+  const todayMg = todayLogs.filter(l => !l.type || l.type === "hit").reduce((a, l) => a + (l.mg || 0), 0);
   const hitBarPct = Math.min(100, (todayHitCount / effectiveHitsPerDay) * 100);
   const isOver = todayHitCount > effectiveHitsPerDay;
 
@@ -392,6 +473,21 @@ function MariaView({ state, onUpdate }) {
   } else if (remain <= 0) {
     emptyTxt = "Pen is empty — start a fresh one.";
   }
+
+  const logHit = () => onUpdate(d => {
+    d.maria.logs.push({ id: genId(), ts: Date.now(), type: "hit", sec: m.hitSec, mg: mgPerHit });
+  });
+
+  const logJoint = () => {
+    const g = parseFloat(jointGrams);
+    if (!g || g <= 0) return;
+    const hitsEquiv = +(g / conv).toFixed(2);
+    onUpdate(d => {
+      d.maria.logs.push({ id: genId(), ts: Date.now(), type: "joint", grams: g, hits: hitsEquiv });
+    });
+    setShowJointLog(false);
+    setJointGrams("");
+  };
 
   const startTaper = () => onUpdate(d => { d.maria.taperStart = Date.now(); });
 
@@ -431,7 +527,7 @@ function MariaView({ state, onUpdate }) {
         </div>
       </div>
 
-      {/* Today's hits */}
+      {/* Today's progress bar */}
       <div className="wt-card">
         <div className="wt-card-title">Today&apos;s hits</div>
         <div className="wt-card-sub">
@@ -439,7 +535,7 @@ function MariaView({ state, onUpdate }) {
           {m.taperEnabled && m.taperStart && effectiveHitsPerDay < baseHitsPerDay && (
             <span className="wt-taper-reduced"> (tapered down from {baseHitsPerDay})</span>
           )}
-          {" "}· each hit ≈{mgPerHit}mg off the dab pen.
+          {" "}· each pen hit ≈{mgPerHit}mg · joints converted at {conv.toFixed(2)}g/hit.
         </div>
         <div className="wt-bar-wrap">
           <div className="wt-bar-track">
@@ -451,19 +547,69 @@ function MariaView({ state, onUpdate }) {
             }} />
           </div>
           <div className="wt-bar-labels">
-            <span>{todayHitCount} of {effectiveHitsPerDay} hits</span>
-            <span>{Math.round(todayMg)}mg today</span>
+            <span>{todayHitCount.toFixed(1)} of {effectiveHitsPerDay} hits</span>
+            <span style={{ color: isOver ? "#f87171" : "#b68bd6" }}>{Math.round(todayMg)}mg pen today</span>
           </div>
         </div>
+        {/* Breakdown */}
+        {todayLogs.length > 0 && (
+          <div className="wt-today-types">
+            {todayLogs.filter(l => !l.type || l.type === "hit").length > 0 && (
+              <span className="wt-type-chip pen">
+                💨 {todayLogs.filter(l => !l.type || l.type === "hit").length} pen hits
+              </span>
+            )}
+            {todayLogs.filter(l => l.type === "joint").length > 0 && (
+              <span className="wt-type-chip joint">
+                🌿 {todayLogs.filter(l => l.type === "joint").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g joint
+                {" "}(≈{todayLogs.filter(l => l.type === "joint").reduce((a,l)=>a+(l.hits||0),0).toFixed(1)} hits)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Log */}
+      {/* Log buttons */}
       <div className="wt-card">
-        <button className="wt-logbtn" style={{ "--lb": "#b68bd6", "--lb-glow": "#cda6e8" }}
-          onClick={() => onUpdate(d => { d.maria.logs.push({ id: genId(), ts: Date.now(), sec: m.hitSec, mg: mgPerHit }); })}>
-          Log a hit
-          <small>{m.hitSec}s @ 3.5V · ≈{mgPerHit}mg per hit</small>
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button className="wt-logbtn" style={{ "--lb": "#b68bd6", "--lb-glow": "#cda6e8", flex: 1 }}
+            onClick={logHit}>
+            💨 Log a hit
+            <small>{m.hitSec}s @ 3.5V · ≈{mgPerHit}mg</small>
+          </button>
+          <button className="wt-logbtn" style={{ "--lb": "#e8915b", "--lb-glow": "#f0a87a", flex: 1 }}
+            onClick={() => setShowJointLog(v => !v)}>
+            🌿 Log a joint
+            <small>grams → hit equivalent</small>
+          </button>
+        </div>
+
+        {showJointLog && (
+          <div className="wt-joint-inline">
+            <div className="wt-gram-grid">
+              {[0.1, 0.2, 0.3, 0.5, 0.75, 1.0].map(g => (
+                <button key={g}
+                  className={`wt-gram-btn${jointGrams === String(g) ? " active" : ""}`}
+                  onClick={() => setJointGrams(String(g))}>
+                  {g}g
+                </button>
+              ))}
+            </div>
+            <input type="number" step="0.01" min="0.01" max="5" className="field"
+              placeholder="Custom (g)…"
+              value={jointGrams}
+              onChange={e => setJointGrams(e.target.value)} />
+            {jointGrams && parseFloat(jointGrams) > 0 && (
+              <div className="wt-pen-conv-note">
+                {jointGrams}g ≈ <strong>{+(parseFloat(jointGrams) / conv).toFixed(1)} hits</strong> equivalent
+              </div>
+            )}
+            <button className="btn" style={{ width: "100%" }} onClick={logJoint} disabled={!jointGrams || parseFloat(jointGrams) <= 0}>
+              <i className="fa-solid fa-leaf" /> Log {jointGrams || "?"}g joint
+            </button>
+          </div>
+        )}
+
         <button className="wt-undo-btn" onClick={() => {
           if (m.logs.length) onUpdate(d => { d.maria.logs.pop(); });
         }}>Undo last</button>
@@ -472,9 +618,7 @@ function MariaView({ state, onUpdate }) {
       {/* Taper */}
       <div className="wt-card">
         <div className="wt-card-title">Hit taper — dab pen</div>
-        <div className="wt-card-sub">
-          Auto-reduces your daily hit cap by {MARIA_TAPER_STEP} every {MARIA_TAPER_INTERVAL} days.
-        </div>
+        <div className="wt-card-sub">Auto-reduces daily hit cap by {MARIA_TAPER_STEP} every {MARIA_TAPER_INTERVAL} days.</div>
         <div className="wt-ctrl">
           <div>
             <div className="wt-ctrl-label">Auto-taper</div>
@@ -495,10 +639,7 @@ function MariaView({ state, onUpdate }) {
         )}
         {m.taperEnabled && m.taperStart && (
           <div className="wt-taper-status">
-            <div className="wt-taper-row">
-              <span>Current daily limit</span>
-              <strong>{effectiveHitsPerDay} hits</strong>
-            </div>
+            <div className="wt-taper-row"><span>Current daily limit</span><strong>{effectiveHitsPerDay} hits</strong></div>
             <div className="wt-taper-row">
               <span>Next reduction</span>
               <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
@@ -515,11 +656,10 @@ function MariaView({ state, onUpdate }) {
       <div className="wt-card">
         <div className="wt-card-title">Settings &amp; calibration</div>
         <div className="wt-card-sub">Nudge these until the gauge matches reality.</div>
-
         {[
-          { label: "Daily hit cap", sub: "hits per day (your personal limit)", val: `${m.hitsPerDayCap}`, dec: () => onUpdate(d => { d.maria.hitsPerDayCap = Math.max(1, d.maria.hitsPerDayCap - 1); }), inc: () => onUpdate(d => { d.maria.hitsPerDayCap++; }) },
+          { label: "Daily hit cap", sub: "hits per day", val: `${m.hitsPerDayCap}`, dec: () => onUpdate(d => { d.maria.hitsPerDayCap = Math.max(1, d.maria.hitsPerDayCap - 1); }), inc: () => onUpdate(d => { d.maria.hitsPerDayCap++; }) },
           { label: "Make it last", sub: "days per cartridge", val: `${m.daysTarget}d`, dec: () => onUpdate(d => { d.maria.daysTarget = Math.max(1, d.maria.daysTarget - 1); }), inc: () => onUpdate(d => { d.maria.daysTarget++; }) },
-          { label: "Average hit length", sub: "seconds", val: `${m.hitSec}s`, dec: () => onUpdate(d => { d.maria.hitSec = Math.max(1, d.maria.hitSec - 1); }), inc: () => onUpdate(d => { d.maria.hitSec++; }) },
+          { label: "Hit length", sub: "seconds", val: `${m.hitSec}s`, dec: () => onUpdate(d => { d.maria.hitSec = Math.max(1, d.maria.hitSec - 1); }), inc: () => onUpdate(d => { d.maria.hitSec++; }) },
           { label: "mg per second", sub: "at 3.5V — calibration", val: `${m.mgPerSec.toFixed(1)}`, dec: () => onUpdate(d => { d.maria.mgPerSec = Math.max(0.1, +(d.maria.mgPerSec - 0.1).toFixed(1)); }), inc: () => onUpdate(d => { d.maria.mgPerSec = +(d.maria.mgPerSec + 0.1).toFixed(1); }) },
           { label: "Cartridge size", sub: "milligrams of oil", val: `${m.cartridgeMg}mg`, dec: () => onUpdate(d => { d.maria.cartridgeMg = Math.max(100, d.maria.cartridgeMg - 100); }), inc: () => onUpdate(d => { d.maria.cartridgeMg += 100; }) },
         ].map(row => (
@@ -532,7 +672,6 @@ function MariaView({ state, onUpdate }) {
             </div>
           </div>
         ))}
-
         <button className="wt-ghost-btn" style={{ marginTop: "0.875rem" }}
           onClick={() => { if (confirm("Start a fresh pen? This resets the reservoir.")) onUpdate(d => { d.maria.penStart = Date.now(); }); }}>
           Start a fresh pen
@@ -548,8 +687,12 @@ function MariaView({ state, onUpdate }) {
           <ul className="wt-hist">
             {[...m.logs].reverse().slice(0, 25).map(l => (
               <li key={l.id} className="wt-hist-item">
-                <span className="wt-hist-ic">💨</span>
-                <span className="wt-hist-desc">{l.sec}s hit · {Math.round(l.mg)}mg</span>
+                <span className="wt-hist-ic">{l.type === "joint" ? "🌿" : "💨"}</span>
+                <span className="wt-hist-desc">
+                  {l.type === "joint"
+                    ? `${l.grams}g joint · ≈${(l.hits || 0).toFixed(1)} hits`
+                    : `${l.sec}s hit · ${Math.round(l.mg || 0)}mg`}
+                </span>
                 <span className="wt-hist-time">{timeAgo(l.ts)}</span>
                 <button className="wt-hist-del"
                   onClick={() => onUpdate(d => { d.maria.logs = d.maria.logs.filter(x => x.id !== l.id); })}>
