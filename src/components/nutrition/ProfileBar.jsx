@@ -74,10 +74,10 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
     height_cm: initial.height_cm ?? "",
     birth_year: initial.birth_year ?? "",
     target_calories: initial.target_calories ?? "",
-    start_weight_kg: initial.start_weight_kg != null
-      ? (unit === "lb" ? toLb(initial.start_weight_kg) : initial.start_weight_kg).toFixed(1) : "",
-    goal_weight_kg: initial.goal_weight_kg != null
-      ? (unit === "lb" ? toLb(initial.goal_weight_kg) : initial.goal_weight_kg).toFixed(1) : "",
+    start_weight_kg: initial.start_weight_kg != null && initial.start_weight_kg !== ""
+      ? (unit === "lb" ? toLb(Number(initial.start_weight_kg)) : Number(initial.start_weight_kg)).toFixed(1) : "",
+    goal_weight_kg: initial.goal_weight_kg != null && initial.goal_weight_kg !== ""
+      ? (unit === "lb" ? toLb(Number(initial.goal_weight_kg)) : Number(initial.goal_weight_kg)).toFixed(1) : "",
   }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
