@@ -2210,15 +2210,27 @@ input, textarea, select { font-family: inherit; }
 .bottom-tab.active { color: var(--red-flag); }
 .bottom-tab:hover { color: var(--text-secondary); }
 
-@media (max-width: 768px) {
-  .admin-rail, .admin-subbar, .admin-rail-reopen, .admin-bottom-nav { display: none; }
-  .admin-topbar { display: flex; }
-  .admin-mobile-fab { display: flex; }
-  .admin-main { margin-right: 0; padding: 1rem 0.875rem 3.5rem; max-width: none; }
-}
-
 /* Mobile menu FAB (bottom-left) + sheet — replaces the bottom tab bar */
 .admin-mobile-fab { display: none; }
+
+@media (max-width: 768px) {
+  .admin-rail,
+  .admin-subbar,
+  .admin-rail-reopen,
+  .admin-bottom-nav { display: none !important; }
+  .admin-topbar { display: flex; }
+  .admin-mobile-fab { display: flex; }
+  /* Force main content to fill the entire screen */
+  .admin-shell { display: block !important; overflow-x: hidden; }
+  .admin-main {
+    margin: 0 !important;
+    padding: 1rem 0.875rem 5rem !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+}
+
 .admin-mobile-fab {
   position: fixed;
   left: 1rem;
@@ -3876,6 +3888,102 @@ input, textarea, select { font-family: inherit; }
   .wt-profiles { flex-direction: column; }
   .wt-today-stats { gap: 0.75rem; }
   .wt-setup-card { padding: 1.75rem 1.25rem; }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE — Admin Pages
+   All breakpoints consolidated here so they
+   load after feature CSS and always win.
+   ═══════════════════════════════════════════ */
+
+/* Guarantee FABs are always on top of page content */
+.admin-mobile-fab { z-index: 1000 !important; }
+.chat-fab         { z-index: 999  !important; }
+.admin-mobile-sheet { z-index: 1001 !important; }
+.chat-panel       { z-index: 998  !important; }
+
+@media (max-width: 768px) {
+  /* ── Grids → single column ── */
+  .projects-grid,
+  .acc-grid,
+  .snip-grid,
+  .doc-grid,
+  .idea-grid,
+  .nut-recipe-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Budget ── */
+  .bud-hero { grid-template-columns: 1fr !important; }
+  .bud-card-grid { grid-template-columns: 1fr !important; }
+  .bud-breakdown-grid { grid-template-columns: 1fr !important; }
+  .bud-whatif { grid-template-columns: 1fr !important; }
+
+  /* ── Accountability ── */
+  .acc-stats { flex-direction: column; gap: 0.5rem; }
+  .acc-stats .acc-big,
+  .acc-stats .acc-sub { text-align: left; }
+
+  /* ── Hikers ── */
+  .hiker-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .hiker-table-wrap { overflow-x: auto; }
+  .hiker-table { min-width: 480px; }
+
+  /* ── Nutrition ── */
+  .nut-day-summary { flex-direction: column !important; }
+  .nut-tabs { flex-wrap: wrap; }
+  .nut-tabs button { flex: 1 1 auto; }
+
+  /* ── Reminders / Tasks ── */
+  /* tasks-layout already handled at 860px — just ensure panel is full-width */
+  .tasks-form-panel { width: 100% !important; max-width: 100% !important; }
+
+  /* ── Calendar ── */
+  .calendar-cell { min-height: 60px; }
+  .day-modal {
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  /* ── Date planner ── */
+  .done-item { flex-wrap: wrap; }
+  .reveal-card { width: 100% !important; max-width: 100% !important; }
+
+  /* ── Project detail header ── */
+  .project-detail-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* ── Forms ── */
+  .form-row { flex-wrap: wrap; }
+  .form-row > .btn { flex: 0 0 auto; }
+
+  /* ── DB cards need bottom clearance so content isn't hidden behind FABs ── */
+  .module-page { padding-bottom: 5rem; }
+
+  /* ── Weed tracker ── */
+  .wt-profiles { flex-direction: column; }
+  .wt-today-header { flex-direction: column; gap: 0.75rem; }
+  .wt-today-stats { justify-content: flex-start; }
+}
+
+@media (max-width: 480px) {
+  /* ── Hikers table: hide email + phone columns ── */
+  .hiker-table th:nth-child(3),
+  .hiker-table td:nth-child(3),
+  .hiker-table th:nth-child(4),
+  .hiker-table td:nth-child(4) { display: none; }
+
+  /* ── Hiker stats single column ── */
+  .hiker-stats-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Accountability weekly dots ── */
+  .acc-week { flex-wrap: wrap; gap: 4px; }
+
+  /* ── Calendar ── */
+  .calendar-item { font-size: 0.55rem; }
+  .calendar-day-name { font-size: 0.65rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

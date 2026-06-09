@@ -182,13 +182,31 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Empty / overview state — project list now lives in the side panel */}
+      {/* Project list — always shown when nothing is selected */}
       {!selected && (
-        <p className="no-entries">
-          {projects.length === 0
-            ? "No projects yet. Create one from the panel to get started."
-            : "Select a project from the panel to view its details."}
-        </p>
+        <>
+          {projects.length === 0 ? (
+            <p className="no-entries">No projects yet. Hit &ldquo;New Project&rdquo; to get started.</p>
+          ) : (
+            <div className="projects-grid">
+              {projects.filter(p => !p.parent_id).map(p => (
+                <button
+                  key={p.id}
+                  className="project-tile"
+                  style={{ "--project-color": p.color }}
+                  onClick={() => setSelected(p.id)}
+                >
+                  <span className="project-tile-dot" style={{ background: p.color }} />
+                  <div className="project-tile-body">
+                    <div className="project-tile-name">{p.name}</div>
+                    {p.description && <div className="project-tile-desc">{p.description}</div>}
+                  </div>
+                  <i className="fa-solid fa-chevron-right" style={{ color: "var(--text-muted)", fontSize: "0.75rem" }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Project Detail ── */}
