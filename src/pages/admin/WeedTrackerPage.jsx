@@ -51,22 +51,21 @@ function freshState() {
     activeProfile: "scott",
     activeTab: "tracker",
     scott: {
-      dailyCapG: 1.5,
-      weeklyStepDown: 0.25,
+      dailyCapG: 1.5,        // Scott's personal daily cap in grams
       taperEnabled: true,
-      taperStart: null, // timestamp when taper began
-      logs: [], // { id, ts, grams }
+      taperStart: null,
+      logs: [],              // { id, ts, grams }
     },
     maria: {
+      hitsPerDayCap: 8,      // Maria's personal daily hit cap
       cartridgeMg: 1000,
       mgPerSec: 1.5,
       hitSec: 6,
       daysTarget: 14,
-      hitsPerDayCap: null, // null = auto from daysTarget
       taperEnabled: true,
       taperStart: null,
       penStart: Date.now(),
-      logs: [], // { id, ts, sec, mg }
+      logs: [],              // { id, ts, sec, mg }
     },
     context: [],
   };
@@ -356,8 +355,8 @@ function MariaView({ state, onUpdate }) {
   const remain = Math.max(0, m.cartridgeMg - usedThisPen);
   const pct = Math.max(0, Math.min(100, (remain / m.cartridgeMg) * 100));
 
-  // Base hits/day from cartridge math, then apply taper
-  const baseHitsPerDay = Math.max(1, Math.round((m.cartridgeMg / mgPerHit) / m.daysTarget));
+  // Base hits/day is Maria's personal cap, taper reduces it over time
+  const baseHitsPerDay = m.hitsPerDayCap;
   const effectiveHitsPerDay = mariaTaperedHitsPerDay(m, baseHitsPerDay);
 
   const daysElapsed = taperDays(m.taperStart);
@@ -436,11 +435,11 @@ function MariaView({ state, onUpdate }) {
       <div className="wt-card">
         <div className="wt-card-title">Today&apos;s hits</div>
         <div className="wt-card-sub">
-          Aim for <strong>{effectiveHitsPerDay}</strong> hits/day
+          Daily cap: <strong>{effectiveHitsPerDay} hits</strong>
           {m.taperEnabled && m.taperStart && effectiveHitsPerDay < baseHitsPerDay && (
             <span className="wt-taper-reduced"> (tapered down from {baseHitsPerDay})</span>
           )}
-          {" "} to stretch {m.cartridgeMg}mg over {m.daysTarget} days.
+          {" "}· each hit ≈{mgPerHit}mg off the dab pen.
         </div>
         <div className="wt-bar-wrap">
           <div className="wt-bar-track">
@@ -472,9 +471,9 @@ function MariaView({ state, onUpdate }) {
 
       {/* Taper */}
       <div className="wt-card">
-        <div className="wt-card-title">Hit taper</div>
+        <div className="wt-card-title">Hit taper — dab pen</div>
         <div className="wt-card-sub">
-          Auto-reduces daily hit allowance by {MARIA_TAPER_STEP} hit every {MARIA_TAPER_INTERVAL} days.
+          Auto-reduces your daily hit cap by {MARIA_TAPER_STEP} every {MARIA_TAPER_INTERVAL} days.
         </div>
         <div className="wt-ctrl">
           <div>
@@ -518,6 +517,7 @@ function MariaView({ state, onUpdate }) {
         <div className="wt-card-sub">Nudge these until the gauge matches reality.</div>
 
         {[
+          { label: "Daily hit cap", sub: "hits per day (your personal limit)", val: `${m.hitsPerDayCap}`, dec: () => onUpdate(d => { d.maria.hitsPerDayCap = Math.max(1, d.maria.hitsPerDayCap - 1); }), inc: () => onUpdate(d => { d.maria.hitsPerDayCap++; }) },
           { label: "Make it last", sub: "days per cartridge", val: `${m.daysTarget}d`, dec: () => onUpdate(d => { d.maria.daysTarget = Math.max(1, d.maria.daysTarget - 1); }), inc: () => onUpdate(d => { d.maria.daysTarget++; }) },
           { label: "Average hit length", sub: "seconds", val: `${m.hitSec}s`, dec: () => onUpdate(d => { d.maria.hitSec = Math.max(1, d.maria.hitSec - 1); }), inc: () => onUpdate(d => { d.maria.hitSec++; }) },
           { label: "mg per second", sub: "at 3.5V — calibration", val: `${m.mgPerSec.toFixed(1)}`, dec: () => onUpdate(d => { d.maria.mgPerSec = Math.max(0.1, +(d.maria.mgPerSec - 0.1).toFixed(1)); }), inc: () => onUpdate(d => { d.maria.mgPerSec = +(d.maria.mgPerSec + 0.1).toFixed(1); }) },
