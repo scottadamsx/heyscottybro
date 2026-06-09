@@ -264,7 +264,7 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
       .in("first", toInsert.map(m => m.first));
     if (newRows) {
       newRows.forEach(r => {
-        const key = `${r.first.toLowerCase()}|${r.last.toLowerCase()}`;
+        const key = `${(r.first || "").toLowerCase()}|${(r.last || "").toLowerCase()}`;
         if (newNames.includes(key)) {
           attendeeInserts.push({ hike_import_id: importRow.id, member_id: r.id });
         }

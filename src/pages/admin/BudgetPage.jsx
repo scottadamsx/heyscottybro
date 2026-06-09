@@ -275,7 +275,7 @@ export default function BudgetPage() {
   return (
     <div className="module-page bud">
       <div className="module-header">
-        <h1>Budget <span className="bud-period-label">· Apr–Dec 2026</span></h1>
+        <h1>Budget <span className="bud-period-label">· {new Date().toLocaleDateString(undefined, { month: "short", year: "numeric" })}</span></h1>
       </div>
 
       {/* ── This Week tracker */}

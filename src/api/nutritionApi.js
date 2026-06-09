@@ -96,7 +96,8 @@ export async function updateFoodLog(id, fields) {
 
 export async function deleteFoodLog(log) {
   if (log.image_path) {
-    await supabase.storage.from(BUCKET).remove([log.image_path]).then(() => {}, () => {});
+    const { error: storageError } = await supabase.storage.from(BUCKET).remove([log.image_path]);
+    if (storageError) console.warn("Failed to delete meal photo:", storageError.message);
   }
   const { error } = await supabase.from("food_logs").delete().eq("id", log.id);
   if (error) throw error;

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { estimateMealFromText, estimateMealFromImage } from "../../api/aiFood";
 import { createFoodLog, uploadMealPhoto } from "../../api/nutritionApi";
 import { MEAL_TYPES, round } from "../../utils/nutrition";
@@ -72,6 +72,11 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
+  // Revoke object URL when it changes or component unmounts to prevent memory leak
+  useEffect(() => {
+    return () => { if (photoPreview) URL.revokeObjectURL(photoPreview); };
+  }, [photoPreview]);
+
   const pickPhoto = (f) => {
     if (!f) return;
     setPhotoFile(f);
@@ -101,7 +106,11 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
       }
       const log = await createFoodLog(profileId, { ...entry, source, image_path });
       onLogged(log);
-    } catch (err) { setError(err.message); setBusy(false); }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
