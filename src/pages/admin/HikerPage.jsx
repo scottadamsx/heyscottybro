@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
+import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees, deleteHikeImport } from "../../api/hikerApi";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -26,6 +26,7 @@ export default function HikerPage() {
   const [selectedHike, setSelectedHike] = useState(null);
   const [hikeAttendees, setHikeAttendees] = useState([]);
   const [copyAnim, setCopyAnim] = useState(false);
+  const [deletingHike, setDeletingHike] = useState(false);
 
   const reload = async () => {
     const [s, m] = await Promise.all([loadStats(), loadMembers(search)]);
@@ -96,6 +97,23 @@ export default function HikerPage() {
       setCopyAnim(true);
       setTimeout(() => setCopyAnim(false), 2000);
     });
+  };
+
+  const handleDeleteHike = async () => {
+    if (!selectedHike) return;
+    const confirmed = window.confirm(`Delete "${selectedHike.hike_name || selectedHike.filename}"? This will also adjust member attendance counts.`);
+    if (!confirmed) return;
+    setDeletingHike(true);
+    try {
+      await deleteHikeImport(selectedHike.id);
+      setSelectedHike(null);
+      setHikeAttendees([]);
+      setView("history");
+      await reload();
+      await reloadHistory();
+    } finally {
+      setDeletingHike(false);
+    }
   };
 
   const sorted = [...members].sort((a, b) => {
@@ -309,7 +327,15 @@ export default function HikerPage() {
         <>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
             <button className="btn-sm btn-secondary-sm btn" onClick={() => setView("history")}>← Back</button>
-            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{selectedHike.hike_name || selectedHike.filename}</h2>
+            <h2 style={{ margin: 0, fontSize: "1.1rem", flex: 1 }}>{selectedHike.hike_name || selectedHike.filename}</h2>
+            <button
+              className="btn-sm btn"
+              style={{ background: "var(--red, #ef4444)", color: "#fff", opacity: deletingHike ? 0.6 : 1 }}
+              onClick={handleDeleteHike}
+              disabled={deletingHike}
+            >
+              {deletingHike ? "Deleting…" : "🗑 Delete"}
+            </button>
           </div>
 
           <div className="db-card">

@@ -115,6 +115,34 @@ function toTitle(s) {
   return s.trim().replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
+export async function deleteHikeImport(id) {
+  // Fetch attendees so we can decrement their attendance counts
+  const { data: attendees } = await supabase
+    .from("hike_attendees")
+    .select("member_id")
+    .eq("hike_import_id", id);
+
+  if (attendees?.length) {
+    for (const { member_id } of attendees) {
+      const { data: member } = await supabase
+        .from("hiker_members")
+        .select("attendance")
+        .eq("id", member_id)
+        .single();
+      if (member) {
+        await supabase
+          .from("hiker_members")
+          .update({ attendance: Math.max(0, (member.attendance || 1) - 1) })
+          .eq("id", member_id);
+      }
+    }
+    await supabase.from("hike_attendees").delete().eq("hike_import_id", id);
+  }
+
+  const { error } = await supabase.from("hiker_imports").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function loadHikeHistory() {
   const userId = await uid();
   const { data, error } = await supabase
