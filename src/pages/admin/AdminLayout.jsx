@@ -36,6 +36,7 @@ const NAV_ITEMS = [
   { to: "/admin/snippets", icon: "fa-key", label: "Vault" },
   { to: "/admin/documents", icon: "fa-file-lines", label: "Documents" },
   { to: "/admin/smoke", icon: "fa-leaf", label: "Smoke Tracker" },
+  { to: "/admin/context", icon: "fa-brain", label: "Context" },
 ];
 
 export default function AdminLayout() {

@@ -25,6 +25,42 @@ function addDays(str, n) {
   return toDateStr(d);
 }
 
+const WEEKS_BACK = 16; // how many weeks of history to show in dot grid
+
+// Build a grid of WEEKS_BACK weeks ending today, aligned to Sun-Sat rows
+function buildGrid(todayStr) {
+  const today = new Date(todayStr + "T00:00:00");
+  // Find the Saturday on or after today to end the grid
+  const endDow = today.getDay(); // 0=Sun…6=Sat
+  const daysToSat = endDow === 6 ? 0 : 6 - endDow;
+  const gridEnd = new Date(today);
+  gridEnd.setDate(today.getDate() + daysToSat);
+  const gridStart = new Date(gridEnd);
+  gridStart.setDate(gridEnd.getDate() - WEEKS_BACK * 7 + 1);
+  const weeks = [];
+  let cur = new Date(gridStart);
+  for (let w = 0; w < WEEKS_BACK; w++) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      week.push(toDateStr(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+  return weeks; // array of 16 arrays of 7 date strings
+}
+
+// Month labels for grid: find where the month changes
+function monthLabels(weeks) {
+  const labels = new Array(weeks.length).fill(null);
+  let lastMonth = -1;
+  weeks.forEach((week, i) => {
+    const m = new Date(week[0] + "T00:00:00").getMonth();
+    if (m !== lastMonth) { labels[i] = new Date(week[0] + "T00:00:00").toLocaleDateString(undefined, { month: "short" }); lastMonth = m; }
+  });
+  return labels;
+}
+
 export default function AccountabilityPage() {
   const [params] = useSearchParams();
   const [data, setData] = useState(loadData);
@@ -32,6 +68,7 @@ export default function AccountabilityPage() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff", mode: "count" });
+  const [detailId, setDetailId] = useState(null);
 
   const todayStr = toDateStr(new Date());
 
@@ -98,6 +135,105 @@ export default function AccountabilityPage() {
     return { total: tl.length, streak: s, week, weekCount, recent: tl.slice(0, 6), lastDate: tl[0]?.date };
   };
 
+  // Detail view for a single tracker
+  const renderDetail = (t) => {
+    const st = stats(t.id);
+    const tl = (logsByTracker[t.id] || []);
+    const dateSet = new Set(tl.map((l) => l.date));
+    const counts = {};
+    tl.forEach((l) => { counts[l.date] = (counts[l.date] || 0) + 1; });
+    const weeks = buildGrid(todayStr);
+    const mLabels = monthLabels(weeks);
+    const maxCount = Math.max(1, ...Object.values(counts));
+
+    return (
+      <div className="module-page" style={{ paddingTop: 0 }}>
+        <div className="module-header" style={{ marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <button className="btn btn-sm btn-secondary-sm" onClick={() => setDetailId(null)}>
+              <i className="fa-solid fa-arrow-left" /> Back
+            </button>
+            <span style={{ fontSize: "1.5rem" }}>{t.emoji}</span>
+            <h2 style={{ margin: 0 }}>{t.name}</h2>
+          </div>
+        </div>
+
+        <div className="acc-detail-stats">
+          <div className="acc-stat-pill"><b>{st.total}</b><span>total</span></div>
+          <div className="acc-stat-pill"><b>{st.weekCount}</b><span>this week</span></div>
+          <div className="acc-stat-pill"><b>{st.streak}🔥</b><span>streak</span></div>
+        </div>
+
+        <div className="db-card" style={{ "--acc-color": t.color, marginBottom: "1rem" }}>
+          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Past {WEEKS_BACK} weeks</h3>
+
+          {/* Month labels row */}
+          <div className="acc-hist-grid">
+            <div className="acc-hist-dow-col">
+              {["S","M","T","W","T","F","S"].map((d, i) => (
+                <div key={i} className="acc-hist-dow">{d}</div>
+              ))}
+            </div>
+            {weeks.map((week, wi) => (
+              <div key={wi} className="acc-hist-week-col">
+                <div className="acc-hist-month-lbl">{mLabels[wi] || ""}</div>
+                {week.map((ds) => {
+                  const on = dateSet.has(ds);
+                  const cnt = counts[ds] || 0;
+                  const future = ds > todayStr;
+                  const isToday = ds === todayStr;
+                  const opacity = on ? (t.mode === "count" ? 0.3 + 0.7 * (cnt / maxCount) : 1) : 0;
+                  return (
+                    <div
+                      key={ds}
+                      className={`acc-hist-dot${isToday ? " today" : ""}${future ? " future" : ""}`}
+                      style={{ background: on ? t.color : undefined, opacity: future ? 0.2 : on ? opacity : undefined }}
+                      title={`${ds}${on ? ` · ${cnt > 1 ? cnt + "×" : "✓"}` : ""}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          {t.mode === "count" && <p className="acc-hist-note">Darker = more logs that day</p>}
+        </div>
+
+        {/* Log actions */}
+        <div className="db-card" style={{ "--acc-color": t.color }}>
+          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Log</h3>
+          <div className="acc-actions">
+            {(() => {
+              const done = t.mode === "check" && countOn(t, todayStr) > 0;
+              return (
+                <button className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
+                  {t.mode === "check"
+                    ? (done ? <><i className="fa-solid fa-check" /> Done today</> : <><i className="fa-solid fa-plus" /> Mark done</>)
+                    : <><i className="fa-solid fa-plus" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
+                </button>
+              );
+            })()}
+            <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" />
+          </div>
+          {st.recent.length > 0 && (
+            <div className="acc-recent" style={{ marginTop: "0.75rem" }}>
+              {st.recent.map((l) => (
+                <div className="acc-log" key={l.id}>
+                  <span>{l.date === todayStr ? "Today" : formatDisplayDate(l.date)}</span>
+                  <button className="icon-x sm" onClick={() => deleteLog(l.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (detailId) {
+    const t = trackers.find((x) => x.id === detailId);
+    if (t) return renderDetail(t);
+  }
+
   return (
     <div className="module-page">
       <div className="module-header">
@@ -144,10 +280,10 @@ export default function AccountabilityPage() {
           const st = stats(t.id);
           return (
             <div className="acc-card" id={`acc-${t.id}`} key={t.id} style={{ "--acc-color": t.color }}>
-              <div className="acc-card-top">
+              <div className="acc-card-top" style={{ cursor: "pointer" }} onClick={() => setDetailId(t.id)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setDetailId(t.id)}>
                 <span className="acc-emoji">{t.emoji}</span>
                 <div className="acc-card-name">{t.name}</div>
-                <button className="icon-x sm" onClick={() => deleteTracker(t.id)} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
+                <button className="icon-x sm" onClick={(e) => { e.stopPropagation(); deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
               </div>
 
               <div className="acc-stats">

@@ -465,3 +465,293 @@ CREATE POLICY "owner only" ON recipes USING (auth.uid() = user_id) WITH CHECK (a
 DROP TRIGGER IF EXISTS recipes_updated_at ON recipes;
 CREATE TRIGGER recipes_updated_at BEFORE UPDATE ON recipes FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE INDEX IF NOT EXISTS recipes_user_idx ON recipes (user_id, created_at DESC);
+
+-- ═══════════════════════════════════════════
+-- Finance  (fin_* schema)
+-- Idempotent — safe to run multiple times.
+-- ═══════════════════════════════════════════
+
+-- Settings (one row per user)
+CREATE TABLE IF NOT EXISTS fin_settings (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  currency        TEXT        NOT NULL DEFAULT 'CAD',
+  reserve_pct     NUMERIC     NOT NULL DEFAULT 0.20,   -- fraction of income auto-reserved
+  net_worth_start NUMERIC     NOT NULL DEFAULT 0,
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_settings;
+CREATE POLICY "owner only" ON fin_settings USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Categories (expense / income buckets)
+CREATE TABLE IF NOT EXISTS fin_categories (
+  id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name    TEXT NOT NULL,
+  kind    TEXT NOT NULL DEFAULT 'expense' CHECK (kind IN ('expense','income')),
+  color   TEXT DEFAULT '#6366f1',
+  icon    TEXT DEFAULT ''
+);
+ALTER TABLE fin_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_categories;
+CREATE POLICY "owner only" ON fin_categories USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_categories_user_idx ON fin_categories (user_id);
+
+-- Income records
+CREATE TABLE IF NOT EXISTS fin_income (
+  id       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id  UUID        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  amount   NUMERIC     NOT NULL,
+  pay_date DATE        NOT NULL DEFAULT CURRENT_DATE,
+  source   TEXT        DEFAULT '',
+  notes    TEXT        DEFAULT '',
+  received BOOLEAN     NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_income ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_income;
+CREATE POLICY "owner only" ON fin_income USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_income_user_date_idx ON fin_income (user_id, pay_date DESC);
+
+-- Recurring bills (templates)
+CREATE TABLE IF NOT EXISTS fin_recurring_bills (
+  id          UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name        TEXT    NOT NULL,
+  amount      NUMERIC NOT NULL DEFAULT 0,
+  due_day     INTEGER NOT NULL DEFAULT 1 CHECK (due_day BETWEEN 1 AND 31),
+  category_id UUID    REFERENCES fin_categories(id) ON DELETE SET NULL,
+  active      BOOLEAN NOT NULL DEFAULT true,
+  auto_pay    BOOLEAN NOT NULL DEFAULT false,
+  notes       TEXT    DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_recurring_bills ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_recurring_bills;
+CREATE POLICY "owner only" ON fin_recurring_bills USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_recurring_bills_user_idx ON fin_recurring_bills (user_id);
+
+-- Bill instances (one per bill per month, or one-off)
+CREATE TABLE IF NOT EXISTS fin_bill_instances (
+  id                  UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  recurring_bill_id   UUID    REFERENCES fin_recurring_bills(id) ON DELETE SET NULL,
+  name                TEXT    NOT NULL,
+  amount              NUMERIC NOT NULL DEFAULT 0,
+  due_date            DATE    NOT NULL,
+  category_id         UUID    REFERENCES fin_categories(id) ON DELETE SET NULL,
+  paid                BOOLEAN NOT NULL DEFAULT false,
+  paid_date           DATE,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_bill_instances ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_bill_instances;
+CREATE POLICY "owner only" ON fin_bill_instances USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_bill_instances_user_date_idx ON fin_bill_instances (user_id, due_date);
+
+-- Expenses
+CREATE TABLE IF NOT EXISTS fin_expenses (
+  id          UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  amount      NUMERIC NOT NULL,
+  date        DATE    NOT NULL DEFAULT CURRENT_DATE,
+  category_id UUID    REFERENCES fin_categories(id) ON DELETE SET NULL,
+  description TEXT    NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_expenses;
+CREATE POLICY "owner only" ON fin_expenses USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_expenses_user_date_idx ON fin_expenses (user_id, date DESC);
+
+-- Savings goals
+CREATE TABLE IF NOT EXISTS fin_savings_goals (
+  id             UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name           TEXT    NOT NULL,
+  target_amount  NUMERIC NOT NULL DEFAULT 0,
+  current_amount NUMERIC NOT NULL DEFAULT 0,
+  due_date       DATE,
+  notes          TEXT    DEFAULT '',
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_savings_goals ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_savings_goals;
+CREATE POLICY "owner only" ON fin_savings_goals USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_savings_goals_user_idx ON fin_savings_goals (user_id);
+
+-- Savings allocations
+CREATE TABLE IF NOT EXISTS fin_savings_allocations (
+  id      UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  goal_id UUID    REFERENCES fin_savings_goals(id) ON DELETE CASCADE NOT NULL,
+  amount  NUMERIC NOT NULL,
+  source  TEXT    NOT NULL DEFAULT 'pool',
+  date    DATE    NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_savings_allocations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_savings_allocations;
+CREATE POLICY "owner only" ON fin_savings_allocations USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_savings_alloc_goal_idx ON fin_savings_allocations (goal_id);
+
+-- Debts
+CREATE TABLE IF NOT EXISTS fin_debts (
+  id              UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name            TEXT    NOT NULL,
+  principal       NUMERIC NOT NULL DEFAULT 0,   -- original balance
+  balance         NUMERIC NOT NULL DEFAULT 0,   -- current remaining
+  interest_rate   NUMERIC NOT NULL DEFAULT 0,   -- APR as decimal (e.g. 0.19)
+  minimum_payment NUMERIC NOT NULL DEFAULT 0,
+  due_day         INTEGER DEFAULT 1 CHECK (due_day BETWEEN 1 AND 31),
+  notes           TEXT    DEFAULT '',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_debts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_debts;
+CREATE POLICY "owner only" ON fin_debts USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_debts_user_idx ON fin_debts (user_id);
+
+-- Debt payments
+CREATE TABLE IF NOT EXISTS fin_debt_payments (
+  id        UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id   UUID    REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  debt_id   UUID    REFERENCES fin_debts(id) ON DELETE CASCADE NOT NULL,
+  amount    NUMERIC NOT NULL,
+  principal NUMERIC NOT NULL DEFAULT 0,
+  interest  NUMERIC NOT NULL DEFAULT 0,
+  date      DATE    NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE fin_debt_payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON fin_debt_payments;
+CREATE POLICY "owner only" ON fin_debt_payments USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE INDEX IF NOT EXISTS fin_debt_payments_debt_idx ON fin_debt_payments (debt_id, date DESC);
+
+-- ── RPCs ──────────────────────────────────────────────────────────────
+
+-- fin_add_income: insert income row and return it
+CREATE OR REPLACE FUNCTION fin_add_income(
+  p_amount   NUMERIC,
+  p_pay_date DATE,
+  p_source   TEXT    DEFAULT NULL,
+  p_notes    TEXT    DEFAULT NULL,
+  p_received BOOLEAN DEFAULT false
+)
+RETURNS fin_income LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_row     fin_income;
+BEGIN
+  INSERT INTO fin_income (user_id, amount, pay_date, source, notes, received)
+  VALUES (v_user_id, p_amount, p_pay_date, COALESCE(p_source,''), COALESCE(p_notes,''), p_received)
+  RETURNING * INTO v_row;
+  RETURN v_row;
+END;
+$$;
+
+-- fin_generate_bill_instances: create instances for active recurring bills in a given month
+CREATE OR REPLACE FUNCTION fin_generate_bill_instances(p_month DATE)
+RETURNS INTEGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_bill    fin_recurring_bills;
+  v_count   INTEGER := 0;
+  v_due     DATE;
+  v_last    DATE;
+BEGIN
+  v_last := (date_trunc('month', p_month) + interval '1 month - 1 day')::DATE;
+  FOR v_bill IN
+    SELECT * FROM fin_recurring_bills WHERE user_id = v_user_id AND active = true
+  LOOP
+    -- Clamp due_day to actual last day of month
+    v_due := date_trunc('month', p_month)::DATE + LEAST(v_bill.due_day, EXTRACT(DAY FROM v_last)::INTEGER) - 1;
+    -- Skip if already exists for this bill+month
+    IF NOT EXISTS (
+      SELECT 1 FROM fin_bill_instances
+      WHERE user_id = v_user_id
+        AND recurring_bill_id = v_bill.id
+        AND date_trunc('month', due_date) = date_trunc('month', p_month)
+    ) THEN
+      INSERT INTO fin_bill_instances (user_id, recurring_bill_id, name, amount, due_date, category_id, paid)
+      VALUES (v_user_id, v_bill.id, v_bill.name, v_bill.amount, v_due, v_bill.category_id, false);
+      v_count := v_count + 1;
+    END IF;
+  END LOOP;
+  RETURN v_count;
+END;
+$$;
+
+-- fin_allocate_to_goal: add amount to savings goal
+CREATE OR REPLACE FUNCTION fin_allocate_to_goal(
+  p_goal_id UUID,
+  p_amount  NUMERIC,
+  p_source  TEXT DEFAULT 'pool'
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+BEGIN
+  INSERT INTO fin_savings_allocations (user_id, goal_id, amount, source)
+  VALUES (v_user_id, p_goal_id, p_amount, p_source);
+  UPDATE fin_savings_goals SET current_amount = current_amount + p_amount WHERE id = p_goal_id AND user_id = v_user_id;
+END;
+$$;
+
+-- fin_record_debt_payment: record payment and reduce debt balance
+CREATE OR REPLACE FUNCTION fin_record_debt_payment(
+  p_debt_id  UUID,
+  p_amount   NUMERIC,
+  p_principal NUMERIC DEFAULT NULL,
+  p_interest  NUMERIC DEFAULT 0,
+  p_date      DATE    DEFAULT NULL
+)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  v_user_id  UUID := auth.uid();
+  v_principal NUMERIC := COALESCE(p_principal, p_amount);
+BEGIN
+  INSERT INTO fin_debt_payments (user_id, debt_id, amount, principal, interest, date)
+  VALUES (v_user_id, p_debt_id, p_amount, v_principal, p_interest, COALESCE(p_date, CURRENT_DATE));
+  UPDATE fin_debts SET balance = GREATEST(0, balance - v_principal) WHERE id = p_debt_id AND user_id = v_user_id;
+END;
+$$;
+
+-- fin_soft_reset: clear transactional data, keep recurring bills & settings
+CREATE OR REPLACE FUNCTION fin_soft_reset()
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_user_id UUID := auth.uid();
+BEGIN
+  DELETE FROM fin_income WHERE user_id = v_user_id;
+  DELETE FROM fin_bill_instances WHERE user_id = v_user_id;
+  DELETE FROM fin_expenses WHERE user_id = v_user_id;
+  DELETE FROM fin_savings_allocations WHERE user_id = v_user_id;
+  DELETE FROM fin_debt_payments WHERE user_id = v_user_id;
+  UPDATE fin_savings_goals SET current_amount = 0 WHERE user_id = v_user_id;
+  UPDATE fin_debts SET balance = principal WHERE user_id = v_user_id;
+END;
+$$;
+
+-- fin_factory_reset: wipe everything for the user
+CREATE OR REPLACE FUNCTION fin_factory_reset()
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_user_id UUID := auth.uid();
+BEGIN
+  DELETE FROM fin_debt_payments WHERE user_id = v_user_id;
+  DELETE FROM fin_debts WHERE user_id = v_user_id;
+  DELETE FROM fin_savings_allocations WHERE user_id = v_user_id;
+  DELETE FROM fin_savings_goals WHERE user_id = v_user_id;
+  DELETE FROM fin_expenses WHERE user_id = v_user_id;
+  DELETE FROM fin_bill_instances WHERE user_id = v_user_id;
+  DELETE FROM fin_recurring_bills WHERE user_id = v_user_id;
+  DELETE FROM fin_income WHERE user_id = v_user_id;
+  DELETE FROM fin_categories WHERE user_id = v_user_id;
+  DELETE FROM fin_settings WHERE user_id = v_user_id;
+END;
+$$;
+
+-- Default settings row (upsert so re-runs are safe)
+-- Must be run after a user exists. Uncomment and fill in your user ID if you want a seed row:
+-- INSERT INTO fin_settings (user_id) VALUES ('<your-user-uuid>') ON CONFLICT (user_id) DO NOTHING;

@@ -203,7 +203,7 @@ export default function DashboardPage() {
             <div className="db-list-item" key={`${r.id}-${r.date}`}>
               <div className="db-list-item-content">
                 <div className="db-list-item-title">{r.name}</div>
-                <div className="db-list-item-subtitle">{r.date === todayStr ? "Today" : formatDisplayDate(r.date)}</div>
+                <div className="db-list-item-subtitle" style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{r.date === todayStr ? "Today" : formatDisplayDate(r.date)}</div>
               </div>
             </div>
           ))}

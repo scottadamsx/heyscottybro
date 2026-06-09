@@ -53,9 +53,9 @@ export function renderMarkdown(text) {
       i += 2;
       const rows = [];
       while (i < lines.length && lines[i].includes("|") && lines[i].trim() !== "") { rows.push(splitRow(lines[i])); i++; }
-      html += "<table class='chat-grid'><thead><tr>" + header.map((h) => `<th>${inline(escapeHtml(h))}</th>`).join("") + "</tr></thead><tbody>";
+      html += "<div class='chat-grid-wrap'><table class='chat-grid'><thead><tr>" + header.map((h) => `<th>${inline(escapeHtml(h))}</th>`).join("") + "</tr></thead><tbody>";
       html += rows.map((r) => "<tr>" + r.map((c) => `<td>${inline(escapeHtml(c))}</td>`).join("") + "</tr>").join("");
-      html += "</tbody></table>";
+      html += "</tbody></table></div>";
       continue;
     }
 

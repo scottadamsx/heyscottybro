@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
-import { formatDisplayDate } from "../../utils/plannerUtils";
+import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
+
+const todayStr = toDateStr(new Date());
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 
@@ -177,7 +179,7 @@ export default function RemindersPage() {
                 <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <strong>{r.name}</strong>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    {r.date && <span>{formatDisplayDate(r.date)}</span>}
+                    {r.date && <span style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{formatDisplayDate(r.date)}</span>}
                     {r.time && <span>· {r.time}</span>}
                     {r.show_on_calendar === false && <span>· off calendar</span>}
                     {r.recurrence !== "none" && <span>· {r.recurrence}</span>}

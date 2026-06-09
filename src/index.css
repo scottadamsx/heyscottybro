@@ -1653,6 +1653,22 @@ input, textarea, select { font-family: inherit; }
 .acc-recent { display: flex; flex-direction: column; gap: 3px; border-top: 1px solid var(--border-subtle); padding-top: 0.7rem; }
 .acc-log { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); padding: 0.15rem 0.1rem; }
 
+/* Accountability history dot grid */
+.acc-detail-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.acc-stat-pill { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 0.5rem 1rem; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+.acc-stat-pill b { font-size: 1.2rem; line-height: 1.2; }
+.acc-stat-pill span { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.acc-hist-grid { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 0.25rem; }
+.acc-hist-dow-col { display: flex; flex-direction: column; gap: 2px; padding-top: 18px; /* offset for month label row */ }
+.acc-hist-dow { width: 14px; height: 14px; font-size: 0.58rem; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+.acc-hist-week-col { display: flex; flex-direction: column; gap: 2px; }
+.acc-hist-month-lbl { height: 16px; font-size: 0.6rem; color: var(--text-muted); white-space: nowrap; overflow: visible; }
+.acc-hist-dot { width: 14px; height: 14px; border-radius: 3px; background: var(--bg-raised); border: 1px solid var(--border-subtle); flex-shrink: 0; transition: opacity 0.15s; cursor: default; }
+.acc-hist-dot.today { box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+.acc-hist-dot.future { border-style: dashed; opacity: 0.2; }
+.acc-hist-note { font-size: 0.7rem; color: var(--text-muted); margin: 0.5rem 0 0; }
+
 /* ═══ Connection status (small, dashboard footer) ═══ */
 .dashboard-expand {
   width: 100%;
@@ -1729,10 +1745,28 @@ input, textarea, select { font-family: inherit; }
 .chat-md h4, .chat-md h5, .chat-md h6 { margin: 0.5rem 0 0.3rem; font-size: 0.92rem; font-weight: 700; }
 
 /* Tables rendered as grids */
-.chat-grid { width: 100%; border-collapse: collapse; margin: 0.4rem 0 0.6rem; font-size: 0.8rem; }
-.chat-grid th, .chat-grid td { border: 1px solid var(--border-subtle); padding: 0.35rem 0.55rem; text-align: left; }
-.chat-grid th { background: var(--bg-hover); font-weight: 700; color: var(--text-primary); }
-.chat-grid tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.chat-grid-wrap {
+  overflow-x: auto;
+  margin: 0.35rem 0 0.5rem;
+  /* Shrink to fit the bubble — horizontal scroll kicks in only when truly needed */
+  max-width: 100%;
+}
+.chat-grid {
+  border-collapse: collapse;
+  /* Use the smallest readable font so columns fit without scrolling when possible */
+  font-size: 0.7rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.chat-grid th, .chat-grid td {
+  border: 1px solid var(--border-subtle);
+  padding: 0.2rem 0.4rem;
+  text-align: left;
+  vertical-align: top;
+}
+.chat-grid th { background: var(--bg-hover); font-weight: 700; color: var(--text-primary); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.chat-grid td { color: var(--text-secondary); }
+.chat-grid tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
 
 /* iOS Safari auto-zooms when a focused field is < 16px. Force 16px on mobile. */
 @media (max-width: 768px) {
@@ -2157,6 +2191,9 @@ input, textarea, select { font-family: inherit; }
 .reminder-item { background: rgba(99,102,241,0.2); color: var(--accent-light); }
 .event-item { background: rgba(34,211,238,0.2); color: var(--cyan); }
 .future-item { background: rgba(251,146,60,0.2); color: var(--orange); }
+.calendar-count { display: block; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; width: 100%; box-sizing: border-box; }
+.calendar-count.event-count { background: rgba(34,211,238,0.2); color: var(--cyan, #22d3ee); }
+.calendar-count.task-count { background: rgba(99,102,241,0.2); color: var(--accent-light, #a5b4fc); }
 
 /* Event overlay */
 .event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 200; }
@@ -3271,6 +3308,14 @@ input, textarea, select { font-family: inherit; }
   background: var(--bg-raised);
   color: var(--text-primary);
   border-bottom-left-radius: 4px;
+  /* Assistant messages contain rendered HTML — pre-wrap breaks table layout */
+  white-space: normal;
+  /* Give as much width as possible so tables have room */
+  max-width: 97%;
+  padding: 0.5rem 0.7rem;
+  /* Prevent inner content from forcing the bubble wider than the panel */
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Typing indicator */
@@ -4100,6 +4145,111 @@ input, textarea, select { font-family: inherit; }
   .wt-today-stats { gap: 0.75rem; }
   .wt-setup-card { padding: 1.75rem 1.25rem; }
 }
+
+/* ═══════════════════════════════════════════
+   CONTEXT PAGE
+   ═══════════════════════════════════════════ */
+
+.module-header-sub { font-size: 0.78rem; color: var(--text-muted); align-self: center; }
+
+.ctx-add-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary, #333);
+  border-radius: var(--radius-md, 10px);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.ctx-add-title { font-size: 0.92rem; font-weight: 700; }
+.ctx-add-sub { font-size: 0.78rem; color: var(--text-muted); }
+.ctx-textarea {
+  width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-primary, #333);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.ctx-textarea:focus { outline: none; border-color: var(--accent, #4ade80); }
+.ctx-verdict { font-size: 0.8rem; min-height: 1.2rem; }
+.ctx-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.ctx-chip {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border-primary, #333);
+}
+.ctx-chip.person { color: var(--accent, #4ade80); border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.07); }
+.ctx-chip.preview { color: var(--text-secondary); border-style: dashed; }
+
+/* Filters row */
+.ctx-filters { display: flex; flex-direction: column; gap: 0.5rem; }
+.ctx-search {
+  width: 100%;
+  max-width: 360px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-primary, #333);
+  border-radius: var(--radius-sm, 6px);
+  color: var(--text-primary);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+.ctx-filter-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.ctx-filter-btn {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary, #333);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.ctx-filter-btn.active { background: var(--bg-raised); color: var(--text-primary); border-color: var(--accent, #4ade80); }
+
+/* Items list */
+.ctx-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.ctx-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary, #333);
+  border-radius: var(--radius-md, 10px);
+  padding: 0.875rem 1rem;
+}
+.ctx-item-text { font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); }
+.ctx-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.ctx-item-by { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+.ctx-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.ctx-item-time { color: var(--text-muted); }
+.ctx-item-why { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
+.ctx-del-btn {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-primary, #333);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ctx-del-btn:hover { background: rgba(239,68,68,0.12); border-color: #ef4444; color: #ef4444; }
 
 /* ═══════════════════════════════════════════
    NUTRITION

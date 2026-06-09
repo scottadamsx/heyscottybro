@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { getContext, addContextEntry, deleteContextEntry, replaceContext } from "../api/contextApi";
 import {
   loadReminders, newReminder, updateReminder, completeReminder, deleteReminder,
   loadEvents, newEvent, deleteEvent,
@@ -48,6 +49,11 @@ You have FULL read/write access to Scott's data and can make complex, multi-step
 Capabilities: reminders/tasks (add, edit, complete, delete — incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, the hiker database, and nutrition tracking (log food + weight for Scott or his partner). For nutrition, ALWAYS call list_nutrition_profiles first to get the profile id, then log_food / log_weight. If Scott describes a meal without calories, estimate sensible calories and macros (protein/carbs/fat in grams) yourself before logging.
 
 Formatting: reply in Markdown. Use **bold** for emphasis, bullet lists for steps, and Markdown TABLES whenever you present multiple records to the user (e.g. listing tasks, projects, search results) so they render as a grid. Keep prose short.
+
+CONTEXT — your long-term memory:
+You have a persistent context store (separate from the planner). Whenever you learn a personal fact about Scott or Maria during conversation — preferences, health info, relationship details, plans, allergies, hobbies, anything worth remembering across sessions — call save_context automatically without asking. Just save it and append a small italicised note like *"Noted to context."*. Use the "frodo" source so it's labelled clearly.
+
+When Scott asks you to organise, clean up, or deduplicate the context, call list_context first, then present your proposed changes (what you'll merge, remove, or reword) and explicitly ask "Should I go ahead?" before calling reorganize_context.
 
 DATES — read carefully:
 - Always resolve relative dates ("tomorrow", "next Monday", "this Friday") to a YYYY-MM-DD string BEFORE calling any tool, using the local date and weekday map above. Never guess the weekday — use the map.
@@ -224,6 +230,37 @@ const TOOLS = [
   { name: "search_hikers", description: "Search hikers by name or email to find IDs", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
   { name: "delete_hiker", description: "Delete a specific hiker by id", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } }, required: ["id", "name"] } },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
+  { name: "list_context", description: "Read all saved context facts about Scott and Maria. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
+  {
+    name: "save_context",
+    description: "Save a fact to the persistent context store. Call automatically whenever you learn something worth remembering about Scott or Maria.",
+    input_schema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "The cleaned-up fact to store (one sentence, first-person removed)" },
+        tags: { type: "array", items: { type: "string" }, description: "Relevant tags e.g. ['Scott','Health']" },
+        why: { type: "string", description: "Brief reason why this is worth keeping" },
+      },
+      required: ["text"],
+    },
+  },
+  { name: "delete_context", description: "Delete a context entry by id (get ids from list_context)", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  {
+    name: "reorganize_context",
+    description: "Replace the entire context store with a cleaned/deduplicated version. ONLY call this AFTER presenting the proposed changes to Scott and receiving explicit confirmation.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entries: {
+          type: "array",
+          description: "The new context array. Each item must have text, tags[], by, why.",
+          items: { type: "object", properties: { text: { type: "string" }, tags: { type: "array", items: { type: "string" } }, by: { type: "string" }, why: { type: "string" } }, required: ["text"] },
+        },
+        confirmed: { type: "boolean", description: "Must be true — confirms Scott approved the reorganisation" },
+      },
+      required: ["entries", "confirmed"],
+    },
+  },
 ];
 
 async function executeTool(name, input) {
@@ -294,6 +331,16 @@ async function executeTool(name, input) {
       case "search_hikers": { const results = await loadMembers(input.query); return { results: results.slice(0, 10).map((m) => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) }; }
       case "delete_hiker": await deleteMember(input.id); return { success: true, deleted: input.name };
       case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
+      case "list_context": return { items: getContext().map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) };
+      case "save_context": { const entry = addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
+      case "delete_context": deleteContextEntry(input.id); return { success: true };
+      case "reorganize_context": {
+        if (!input.confirmed) return { error: "confirmed must be true — present the plan to Scott first and wait for a yes" };
+        const genId = () => `ctx${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        const stamped = (input.entries || []).map((e) => ({ id: e.id || genId(), ts: e.ts || Date.now(), text: e.text, tags: e.tags || [], by: e.by || "frodo", why: e.why || "" }));
+        replaceContext(stamped);
+        return { success: true, count: stamped.length };
+      }
       default: return { error: `Unknown tool: ${name}` };
     }
   } catch (err) {

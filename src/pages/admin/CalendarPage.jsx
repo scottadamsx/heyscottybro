@@ -208,9 +208,18 @@ export default function CalendarPage() {
                 onClick={() => openDay(date)}
               >
                 <span className="day-number" style={isToday ? { color: "var(--accent)" } : {}}>{day}</span>
-                {(itemsByDate[date] || []).slice(0, 3).map((item, idx) => (
-                  <span key={idx} className={`calendar-item ${item.kind}-item`}>{item.label}</span>
-                ))}
+                {(() => {
+                  const items = itemsByDate[date] || [];
+                  const evCount = items.filter((x) => x.kind === "event" || x.kind === "future").length;
+                  const taskCount = items.filter((x) => x.kind === "reminder").length;
+                  if (items.length === 0) return null;
+                  return (
+                    <>
+                      {evCount > 0 && <span className="calendar-count event-count">{evCount} event{evCount !== 1 ? "s" : ""}</span>}
+                      {taskCount > 0 && <span className="calendar-count task-count">{taskCount} task{taskCount !== 1 ? "s" : ""}</span>}
+                    </>
+                  );
+                })()}
               </button>
             );
           })}

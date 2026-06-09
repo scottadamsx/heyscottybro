@@ -12,43 +12,10 @@ const SCOTT_TAPER_STEP = 0.2;
 const MARIA_TAPER_INTERVAL = 3;
 const MARIA_TAPER_STEP = 1;
 
-// ── Context classifier ────────────────────────────────────
-const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
-const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays"];
-const TOPICS = { gardening: "Gardening", garden: "Gardening", work: "Work", school: "School", music: "Music", food: "Food", family: "Family", health: "Health", weed: "Cannabis", pen: "Cannabis", smoke: "Cannabis", joint: "Cannabis", birthday: "Date", anniversary: "Date" };
-
-function classify(raw) {
-  const t = raw.trim();
-  if (!t) return { kind: "idle" };
-  const lower = t.toLowerCase();
-  let why = "", keep = false;
-  const hitTrig = TRIGGERS.find(k => lower.startsWith(k) || lower.includes(` ${k} `) || lower.includes(`${k} `));
-  if (hitTrig) { keep = true; why = `you said "${hitTrig}"`; }
-  if (!keep) {
-    const fw = FACTWORDS.find(w => lower.includes(w));
-    if (fw) { keep = true; why = `reads like a fact ("${fw}")`; }
-  }
-  let fact = t.replace(/^(please\s+)?(remember(\s+that)?|note(\s+that)?|don'?t forget(\s+that)?|keep in mind(\s+that)?|fyi[\s,:-]*|important[\s,:-]*|for the record[\s,:-]*)\s*/i, "").trim();
-  if (!fact) fact = t;
-  fact = fact.charAt(0).toUpperCase() + fact.slice(1);
-  const tags = [];
-  ["scott", "maria"].forEach(n => {
-    if (lower.includes(n)) { const T = n === "scott" ? "Scott" : "Maria"; if (!tags.includes(T)) tags.push(T); }
-  });
-  (t.match(/(?<!^)(?<![.!?]\s)\b[A-Z][a-z]{2,}\b/g) || []).forEach(c => {
-    if (!tags.includes(c) && !["Remember", "Note"].includes(c)) tags.push(c);
-  });
-  Object.keys(TOPICS).forEach(k => {
-    if (lower.includes(k)) { const T = TOPICS[k]; if (!tags.includes(T)) tags.push(T); }
-  });
-  return { kind: keep ? "keep" : "maybe", why, fact, tags: tags.slice(0, 6) };
-}
-
 // ── State ─────────────────────────────────────────────────
 function freshState() {
   return {
     activeProfile: "scott",
-    activeTab: "tracker",
     // Shared conversion: how many grams equals one pen hit
     penGramEquiv: 0.1,
     scott: {
@@ -68,7 +35,6 @@ function freshState() {
       penStart: Date.now(),
       logs: [],  // { id, ts, type: "hit"|"joint", hits, mg?, sec?, grams? }
     },
-    context: [],
   };
 }
 
@@ -707,97 +673,6 @@ function MariaView({ state, onUpdate }) {
   );
 }
 
-// ── Context View ──────────────────────────────────────────
-function ContextView({ state, onUpdate, activeProfile }) {
-  const [input, setInput] = useState("");
-  const [search, setSearch] = useState("");
-  const verdict = useMemo(() => classify(input), [input]);
-
-  const saveCtx = () => {
-    if (!input.trim()) return;
-    const c = classify(input.trim());
-    onUpdate(d => {
-      d.context.push({ id: genId(), ts: Date.now(), by: activeProfile, text: c.fact, tags: c.tags, why: c.why || "saved manually" });
-    });
-    setInput("");
-  };
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    const items = [...state.context].reverse();
-    return q ? items.filter(i => i.text.toLowerCase().includes(q) || i.tags.join(" ").toLowerCase().includes(q)) : items;
-  }, [state.context, search]);
-
-  const verdictColor = { idle: "var(--text-muted)", keep: "var(--accent,#4ade80)", maybe: "#f59e0b" };
-
-  return (
-    <>
-      <div className="wt-card">
-        <div className="wt-card-title">Add to context</div>
-        <div className="wt-card-sub">Type anything worth remembering — say &ldquo;remember that…&rdquo; to force-save it.</div>
-        <textarea
-          className="wt-ctx-textarea"
-          rows={3}
-          placeholder={`e.g. "remember that ${activeProfile === "scott" ? "Scott" : "Maria"} prefers sativa strains"`}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-        />
-        <div className="wt-verdict" style={{ color: verdictColor[verdict.kind] }}>
-          {verdict.kind === "idle" && "Start typing…"}
-          {verdict.kind === "keep" && <><strong>Worth keeping</strong> — {verdict.why}</>}
-          {verdict.kind === "maybe" && <><strong>Looks like chatter</strong> — save it anyway if it matters</>}
-        </div>
-        {verdict.kind !== "idle" && verdict.fact && (
-          <div className="wt-chips">
-            <span className="wt-chip">will store: &ldquo;{verdict.fact.slice(0, 48)}{verdict.fact.length > 48 ? "…" : ""}&rdquo;</span>
-            {(verdict.tags || []).map(tag => (
-              <span key={tag} className={`wt-chip${["Scott", "Maria"].includes(tag) ? " accent" : ""}`}>#{tag}</span>
-            ))}
-          </div>
-        )}
-        <div className="wt-ctx-actions">
-          <button className="btn" onClick={saveCtx} disabled={verdict.kind === "idle"}>
-            {verdict.kind === "keep" ? "Save to context" : "Save anyway"}
-          </button>
-          <button className="wt-ghost-btn" onClick={() => setInput("")}>Clear</button>
-        </div>
-      </div>
-
-      <div className="wt-card">
-        <div className="wt-card-title">Saved context</div>
-        <div className="wt-card-sub">Facts worth remembering about you both. Shared across profiles.</div>
-        <input className="wt-search" placeholder="Search context…" value={search} onChange={e => setSearch(e.target.value)} />
-        {filtered.length === 0 ? (
-          <p className="wt-empty">{search ? "Nothing matches." : "No context saved yet."}</p>
-        ) : filtered.map(item => (
-          <div key={item.id} className="wt-ctx-item">
-            <div className="wt-ctx-fact">{item.text}</div>
-            {item.tags.length > 0 && (
-              <div className="wt-chips" style={{ marginTop: "0.5rem" }}>
-                {item.tags.map(tag => (
-                  <span key={tag} className={`wt-chip${["Scott", "Maria"].includes(tag) ? " accent" : ""}`}>#{tag}</span>
-                ))}
-              </div>
-            )}
-            <div className="wt-ctx-meta">
-              <span style={{ color: item.by === "scott" ? "#e8915b" : "#b68bd6", display: "flex", alignItems: "center", gap: "5px" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
-                {item.by === "scott" ? "Scott" : "Maria"}
-              </span>
-              <span>{timeAgo(item.ts)}</span>
-              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.why}</span>
-              <button className="wt-ctx-del"
-                onClick={() => onUpdate(d => { d.context = d.context.filter(x => x.id !== item.id); })}>
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 // ── Main Page ─────────────────────────────────────────────
 export default function WeedTrackerPage() {
   const [state, setState] = useState(loadData);
@@ -814,7 +689,7 @@ export default function WeedTrackerPage() {
     });
   };
 
-  const { activeProfile, activeTab } = state;
+  const { activeProfile } = state;
 
   return (
     <div className="module-page">
@@ -838,26 +713,8 @@ export default function WeedTrackerPage() {
         </div>
       </div>
 
-      <div className="wt-tabs">
-        <button className={activeTab === "tracker" ? "active" : ""}
-          onClick={() => onUpdate(d => { d.activeTab = "tracker"; })}>
-          Tracker
-        </button>
-        <button className={activeTab === "context" ? "active" : ""}
-          onClick={() => onUpdate(d => { d.activeTab = "context"; })}>
-          Context
-        </button>
-      </div>
-
-      {activeTab === "tracker" && activeProfile === "scott" && (
-        <ScottyView state={state} onUpdate={onUpdate} />
-      )}
-      {activeTab === "tracker" && activeProfile === "maria" && (
-        <MariaView state={state} onUpdate={onUpdate} />
-      )}
-      {activeTab === "context" && (
-        <ContextView state={state} onUpdate={onUpdate} activeProfile={activeProfile} />
-      )}
+      {activeProfile === "scott" && <ScottyView state={state} onUpdate={onUpdate} />}
+      {activeProfile === "maria" && <MariaView state={state} onUpdate={onUpdate} />}
     </div>
   );
 }
