@@ -332,7 +332,7 @@ function ScottyView({ state, onUpdate }) {
                 onChange={e => { setCustomG(e.target.value); setSelectedG(null); }} />
               <button className="btn" style={{ width: "100%" }} onClick={doLog}
                 disabled={selectedG === null && !customG}>
-                <i className="fa-solid fa-leaf" /> Log {selectedG ?? customG || "?"}g
+                <i className="fa-solid fa-leaf" /> Log {(selectedG ?? customG) || "?"}g
               </button>
             </div>
           </div>
