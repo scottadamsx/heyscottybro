@@ -1,4 +1,5 @@
 import { supabase } from "../utils/supabase";
+import { toDateStr } from "../utils/plannerUtils";
 
 async function uid() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -139,12 +140,16 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
   const userId = await uid();
   const lines = fileText.split(/\r?\n/);
   const rows = lines.map(l => {
-    // Simple CSV parse (handles quoted fields)
+    // Simple CSV parse (handles quoted fields and "" escaped quotes)
     const result = [];
     let cur = "", inQ = false;
     for (let i = 0; i < l.length; i++) {
       const c = l[i];
-      if (c === '"') { inQ = !inQ; continue; }
+      if (c === '"') {
+        if (inQ && l[i + 1] === '"') { cur += '"'; i++; continue; }
+        inQ = !inQ;
+        continue;
+      }
       if (c === "," && !inQ) { result.push(cur); cur = ""; continue; }
       cur += c;
     }
@@ -168,7 +173,7 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
   const existingByEmail = {};
   const existingByPhone = {};
   existingList.forEach(m => {
-    existingByName[`${m.first.toLowerCase()}|${m.last.toLowerCase()}`] = m;
+    existingByName[`${(m.first || "").toLowerCase()}|${(m.last || "").toLowerCase()}`] = m;
     if (m.email) existingByEmail[m.email.toLowerCase()] = m;
     if (m.phone) existingByPhone[m.phone] = m;
   });
@@ -219,7 +224,7 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
       returning++;
     } else if (!match) {
       // Brand new person — queue for insert
-      const newMember = { user_id: userId, first, last, email, phone, attendance: 1, joined_date: new Date().toISOString().split("T")[0] };
+      const newMember = { user_id: userId, first, last, email, phone, attendance: 1, joined_date: toDateStr(new Date()) };
       toInsert.push(newMember);
       existingByName[nameKey] = newMember;
       if (email) existingByEmail[email.toLowerCase()] = newMember;
@@ -229,50 +234,39 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
     // else: same person appeared twice in this file (match has no id = pending insert, or already updated) — skip
   }
 
-  // Batch upserts
+  // Batch upserts — insert returns the new rows so we get their IDs directly
+  // instead of re-querying by name (which could match the wrong member).
+  let insertedRows = [];
   if (toInsert.length) {
-    await supabase.from("hiker_members").insert(toInsert);
+    const { data, error } = await supabase.from("hiker_members").insert(toInsert).select("id");
+    if (error) throw error;
+    insertedRows = data ?? [];
   }
   for (const u of toUpdate) {
-    await supabase.from("hiker_members")
+    const { error } = await supabase.from("hiker_members")
       .update({ attendance: u.attendance, first: u.first, last: u.last, email: u.email, phone: u.phone })
       .eq("id", u.id);
+    if (error) throw error;
   }
 
   // Log the import
   const { data: importRow, error: importErr } = await supabase.from("hiker_imports").insert({
     user_id: userId, filename,
-    imported_at: new Date().toISOString().split("T")[0],
+    imported_at: toDateStr(new Date()),
     hike_name: hikeName || filename,
-    hike_date: hikeDate || new Date().toISOString().split("T")[0],
+    hike_date: hikeDate || toDateStr(new Date()),
     first_timers: firstTimers, returning_count: returning, total: firstTimers + returning,
   }).select().single();
   if (importErr) throw importErr;
 
   // Record attendees for this hike (all inserted + updated members)
-  const attendeeInserts = [];
-  for (const u of toUpdate) {
-    attendeeInserts.push({ hike_import_id: importRow.id, member_id: u.id });
-  }
-  // For new inserts we need to fetch their IDs
-  if (toInsert.length) {
-    const newNames = toInsert.map(m => `${m.first.toLowerCase()}|${m.last.toLowerCase()}`);
-    const { data: newRows } = await supabase
-      .from("hiker_members")
-      .select("id, first, last")
-      .eq("user_id", userId)
-      .in("first", toInsert.map(m => m.first));
-    if (newRows) {
-      newRows.forEach(r => {
-        const key = `${(r.first || "").toLowerCase()}|${(r.last || "").toLowerCase()}`;
-        if (newNames.includes(key)) {
-          attendeeInserts.push({ hike_import_id: importRow.id, member_id: r.id });
-        }
-      });
-    }
-  }
+  const attendeeInserts = [
+    ...toUpdate.map(u => ({ hike_import_id: importRow.id, member_id: u.id })),
+    ...insertedRows.map(r => ({ hike_import_id: importRow.id, member_id: r.id })),
+  ];
   if (attendeeInserts.length) {
-    await supabase.from("hike_attendees").insert(attendeeInserts);
+    const { error } = await supabase.from("hike_attendees").insert(attendeeInserts);
+    if (error) throw error;
   }
 
   return { first_timers: firstTimers, returning, total: firstTimers + returning, filename };

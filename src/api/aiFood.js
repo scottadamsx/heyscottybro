@@ -2,12 +2,14 @@
 // AI helpers for the nutrition + recipe features. All calls go through the
 // existing Vercel proxy (/api/chat) which forwards to the Anthropic API, so no
 // API key is exposed client-side. We force tool use to get strict JSON back.
+import { getAuthHeaders } from "../utils/supabase";
+
 const MODEL = "claude-haiku-4-5-20251001";
 
 async function callClaude(body) {
   const res = await fetch("/api/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ model: MODEL, ...body }),
   });
   const data = await res.json();

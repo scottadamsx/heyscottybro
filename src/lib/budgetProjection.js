@@ -215,7 +215,7 @@ export function narrativeFor(projection) {
       if (m.projectedIncome > 0) parts.push(`Projected income +$${fmt(m.projectedIncome)}.`);
       if (m.projectedExpenses < 0) parts.push(`Projected bills -$${fmt(Math.abs(m.projectedExpenses))}.`);
     }
-    parts.push(`Closes ${m.closingBalance < 0 ? "at " : "at $"}${fmt(m.closingBalance)}.`);
+    parts.push(`Closes at ${m.closingBalance < 0 ? "-" : ""}$${fmt(Math.abs(m.closingBalance))}.`);
     lines.push(`${m.label}: ${parts.join(" ")}`);
   }
   return lines;

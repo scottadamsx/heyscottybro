@@ -11,8 +11,13 @@ import {
 import { computeDashboard, recentTransactions, billState } from "../../../lib/finance/balances";
 import { toCents, formatCents, formatSignedCents } from "../../../lib/finance/money";
 
-const monthStr = () => new Date().toISOString().slice(0, 7) + "-01";
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// Local calendar day/month — toISOString() would give the UTC day, which is
+// yesterday during AU mornings.
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+const monthStr = () => todayStr().slice(0, 7) + "-01";
 
 const TABS = [
   { id: "dashboard", label: "dashboard" },
@@ -57,10 +62,11 @@ export default function FinanceApp() {
     })();
   }, [refresh]);
 
+  // Returns true on success so callers can decide whether to reset their form.
   const run = async (fn) => {
     setBusy(true); setErr("");
-    try { await fn(); await refresh(); }
-    catch (e) { setErr(e.message || "Action failed."); }
+    try { await fn(); await refresh(); return true; }
+    catch (e) { setErr(e.message || "Action failed."); return false; }
     finally { setBusy(false); }
   };
 
@@ -176,7 +182,7 @@ function DashboardView({ data, dash, run, busy }) {
 function IncomeView({ data, run, busy }) {
   const [f, upd, reset] = useForm({ amount: "", pay_date: todayStr(), source: "", notes: "", received: false });
   const submit = (e) => { e.preventDefault(); if (!(Number(f.amount) > 0)) return;
-    run(() => addIncome({ amount: toCents(f.amount), payDate: f.pay_date, source: f.source, notes: f.notes, received: f.received })).then(reset); };
+    run(() => addIncome({ amount: toCents(f.amount), payDate: f.pay_date, source: f.source, notes: f.notes, received: f.received })).then((ok) => ok && reset()); };
   const list = [...data.income].sort((a, b) => b.pay_date.localeCompare(a.pay_date));
   return (
     <div className="fin-grid">
@@ -219,7 +225,7 @@ function BillsView({ data, dash, run, busy }) {
   const cats = data.categories.filter((c) => c.kind === "expense");
   const [f, upd, reset] = useForm({ name: "", amount: "", due_day: "1", category_id: "", autopay: false });
   const submit = (e) => { e.preventDefault(); if (!f.name || !(Number(f.amount) > 0)) return;
-    run(() => addRecurringBill({ name: f.name, amount: toCents(f.amount), due_day: Number(f.due_day), category_id: f.category_id || null, autopay: f.autopay, active: true, start_date: todayStr() })).then(reset); };
+    run(() => addRecurringBill({ name: f.name, amount: toCents(f.amount), due_day: Number(f.due_day), category_id: f.category_id || null, autopay: f.autopay, active: true, start_date: todayStr() })).then((ok) => ok && reset()); };
   const instances = [...data.billInstances].sort((a, b) => a.due_date.localeCompare(b.due_date));
   return (
     <div className="fin-grid">
@@ -274,7 +280,7 @@ function ExpensesView({ data, run, busy }) {
   const [catFilter, setCatFilter] = useState("");
   const [f, upd, reset] = useForm({ amount: "", date: todayStr(), category_id: "", description: "" });
   const submit = (e) => { e.preventDefault(); if (!(Number(f.amount) > 0)) return;
-    run(() => addExpense({ amount: toCents(f.amount), date: f.date, categoryId: f.category_id || null, description: f.description })).then(reset); };
+    run(() => addExpense({ amount: toCents(f.amount), date: f.date, categoryId: f.category_id || null, description: f.description })).then((ok) => ok && reset()); };
   const catName = (id) => cats.find((c) => c.id === id)?.name || "—";
   const list = data.expenses
     .filter((e) => !q || (e.description || "").toLowerCase().includes(q.toLowerCase()))
@@ -328,7 +334,7 @@ function ExpensesView({ data, run, busy }) {
 function SavingsView({ data, dash, run, busy }) {
   const [f, upd, reset] = useForm({ name: "", target_amount: "", target_date: "" });
   const submit = (e) => { e.preventDefault(); if (!f.name || !(Number(f.target_amount) > 0)) return;
-    run(() => addSavingsGoal({ name: f.name, target_amount: toCents(f.target_amount), target_date: f.target_date || null, color: "#4ade80" })).then(reset); };
+    run(() => addSavingsGoal({ name: f.name, target_amount: toCents(f.target_amount), target_date: f.target_date || null, color: "#4ade80" })).then((ok) => ok && reset()); };
   return (
     <div className="fin-grid">
       <div className="db-card col-12 fin-pool">
@@ -370,7 +376,7 @@ function AllocateBox({ goalId, run, busy }) {
     <div className="fin-inline">
       <input type="number" step="0.01" min="0" placeholder="$" value={amt} onChange={(e) => setAmt(e.target.value)} />
       <button className="btn btn-sm fin-pay" disabled={busy || !(Number(amt) > 0)}
-        onClick={() => run(() => allocateToGoal(goalId, toCents(amt), "pool")).then(() => setAmt(""))}>allocate</button>
+        onClick={() => run(() => allocateToGoal(goalId, toCents(amt), "pool")).then((ok) => ok && setAmt(""))}>allocate</button>
     </div>
   );
 }
@@ -380,7 +386,7 @@ function DebtView({ data, run, busy }) {
   const [f, upd, reset] = useForm({ name: "", kind: "loan", original_balance: "", apr: "", minimum_payment: "", due_day: "" });
   const submit = (e) => { e.preventDefault(); if (!f.name || !(Number(f.original_balance) > 0)) return;
     run(() => addDebt({ name: f.name, kind: f.kind, original_balance: toCents(f.original_balance), current_balance: toCents(f.original_balance),
-      apr: Number(f.apr) || 0, minimum_payment: toCents(f.minimum_payment || 0), due_day: f.due_day ? Number(f.due_day) : null })).then(reset); };
+      apr: Number(f.apr) || 0, minimum_payment: toCents(f.minimum_payment || 0), due_day: f.due_day ? Number(f.due_day) : null })).then((ok) => ok && reset()); };
   return (
     <div className="fin-grid">
       <form className="db-card col-5 fin-form" onSubmit={submit}>
@@ -422,7 +428,7 @@ function PayBox({ debtId, run, busy }) {
     <div className="fin-inline">
       <input type="number" step="0.01" min="0" placeholder="$ payment" value={amt} onChange={(e) => setAmt(e.target.value)} />
       <button className="btn btn-sm fin-pay" disabled={busy || !(Number(amt) > 0)}
-        onClick={() => run(() => recordDebtPayment(debtId, { amount: toCents(amt), principal: toCents(amt) })).then(() => setAmt(""))}>pay</button>
+        onClick={() => run(() => recordDebtPayment(debtId, { amount: toCents(amt), principal: toCents(amt) })).then((ok) => ok && setAmt(""))}>pay</button>
     </div>
   );
 }

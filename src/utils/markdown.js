@@ -63,7 +63,7 @@ export function renderMarkdown(text) {
     if (heading) { closeLists(); const lvl = Math.min(heading[1].length + 3, 6); html += `<h${lvl}>${inline(escapeHtml(heading[2]))}</h${lvl}>`; i++; continue; }
 
     const ul = line.match(/^\s*[-*]\s+(.*)$/);
-    if (ul) { if (!inOl) { /* keep */ } if (!inUl) { closeLists(); html += "<ul>"; inUl = true; } html += `<li>${inline(escapeHtml(ul[1]))}</li>`; i++; continue; }
+    if (ul) { if (!inUl) { closeLists(); html += "<ul>"; inUl = true; } html += `<li>${inline(escapeHtml(ul[1]))}</li>`; i++; continue; }
 
     const ol = line.match(/^\s*\d+\.\s+(.*)$/);
     if (ol) { if (!inOl) { closeLists(); html += "<ol>"; inOl = true; } html += `<li>${inline(escapeHtml(ol[1]))}</li>`; i++; continue; }

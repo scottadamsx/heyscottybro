@@ -3,6 +3,7 @@
 // single admin account. Direct Supabase calls (no localStorage fallback — meal
 // photos and shared data can't live in localStorage meaningfully).
 import { supabase } from "../utils/supabase";
+import { todayStr } from "../utils/nutrition";
 
 const BUCKET = "nutrition";
 
@@ -67,7 +68,7 @@ export async function createFoodLog(profileId, entry) {
   const row = {
     user_id: userId,
     profile_id: profileId,
-    date: entry.date || new Date().toISOString().split("T")[0],
+    date: entry.date || todayStr(), // local day, not UTC
     meal_type: entry.meal_type || "snack",
     name: entry.name,
     description: entry.description || "",
@@ -139,7 +140,7 @@ export async function saveWeight(profileId, { date, weight_kg, note }) {
   const row = {
     user_id: userId,
     profile_id: profileId,
-    date: date || new Date().toISOString().split("T")[0],
+    date: date || todayStr(), // local day, not UTC
     weight_kg: Number(weight_kg),
     note: note || "",
   };

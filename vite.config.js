@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
               proxyReq.setHeader("anthropic-dangerous-direct-browser-access", "true");
               proxyReq.removeHeader("origin");
               proxyReq.removeHeader("referer");
+              proxyReq.removeHeader("authorization"); // Supabase session token is for our own /api, not Anthropic
             });
           },
         },
@@ -38,6 +39,7 @@ export default defineConfig(({ mode }) => {
               proxyReq.setHeader("anthropic-dangerous-direct-browser-access", "true");
               proxyReq.removeHeader("origin");
               proxyReq.removeHeader("referer");
+              proxyReq.removeHeader("authorization"); // Supabase session token is for our own /api, not Anthropic
             });
           },
         },

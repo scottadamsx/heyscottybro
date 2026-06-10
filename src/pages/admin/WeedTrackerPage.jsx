@@ -6,26 +6,28 @@ const DAY = 86400000;
 // Scotty gram presets
 const GRAM_PRESETS = [0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5];
 
-// Taper schedule
-const SCOTT_TAPER_INTERVAL = 3;
-const SCOTT_TAPER_STEP = 0.2;
-const MARIA_TAPER_INTERVAL = 3;
-const MARIA_TAPER_STEP = 1;
+// Taper schedule (shared — both profiles step down the same way)
+const TAPER_INTERVAL = 3; // days
+const TAPER_STEP = 0.2;   // grams
+
+// The shared reference: 1.5g of ~30% THC flower per day, for both of us.
+const FLOWER_THC_PCT = 30;
 
 // ── State ─────────────────────────────────────────────────
 function freshState() {
   return {
     activeProfile: "scott",
+    // ONE daily limit for Scott AND Maria: grams of flower (~30% THC), with
+    // pen hits counted via the shared gram-equivalent conversion below.
+    sharedDailyCapG: 1.5,
     // Shared conversion: how many grams equals one pen hit
     penGramEquiv: 0.1,
     scott: {
-      dailyCapG: 1.5,
       taperEnabled: true,
       taperStart: null,
       logs: [],  // { id, ts, type: "joint"|"pen", grams, penHits? }
     },
     maria: {
-      hitsPerDayCap: 8,
       cartridgeMg: 1000,
       mgPerSec: 1.5,
       hitSec: 6,
@@ -45,6 +47,8 @@ function loadData() {
       const fresh = freshState();
       return {
         ...fresh, ...d,
+        // migrate: older data kept the cap on Scott's profile only
+        sharedDailyCapG: d.sharedDailyCapG ?? d.scott?.dailyCapG ?? fresh.sharedDailyCapG,
         penGramEquiv: d.penGramEquiv ?? fresh.penGramEquiv,
         scott: { ...fresh.scott, ...(d.scott || {}) },
         maria: { ...fresh.maria, ...(d.maria || {}) },
@@ -77,16 +81,20 @@ function taperDays(taperStart) {
   return Math.floor((Date.now() - taperStart) / DAY);
 }
 
-function scottTaperedCap(scott) {
-  if (!scott.taperEnabled || !scott.taperStart) return scott.dailyCapG;
-  const intervals = Math.floor(taperDays(scott.taperStart) / SCOTT_TAPER_INTERVAL);
-  return Math.max(0.1, +(scott.dailyCapG - intervals * SCOTT_TAPER_STEP).toFixed(2));
+/** Shared daily cap (grams), reduced by each profile's own taper progress. */
+function taperedCapG(capG, profile) {
+  if (!profile.taperEnabled || !profile.taperStart) return capG;
+  const intervals = Math.floor(taperDays(profile.taperStart) / TAPER_INTERVAL);
+  return Math.max(0.1, +(capG - intervals * TAPER_STEP).toFixed(2));
 }
 
-function mariaTaperedHitsPerDay(maria, base) {
-  if (!maria.taperEnabled || !maria.taperStart) return base;
-  const intervals = Math.floor(taperDays(maria.taperStart) / MARIA_TAPER_INTERVAL);
-  return Math.max(1, base - intervals * MARIA_TAPER_STEP);
+/** Grams smoked in a set of logs — pen hits count via the shared conversion. */
+function gramsOf(logs, conv) {
+  return logs.reduce((a, l) => {
+    if (l.grams != null) return a + (Number(l.grams) || 0);
+    if (l.type === "hit" || !l.type) return a + conv; // Maria's pen hits: 1 hit ≈ conv grams
+    return a;
+  }, 0);
 }
 
 // ── Scotty View ───────────────────────────────────────────
@@ -99,10 +107,10 @@ function ScottyView({ state, onUpdate }) {
 
   const s = state.scott;
   const conv = state.penGramEquiv;
-  const effectiveCap = scottTaperedCap(s);
+  const effectiveCap = taperedCapG(state.sharedDailyCapG, s);
   const daysElapsed = taperDays(s.taperStart);
   const nextReduction = s.taperEnabled && s.taperStart
-    ? SCOTT_TAPER_INTERVAL - (daysElapsed % SCOTT_TAPER_INTERVAL)
+    ? TAPER_INTERVAL - (daysElapsed % TAPER_INTERVAL)
     : null;
 
   // All logs count by grams (pen hits are pre-converted to gram-equiv when logged)
@@ -145,7 +153,7 @@ function ScottyView({ state, onUpdate }) {
           <div>
             <div className="wt-card-title">Today</div>
             <div className="wt-card-sub">
-              Cap is <strong>{effectiveCap.toFixed(2)}g</strong> — joints + pen hits counted together.
+              Cap is <strong>{effectiveCap.toFixed(2)}g</strong> flower (~{FLOWER_THC_PCT}% THC) — shared with Maria, joints + pen hits counted together.
             </div>
           </div>
           {s.taperEnabled && s.taperStart && (
@@ -217,17 +225,17 @@ function ScottyView({ state, onUpdate }) {
       {/* Taper plan */}
       <div className="wt-card">
         <div className="wt-card-title">Taper plan</div>
-        <div className="wt-card-sub">Auto-reduces your cap by {SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days.</div>
+        <div className="wt-card-sub">Auto-reduces your cap by {TAPER_STEP}g every {TAPER_INTERVAL} days.</div>
 
         <div className="wt-ctrl">
           <div>
-            <div className="wt-ctrl-label">Starting daily cap</div>
-            <div className="wt-ctrl-sub">grams per day</div>
+            <div className="wt-ctrl-label">Shared daily cap</div>
+            <div className="wt-ctrl-sub">grams per day — same limit for you and Maria</div>
           </div>
           <div className="wt-stepper">
-            <button onClick={() => onUpdate(d => { d.scott.dailyCapG = Math.max(0.25, +(d.scott.dailyCapG - 0.25).toFixed(2)); })}>−</button>
-            <span>{s.dailyCapG}g</span>
-            <button onClick={() => onUpdate(d => { d.scott.dailyCapG = +(d.scott.dailyCapG + 0.25).toFixed(2); })}>+</button>
+            <button onClick={() => onUpdate(d => { d.sharedDailyCapG = Math.max(0.25, +(d.sharedDailyCapG - 0.25).toFixed(2)); })}>−</button>
+            <span>{state.sharedDailyCapG}g</span>
+            <button onClick={() => onUpdate(d => { d.sharedDailyCapG = +(d.sharedDailyCapG + 0.25).toFixed(2); })}>+</button>
           </div>
         </div>
 
@@ -246,7 +254,7 @@ function ScottyView({ state, onUpdate }) {
         <div className="wt-ctrl">
           <div>
             <div className="wt-ctrl-label">Auto-taper</div>
-            <div className="wt-ctrl-sub">−{SCOTT_TAPER_STEP}g every {SCOTT_TAPER_INTERVAL} days</div>
+            <div className="wt-ctrl-sub">−{TAPER_STEP}g every {TAPER_INTERVAL} days</div>
           </div>
           <button
             className={`wt-toggle${s.taperEnabled ? " on" : ""}`}
@@ -270,7 +278,7 @@ function ScottyView({ state, onUpdate }) {
               <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
             </div>
             <div className="wt-taper-row">
-              <span>Goal (in {Math.ceil(s.dailyCapG / SCOTT_TAPER_STEP) * SCOTT_TAPER_INTERVAL}d)</span>
+              <span>Goal (in {Math.ceil(state.sharedDailyCapG / TAPER_STEP) * TAPER_INTERVAL}d)</span>
               <strong>0.1g/day</strong>
             </div>
             <button className="wt-ghost-btn" style={{ marginTop: "0.5rem" }}
@@ -397,25 +405,20 @@ function MariaView({ state, onUpdate }) {
   const remain = Math.max(0, m.cartridgeMg - usedThisPen);
   const pct = Math.max(0, Math.min(100, (remain / m.cartridgeMg) * 100));
 
-  const baseHitsPerDay = m.hitsPerDayCap;
-  const effectiveHitsPerDay = mariaTaperedHitsPerDay(m, baseHitsPerDay);
+  // Same shared gram cap as Scott — pen hits count via the gram conversion.
+  const effectiveCapG = taperedCapG(state.sharedDailyCapG, m);
+  const capHitsEquiv = conv > 0 ? +(effectiveCapG / conv).toFixed(1) : 0;
   const daysElapsed = taperDays(m.taperStart);
   const nextReduction = m.taperEnabled && m.taperStart
-    ? MARIA_TAPER_INTERVAL - (daysElapsed % MARIA_TAPER_INTERVAL)
+    ? TAPER_INTERVAL - (daysElapsed % TAPER_INTERVAL)
     : null;
 
-  // Count hits: pen entries = 1 hit each, joint entries = grams / conv
   const todayLogs = useMemo(() => m.logs.filter(l => toDateStr(l.ts) === today()), [m.logs]);
-  const todayHitCount = useMemo(() =>
-    todayLogs.reduce((a, l) => {
-      if (l.type === "joint") return a + (l.hits || 0);
-      return a + 1; // legacy or type="hit"
-    }, 0),
-    [todayLogs]
-  );
+  const todayGrams = useMemo(() => gramsOf(todayLogs, conv), [todayLogs, conv]);
+  const todayHitCount = conv > 0 ? todayGrams / conv : 0;
   const todayMg = todayLogs.filter(l => !l.type || l.type === "hit").reduce((a, l) => a + (l.mg || 0), 0);
-  const hitBarPct = Math.min(100, (todayHitCount / effectiveHitsPerDay) * 100);
-  const isOver = todayHitCount > effectiveHitsPerDay;
+  const hitBarPct = effectiveCapG > 0 ? Math.min(100, (todayGrams / effectiveCapG) * 100) : 0;
+  const isOver = todayGrams > effectiveCapG;
 
   // Pace
   const elapsed = Math.max(0, (Date.now() - m.penStart) / DAY);
@@ -495,13 +498,10 @@ function MariaView({ state, onUpdate }) {
 
       {/* Today's progress bar */}
       <div className="wt-card">
-        <div className="wt-card-title">Today&apos;s hits</div>
+        <div className="wt-card-title">Today</div>
         <div className="wt-card-sub">
-          Daily cap: <strong>{effectiveHitsPerDay} hits</strong>
-          {m.taperEnabled && m.taperStart && effectiveHitsPerDay < baseHitsPerDay && (
-            <span className="wt-taper-reduced"> (tapered down from {baseHitsPerDay})</span>
-          )}
-          {" "}· each pen hit ≈{mgPerHit}mg · joints converted at {conv.toFixed(2)}g/hit.
+          Daily cap: <strong>{effectiveCapG.toFixed(2)}g</strong> flower (~{FLOWER_THC_PCT}% THC) — shared with Scott
+          {" "}· ≈{capHitsEquiv} pen hits · 1 hit ≈ {conv.toFixed(2)}g · each pen hit ≈{mgPerHit}mg.
         </div>
         <div className="wt-bar-wrap">
           <div className="wt-bar-track">
@@ -513,7 +513,7 @@ function MariaView({ state, onUpdate }) {
             }} />
           </div>
           <div className="wt-bar-labels">
-            <span>{todayHitCount.toFixed(1)} of {effectiveHitsPerDay} hits</span>
+            <span>{todayGrams.toFixed(2)}g of {effectiveCapG.toFixed(2)}g (≈{todayHitCount.toFixed(1)} hits)</span>
             <span style={{ color: isOver ? "#f87171" : "#b68bd6" }}>{Math.round(todayMg)}mg pen today</span>
           </div>
         </div>
@@ -583,12 +583,12 @@ function MariaView({ state, onUpdate }) {
 
       {/* Taper */}
       <div className="wt-card">
-        <div className="wt-card-title">Hit taper — dab pen</div>
-        <div className="wt-card-sub">Auto-reduces daily hit cap by {MARIA_TAPER_STEP} every {MARIA_TAPER_INTERVAL} days.</div>
+        <div className="wt-card-title">Taper plan</div>
+        <div className="wt-card-sub">Auto-reduces the shared daily cap by {TAPER_STEP}g every {TAPER_INTERVAL} days.</div>
         <div className="wt-ctrl">
           <div>
             <div className="wt-ctrl-label">Auto-taper</div>
-            <div className="wt-ctrl-sub">−{MARIA_TAPER_STEP} hit every {MARIA_TAPER_INTERVAL} days</div>
+            <div className="wt-ctrl-sub">−{TAPER_STEP}g every {TAPER_INTERVAL} days</div>
           </div>
           <button
             className={`wt-toggle${m.taperEnabled ? " on" : ""}`}
@@ -605,7 +605,7 @@ function MariaView({ state, onUpdate }) {
         )}
         {m.taperEnabled && m.taperStart && (
           <div className="wt-taper-status">
-            <div className="wt-taper-row"><span>Current daily limit</span><strong>{effectiveHitsPerDay} hits</strong></div>
+            <div className="wt-taper-row"><span>Current daily limit</span><strong>{effectiveCapG.toFixed(2)}g (≈{capHitsEquiv} hits)</strong></div>
             <div className="wt-taper-row">
               <span>Next reduction</span>
               <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
@@ -623,7 +623,8 @@ function MariaView({ state, onUpdate }) {
         <div className="wt-card-title">Settings &amp; calibration</div>
         <div className="wt-card-sub">Nudge these until the gauge matches reality.</div>
         {[
-          { label: "Daily hit cap", sub: "hits per day", val: `${m.hitsPerDayCap}`, dec: () => onUpdate(d => { d.maria.hitsPerDayCap = Math.max(1, d.maria.hitsPerDayCap - 1); }), inc: () => onUpdate(d => { d.maria.hitsPerDayCap++; }) },
+          { label: "Shared daily cap", sub: "grams per day — same limit as Scott", val: `${state.sharedDailyCapG}g`, dec: () => onUpdate(d => { d.sharedDailyCapG = Math.max(0.25, +(d.sharedDailyCapG - 0.25).toFixed(2)); }), inc: () => onUpdate(d => { d.sharedDailyCapG = +(d.sharedDailyCapG + 0.25).toFixed(2); }) },
+          { label: "1 pen hit =", sub: "grams equivalent (shared setting)", val: `${conv.toFixed(2)}g`, dec: () => onUpdate(d => { d.penGramEquiv = Math.max(0.05, +(d.penGramEquiv - 0.05).toFixed(2)); }), inc: () => onUpdate(d => { d.penGramEquiv = +(d.penGramEquiv + 0.05).toFixed(2); }) },
           { label: "Make it last", sub: "days per cartridge", val: `${m.daysTarget}d`, dec: () => onUpdate(d => { d.maria.daysTarget = Math.max(1, d.maria.daysTarget - 1); }), inc: () => onUpdate(d => { d.maria.daysTarget++; }) },
           { label: "Hit length", sub: "seconds", val: `${m.hitSec}s`, dec: () => onUpdate(d => { d.maria.hitSec = Math.max(1, d.maria.hitSec - 1); }), inc: () => onUpdate(d => { d.maria.hitSec++; }) },
           { label: "mg per second", sub: "at 3.5V — calibration", val: `${m.mgPerSec.toFixed(1)}`, dec: () => onUpdate(d => { d.maria.mgPerSec = Math.max(0.1, +(d.maria.mgPerSec - 0.1).toFixed(1)); }), inc: () => onUpdate(d => { d.maria.mgPerSec = +(d.maria.mgPerSec + 0.1).toFixed(1); }) },

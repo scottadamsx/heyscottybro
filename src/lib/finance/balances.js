@@ -16,7 +16,13 @@
 //  income only — you can't set aside money you haven't been paid.
 // ════════════════════════════════════════════════════════════
 
-const iso = (d) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10));
+// Format as the LOCAL calendar day. toISOString() reports the UTC day, which
+// is off by one in UTC+ timezones (e.g. addDays("2026-06-10", 7) would have
+// returned "2026-06-16").
+const iso = (d) => {
+  if (!(d instanceof Date)) return String(d).slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 const sum = (rows, pick) => rows.reduce((t, r) => t + (Number(pick(r)) || 0), 0);
 
 export function addDays(dateStr, n) {

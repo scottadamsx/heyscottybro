@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
+import { toDateStr } from "../../utils/plannerUtils";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -19,7 +20,7 @@ export default function HikerPage() {
   const [pendingFiles, setPendingFiles] = useState(null);
   const [hikeModal, setHikeModal] = useState(false);
   const [hikeName, setHikeName] = useState("");
-  const [hikeDate, setHikeDate] = useState(new Date().toISOString().split("T")[0]);
+  const [hikeDate, setHikeDate] = useState(() => toDateStr(new Date()));
 
   // History
   const [hikes, setHikes] = useState([]);
@@ -45,7 +46,7 @@ export default function HikerPage() {
     if (!files.length) return;
     setPendingFiles(files);
     setHikeName("");
-    setHikeDate(new Date().toISOString().split("T")[0]);
+    setHikeDate(toDateStr(new Date()));
     setHikeModal(true);
   };
 

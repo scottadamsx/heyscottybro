@@ -18,6 +18,7 @@ import {
 import { todayStr as nutritionToday } from "../utils/nutrition";
 import { renderMarkdown } from "../utils/markdown";
 import { toDateStr } from "../utils/plannerUtils";
+import { getAuthHeaders } from "../utils/supabase";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -206,7 +207,7 @@ const TOOLS = [
   },
   {
     name: "log_weight",
-    description: "Record a weigh-in (in kg) for a nutrition profile on a date.",
+    description: "Record a weigh-in for a nutrition profile on a date. Scott talks in POUNDS — convert lb to kg (lb × 0.4536) before passing weight_kg.",
     input_schema: {
       type: "object",
       properties: {
@@ -405,10 +406,13 @@ export default function ChatBot() {
       let msgs = nextApi;
       let finalDisplay = nextDisplay;
 
-      while (true) {
+      const authHeaders = await getAuthHeaders();
+      // Cap the agentic loop so a runaway tool-use chain can't spin forever.
+      for (let turn = 0; ; turn++) {
+        if (turn >= 15) throw new Error("Too many tool calls in one turn — try a smaller request.");
         const res = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2048, system: buildSystemPrompt(), tools: TOOLS, messages: msgs }),
         });
         const data = await res.json();

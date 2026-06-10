@@ -9,7 +9,21 @@
       "mcp__claude_ai_Supabase__apply_migration",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__get_logs",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "mcp__claude_ai_Supabase__get_publishable_keys",
+      "Bash(cat vercel.json vite.config.js && sed -E 's/=\\(.{6}\\).*/=\\\\1…\\(redacted\\)/' .env)",
+      "Bash(perl -pi -e 's/\\\\.then\\\\\\(reset\\\\\\); \\\\};/.then\\(\\(ok\\) => ok && reset\\(\\)\\); };/g; s/\\\\.then\\\\\\(\\\\\\(\\\\\\) => setAmt\\\\\\(\"\"\\\\\\)\\\\\\)/.then\\(\\(ok\\) => ok && setAmt\\(\"\"\\)\\)/g' src/pages/admin/finance/FinanceApp.jsx)",
+      "Bash(sed -n '1287,1400p' src/index.css)",
+      "Read(//dev/**)",
+      "mcp__claude_ai_Supabase__get_advisors"
+    ],
+    "additionalDirectories": [
+      "/Users/heyscottybro/Documents/GitHub/heyscottybro"
     ]
   }
 }

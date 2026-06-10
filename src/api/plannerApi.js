@@ -7,8 +7,9 @@
  * - Local mode (toggle in the dashboard, or VITE_LOCAL_DATA=1): every call uses
  *   localStorage consistently — handy for offline testing.
  */
-import { supabase } from "../utils/supabase";
+import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
+import { toDateStr } from "../utils/plannerUtils";
 
 /* ── connection + mode state ─────────────────── */
 let _connected = null; // null = unknown, true, false
@@ -97,7 +98,9 @@ export async function newReminder({ name, date, time, description, recurrence, p
 }
 
 export async function completeReminder(id) {
-  const completed_date = new Date().toISOString().split("T")[0];
+  // Local calendar day — toISOString() would give the UTC day, which is
+  // yesterday during AU mornings.
+  const completed_date = toDateStr(new Date());
   return op(
     async () => { const { error } = await supabase.from("reminders").update({ completed: true, completed_date }).eq("id", id); if (error) throw error; },
     () => local.update("reminders", id, { completed: true, completed_date }),
@@ -455,7 +458,7 @@ export async function getSession() {
 export async function getAIBriefing({ reminders, events, projects, initiatives }) {
   const today = new Date();
   const todayStr = today.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const todayIso = today.toISOString().split("T")[0];
+  const todayIso = toDateStr(today); // local day, not UTC
 
   const todayTasks = reminders.filter((r) => !r.completed && r.date === todayIso).map((r) => `- ${r.name}`).join("\n") || "None";
   const upcomingTasks = reminders.filter((r) => !r.completed && r.date > todayIso).slice(0, 10).map((r) => `- ${r.name} (${r.date})`).join("\n") || "None";
@@ -484,7 +487,7 @@ Write Scott a short, friendly, personalised morning briefing (3-5 sentences). Co
 
   const response = await fetch("/api/briefing", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 300, messages: [{ role: "user", content: prompt }] }),
   });
 

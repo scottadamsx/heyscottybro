@@ -4,6 +4,7 @@
  * Postgres RPCs (fin_*). RLS scopes everything to the logged-in user.
  */
 import { supabase } from "../utils/supabase";
+import { toDateStr } from "../utils/plannerUtils";
 
 async function uid() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -77,8 +78,8 @@ export async function deleteRecurringBill(id) {
 
 /* ── Bill instances ── */
 export async function generateBillInstances(month) {
-  // month: 'YYYY-MM-01' string or Date → first of month
-  const m = typeof month === "string" ? month : new Date(month).toISOString().slice(0, 7) + "-01";
+  // month: 'YYYY-MM-01' string or Date → first of month (local, not UTC)
+  const m = typeof month === "string" ? month : toDateStr(new Date(month)).slice(0, 7) + "-01";
   return one(await supabase.rpc("fin_generate_bill_instances", { p_month: m }));
 }
 export async function addOneOffBill({ name, amount, dueDate, categoryId }) {
@@ -89,7 +90,7 @@ export async function addOneOffBill({ name, amount, dueDate, categoryId }) {
 }
 export async function payBill(id) {
   const r = await supabase.from("fin_bill_instances")
-    .update({ paid: true, paid_date: new Date().toISOString().slice(0, 10) }).eq("id", id);
+    .update({ paid: true, paid_date: toDateStr(new Date()) }).eq("id", id);
   if (r.error) throw r.error;
 }
 export async function unpayBill(id) {

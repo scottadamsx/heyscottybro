@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
 
 const KEY = "accountability";
-const todayStr = toDateStr(new Date());
 
 function genId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -17,6 +16,8 @@ function load() {
 
 export default function AccountabilitySummary() {
   const [data, setData] = useState(load);
+  // Computed per render (not module-level) so it stays correct past midnight.
+  const todayStr = toDateStr(new Date());
   const trackers = data.trackers || [];
   const logs = data.logs || [];
 

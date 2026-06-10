@@ -1,34 +1,36 @@
 -- ═══════════════════════════════════════════
 -- heyScottyBro Planner — Supabase Schema
 -- Run this in your Supabase SQL editor
+-- Idempotent: safe to re-run on an existing database without losing data.
 -- ═══════════════════════════════════════════
 
--- Drop existing tables (clean slate)
-DROP TABLE IF EXISTS budget_config CASCADE;
-DROP TABLE IF EXISTS transactions CASCADE;
-DROP TABLE IF EXISTS events CASCADE;
-DROP TABLE IF EXISTS journal CASCADE;
-DROP TABLE IF EXISTS reminders CASCADE;
+-- ⚠️ DANGER — clean-slate wipe. Only uncomment if you intend to ERASE ALL DATA.
+-- DROP TABLE IF EXISTS budget_config CASCADE;
+-- DROP TABLE IF EXISTS transactions CASCADE;
+-- DROP TABLE IF EXISTS events CASCADE;
+-- DROP TABLE IF EXISTS journal CASCADE;
+-- DROP TABLE IF EXISTS reminders CASCADE;
 
 -- Enable Row Level Security on all tables
 -- (your user_id from Supabase Auth is stored on each row)
 
 -- Reminders / Tasks
-CREATE TABLE reminders (
+CREATE TABLE IF NOT EXISTS reminders (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name          TEXT NOT NULL,
-  date          DATE NOT NULL,
+  date          DATE,                  -- optional: tasks may have no due date
   recurrence    TEXT DEFAULT 'none',   -- none | daily | weekly | monthly
   completed     BOOLEAN DEFAULT FALSE,
   completed_date DATE,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON reminders;
 CREATE POLICY "owner only" ON reminders USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Journal entries
-CREATE TABLE journal (
+CREATE TABLE IF NOT EXISTS journal (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   title      TEXT NOT NULL,
@@ -37,10 +39,11 @@ CREATE TABLE journal (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE journal ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON journal;
 CREATE POLICY "owner only" ON journal USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Calendar events
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   title       TEXT NOT NULL,
@@ -49,10 +52,11 @@ CREATE TABLE events (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON events;
 CREATE POLICY "owner only" ON events USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Budget transactions
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   description TEXT NOT NULL,
@@ -64,10 +68,11 @@ CREATE TABLE transactions (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON transactions;
 CREATE POLICY "owner only" ON transactions USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Budget config (one row per user)
-CREATE TABLE budget_config (
+CREATE TABLE IF NOT EXISTS budget_config (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id        UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   categories     JSONB DEFAULT '["Food","Transport","Bills","Entertainment","Other"]',
@@ -76,6 +81,7 @@ CREATE TABLE budget_config (
   created_at     TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE budget_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON budget_config;
 CREATE POLICY "owner only" ON budget_config USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ═══════════════════════════════════════════
@@ -125,13 +131,44 @@ DROP POLICY IF EXISTS "owner only" ON initiatives;
 CREATE POLICY "owner only" ON initiatives USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Extend reminders with project linkage and limited recurrence
+ALTER TABLE reminders ALTER COLUMN date DROP NOT NULL;  -- allow tasks without a due date
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS project_id    UUID REFERENCES projects(id) ON DELETE SET NULL;
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recur_until   DATE;
 ALTER TABLE reminders ADD COLUMN IF NOT EXISTS recur_times   INTEGER;
+-- Columns the UI already writes (must exist or inserts fail)
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS time             TIME;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS description      TEXT;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS show_on_calendar BOOLEAN DEFAULT TRUE;
+-- Future-proofing: priority + manual ordering
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS priority   TEXT DEFAULT 'none' CHECK (priority IN ('none','low','medium','high'));
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
 
 -- Extend events with project and event type linkage
 ALTER TABLE events ADD COLUMN IF NOT EXISTS project_id    UUID REFERENCES projects(id) ON DELETE SET NULL;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type_id UUID REFERENCES event_types(id) ON DELETE SET NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS cost          NUMERIC DEFAULT 0;
+-- Future-proofing: times, multi-day events, location
+ALTER TABLE events ADD COLUMN IF NOT EXISTS time      TIME;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time  TIME;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS end_date  DATE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS location  TEXT DEFAULT '';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS all_day   BOOLEAN DEFAULT TRUE;
+
+-- Future-proofing: journal tags + mood
+ALTER TABLE journal ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE journal ADD COLUMN IF NOT EXISTS mood TEXT;
+
+-- Future-proofing: project lifecycle
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS archived   BOOLEAN DEFAULT FALSE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS due_date   DATE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+
+-- Indexes for the common "my stuff by date" queries
+CREATE INDEX IF NOT EXISTS reminders_user_date_idx    ON reminders (user_id, date);
+CREATE INDEX IF NOT EXISTS reminders_user_project_idx ON reminders (user_id, project_id);
+CREATE INDEX IF NOT EXISTS events_user_date_idx       ON events (user_id, date);
+CREATE INDEX IF NOT EXISTS journal_user_date_idx      ON journal (user_id, date DESC);
+CREATE INDEX IF NOT EXISTS transactions_user_date_idx ON transactions (user_id, date DESC);
 
 -- ═══════════════════════════════════════════
 -- SJHC Hiker Database
@@ -751,6 +788,33 @@ BEGIN
   DELETE FROM fin_settings WHERE user_id = v_user_id;
 END;
 $$;
+
+-- ── Hardening (Supabase advisor fixes) ────────────────────────────────
+-- Pin search_path on helper/RPC functions and keep finance RPCs
+-- (SECURITY DEFINER) away from the anon role — they're authed-only.
+DO $$
+DECLARE f RECORD;
+BEGIN
+  FOR f IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN ('set_updated_at','update_updated_at','fin_seed_categories',
+                        'fin_add_income','fin_generate_bill_instances','fin_allocate_to_goal',
+                        'fin_record_debt_payment','fin_soft_reset','fin_factory_reset',
+                        'get_user_org_id','get_user_role')
+  LOOP
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public', f.sig);
+  END LOOP;
+
+  FOR f IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname LIKE 'fin\_%' AND p.prosecdef
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM anon', f.sig);
+  END LOOP;
+END $$;
 
 -- Default settings row (upsert so re-runs are safe)
 -- Must be run after a user exists. Uncomment and fill in your user ID if you want a seed row:

@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
-
-const todayStr = toDateStr(new Date());
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 
@@ -19,6 +17,9 @@ export default function RemindersPage() {
   const [showForm, setShowForm] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showDateTime, setShowDateTime] = useState(false);
+  // Computed per render (not module-level) so overdue highlighting stays
+  // correct if the tab is left open past midnight.
+  const todayStr = toDateStr(new Date());
 
   const load = async () => {
     const [reminders, projs] = await Promise.all([
@@ -39,7 +40,8 @@ export default function RemindersPage() {
     return list.filter(r => String(r.project_id) === String(filter));
   }, [list, filter]);
 
-  const active = useMemo(() => filtered.filter((r) => !r.completed), [filtered]);
+  const active = useMemo(() => filtered.filter((r) => !r.completed && r.date), [filtered]);
+  const noDate = useMemo(() => filtered.filter((r) => !r.completed && !r.date), [filtered]);
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
 
   const addReminder = async (e) => {
@@ -64,6 +66,33 @@ export default function RemindersPage() {
 
   const projectName = (id) => projects.find(p => p.id === id)?.name || "";
   const projectColor = (id) => projects.find(p => p.id === id)?.color || "var(--text-muted)";
+
+  const renderTask = (r) => (
+    <div className="completed-item" key={r.id}>
+      <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <strong>{r.name}</strong>
+        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          {r.date && <span style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{formatDisplayDate(r.date)}</span>}
+          {r.time && <span>· {r.time}</span>}
+          {r.show_on_calendar === false && <span>· off calendar</span>}
+          {r.recurrence !== "none" && <span>· {r.recurrence}</span>}
+          {r.recur_until && <span>· until {r.recur_until}</span>}
+          {r.recur_times && <span>· {r.recur_times}×</span>}
+          {r.project_id && (
+            <span style={{ color: projectColor(r.project_id) }}>· {projectName(r.project_id)}</span>
+          )}
+        </span>
+      </span>
+      <span>
+        <button type="button" className="btn-sm btn-complete" onClick={() => completeReminder(r.id).then(load)}>
+          ✓ Done
+        </button>
+        <button type="button" className="btn-sm btn-delete" onClick={() => deleteReminder(r.id).then(load)}>
+          ✕
+        </button>
+      </span>
+    </div>
+  );
 
   return (
     <div className="module-page">
@@ -174,33 +203,15 @@ export default function RemindersPage() {
           <div className="db-card">
             <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Active ({active.length})</h3>
             {active.length === 0 && <p className="no-entries">No active tasks. All clear! 🎉</p>}
-            {active.map((r) => (
-              <div className="completed-item" key={r.id}>
-                <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <strong>{r.name}</strong>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    {r.date && <span style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{formatDisplayDate(r.date)}</span>}
-                    {r.time && <span>· {r.time}</span>}
-                    {r.show_on_calendar === false && <span>· off calendar</span>}
-                    {r.recurrence !== "none" && <span>· {r.recurrence}</span>}
-                    {r.recur_until && <span>· until {r.recur_until}</span>}
-                    {r.recur_times && <span>· {r.recur_times}×</span>}
-                    {r.project_id && (
-                      <span style={{ color: projectColor(r.project_id) }}>· {projectName(r.project_id)}</span>
-                    )}
-                  </span>
-                </span>
-                <span>
-                  <button type="button" className="btn-sm btn-complete" onClick={() => completeReminder(r.id).then(load)}>
-                    ✓ Done
-                  </button>
-                  <button type="button" className="btn-sm btn-delete" onClick={() => deleteReminder(r.id).then(load)}>
-                    ✕
-                  </button>
-                </span>
-              </div>
-            ))}
+            {active.map(renderTask)}
           </div>
+
+          {noDate.length > 0 && (
+            <div className="db-card">
+              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>No due date ({noDate.length})</h3>
+              {noDate.map(renderTask)}
+            </div>
+          )}
 
           {completed.length > 0 && (
             <div className="db-card">

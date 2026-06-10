@@ -14,7 +14,9 @@ import {
 } from "../../utils/nutrition";
 
 const ACTIVE_KEY = "nutritionActiveProfile";
-const UNIT_KEY = "nutritionUnit";
+// v2: default switched to pounds — the bumped key ignores the old stored "kg"
+// preference once, while keeping the toggle functional.
+const UNIT_KEY = "nutritionUnit_v2";
 
 export default function NutritionPage() {
   const [params, setParams] = useSearchParams();
@@ -22,7 +24,7 @@ export default function NutritionPage() {
 
   const [profiles, setProfiles] = useState([]);
   const [activeId, setActiveId] = useState(() => localStorage.getItem(ACTIVE_KEY) || null);
-  const [unit, setUnit] = useState(() => localStorage.getItem(UNIT_KEY) || "kg");
+  const [unit, setUnit] = useState(() => localStorage.getItem(UNIT_KEY) || "lb");
   const [loading, setLoading] = useState(true);
 
   const [date, setDate] = useState(todayStr);

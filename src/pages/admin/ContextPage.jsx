@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { getContext, addContextEntry, deleteContextEntry } from "../../api/contextApi";
+import { getContext, addContextEntry, deleteContextEntry, refineContextEntry } from "../../api/contextApi";
 
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
 const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays", "eats", "drinks", "takes"];
@@ -55,16 +55,27 @@ export default function ContextPage() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [saving, setSaving] = useState(false);
 
   const reload = useCallback(() => setItems([...getContext()].reverse()), []);
 
   const verdict = useMemo(() => classify(input), [input]);
 
-  const save = () => {
-    if (!input.trim()) return;
-    const c = classify(input.trim());
-    addContextEntry({ text: c.fact || input.trim(), tags: c.tags, by: "manual", why: c.why || "saved manually" });
+  const save = async () => {
+    const raw = input.trim();
+    if (!raw || saving) return;
+    setSaving(true);
+    try {
+      // Frodo rewrites the note into a clean, tagged fact before saving.
+      const refined = await refineContextEntry(raw);
+      addContextEntry({ text: refined.text, tags: (refined.tags || []).slice(0, 6), by: "manual", why: refined.why || "rephrased by Frodo" });
+    } catch {
+      // Offline / API error — fall back to the local keyword classifier.
+      const c = classify(raw);
+      addContextEntry({ text: c.fact || raw, tags: c.tags, by: "manual", why: c.why || "saved manually" });
+    }
     setInput("");
+    setSaving(false);
     reload();
   };
 
@@ -92,7 +103,7 @@ export default function ContextPage() {
       {/* Add */}
       <div className="ctx-add-card">
         <div className="ctx-add-title">Add a fact</div>
-        <div className="ctx-add-sub">Say "remember that…" to force-save. Otherwise the classifier decides.</div>
+        <div className="ctx-add-sub">Type it however you like — Frodo rewrites it into a clean fact when you save.</div>
         <textarea
           className="ctx-textarea"
           rows={3}
@@ -115,10 +126,12 @@ export default function ContextPage() {
           </div>
         )}
         <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
-          <button className="btn" onClick={save} disabled={verdict.kind === "idle"}>
-            {verdict.kind === "keep" ? <><i className="fa-solid fa-brain" /> Save to context</> : <><i className="fa-solid fa-plus" /> Save anyway</>}
+          <button className="btn" onClick={save} disabled={verdict.kind === "idle" || saving}>
+            {saving
+              ? <><i className="fa-solid fa-spinner fa-spin" /> Refining…</>
+              : verdict.kind === "keep" ? <><i className="fa-solid fa-brain" /> Save to context</> : <><i className="fa-solid fa-plus" /> Save anyway</>}
           </button>
-          {input && <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setInput("")}>Clear</button>}
+          {input && !saving && <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setInput("")}>Clear</button>}
         </div>
       </div>
 

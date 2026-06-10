@@ -2,7 +2,7 @@
 // Owner-side calls use the authenticated Supabase client (RLS: owner only).
 // Public share resolution is fully server-side via /api/doc-share (service role),
 // so anonymous viewers never touch the tables directly.
-import { supabase } from "../utils/supabase";
+import { supabase, getAuthHeaders } from "../utils/supabase";
 
 const BUCKET = "documents";
 
@@ -133,7 +133,7 @@ export async function fetchSharedDoc(token) {
 export async function emailShareLink({ to, documentName, shareUrl }) {
   const res = await fetch("/api/send-share-email", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ to, document_name: documentName, share_url: shareUrl }),
   });
   const data = await res.json().catch(() => ({}));

@@ -74,22 +74,6 @@ export default function DashboardPage() {
 
   const today = new Date();
   const todayStr = toDateStr(today);
-  const todayReminders = expandReminders(data.reminders, todayStr, todayStr);
-
-  const dayOffset = today.getDay();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - dayOffset);
-
-  const weeks = Array.from({ length: 4 }).map((_, index) => {
-    const weekStart = new Date(startOfWeek);
-    weekStart.setDate(startOfWeek.getDate() + index * 7);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    const reminders = expandReminders(data.reminders, toDateStr(weekStart), toDateStr(weekEnd));
-    const label = index === 0 ? "This Week" : index === 1 ? "Next Week"
-      : `Week of ${weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
-    return { label, reminders };
-  });
 
   const upcomingEvents = data.events
     .filter(e => e.date >= todayStr)

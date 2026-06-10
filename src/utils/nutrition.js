@@ -20,8 +20,8 @@ export const prettyDate = (str) => {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 };
 
-/** Display a kg value in the user's preferred unit. */
-export function formatWeight(kg, unit = "kg", digits = 1) {
+/** Display a kg value in the user's preferred unit (pounds by default). */
+export function formatWeight(kg, unit = "lb", digits = 1) {
   if (kg == null || Number.isNaN(kg)) return "—";
   const v = unit === "lb" ? toLb(kg) : kg;
   return `${v.toFixed(digits)} ${unit}`;

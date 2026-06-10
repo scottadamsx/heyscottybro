@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    Documents · Nutrition · Recipes  (June 2026)
-   Loads after admin-terminal.css. Aliases generic var names used
-   by these features onto the terminal palette so styling stays cohesive.
+   Loads after admin-executive.css. Aliases generic var names used
+   by these features onto the admin palette so styling stays cohesive.
    ═══════════════════════════════════════════════════════════ */
 :root {
   --surface:    var(--bg-card);
@@ -11,7 +11,7 @@
   --bg:         var(--bg-base);
   --danger:     #f87171;
   --danger-bg:  rgba(248, 113, 113, 0.12);
-  --accent-bg:  rgba(74, 222, 128, 0.08);
+  --accent-bg:  rgba(91, 141, 239, 0.10);
 }
 
 /* Info banner (vault import, etc.) */
