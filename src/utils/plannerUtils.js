@@ -57,14 +57,21 @@ export function expandReminders(reminders, startDate, endDate) {
       return;
     }
 
+    // recur_times limits the TOTAL number of occurrences from the series
+    // start — so every occurrence must be counted, even ones before the
+    // viewing window, or a "repeat 3×" series would show 3 fresh occurrences
+    // in every future window forever.
     if (recur === "daily") {
-      const cur = new Date(Math.max(start.getTime(), reminderDate.getTime()));
+      // Fast path: no occurrence cap → no need to walk days before the window.
+      const cur = r.recur_times
+        ? new Date(reminderDate)
+        : new Date(Math.max(start.getTime(), reminderDate.getTime()));
       let count = 0;
       while (cur <= effectiveEnd) {
         if (r.recur_times && count >= r.recur_times) break;
-        expanded.push({ ...r, date: toDateStr(cur) });
-        cur.setDate(cur.getDate() + 1);
         count++;
+        if (cur >= start) expanded.push({ ...r, date: toDateStr(cur) });
+        cur.setDate(cur.getDate() + 1);
       }
       return;
     }
@@ -74,10 +81,8 @@ export function expandReminders(reminders, startDate, endDate) {
       let count = 0;
       while (cur <= effectiveEnd) {
         if (r.recur_times && count >= r.recur_times) break;
-        if (cur >= start) {
-          expanded.push({ ...r, date: toDateStr(cur) });
-          count++;
-        }
+        count++;
+        if (cur >= start) expanded.push({ ...r, date: toDateStr(cur) });
         cur.setDate(cur.getDate() + 7);
       }
       return;
@@ -85,7 +90,7 @@ export function expandReminders(reminders, startDate, endDate) {
 
     if (recur === "monthly") {
       let count = 0;
-      for (let offset = 0; offset <= 36; offset++) {
+      for (let offset = 0; offset < 1200; offset++) {
         if (r.recur_times && count >= r.recur_times) break;
         const y = reminderDate.getFullYear() + Math.floor((reminderDate.getMonth() + offset) / 12);
         const m = (reminderDate.getMonth() + offset) % 12;
@@ -93,10 +98,8 @@ export function expandReminders(reminders, startDate, endDate) {
         const day = Math.min(reminderDate.getDate(), lastDay);
         const candidate = new Date(y, m, day);
         if (candidate > effectiveEnd) break;
-        if (candidate >= start && candidate >= reminderDate) {
-          expanded.push({ ...r, date: toDateStr(candidate) });
-          count++;
-        }
+        count++;
+        if (candidate >= start) expanded.push({ ...r, date: toDateStr(candidate) });
       }
     }
   });

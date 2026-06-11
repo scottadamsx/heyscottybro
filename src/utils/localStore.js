@@ -14,7 +14,13 @@ function read(table) {
   }
 }
 function write(table, rows) {
-  localStorage.setItem(PREFIX + table, JSON.stringify(rows));
+  // Quota errors must not crash the fallback path — it's the thing keeping
+  // the app alive when Supabase is unreachable.
+  try {
+    localStorage.setItem(PREFIX + table, JSON.stringify(rows));
+  } catch (err) {
+    console.warn(`localStore: failed to write "${table}" (storage full or unavailable)`, err);
+  }
 }
 function genId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();

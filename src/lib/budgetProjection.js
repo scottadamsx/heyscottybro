@@ -35,10 +35,11 @@ function isActiveInMonth(source, monthKey) {
 }
 
 // Normalize a transaction's amount to a signed number.
-// DB convention (new): expense negative, income positive. Older rows may be unsigned; we fix them here.
+// DB convention (new): expense negative, income positive. "future" rows are
+// planned spend, so they're negative too. Older rows may be unsigned; we fix them here.
 function signedAmount(tx) {
   let n = Number(tx.amount || 0);
-  if (tx.type === "expense" && n > 0) n = -n;
+  if ((tx.type === "expense" || tx.type === "future") && n > 0) n = -n;
   if (tx.type === "income" && n < 0) n = Math.abs(n);
   return n;
 }
@@ -96,6 +97,12 @@ export function buildProjection({
     const actualExpenses = monthTxs
       .filter(t => t._signed < 0 && t.type !== "future")
       .reduce((s, t) => s + t._signed, 0); // stays negative
+    // Planned ("future") transactions aren't actuals, but they ARE cash flow —
+    // they must hit the month's balance or the chart disagrees with the
+    // current-balance stat (which includes them once their date passes).
+    const plannedNet = monthTxs
+      .filter(t => t.type === "future")
+      .reduce((s, t) => s + t._signed, 0);
 
     const isPast = monthKey < todayYM;
     const isCurrent = monthKey === todayYM;
@@ -141,7 +148,7 @@ export function buildProjection({
 
     const income = actualIncome + projectedIncome;
     const expenses = actualExpenses + projectedExpenses;
-    const net = income + expenses;
+    const net = income + expenses + plannedNet;
     balance = opening + net;
 
     out.push({
@@ -153,6 +160,7 @@ export function buildProjection({
       actualExpenses,
       projectedIncome,
       projectedExpenses,
+      plannedNet,
       income,
       expenses,
       net,
@@ -206,8 +214,7 @@ export function narrativeFor(projection) {
     const parts = [];
     parts.push(`Opens at $${fmt(m.openingBalance)}.`);
     for (const tx of m.events) {
-      const amt = Number(tx.amount || 0);
-      const signed = tx.type === "expense" && amt > 0 ? -amt : amt;
+      const signed = signedAmount(tx);
       const sign = signed >= 0 ? "+" : "-";
       parts.push(`${tx.description} (${sign}$${fmt(Math.abs(signed))}).`);
     }

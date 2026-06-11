@@ -174,7 +174,7 @@ const TOOLS = [
       properties: {
         description: { type: "string" },
         amount: { type: "number", description: "Positive — sign derived from type" },
-        type: { type: "string", enum: ["expense", "income", "future"] },
+        type: { type: "string", enum: ["expense", "income", "future"], description: "future = planned spend (counts against projected balance, not actuals)" },
         category: { type: "string" },
         date: { type: "string" },
         notes: { type: "string" },
@@ -353,6 +353,49 @@ async function executeTool(name, input) {
 const CHAT_STORE_KEY = "frodo_chat_session";
 const CHAT_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+// ── API capacity guards ──
+// Hard cap on a single typed message, and a rough character budget (~25k
+// tokens) for the history sent to the API. Older turns are dropped silently —
+// the on-screen conversation is never touched.
+const MAX_INPUT_CHARS = 4000;
+const HISTORY_CHAR_BUDGET = 100000;
+
+function trimHistory(msgs) {
+  const size = (m) => JSON.stringify(m).length;
+  let total = msgs.reduce((s, m) => s + size(m), 0);
+  let start = 0;
+  while (total > HISTORY_CHAR_BUDGET && start < msgs.length - 2) {
+    total -= size(msgs[start]);
+    start++;
+  }
+  // Never start mid tool-exchange — advance to a plain user text message so
+  // no tool_result is left without its matching tool_use.
+  while (start > 0 && start < msgs.length - 1 && !(msgs[start].role === "user" && typeof msgs[start].content === "string")) start++;
+  return start > 0 ? msgs.slice(start) : msgs;
+}
+
+// Prompt caching: mark the newest message with a cache breakpoint so every
+// follow-up call (tool-loop iterations, replies within 5 min) re-reads the
+// conversation prefix from Anthropic's cache at ~10% of the normal token
+// price instead of re-billing the full history each time. Old markers are
+// stripped first — the API allows at most 4 breakpoints per request.
+function withCacheMarkers(msgs) {
+  return msgs.map((m, i) => {
+    const isLast = i === msgs.length - 1;
+    let content = m.content;
+    if (typeof content === "string") {
+      if (!isLast) return m;
+      content = [{ type: "text", text: content }];
+    } else {
+      content = content.map(({ cache_control, ...b }) => b);
+    }
+    if (isLast && content.length > 0) {
+      content = content.map((b, j) => (j === content.length - 1 ? { ...b, cache_control: { type: "ephemeral" } } : b));
+    }
+    return { ...m, content };
+  });
+}
+
 function loadSavedChat() {
   try {
     const raw = localStorage.getItem(CHAT_STORE_KEY);
@@ -392,10 +435,20 @@ export default function ChatBot() {
     } catch { /* storage full or unavailable — non-fatal */ }
   }, [displayMsgs, apiHistory]);
 
+  // Grow the input with its content (up to the CSS max-height) so long
+  // messages stay fully visible while typing.
+  const autoGrow = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     setLoading(true);
 
     const nextDisplay = [...displayMsgs, { role: "user", text }];
@@ -403,17 +456,20 @@ export default function ChatBot() {
     setDisplayMsgs(nextDisplay);
 
     try {
-      let msgs = nextApi;
+      let msgs = trimHistory(nextApi);
       let finalDisplay = nextDisplay;
 
       const authHeaders = await getAuthHeaders();
+      // Cache breakpoint on the system prompt also covers the tool definitions
+      // (tools + system form the static prefix of every request).
+      const systemBlocks = [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }];
       // Cap the agentic loop so a runaway tool-use chain can't spin forever.
       for (let turn = 0; ; turn++) {
         if (turn >= 15) throw new Error("Too many tool calls in one turn — try a smaller request.");
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2048, system: buildSystemPrompt(), tools: TOOLS, messages: msgs }),
+          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 4096, system: systemBlocks, tools: TOOLS, messages: withCacheMarkers(msgs) }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
@@ -427,7 +483,9 @@ export default function ChatBot() {
           }
           msgs = [...msgs, { role: "assistant", content: data.content }, { role: "user", content: toolResults }];
         } else {
-          const replyText = data.content?.find((b) => b.type === "text")?.text ?? "Done.";
+          // Join ALL text blocks — Claude can return several, and taking only
+          // the first was cutting replies off mid-message.
+          const replyText = data.content?.filter((b) => b.type === "text").map((b) => b.text).join("\n\n") || "Done.";
           finalDisplay = [...finalDisplay, { role: "assistant", text: replyText }];
           setDisplayMsgs(finalDisplay);
           setApiHistory([...msgs, { role: "assistant", content: data.content }]);
@@ -487,7 +545,10 @@ export default function ChatBot() {
           </div>
 
           <div className="chat-input-row">
-            <textarea ref={textareaRef} className="chat-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={onKey} placeholder="Ask Frodo anything..." rows={1} />
+            <textarea ref={textareaRef} className="chat-input" value={input} maxLength={MAX_INPUT_CHARS} onChange={(e) => { setInput(e.target.value); autoGrow(); }} onKeyDown={onKey} placeholder="Ask Frodo anything..." rows={1} />
+            {input.length > MAX_INPUT_CHARS * 0.85 && (
+              <span className="chat-char-count">{input.length}/{MAX_INPUT_CHARS}</span>
+            )}
             <button type="button" className="chat-send" onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />
             </button>

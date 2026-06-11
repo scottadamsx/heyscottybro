@@ -2194,6 +2194,7 @@ input, textarea, select { font-family: inherit; }
 .calendar-count { display: block; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; width: 100%; box-sizing: border-box; }
 .calendar-count.event-count { background: rgba(34,211,238,0.2); color: var(--cyan, #22d3ee); }
 .calendar-count.task-count { background: rgba(99,102,241,0.2); color: var(--accent-light, #a5b4fc); }
+.calendar-count.done-count { background: rgba(74,222,128,0.15); color: var(--green, #4ade80); }
 
 /* Event overlay */
 .event-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 200; }
@@ -3289,6 +3290,8 @@ input, textarea, select { font-family: inherit; }
 .chat-empty li { margin-bottom: 0.2rem; }
 
 .chat-msg {
+  /* Never let the flex column squash a bubble — full text must stay visible */
+  flex-shrink: 0;
   max-width: 88%;
   padding: 0.55rem 0.85rem;
   border-radius: 14px;
@@ -3358,11 +3361,17 @@ input, textarea, select { font-family: inherit; }
   font-size: 0.875rem;
   padding: 0.5rem 0.75rem;
   line-height: 1.4;
-  max-height: 100px;
+  max-height: 180px;
   overflow-y: auto;
   font-family: inherit;
 }
 .chat-input:focus { outline: none; border-color: var(--accent); }
+.chat-char-count {
+  align-self: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
 .chat-send {
   width: 36px;
   height: 36px;

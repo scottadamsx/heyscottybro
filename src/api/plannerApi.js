@@ -178,9 +178,15 @@ export async function deleteEvent(id) {
 }
 
 /* ── Budget ──────────────────────────────────── */
+// Amounts are stored signed: expenses and planned ("future") spend negative,
+// income positive. Deriving the sign from type (not the typed value) means
+// edit forms can safely show absolute values without flipping signs on save.
 function signTx(tx) {
   const n = Number(tx.amount || 0);
-  const signed = tx.type === "expense" ? -Math.abs(n) : tx.type === "income" ? Math.abs(n) : n;
+  const signed =
+    tx.type === "expense" || tx.type === "future" ? -Math.abs(n)
+    : tx.type === "income" ? Math.abs(n)
+    : n;
   return { ...tx, amount: signed };
 }
 
@@ -457,7 +463,7 @@ export async function getSession() {
 /* ── AI Briefing ─────────────────────────────── */
 export async function getAIBriefing({ reminders, events, projects, initiatives }) {
   const today = new Date();
-  const todayStr = today.toLocaleDateString("en-AU", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const todayStr = today.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const todayIso = toDateStr(today); // local day, not UTC
 
   const todayTasks = reminders.filter((r) => !r.completed && r.date === todayIso).map((r) => `- ${r.name}`).join("\n") || "None";

@@ -277,16 +277,39 @@ export default function ProjectsPage() {
               </div>
             </form>
             {projectTasks.length === 0 && <p className="no-entries">No active tasks for this project.</p>}
-            <div className="db-list">
-              {projectTasks.map(t => (
-                <div className="db-list-item" key={t.id}>
-                  <div className="db-list-item-content">
-                    <div className="db-list-item-title">{t.name}</div>
-                    <div className="db-list-item-subtitle">{formatDisplayDate(t.date)}{t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
+            {(() => {
+              const dated = projectTasks.filter(t => t.date);
+              const undated = projectTasks.filter(t => !t.date);
+              return (
+                <>
+                  <div className="db-list">
+                    {dated.map(t => (
+                      <div className="db-list-item" key={t.id}>
+                        <div className="db-list-item-content">
+                          <div className="db-list-item-title">{t.name}</div>
+                          <div className="db-list-item-subtitle">{formatDisplayDate(t.date)}{t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-            </div>
+                  {undated.length > 0 && (
+                    <>
+                      <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.75rem 0 0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>No due date</p>
+                      <div className="db-list">
+                        {undated.map(t => (
+                          <div className="db-list-item" key={t.id}>
+                            <div className="db-list-item-content">
+                              <div className="db-list-item-title">{t.name}</div>
+                              {t.recurrence !== "none" && <div className="db-list-item-subtitle">{t.recurrence}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Upcoming Events */}

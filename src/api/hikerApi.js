@@ -136,26 +136,36 @@ export async function loadHikeAttendees(hikeImportId) {
   return (data ?? []).map(r => r.hiker_members).filter(Boolean);
 }
 
+// CSV parse over the WHOLE text (not line-by-line) so quoted fields that
+// contain newlines — common in Google Forms exports — stay in one row.
+// Handles quoted fields and "" escaped quotes.
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cur = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQ && text[i + 1] === '"') { cur += '"'; i++; continue; }
+      inQ = !inQ;
+      continue;
+    }
+    if (!inQ && c === ",") { row.push(cur); cur = ""; continue; }
+    if (!inQ && (c === "\n" || c === "\r")) {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cur); cur = "";
+      rows.push(row); row = [];
+      continue;
+    }
+    cur += c;
+  }
+  row.push(cur);
+  rows.push(row);
+  return rows.filter(r => r.some(c => c.trim()));
+}
+
 export async function importCSV(fileText, filename, hikeName, hikeDate) {
   const userId = await uid();
-  const lines = fileText.split(/\r?\n/);
-  const rows = lines.map(l => {
-    // Simple CSV parse (handles quoted fields and "" escaped quotes)
-    const result = [];
-    let cur = "", inQ = false;
-    for (let i = 0; i < l.length; i++) {
-      const c = l[i];
-      if (c === '"') {
-        if (inQ && l[i + 1] === '"') { cur += '"'; i++; continue; }
-        inQ = !inQ;
-        continue;
-      }
-      if (c === "," && !inQ) { result.push(cur); cur = ""; continue; }
-      cur += c;
-    }
-    result.push(cur);
-    return result;
-  }).filter(r => r.some(c => c.trim()));
+  const rows = parseCSV(fileText);
 
   if (rows.length < 2) return { first_timers: 0, returning: 0, total: 0, filename };
 

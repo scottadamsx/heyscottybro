@@ -204,6 +204,23 @@ ALTER TABLE hiker_imports ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "owner only" ON hiker_imports;
 CREATE POLICY "owner only" ON hiker_imports USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- Hike metadata + per-hike attendance (matches live schema)
+ALTER TABLE hiker_imports ADD COLUMN IF NOT EXISTS hike_name TEXT;
+ALTER TABLE hiker_imports ADD COLUMN IF NOT EXISTS hike_date DATE;
+
+CREATE TABLE IF NOT EXISTS hike_attendees (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hike_import_id UUID REFERENCES hiker_imports(id) ON DELETE CASCADE NOT NULL,
+  member_id      UUID REFERENCES hiker_members(id) ON DELETE CASCADE NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE hike_attendees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "owner only" ON hike_attendees;
+CREATE POLICY "owner only" ON hike_attendees
+  USING (EXISTS (SELECT 1 FROM hiker_imports i WHERE i.id = hike_import_id AND i.user_id = auth.uid()))
+  WITH CHECK (EXISTS (SELECT 1 FROM hiker_imports i WHERE i.id = hike_import_id AND i.user_id = auth.uid()));
+CREATE INDEX IF NOT EXISTS hike_attendees_import_idx ON hike_attendees (hike_import_id);
+
 -- ═══════════════════════════════════════════
 -- Budget Rewrite Migration (Apr 2026 — 9-month plan)
 -- Idempotent: safe to run multiple times.

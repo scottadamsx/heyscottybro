@@ -20,7 +20,9 @@
       "Bash(perl -pi -e 's/\\\\.then\\\\\\(reset\\\\\\); \\\\};/.then\\(\\(ok\\) => ok && reset\\(\\)\\); };/g; s/\\\\.then\\\\\\(\\\\\\(\\\\\\) => setAmt\\\\\\(\"\"\\\\\\)\\\\\\)/.then\\(\\(ok\\) => ok && setAmt\\(\"\"\\)\\)/g' src/pages/admin/finance/FinanceApp.jsx)",
       "Bash(sed -n '1287,1400p' src/index.css)",
       "Read(//dev/**)",
-      "mcp__claude_ai_Supabase__get_advisors"
+      "mcp__claude_ai_Supabase__get_advisors",
+      "Bash(node /Users/heyscottybro/Documents/GitHub/heyscottybro/src/lib/budgetProjection.test.js)",
+      "Bash(npm test *)"
     ],
     "additionalDirectories": [
       "/Users/heyscottybro/Documents/GitHub/heyscottybro"

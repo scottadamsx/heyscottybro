@@ -90,6 +90,24 @@ test("contract endDate excludes Sept+", () => {
   near(p[5].projectedIncome, 0);    // September
 });
 
+test("planned ('future') transactions hit the balance but not actuals", () => {
+  const txs = [{ id: "t1", description: "Car purchase", amount: -4000, type: "future", category: "Car", date: "2026-06-05" }];
+  const p = buildProjection({ transactions: txs, startingBalance: 5000, horizonMonths: HORIZON, today: TODAY });
+  const june = p[2];
+  near(june.actualExpenses, 0);              // not an actual
+  near(june.plannedNet, -4000);              // but it IS planned cash flow
+  near(june.closingBalance - june.openingBalance, -4000);
+  near(p[8].closingBalance, 1000);           // carries through to the end
+});
+
+test("positive-amount 'future' rows are normalized to planned spend", () => {
+  // Frodo's tool passes positive amounts; sign must derive from type.
+  const txs = [{ id: "t1", description: "Flight", amount: 800, type: "future", date: "2026-07-10" }];
+  const p = buildProjection({ transactions: txs, startingBalance: 1000, horizonMonths: HORIZON, today: TODAY });
+  near(p[3].plannedNet, -800);
+  near(p[3].closingBalance, 200);
+});
+
 test("full plan smoke test — April opens 5000, car + deposit + lump sum", () => {
   const txs = [
     { id: "t1", description: "Car", amount: -4000, type: "expense", category: "Car", date: "2026-04-05" },

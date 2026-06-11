@@ -74,6 +74,18 @@ export default function CalendarPage() {
       map[item.date] = map[item.date] || [];
       map[item.date].push({ kind: "reminder", label: item.name });
     });
+    // Show completed tasks on the day they were finished so you can see what got done.
+    reminders
+      .filter((r) => r.completed && r.show_on_calendar !== false)
+      .forEach((r) => {
+        const doneDate = r.completed_date || r.date;
+        if (!doneDate) return;
+        const [dY, dM] = doneDate.split("-").map(Number);
+        if (dY === year && dM === month + 1) {
+          map[doneDate] = map[doneDate] || [];
+          map[doneDate].push({ kind: "done", label: r.name });
+        }
+      });
     events.forEach((item) => {
       map[item.date] = map[item.date] || [];
       map[item.date].push({ kind: "event", label: item.title });
@@ -127,7 +139,12 @@ export default function CalendarPage() {
 
   // Derived day data — auto-refreshes after load()
   const dayEvents = selectedDate ? events.filter((e) => e.date === selectedDate) : [];
-  const dayTasks = selectedDate ? expandReminders(reminders, selectedDate, selectedDate) : [];
+  // Active tasks: use expandReminders on incomplete reminders only (handles recurrence correctly)
+  const dayTasks = selectedDate ? expandReminders(reminders.filter((r) => !r.completed), selectedDate, selectedDate) : [];
+  // Completed tasks: show tasks finished on this day (by completed_date, falling back to date)
+  const dayDone = selectedDate
+    ? reminders.filter((r) => r.completed && (r.completed_date === selectedDate || (!r.completed_date && r.date === selectedDate)))
+    : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
@@ -212,11 +229,13 @@ export default function CalendarPage() {
                   const items = itemsByDate[date] || [];
                   const evCount = items.filter((x) => x.kind === "event" || x.kind === "future").length;
                   const taskCount = items.filter((x) => x.kind === "reminder").length;
+                  const doneCount = items.filter((x) => x.kind === "done").length;
                   if (items.length === 0) return null;
                   return (
                     <>
                       {evCount > 0 && <span className="calendar-count event-count">{evCount} event{evCount !== 1 ? "s" : ""}</span>}
                       {taskCount > 0 && <span className="calendar-count task-count">{taskCount} task{taskCount !== 1 ? "s" : ""}</span>}
+                      {doneCount > 0 && <span className="calendar-count done-count">{doneCount} done</span>}
                     </>
                   );
                 })()}
@@ -263,11 +282,13 @@ export default function CalendarPage() {
               <div className="day-section">
                 <div className="day-section-head">
                   <span><i className="fa-solid fa-list-check" /> Tasks</span>
-                  <span className="day-count">{dayTasks.filter((t) => !t.completed).length}</span>
+                  <span className="day-count">
+                    {dayTasks.length} active{dayDone.length > 0 ? ` · ${dayDone.length} done` : ""}
+                  </span>
                 </div>
-                {dayTasks.length === 0 && <p className="day-empty">No tasks due.</p>}
+                {dayTasks.length === 0 && dayDone.length === 0 && <p className="day-empty">No tasks due.</p>}
 
-                {dayTasks.filter((t) => !t.completed).map((t) => (
+                {dayTasks.map((t) => (
                   <div className="day-item" key={`${t.id}-${t.date}`}>
                     <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
                     <div className="day-item-body">
@@ -278,8 +299,8 @@ export default function CalendarPage() {
                   </div>
                 ))}
 
-                {dayTasks.filter((t) => t.completed).map((t) => (
-                  <div className="day-item done" key={`${t.id}-${t.date}`}>
+                {dayDone.map((t) => (
+                  <div className="day-item done" key={`done-${t.id}`}>
                     <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" /></span>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>

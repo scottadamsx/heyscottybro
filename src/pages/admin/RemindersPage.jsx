@@ -206,12 +206,11 @@ export default function RemindersPage() {
             {active.map(renderTask)}
           </div>
 
-          {noDate.length > 0 && (
-            <div className="db-card">
-              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>No due date ({noDate.length})</h3>
-              {noDate.map(renderTask)}
-            </div>
-          )}
+          <div className="db-card">
+            <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>No due date ({noDate.length})</h3>
+            {noDate.length === 0 && <p className="no-entries">No undated tasks.</p>}
+            {noDate.map(renderTask)}
+          </div>
 
           {completed.length > 0 && (
             <div className="db-card">
