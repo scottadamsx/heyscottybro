@@ -5,7 +5,7 @@ const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, notes: "" };
 const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", nextDate: toDateStr() };
 
-export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions }) {
+export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
   const categories = config.categories || [];
   const [billForm, setBillForm] = useState({ ...EMPTY_BILL });
   const [billEditId, setBillEditId] = useState(null);
@@ -16,6 +16,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
   const [showSchedEdit, setShowSchedEdit] = useState(false);
   const [schedForm, setSchedForm] = useState({ type: config.paySchedule?.type || "biweekly", anchorDate: config.paySchedule?.anchorDate || toDateStr(), customDays: config.paySchedule?.customDays || 14 });
   const [newCat, setNewCat] = useState("");
+  const [balInput, setBalInput] = useState(String(startingBalance));
   const [flash, setFlash] = useState("");
 
   const flashFor = key => { setFlash(key); setTimeout(() => setFlash(""), 1800); };
@@ -210,6 +211,34 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
       <div style={{ display: "flex", gap: 8 }}>
         <input value={newCat} onChange={e => setNewCat(e.target.value)} onKeyDown={e => e.key === "Enter" && addCat()} placeholder="New category…" style={{ flex: 1, fontSize: 13 }} />
         <button className="btn" onClick={addCat} style={{ fontSize: 12, padding: "4px 12px" }}>Add</button>
+      </div>
+
+      {/* Starting balance */}
+      <p style={sh}>Starting balance</p>
+      <div style={card}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>The balance you're starting from. Used in the ledger running total and simulator.</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0.00" style={{ flex: 1, fontFamily: "var(--font-mono,monospace)" }} />
+          <button className="btn" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ fontSize: 12, padding: "4px 12px", background: flash === "bal" ? "#22c55e" : undefined, color: flash === "bal" ? "#000" : undefined }}>
+            {flash === "bal" ? "✓ Saved!" : "Set balance"}
+          </button>
+        </div>
+      </div>
+
+      {/* Fresh start */}
+      <p style={sh}>Reset</p>
+      <div style={{ ...card, border: "0.5px solid rgba(239,68,68,0.3)" }}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
+          Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
+        </div>
+        <button className="btn"
+          onClick={() => {
+            if (!window.confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.")) return;
+            if (onFreshStart) onFreshStart();
+          }}
+          style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 600, width: "100%" }}>
+          Fresh start — clear transactions &amp; reset balance
+        </button>
       </div>
     </div>
   );

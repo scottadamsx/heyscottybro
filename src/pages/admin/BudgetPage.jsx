@@ -5,6 +5,7 @@ import BudgetTransactions from "../../components/budget/BudgetTransactions";
 import BudgetReconcile from "../../components/budget/BudgetReconcile";
 import BudgetBillsIncome from "../../components/budget/BudgetBillsIncome";
 import BudgetSimulator from "../../components/budget/BudgetSimulator";
+import BudgetAnalytics from "../../components/budget/BudgetAnalytics";
 
 const SKEY = "scotty_budget_v3";
 
@@ -37,11 +38,13 @@ function save(state) {
 }
 
 const TABS = [
-  { id: "dashboard",  label: "Dashboard" },
+  { id: "dashboard",    label: "Dashboard" },
   { id: "transactions", label: "Transactions" },
-  { id: "reconcile", label: "Reconcile" },
-  { id: "bills",     label: "Bills & Income" },
-  { id: "simulator", label: "Simulator" },
+  { id: "ledger",       label: "Ledger" },
+  { id: "analytics",    label: "Analytics" },
+  { id: "reconcile",    label: "Reconcile" },
+  { id: "bills",        label: "Bills & Income" },
+  { id: "simulator",    label: "Simulator" },
 ];
 
 export default function BudgetPage() {
@@ -75,6 +78,11 @@ export default function BudgetPage() {
   const handlePayBill = bill => {
     const tx = { id: genId(), description: `Bill: ${bill.name}`, amount: bill.amount, type: "expense", category: bill.category || "Other", date: bill.date || toDateStr(), notes: "Logged from dashboard", reconciled: false };
     setTransactions(p => [tx, ...p]);
+  };
+
+  const handleFreshStart = () => {
+    setTransactions([]);
+    setStartingBalance(0);
   };
 
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
@@ -116,6 +124,23 @@ export default function BudgetPage() {
           config={config}
           transactions={transactions}
           setTransactions={setTransactions}
+          startingBalance={startingBalance}
+        />
+      )}
+      {tab === "ledger" && (
+        <BudgetTransactions
+          config={config}
+          transactions={transactions}
+          setTransactions={setTransactions}
+          startingBalance={startingBalance}
+          defaultView="ledger"
+        />
+      )}
+      {tab === "analytics" && (
+        <BudgetAnalytics
+          config={config}
+          transactions={transactions}
+          startingBalance={startingBalance}
         />
       )}
       {tab === "reconcile" && (
@@ -132,6 +157,9 @@ export default function BudgetPage() {
           setConfig={setConfig}
           transactions={transactions}
           setTransactions={setTransactions}
+          startingBalance={startingBalance}
+          setStartingBalance={setStartingBalance}
+          onFreshStart={handleFreshStart}
         />
       )}
       {tab === "simulator" && (
@@ -139,6 +167,7 @@ export default function BudgetPage() {
           config={config}
           simulations={simulations}
           setSimulations={setSimulations}
+          transactions={transactions}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
+import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
+import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 
 function recalcBalances(rows, startBalance) {
   let bal = startBalance;
@@ -10,7 +11,7 @@ function recalcBalances(rows, startBalance) {
   });
 }
 
-export default function BudgetSimulator({ config, simulations, setSimulations }) {
+export default function BudgetSimulator({ config, simulations, setSimulations, transactions = [] }) {
   const today = toDateStr();
   const sixMonths = (() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return toDateStr(d); })();
 
@@ -109,6 +110,45 @@ export default function BudgetSimulator({ config, simulations, setSimulations })
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "budget_projection.csv"; a.click();
   };
 
+  // Build projection from actual spending habits instead of config bills
+  const loadFromHabits = () => {
+    const lastInc = getLastIncome(transactions);
+    const hist = getPeriodHistory(transactions, config, 3);
+    const proj = projectNextPeriod(hist, lastInc);
+    if (!lastInc && !hist.some(p => p.spending > 0)) {
+      setWarning("Not enough transaction history yet. Log at least one income and a few expenses first.");
+      return;
+    }
+    const bal = parseFloat(startBal) || 0;
+    let r = [{ id: genId(), date: startDate, description: "Starting Balance", income: 0, expense: 0, isManual: false }];
+
+    // Generate income dates using pay schedule + last paycheck amount
+    const inc = { amount: proj.income || lastInc, frequency: config.paySchedule?.type || "biweekly", nextDate: config.paySchedule?.anchorDate || startDate };
+    getIncomeDatesInRange(inc, startDate, endDate).forEach(d => {
+      r.push({ id: genId(), date: d, description: `Payday (assumed ${formatMoney(proj.income || lastInc)} — last paycheck)`, income: proj.income || lastInc, expense: 0, isManual: false });
+    });
+
+    // Add one projected spending lump per pay period
+    let cursor = startDate;
+    while (cursor <= endDate) {
+      const p = getPayPeriod(cursor, 0, config.paySchedule);
+      if (proj.spending > 0) {
+        const mid = p.start > startDate ? p.start : startDate;
+        r.push({ id: genId(), date: mid, description: `Projected spending (avg of last 3 periods)`, income: 0, expense: proj.spending, isManual: false });
+      }
+      // advance cursor past this period
+      const next = new Date(p.end + "T12:00:00");
+      next.setDate(next.getDate() + 1);
+      cursor = next.toLocaleDateString("en-CA");
+    }
+
+    r.sort((a, b) => a.date.localeCompare(b.date));
+    const calced = recalcBalances(r, bal);
+    setRows(calced);
+    const neg = calced.find(row => row.balance < 0);
+    setWarning(neg ? `Warning: balance goes negative on ${neg.date} based on your spending habits.` : "");
+  };
+
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "14px 0 8px", fontWeight: 500 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
 
@@ -129,7 +169,13 @@ export default function BudgetSimulator({ config, simulations, setSimulations })
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ width: "100%" }} />
         </div>
       </div>
-      <button className="btn" onClick={generate} style={{ width: "100%", background: "var(--accent,#6366f1)", color: "#fff", border: "none", marginBottom: 12 }}>Generate projection</button>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button className="btn" onClick={generate} style={{ flex: 1, background: "var(--accent,#6366f1)", color: "#fff", border: "none" }}>From bill config</button>
+        <button className="btn" onClick={loadFromHabits} style={{ flex: 1, background: transactions.length ? "rgba(34,197,94,0.15)" : "var(--bg-raised)", color: transactions.length ? "#22c55e" : "var(--text-muted)", border: `1px solid ${transactions.length ? "rgba(34,197,94,0.4)" : "var(--border)"}` }}
+          title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
+          From my habits {transactions.length ? "✓" : ""}
+        </button>
+      </div>
 
       {/* Saved simulations */}
       {simulations.length > 0 && (
