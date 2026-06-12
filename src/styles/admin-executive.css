@@ -499,10 +499,16 @@
   .admin-shell input,
   .admin-shell select,
   .admin-shell textarea { font-size: 16px; min-height: 44px; }
+  /* Chat textarea stays compact — it auto-grows; restoring natural height */
+  .admin-shell .chat-input { min-height: unset; font-size: 15px; }
   .admin-shell .btn,
   .admin-shell .btn-primary { min-height: 44px; }
   .admin-shell .module-header h1 { font-size: 1.2rem; }
   .admin-shell .db-card { padding: 1rem; }
+  /* Scrollable data tables on small screens */
+  .admin-shell .module-page table { display: block; overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+  /* Weekly upcoming cards flex-shrink on very narrow screens */
+  .admin-shell .weekly-card { flex: 0 0 clamp(130px, 42vw, 160px); }
 }
 
 /* ── Reduced motion ── */
