@@ -45,11 +45,23 @@ export async function checkConnection() {
   }
 }
 
-/** Run a Supabase op, falling back to local storage on failure (or always, in local mode). */
+async function withRetry(fn, maxAttempts = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isNetworkError = err instanceof TypeError && /fetch|network|failed/i.test(err.message ?? "");
+      if (!isNetworkError || attempt >= maxAttempts) throw err;
+      await new Promise((r) => setTimeout(r, 2 ** attempt * 300));
+    }
+  }
+}
+
+/** Run a Supabase op with retry on network errors, falling back to localStorage on persistent failure. */
 async function op(remote, localFn) {
   if (isLocalMode()) return localFn();
   try {
-    const r = await remote();
+    const r = await withRetry(remote);
     setConnected(true);
     return r;
   } catch {
@@ -199,6 +211,46 @@ export async function loadTransactions() {
       return data ?? [];
     },
     () => local.list("transactions").slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))),
+  );
+}
+
+export async function loadTransactionsPaginated(page = 0, pageSize = 50) {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  return op(
+    async () => {
+      const userId = await uid();
+      const { data, error, count } = await supabase
+        .from("transactions").select("*", { count: "exact" })
+        .eq("user_id", userId).order("date", { ascending: false })
+        .range(from, to);
+      if (error) throw error;
+      return { rows: data ?? [], total: count ?? 0, page, pageSize };
+    },
+    () => {
+      const all = local.list("transactions").slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+      return { rows: all.slice(from, to + 1), total: all.length, page, pageSize };
+    },
+  );
+}
+
+export async function loadJournalPaginated(page = 0, pageSize = 20) {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  return op(
+    async () => {
+      const userId = await uid();
+      const { data, error, count } = await supabase
+        .from("journal").select("*", { count: "exact" })
+        .eq("user_id", userId).order("date", { ascending: false })
+        .range(from, to);
+      if (error) throw error;
+      return { rows: data ?? [], total: count ?? 0, page, pageSize };
+    },
+    () => {
+      const all = local.list("journal").slice().sort(byDateAsc());
+      return { rows: all.slice(from, to + 1), total: all.length, page, pageSize };
+    },
   );
 }
 

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
 import ChatBot from "../../components/ChatBot";
 import AdminSubSidebar from "../../components/AdminSubSidebar";
 import PageTransition from "../../components/motion/PageTransition";
+import ErrorBoundary from "../../components/ErrorBoundary";
+import CommandPalette from "../../components/CommandPalette";
 
 // The real React logo — an inline SVG so it can spin and inherit colour.
 function ReactLogo({ className }) {
@@ -52,6 +54,15 @@ export default function AdminLayout() {
   );
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPaletteOpen((o) => !o); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const hidden = railCollapsed && subCollapsed;
 
@@ -193,12 +204,15 @@ export default function AdminLayout() {
       </header>
 
       <main className="admin-main">
-        <AnimatePresence mode="wait" initial={false}>
-          <PageTransition key={location.pathname}>{outlet}</PageTransition>
-        </AnimatePresence>
+        <ErrorBoundary>
+          <AnimatePresence mode="wait" initial={false}>
+            <PageTransition key={location.pathname}>{outlet}</PageTransition>
+          </AnimatePresence>
+        </ErrorBoundary>
       </main>
 
       <ChatBot />
+      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
 
       {/* Mobile menu — floating React-logo button (bottom-left), opposite the chat button */}
       <button

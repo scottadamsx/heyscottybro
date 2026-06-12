@@ -44,10 +44,22 @@ export default function RemindersPage() {
   const noDate = useMemo(() => filtered.filter((r) => !r.completed && !r.date), [filtered]);
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
 
+  const handleComplete = async (id) => {
+    const completedDate = toDateStr(new Date());
+    setList((prev) => prev.map((r) => r.id === id ? { ...r, completed: true, completed_date: completedDate } : r));
+    try { await completeReminder(id); } catch { await load(); }
+  };
+
+  const handleDelete = async (id) => {
+    setList((prev) => prev.filter((r) => r.id !== id));
+    try { await deleteReminder(id); } catch { await load(); }
+  };
+
   const addReminder = async (e) => {
     e.preventDefault();
     if (!form.name) return;
-    await newReminder({
+    const tempId = `temp-${Date.now()}`;
+    const fields = {
       name: form.name,
       date: form.date || null,
       time: form.time || null,
@@ -57,11 +69,17 @@ export default function RemindersPage() {
       recur_until: form.recur_until || null,
       recur_times: form.recur_times ? Number(form.recur_times) : null,
       show_on_calendar: form.show_on_calendar,
-    });
+    };
+    setList((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
     setForm(emptyForm);
     setShowDescription(false);
     setShowDateTime(false);
-    await load();
+    try {
+      await newReminder(fields);
+      await load();
+    } catch {
+      setList((prev) => prev.filter((r) => r.id !== tempId));
+    }
   };
 
   const projectName = (id) => projects.find(p => p.id === id)?.name || "";
@@ -84,10 +102,10 @@ export default function RemindersPage() {
         </span>
       </span>
       <span>
-        <button type="button" className="btn-sm btn-complete" onClick={() => completeReminder(r.id).then(load)}>
+        <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r.id)}>
           ✓ Done
         </button>
-        <button type="button" className="btn-sm btn-delete" onClick={() => deleteReminder(r.id).then(load)}>
+        <button type="button" className="btn-sm btn-delete" onClick={() => handleDelete(r.id)}>
           ✕
         </button>
       </span>

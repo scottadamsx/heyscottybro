@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { ToastProvider } from "./contexts/ToastContext";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -39,7 +40,7 @@ import ContextPage from "./pages/admin/ContextPage.jsx";
 
 export default function App() {
   return (
-    <>
+    <ToastProvider>
       <Routes>
         {/* Public routes with main nav */}
         <Route
@@ -140,6 +141,6 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </ToastProvider>
   );
 }

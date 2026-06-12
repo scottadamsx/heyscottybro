@@ -136,6 +136,20 @@ export async function loadHikeAttendees(hikeImportId) {
   return (data ?? []).map(r => r.hiker_members).filter(Boolean);
 }
 
+export async function loadHikeHistoryWithAttendees() {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("hiker_imports")
+    .select("*, hike_attendees(member_id, hiker_members(id, first, last, email, phone, attendance))")
+    .eq("user_id", userId)
+    .order("hike_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    ...row,
+    attendees: (row.hike_attendees ?? []).map((a) => a.hiker_members).filter(Boolean),
+  }));
+}
+
 // CSV parse over the WHOLE text (not line-by-line) so quoted fields that
 // contain newlines — common in Google Forms exports — stay in one row.
 // Handles quoted fields and "" escaped quotes.
