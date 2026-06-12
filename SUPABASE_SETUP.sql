@@ -836,3 +836,12 @@ END $$;
 -- Default settings row (upsert so re-runs are safe)
 -- Must be run after a user exists. Uncomment and fill in your user ID if you want a seed row:
 -- INSERT INTO fin_settings (user_id) VALUES ('<your-user-uuid>') ON CONFLICT (user_id) DO NOTHING;
+
+-- ─────────────────────────────────────────────────────────────────
+-- Migration (2026-06-12): recurring events
+-- Events gain the same recurrence model reminders already use, so the
+-- AI agent and the calendar can create "weekly until <date>" events.
+-- Safe to re-run.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS recurrence  TEXT DEFAULT 'none';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS recur_until DATE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS recur_times INTEGER;

@@ -159,6 +159,22 @@ export async function newJournalEntry({ title, entry, date }) {
   );
 }
 
+export async function updateJournalEntry(id, fields) {
+  const patch = {};
+  ["title", "entry", "date"].forEach((k) => { if (fields[k] !== undefined) patch[k] = fields[k]; });
+  return op(
+    async () => { const { error } = await supabase.from("journal").update(patch).eq("id", id); if (error) throw error; },
+    () => local.update("journal", id, patch),
+  );
+}
+
+export async function deleteJournalEntry(id) {
+  return op(
+    async () => { const { error } = await supabase.from("journal").delete().eq("id", id); if (error) throw error; },
+    () => local.remove("journal", id),
+  );
+}
+
 /* ── Events ──────────────────────────────────── */
 export async function loadEvents() {
   return op(
@@ -172,13 +188,31 @@ export async function loadEvents() {
   );
 }
 
-export async function newEvent({ title, description, date, project_id, event_type_id }) {
+export async function newEvent({ title, description, date, project_id, event_type_id, recurrence, recur_until, recur_times }) {
   const row = { title, description, date };
   if (project_id) row.project_id = project_id;
   if (event_type_id) row.event_type_id = event_type_id;
+  // Recurrence keys are only sent when set, so inserts keep working on
+  // databases that haven't run the events-recurrence migration yet.
+  if (recurrence && recurrence !== "none") row.recurrence = recurrence;
+  if (recur_until) row.recur_until = recur_until;
+  if (recur_times) row.recur_times = Number(recur_times);
   return op(
     async () => { const userId = await uid(); const { error } = await supabase.from("events").insert({ user_id: userId, ...row }); if (error) throw error; },
     () => { local.insert("events", row); },
+  );
+}
+
+export async function updateEvent(id, fields) {
+  // Only persist keys that were actually provided (so partial edits don't wipe columns).
+  const patch = {};
+  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times"].forEach((k) => {
+    if (fields[k] !== undefined) patch[k] = fields[k];
+  });
+  if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
+  return op(
+    async () => { const { error } = await supabase.from("events").update(patch).eq("id", id); if (error) throw error; },
+    () => local.update("events", id, patch),
   );
 }
 
@@ -474,6 +508,15 @@ export async function newInitiative({ project_id, name, description, recurrence 
   return op(
     async () => { const userId = await uid(); const { error } = await supabase.from("initiatives").insert({ user_id: userId, ...row }); if (error) throw error; },
     () => { local.insert("initiatives", row); },
+  );
+}
+
+export async function updateInitiative(id, fields) {
+  const patch = {};
+  ["name", "description", "recurrence", "project_id", "active"].forEach((k) => { if (fields[k] !== undefined) patch[k] = fields[k]; });
+  return op(
+    async () => { const { error } = await supabase.from("initiatives").update(patch).eq("id", id); if (error) throw error; },
+    () => local.update("initiatives", id, patch),
   );
 }
 

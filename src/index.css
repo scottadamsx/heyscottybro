@@ -3321,6 +3321,37 @@ input, textarea, select { font-family: inherit; }
   overflow: hidden;
 }
 
+/* Escalation ladder: handoff notes between tiers + speaker identity chips */
+.chat-note {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+  padding: 0.1rem 0.6rem;
+  text-align: center;
+}
+.chat-note i { font-size: 0.6rem; margin-right: 0.25rem; }
+.chat-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+  color: var(--text-muted);
+}
+.chat-author.sam { color: #34d399; }
+.chat-author.gandalf { color: #a78bfa; }
+.chat-status {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-left: 0.4rem;
+}
+
 /* Typing indicator */
 .chat-typing {
   display: flex;

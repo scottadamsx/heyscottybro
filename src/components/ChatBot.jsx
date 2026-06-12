@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { renderMarkdown } from "../utils/markdown";
 import useAIAgent, { MAX_INPUT_CHARS } from "../hooks/useAIAgent";
+import { TIERS } from "../api/aiTiers";
+
+const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 
 export default function ChatBot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const { displayMsgs, input, setInput, loading, sendMessage, clearHistory } = useAIAgent();
+  const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory } = useAIAgent();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -61,12 +64,27 @@ export default function ChatBot() {
                 </ul>
               </div>
             )}
-            {displayMsgs.map((m, i) => (
-              m.role === "assistant"
-                ? <div key={i} className="chat-msg assistant chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
-                : <div key={i} className="chat-msg user">{m.text}</div>
-            ))}
-            {loading && <div className="chat-msg assistant chat-typing"><span /><span /><span /></div>}
+            {displayMsgs.map((m, i) => {
+              if (m.role === "note") {
+                return <div key={i} className="chat-note"><i className="fa-solid fa-arrow-turn-up" /> {m.text}</div>;
+              }
+              if (m.role === "assistant") {
+                const tier = TIER_BY_ID[m.by] || TIER_BY_ID.frodo;
+                return (
+                  <div key={i} className="chat-msg assistant chat-md">
+                    {tier.id !== "frodo" && <span className={`chat-author ${tier.id}`}><i className={`fa-solid ${tier.icon}`} /> {tier.label}</span>}
+                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                  </div>
+                );
+              }
+              return <div key={i} className="chat-msg user">{m.text}</div>;
+            })}
+            {loading && (
+              <div className="chat-msg assistant chat-typing">
+                <span /><span /><span />
+                {status && <em className="chat-status">{status}</em>}
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 

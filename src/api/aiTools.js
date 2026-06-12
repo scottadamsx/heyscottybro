@@ -1,144 +1,93 @@
+/**
+ * Agent tool belt — shared by every tier (Frodo/Sam/Gandalf).
+ *
+ * Data access goes through the generic library tools (see aiLibrary.js) so the
+ * agent can touch every collection with four schemas instead of thirty — far
+ * fewer prompt tokens, and validation is centralised in one place. Only
+ * genuinely special flows (nutrition, context memory, balance, bulk hiker
+ * wipe) keep bespoke tools. The pass_to_* escalation tools are appended per
+ * tier by useAIAgent, not listed here.
+ */
+import {
+  COLLECTION_NAMES,
+  libraryCatalog, libraryQuery, libraryCreate, libraryUpdate, libraryDelete,
+} from "./aiLibrary";
 import { getContext, addContextEntry, deleteContextEntry, replaceContext } from "./contextApi";
-import {
-  loadReminders, newReminder, updateReminder, completeReminder, deleteReminder,
-  loadEvents, newEvent, deleteEvent,
-  loadProjects, newProject, updateProject, deleteProject,
-  loadJournal, newJournalEntry,
-  loadInitiatives, newInitiative,
-  loadEventTypes, newEventType,
-  loadTransactions, newTransaction, deleteTransaction,
-  addRecurringBill, addIncomeSource, loadBudgetConfig, saveBudgetConfig,
-} from "./plannerApi";
-import { loadMembers, deleteMember, clearAllMembers } from "./hikerApi";
-import {
-  loadProfiles as loadNutritionProfiles,
-  createFoodLog, loadFoodLogs, saveWeight,
-} from "./nutritionApi";
+import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
+import { clearAllMembers } from "./hikerApi";
+import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
-import { toDateStr } from "../utils/plannerUtils";
-
-const today = () => toDateStr(new Date());
 
 export const TOOLS = [
   {
-    name: "list_items",
-    description: "Read Scott's current data. Returns records with their IDs (needed for update/delete). Use before making changes.",
+    name: "library_catalog",
+    description: "The card catalog: every collection with its fields and allowed operations. Pass include_counts only when you actually need sizes (it loads every collection).",
     input_schema: {
       type: "object",
-      properties: {
-        type: { type: "string", enum: ["reminders", "events", "projects", "journal", "transactions", "initiatives", "event_types"], description: "Which collection to read" },
-      },
-      required: ["type"],
+      properties: { include_counts: { type: "boolean" } },
     },
   },
   {
-    name: "add_reminder",
-    description: "Add a reminder/task (optionally recurring, with a due date and/or project)",
+    name: "query",
+    description: "Read from a collection — filtered, field-projected, row-capped. Returns ids needed for update/delete. Prefer tight filters + small limits; use mode count/summary instead of fetching rows to count them.",
     input_schema: {
       type: "object",
       properties: {
-        name: { type: "string" },
-        date: { type: "string", description: "Due date YYYY-MM-DD (optional)" },
-        time: { type: "string", description: "HH:MM (optional)" },
-        description: { type: "string" },
-        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
-        project_id: { type: "string", description: "Attach to a project/sub-project (from list_items projects)" },
-        show_on_calendar: { type: "boolean" },
+        collection: { type: "string", enum: COLLECTION_NAMES },
+        fields: { type: "array", items: { type: "string" }, description: "Columns to return (id always included). Omit for a sensible compact default." },
+        where: { type: "object", description: "Exact-match filters, e.g. {\"project_id\": \"...\", \"completed\": false}" },
+        search: { type: "string", description: "Case-insensitive substring search across the collection's text fields" },
+        date_from: { type: "string", description: "YYYY-MM-DD inclusive lower bound on the collection's date" },
+        date_to: { type: "string", description: "YYYY-MM-DD inclusive upper bound" },
+        order_by: { type: "string" },
+        direction: { type: "string", enum: ["asc", "desc"] },
+        limit: { type: "number", description: "Max rows (default 25, cap 100)" },
+        offset: { type: "number", description: "For paging — response includes next_offset when more rows exist" },
+        mode: { type: "string", enum: ["rows", "count", "summary"], description: "count = just the number; summary = count + date range + 5 sample rows" },
       },
-      required: ["name"],
+      required: ["collection"],
     },
   },
   {
-    name: "update_reminder",
-    description: "Edit an existing reminder/task. Get the id from list_items first. Only pass the fields you want to change.",
+    name: "create_item",
+    description: "Create a record in a collection. data is validated against the collection's fields (see the catalog in your instructions).",
     input_schema: {
       type: "object",
       properties: {
+        collection: { type: "string", enum: COLLECTION_NAMES },
+        data: { type: "object", description: "Field values for the new record" },
+      },
+      required: ["collection", "data"],
+    },
+  },
+  {
+    name: "update_item",
+    description: "Edit any record — pass only the fields to change. Get the id from query first.",
+    input_schema: {
+      type: "object",
+      properties: {
+        collection: { type: "string", enum: COLLECTION_NAMES },
         id: { type: "string" },
-        name: { type: "string" },
-        date: { type: "string", description: "Due date YYYY-MM-DD" },
-        time: { type: "string", description: "HH:MM" },
-        description: { type: "string" },
-        recurrence: { type: "string", enum: ["none", "daily", "weekly", "monthly"] },
-        project_id: { type: "string" },
-        show_on_calendar: { type: "boolean" },
+        data: { type: "object", description: "Only the fields being changed" },
       },
-      required: ["id"],
+      required: ["collection", "id", "data"],
     },
   },
-  { name: "complete_reminder", description: "Mark a reminder/task complete", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
-  { name: "delete_reminder", description: "Delete a reminder/task by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
   {
-    name: "add_event",
-    description: "Add a calendar event. If an event_type with auto-tasks is given, dependency reminders are auto-created.",
+    name: "delete_item",
+    description: "Delete a record by id. Cascading deletes (projects) require confirm: true after Scott agrees.",
     input_schema: {
       type: "object",
       properties: {
-        title: { type: "string" },
-        date: { type: "string", description: "YYYY-MM-DD" },
-        description: { type: "string" },
-        project_id: { type: "string" },
-        event_type_id: { type: "string" },
+        collection: { type: "string", enum: COLLECTION_NAMES },
+        id: { type: "string" },
+        confirm: { type: "boolean" },
       },
-      required: ["title", "date"],
+      required: ["collection", "id"],
     },
   },
-  { name: "delete_event", description: "Delete a calendar event by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
-  {
-    name: "add_project",
-    description: "Create a project, or a sub-project (e.g. a class) by passing parent_id",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        description: { type: "string" },
-        color: { type: "string", description: "Hex colour like #4f7cff" },
-        parent_id: { type: "string", description: "Parent project id to nest under (optional)" },
-      },
-      required: ["name"],
-    },
-  },
-  { name: "update_project", description: "Rename or recolour a project", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, description: { type: "string" }, color: { type: "string" } }, required: ["id"] } },
-  { name: "delete_project", description: "Delete a project (and its tasks/sub-projects). Confirm first.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
-  {
-    name: "add_event_type",
-    description: "Create an event type with auto-task dependencies that fire relative to an event's date",
-    input_schema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        color: { type: "string" },
-        auto_tasks: {
-          type: "array",
-          description: "Dependency reminders. offset_days negative = before, 0 = day of, positive = after.",
-          items: { type: "object", properties: { offset_days: { type: "number" }, name: { type: "string" } }, required: ["offset_days", "name"] },
-        },
-      },
-      required: ["name"],
-    },
-  },
-  { name: "add_journal_entry", description: "Add a journal entry", input_schema: { type: "object", properties: { title: { type: "string" }, entry: { type: "string" }, date: { type: "string" } }, required: ["title", "entry"] } },
-  { name: "add_initiative", description: "Add a recurring initiative/commitment to a project", input_schema: { type: "object", properties: { project_id: { type: "string" }, name: { type: "string" }, description: { type: "string" }, recurrence: { type: "string", enum: ["daily", "weekly", "monthly"] } }, required: ["name"] } },
-  {
-    name: "add_transaction",
-    description: "Log a financial transaction (expense, income, or future planned spend)",
-    input_schema: {
-      type: "object",
-      properties: {
-        description: { type: "string" },
-        amount: { type: "number", description: "Positive — sign derived from type" },
-        type: { type: "string", enum: ["expense", "income", "future"], description: "future = planned spend (counts against projected balance, not actuals)" },
-        category: { type: "string" },
-        date: { type: "string" },
-        notes: { type: "string" },
-      },
-      required: ["description", "amount", "type", "category", "date"],
-    },
-  },
-  { name: "delete_transaction", description: "Delete a transaction by id", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
-  { name: "add_income_source", description: "Add a recurring income source", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, startDate: { type: "string" }, endDate: { type: "string" }, notes: { type: "string" } }, required: ["name", "amount"] } },
+  { name: "complete_reminder", description: "Mark a reminder/task complete (shortcut for update_item with completed: true)", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
-  { name: "add_recurring_bill", description: "Add a recurring monthly bill or subscription", input_schema: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" }, category: { type: "string" }, startDate: { type: "string" }, dueDay: { type: "number" }, notes: { type: "string" } }, required: ["name", "amount", "category"] } },
   { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
   {
     name: "log_food",
@@ -181,8 +130,6 @@ export const TOOLS = [
       required: ["profile_id"],
     },
   },
-  { name: "search_hikers", description: "Search hikers by name or email to find IDs", input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } },
-  { name: "delete_hiker", description: "Delete a specific hiker by id", input_schema: { type: "object", properties: { id: { type: "string" }, name: { type: "string" } }, required: ["id", "name"] } },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
   { name: "list_context", description: "Read all saved context facts about Scott and Maria. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
   {
@@ -220,42 +167,13 @@ export const TOOLS = [
 export async function executeTool(name, input) {
   try {
     switch (name) {
-      case "list_items": {
-        const t = input.type;
-        if (t === "reminders") return { items: (await loadReminders()).map((r) => ({ id: r.id, name: r.name, date: r.date, time: r.time, recurrence: r.recurrence, completed: r.completed, project_id: r.project_id })) };
-        if (t === "events") return { items: (await loadEvents()).map((e) => ({ id: e.id, title: e.title, date: e.date, project_id: e.project_id })) };
-        if (t === "projects") return { items: (await loadProjects()).map((p) => ({ id: p.id, name: p.name, color: p.color, parent_id: p.parent_id })) };
-        if (t === "journal") return { items: (await loadJournal()).map((j) => ({ id: j.id, title: j.title, date: j.date })) };
-        if (t === "transactions") return { items: (await loadTransactions()).slice(0, 40).map((x) => ({ id: x.id, description: x.description, amount: x.amount, category: x.category, date: x.date })) };
-        if (t === "initiatives") return { items: (await loadInitiatives()).map((i) => ({ id: i.id, name: i.name, recurrence: i.recurrence, project_id: i.project_id })) };
-        if (t === "event_types") return { items: (await loadEventTypes()).map((e) => ({ id: e.id, name: e.name, auto_tasks: e.auto_tasks })) };
-        return { error: "unknown type" };
-      }
-      case "add_reminder":
-        await newReminder({ name: input.name, date: input.date || null, time: input.time || null, description: input.description || null, recurrence: input.recurrence || "none", project_id: input.project_id || null, show_on_calendar: input.show_on_calendar });
-        return { success: true };
-      case "update_reminder": {
-        const { id, ...fields } = input;
-        await updateReminder(id, fields);
-        return { success: true };
-      }
+      case "library_catalog": return await libraryCatalog(input || {});
+      case "query": return await libraryQuery(input);
+      case "create_item": return await libraryCreate(input);
+      case "update_item": return await libraryUpdate(input);
+      case "delete_item": return await libraryDelete(input);
       case "complete_reminder": await completeReminder(input.id); return { success: true };
-      case "delete_reminder": await deleteReminder(input.id); return { success: true };
-      case "add_event":
-        await newEvent({ title: input.title, date: input.date, description: input.description || "", project_id: input.project_id || null, event_type_id: input.event_type_id || null });
-        return { success: true };
-      case "delete_event": await deleteEvent(input.id); return { success: true };
-      case "add_project": { const p = await newProject({ name: input.name, description: input.description || "", color: input.color || "#4f7cff", parent_id: input.parent_id || null }); return { success: true, id: p?.id }; }
-      case "update_project": { const u = {}; if (input.name != null) u.name = input.name; if (input.description != null) u.description = input.description; if (input.color != null) u.color = input.color; await updateProject(input.id, u); return { success: true }; }
-      case "delete_project": await deleteProject(input.id); return { success: true };
-      case "add_event_type": { const e = await newEventType({ name: input.name, color: input.color || "#22d3ee", auto_tasks: input.auto_tasks || [] }); return { success: true, id: e?.id }; }
-      case "add_journal_entry": await newJournalEntry({ title: input.title, entry: input.entry, date: input.date || today() }); return { success: true };
-      case "add_initiative": await newInitiative({ project_id: input.project_id || null, name: input.name, description: input.description || "", recurrence: input.recurrence || "weekly" }); return { success: true };
-      case "add_transaction": await newTransaction({ description: input.description, amount: input.amount, type: input.type, category: input.category, date: input.date, notes: input.notes || "" }); return { success: true };
-      case "delete_transaction": await deleteTransaction(input.id); return { success: true };
-      case "add_income_source": await addIncomeSource({ name: input.name, amount: input.amount, frequency: "monthly", startDate: input.startDate || today(), endDate: input.endDate || null, notes: input.notes || "" }); return { success: true };
       case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
-      case "add_recurring_bill": await addRecurringBill({ name: input.name, amount: input.amount, category: input.category, startDate: input.startDate || today(), dueDay: input.dueDay ?? null, notes: input.notes || "" }); return { success: true };
       case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
       case "log_food": {
         await createFoodLog(input.profile_id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: input.meal_type || "snack", date: input.date || nutritionToday(), source: "ai" });
@@ -270,8 +188,6 @@ export async function executeTool(name, input) {
         const logs = await loadFoodLogs(input.profile_id, { from: d, to: d });
         return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
       }
-      case "search_hikers": { const results = await loadMembers(input.query); return { results: results.slice(0, 10).map((m) => ({ id: m.id, name: `${m.first} ${m.last}`, email: m.email || "", attendance: m.attendance })) }; }
-      case "delete_hiker": await deleteMember(input.id); return { success: true, deleted: input.name };
       case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
       case "list_context": return { items: getContext().map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) };
       case "save_context": { const entry = addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }

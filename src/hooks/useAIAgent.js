@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { TOOLS, executeTool } from "../api/aiTools";
-import { toDateStr } from "../utils/plannerUtils";
+import { TIERS, buildSystemPrompt, escalationToolFor } from "../api/aiTiers";
 import { getAuthHeaders } from "../utils/supabase";
-
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const today = () => toDateStr(new Date());
 
 const CHAT_STORE_KEY = "frodo_chat_session";
 const CHAT_TTL_MS = 60 * 60 * 1000;
@@ -13,41 +9,16 @@ const CHAT_TTL_MS = 60 * 60 * 1000;
 export const MAX_INPUT_CHARS = 4000;
 const HISTORY_CHAR_BUDGET = 100000;
 
-function buildSystemPrompt() {
-  const now = new Date();
-  const todayStr = toDateStr(now);
-  const weekday = WEEKDAYS[now.getDay()];
-  const upcoming = WEEKDAYS.map((_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i + 1);
-    return `${WEEKDAYS[d.getDay()]} = ${toDateStr(d)}`;
-  }).join(", ");
-
-  return `You are Frodo, Scott's loyal personal assistant living inside his planner app (heyScottyBro).
-
-Today is ${weekday}, ${todayStr} (Scott's LOCAL date). The next seven days are: ${upcoming}.
-
-Personality: warm, upbeat, and a touch adventurous — you treat keeping Scott organised like a quest you're happy to be on. Light humour and the occasional cheeky aside are welcome ("consider it done", "one does not simply forget leg day"), but never at the expense of being genuinely useful and concise. Address Scott directly, sign off warmly now and then, and go easy on emojis.
-
-You have FULL read/write access to Scott's data and can make complex, multi-step changes end to end without asking permission for routine work — just do it, then confirm what you did. To make an informed change, first call list_items to read the current data (it returns IDs you need for updates/deletes), then act. When Scott asks for several items at once (e.g. "reminders for Monday, Wednesday and Friday"), create EVERY one in the same turn.
-
-Capabilities: reminders/tasks (add, edit, complete, delete — incl. recurring, due dates, projects), calendar events, projects + nested sub-projects, event types with auto-task dependencies, journal entries, initiatives, transactions, recurring bills, income, balance, the hiker database, and nutrition tracking (log food + weight for Scott or his partner). For nutrition, ALWAYS call list_nutrition_profiles first to get the profile id, then log_food / log_weight. If Scott describes a meal without calories, estimate sensible calories and macros (protein/carbs/fat in grams) yourself before logging.
-
-Formatting: reply in Markdown. Use **bold** for emphasis, bullet lists for steps, and Markdown TABLES whenever you present multiple records to the user (e.g. listing tasks, projects, search results) so they render as a grid. Keep prose short.
-
-CONTEXT — your long-term memory:
-You have a persistent context store (separate from the planner). Whenever you learn a personal fact about Scott or Maria during conversation — preferences, health info, relationship details, plans, allergies, hobbies, anything worth remembering across sessions — call save_context automatically without asking. Just save it and append a small italicised note like *"Noted to context."*. Use the "frodo" source so it's labelled clearly.
-
-When Scott asks you to organise, clean up, or deduplicate the context, call list_context first, then present your proposed changes (what you'll merge, remove, or reword) and explicitly ask "Should I go ahead?" before calling reorganize_context.
-
-DATES — read carefully:
-- Always resolve relative dates ("tomorrow", "next Monday", "this Friday") to a YYYY-MM-DD string BEFORE calling any tool, using the local date and weekday map above. Never guess the weekday — use the map.
-- "This <weekday>" means the named day in the current week (today or later); "next <weekday>" means the following week. When in doubt, pick the soonest upcoming matching date and state the exact date back to Scott.
-- The date you pass is the literal calendar day the task is due — do not add or subtract a day for timezones.
-
-Transaction categories: Food, Transport, Bills, Entertainment, Housing, Car, Subscriptions, Travel, Other. "Fun money" = Entertainment.
-
-Safety: before any destructive BULK action (deleting all hikers, deleting a project with its tasks, etc.) ask one short confirmation question first and wait for a clear yes. Single, easily-reversible changes need no confirmation.`;
-}
+/* Catch-nets around each tier (see aiTiers.js for the explicit pass_to_* tools):
+ * - transient API failures retry with backoff before counting as a real error
+ * - ERROR_STREAK_LIMIT consecutive failed tool calls force a handoff upward
+ * - each tier has a tool-turn budget; blowing it forces a handoff (or, at the
+ *   top tier, a wrap-up instruction instead of an exception)
+ * - history is committed after every completed tool exchange, so even when a
+ *   turn dies mid-flight the next message knows what already changed */
+const ERROR_STREAK_LIMIT = 3;
+const RETRY_STATUSES = new Set([429, 500, 503, 529]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function trimHistory(msgs) {
   const size = (m) => JSON.stringify(m).length;
@@ -78,6 +49,30 @@ function withCacheMarkers(msgs) {
   });
 }
 
+async function callClaude(payload, headers) {
+  for (let attempt = 0; ; attempt++) {
+    let res;
+    try {
+      res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      if (attempt >= 2) throw err;
+      await sleep(800 * 2 ** attempt);
+      continue;
+    }
+    if (RETRY_STATUSES.has(res.status) && attempt < 2) {
+      await sleep(1200 * 2 ** attempt);
+      continue;
+    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
+    return data;
+  }
+}
+
 function loadSavedChat() {
   try {
     const raw = localStorage.getItem(CHAT_STORE_KEY);
@@ -98,6 +93,7 @@ export default function useAIAgent() {
   const [apiHistory, setApiHistory] = useState(() => loadSavedChat().apiHistory);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     try {
@@ -115,51 +111,127 @@ export default function useAIAgent() {
     setInput("");
     setLoading(true);
 
-    const nextDisplay = [...displayMsgs, { role: "user", text }];
-    const nextApi = [...apiHistory, { role: "user", content: text }];
-    setDisplayMsgs(nextDisplay);
+    let display = [...displayMsgs, { role: "user", text }];
+    setDisplayMsgs(display);
+
+    let msgs = trimHistory([...apiHistory, { role: "user", content: text }]);
+    // Last fully-completed exchange — what we fall back to if the turn dies
+    // mid-flight, so already-executed tool side effects stay in history.
+    let committed = msgs;
+
+    const pushNote = (note) => {
+      display = [...display, { role: "note", text: note }];
+      setDisplayMsgs(display);
+    };
+
+    let tierIdx = 0;
+    let turnsInTier = 0;
+    let errorStreak = 0;
+    let wrapUpInjected = false;
+
+    // Move one tier up, telling the next model what happened in-band so it
+    // continues instead of restarting. `msgs` must end with a tool_results
+    // user message — the note rides along as an extra text block.
+    const escalate = (reason) => {
+      const next = TIERS[tierIdx + 1];
+      const last = msgs[msgs.length - 1];
+      msgs = [...msgs.slice(0, -1), {
+        ...last,
+        content: [...last.content, { type: "text", text: `[handoff] ${reason} ${next.label} is taking over — review what was already done above and continue; do not redo completed work.` }],
+      }];
+      pushNote(`${TIERS[tierIdx].label} passed this to ${next.label} — ${reason}`);
+      tierIdx++;
+      turnsInTier = 0;
+      errorStreak = 0;
+    };
 
     try {
-      let msgs = trimHistory(nextApi);
-      let finalDisplay = nextDisplay;
-
       const authHeaders = await getAuthHeaders();
-      const systemBlocks = [{ type: "text", text: buildSystemPrompt(), cache_control: { type: "ephemeral" } }];
 
-      for (let turn = 0; ; turn++) {
-        if (turn >= 15) throw new Error("Too many tool calls in one turn — try a smaller request.");
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 4096, system: systemBlocks, tools: TOOLS, messages: withCacheMarkers(msgs) }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
+      for (;;) {
+        const tier = TIERS[tierIdx];
+        setStatus(`${tier.label} is thinking…`);
 
-        if (data.stop_reason === "tool_use") {
-          const toolBlocks = data.content.filter((b) => b.type === "tool_use");
-          const toolResults = [];
+        const passTool = escalationToolFor(tierIdx);
+        const data = await callClaude({
+          model: tier.model,
+          max_tokens: 4096,
+          system: [{ type: "text", text: buildSystemPrompt(tier), cache_control: { type: "ephemeral" } }],
+          tools: passTool ? [...TOOLS, passTool] : TOOLS,
+          messages: withCacheMarkers(msgs),
+        }, authHeaders);
+
+        const toolBlocks = (data.content || []).filter((b) => b.type === "tool_use");
+
+        if (toolBlocks.length > 0) {
+          turnsInTier++;
+          const passBlock = passTool ? toolBlocks.find((b) => b.name === passTool.name) : null;
+
+          const results = [];
           for (const block of toolBlocks) {
+            if (block === passBlock) {
+              results.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify({ success: true, note: `Handoff accepted — ${TIERS[tierIdx + 1].label} now has the task.` }) });
+              continue;
+            }
+            setStatus(`${tier.label}: ${block.name.replace(/_/g, " ")}…`);
             const result = await executeTool(block.name, block.input);
-            toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
+            errorStreak = result?.error ? errorStreak + 1 : 0;
+            results.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
           }
-          msgs = [...msgs, { role: "assistant", content: data.content }, { role: "user", content: toolResults }];
-        } else {
-          const replyText = data.content?.filter((b) => b.type === "text").map((b) => b.text).join("\n\n") || "Done.";
-          finalDisplay = [...finalDisplay, { role: "assistant", text: replyText }];
-          setDisplayMsgs(finalDisplay);
-          setApiHistory([...msgs, { role: "assistant", content: data.content }]);
-          break;
+
+          msgs = [...msgs, { role: "assistant", content: data.content }, { role: "user", content: results }];
+          committed = msgs;
+
+          if (passBlock && tierIdx < TIERS.length - 1) {
+            escalate(passBlock.input?.reason || "needs more firepower.");
+            continue;
+          }
+          if (errorStreak >= ERROR_STREAK_LIMIT && tierIdx < TIERS.length - 1) {
+            escalate(`${ERROR_STREAK_LIMIT} tool calls failed in a row.`);
+            continue;
+          }
+          if (turnsInTier >= tier.maxToolTurns) {
+            if (tierIdx < TIERS.length - 1) {
+              escalate(`hit the ${tier.maxToolTurns}-step budget without finishing.`);
+              continue;
+            }
+            if (!wrapUpInjected) {
+              wrapUpInjected = true;
+              const last = msgs[msgs.length - 1];
+              msgs = [...msgs.slice(0, -1), {
+                ...last,
+                content: [...last.content, { type: "text", text: "[system] Tool budget exhausted. Stop calling tools now — summarise honestly what was completed, what wasn't, and what Scott should do next." }],
+              }];
+              continue;
+            }
+            throw new Error("Ran out of steps even at the top tier — try breaking the request into smaller pieces.");
+          }
+          continue;
         }
+
+        // No tool calls — this is the reply.
+        let replyText = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n\n").trim();
+        if (data.stop_reason === "max_tokens") {
+          replyText += "\n\n*…I ran out of room — say \"continue\" and I'll pick up where I left off.*";
+        }
+        display = [...display, { role: "assistant", by: tier.id, text: replyText || "Done." }];
+        setDisplayMsgs(display);
+        setApiHistory([...msgs, { role: "assistant", content: data.content }]);
+        break;
       }
     } catch (err) {
-      setDisplayMsgs((prev) => [...prev, { role: "assistant", text: `Something went wrong: ${err.message}` }]);
+      // Keep everything that completed, so the next message has true history.
+      // Close with an assistant turn so roles still alternate on the next send.
+      setApiHistory([...committed, { role: "assistant", content: [{ type: "text", text: `(turn interrupted: ${err.message})` }] }]);
+      display = [...display, { role: "assistant", by: TIERS[tierIdx].id, text: `Something went wrong: ${err.message}` }];
+      setDisplayMsgs(display);
     } finally {
+      setStatus("");
       setLoading(false);
     }
   };
 
   const clearHistory = () => { setDisplayMsgs([]); setApiHistory([]); };
 
-  return { displayMsgs, input, setInput, loading, sendMessage, clearHistory };
+  return { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory };
 }

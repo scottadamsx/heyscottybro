@@ -22,7 +22,11 @@
       "Read(//dev/**)",
       "mcp__claude_ai_Supabase__get_advisors",
       "Bash(node /Users/heyscottybro/Documents/GitHub/heyscottybro/src/lib/budgetProjection.test.js)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "mcp__claude_ai_Google_Calendar__list_events",
+      "mcp__claude_ai_Google_Calendar__get_event",
+      "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/projects/**)",
+      "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/**)"
     ],
     "additionalDirectories": [
       "/Users/heyscottybro/Documents/GitHub/heyscottybro"

@@ -44,7 +44,8 @@ export async function verifySupabaseUser(req) {
 
 // Only the models this app actually uses may pass through the proxy, so a
 // leaked endpoint can't be used to run expensive models on our key.
-const ALLOWED_MODELS = new Set(["claude-haiku-4-5-20251001"]);
+// Frodo (haiku) → Sam (sonnet) → Gandalf (opus) escalation ladder.
+const ALLOWED_MODELS = new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-8"]);
 const MAX_TOKENS_CAP = 4096;
 
 /**

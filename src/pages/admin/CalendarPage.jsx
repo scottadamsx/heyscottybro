@@ -86,7 +86,9 @@ export default function CalendarPage() {
           map[doneDate].push({ kind: "done", label: r.name });
         }
       });
-    events.forEach((item) => {
+    // expandReminders is generic over date/recurrence/recur_until/recur_times,
+    // so it expands recurring events too (events have no `completed` to skip).
+    expandReminders(events, toDateStr(first), toDateStr(last)).forEach((item) => {
       map[item.date] = map[item.date] || [];
       map[item.date].push({ kind: "event", label: item.title });
     });
@@ -138,7 +140,8 @@ export default function CalendarPage() {
   };
 
   // Derived day data — auto-refreshes after load()
-  const dayEvents = selectedDate ? events.filter((e) => e.date === selectedDate) : [];
+  // Recurring events expand to the selected day; occurrences keep the series id.
+  const dayEvents = selectedDate ? expandReminders(events, selectedDate, selectedDate) : [];
   // Active tasks: use expandReminders on incomplete reminders only (handles recurrence correctly)
   const dayTasks = selectedDate ? expandReminders(reminders.filter((r) => !r.completed), selectedDate, selectedDate) : [];
   // Completed tasks: show tasks finished on this day (by completed_date, falling back to date)
