@@ -30,7 +30,7 @@ export function formatDisplayDate(isoDate) {
     // timezones — use the local-safe parser to keep the calendar day correct.
     const local = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? parseDate(isoDate) : new Date(isoDate);
     return local.toLocaleDateString(undefined, {
-      weekday: "long", year: "numeric", month: "long", day: "numeric"
+      weekday: "long", month: "long", day: "numeric"
     });
   } catch {
     return isoDate;

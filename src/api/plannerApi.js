@@ -10,6 +10,7 @@
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
 import { toDateStr } from "../utils/plannerUtils";
+import { emitDataChange } from "../utils/dataEvents";
 
 /* ── connection + mode state ─────────────────── */
 let _connected = null; // null = unknown, true, false
@@ -64,7 +65,9 @@ async function op(remote, localFn) {
     const r = await withRetry(remote);
     setConnected(true);
     return r;
-  } catch {
+  } catch (err) {
+    // Loud, not silent: a fallback means this data is NOT on the server.
+    console.warn("[plannerApi] Supabase call failed — falling back to localStorage. This change will NOT persist across devices/refresh-from-server:", err?.message || err);
     setConnected(false);
     return localFn();
   }
@@ -99,24 +102,28 @@ export async function newReminder({ name, date, time, description, recurrence, p
   if (time) base.time = time;
   if (description) base.description = description;
   if (show_on_calendar === false) base.show_on_calendar = false;
-  return op(
+  const result = await op(
     async () => {
       const userId = await uid();
-      const { error } = await supabase.from("reminders").insert({ user_id: userId, ...base });
+      const { data, error } = await supabase.from("reminders").insert({ user_id: userId, ...base }).select().single();
       if (error) throw error;
+      return data;
     },
-    () => { local.insert("reminders", { show_on_calendar: base.show_on_calendar !== false, ...base }); },
+    () => local.insert("reminders", { show_on_calendar: base.show_on_calendar !== false, ...base }),
   );
+  emitDataChange("reminders");
+  return result;
 }
 
 export async function completeReminder(id) {
   // Local calendar day — toISOString() would give the UTC day, which is
   // yesterday during AU mornings.
   const completed_date = toDateStr(new Date());
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("reminders").update({ completed: true, completed_date }).eq("id", id); if (error) throw error; },
     () => local.update("reminders", id, { completed: true, completed_date }),
   );
+  emitDataChange("reminders");
 }
 
 export async function updateReminder(id, fields) {
@@ -126,17 +133,19 @@ export async function updateReminder(id, fields) {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("reminders").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("reminders", id, patch),
   );
+  emitDataChange("reminders");
 }
 
 export async function deleteReminder(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("reminders").delete().eq("id", id); if (error) throw error; },
     () => local.remove("reminders", id),
   );
+  emitDataChange("reminders");
 }
 
 /* ── Journal ─────────────────────────────────── */
@@ -197,10 +206,12 @@ export async function newEvent({ title, description, date, project_id, event_typ
   if (recurrence && recurrence !== "none") row.recurrence = recurrence;
   if (recur_until) row.recur_until = recur_until;
   if (recur_times) row.recur_times = Number(recur_times);
-  return op(
-    async () => { const userId = await uid(); const { error } = await supabase.from("events").insert({ user_id: userId, ...row }); if (error) throw error; },
-    () => { local.insert("events", row); },
+  const result = await op(
+    async () => { const userId = await uid(); const { data, error } = await supabase.from("events").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
+    () => local.insert("events", row),
   );
+  emitDataChange("events");
+  return result;
 }
 
 export async function updateEvent(id, fields) {
@@ -210,17 +221,19 @@ export async function updateEvent(id, fields) {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("events").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("events", id, patch),
   );
+  emitDataChange("events");
 }
 
 export async function deleteEvent(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("events").delete().eq("id", id); if (error) throw error; },
     () => local.remove("events", id),
   );
+  emitDataChange("events");
 }
 
 /* ── Budget ──────────────────────────────────── */

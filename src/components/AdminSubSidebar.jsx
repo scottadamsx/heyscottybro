@@ -99,7 +99,10 @@ export default function AdminSubSidebar() {
     let alive = true;
     if (section === "projects") loadProjects().then((d) => alive && setProjects(d)).catch(() => {});
     if (section === "journal") loadJournal().then((d) => alive && setJournal(d)).catch(() => {});
-    if (section === "calendar") loadEvents().then((d) => alive && setEvents(d)).catch(() => {});
+    if (section === "calendar") {
+      loadEvents().then((d) => alive && setEvents(d)).catch(() => {});
+      loadReminders().then((d) => alive && setReminders(d)).catch(() => {});
+    }
     if (section === "reminders") loadProjects().then((d) => alive && setProjects(d)).catch(() => {});
     if (section === "hikers") loadHikeHistory().then((d) => alive && setHikes(d || [])).catch(() => {});
     return () => { alive = false; };
@@ -188,21 +191,32 @@ export default function AdminSubSidebar() {
   } else if (section === "calendar") {
     const today = toDateStr(new Date());
     const activeDate = params.get("date");
-    const upcoming = [...events].filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 20);
+    const fk = params.get("fk") || "all"; // "all" | "events" | "tasks"
+    const fp = params.get("fp") || "";    // project id filter
+    const byProject = (item) => !fp || String(item.project_id) === fp;
+    const upcomingEvents = fk !== "tasks"
+      ? events.filter((e) => e.date >= today && byProject(e)).map((e) => ({ ...e, _kind: "event", _label: e.title }))
+      : [];
+    const upcomingTasks = fk !== "events"
+      ? reminders.filter((r) => !r.completed && r.date && r.date >= today && r.show_on_calendar !== false && byProject(r)).map((r) => ({ ...r, _kind: "task", _label: r.name }))
+      : [];
+    const upcoming = [...upcomingEvents, ...upcomingTasks]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 25);
     body = (
       <>
         <button className={`admin-sub-link ${activeDate === today ? "active" : ""}`} onClick={() => setParam({ date: today })}>
           <i className="fa-solid fa-location-crosshairs" />
           <span className="admin-sub-link-body"><div className="admin-sub-link-title">Jump to today</div></span>
         </button>
-        <div className="admin-sub-label">Upcoming events</div>
-        {upcoming.length === 0 && <div className="admin-sub-empty">No upcoming events.</div>}
-        {upcoming.map((e) => (
-          <button key={e.id} className={`admin-sub-link ${activeDate === e.date ? "active" : ""}`} onClick={() => setParam({ date: e.date })}>
-            <i className="fa-solid fa-calendar-day" />
+        <div className="admin-sub-label">Upcoming</div>
+        {upcoming.length === 0 && <div className="admin-sub-empty">Nothing upcoming.</div>}
+        {upcoming.map((item) => (
+          <button key={`${item._kind}-${item.id}`} className={`admin-sub-link ${activeDate === item.date ? "active" : ""}`} onClick={() => setParam({ date: item.date })}>
+            <i className={`fa-solid ${item._kind === "event" ? "fa-calendar-day" : "fa-list-check"}`} />
             <span className="admin-sub-link-body">
-              <div className="admin-sub-link-title">{e.title}</div>
-              <div className="admin-sub-link-meta">{formatDisplayDate(e.date)}</div>
+              <div className="admin-sub-link-title">{item._label}</div>
+              <div className="admin-sub-link-meta">{formatDisplayDate(item.date)}</div>
             </span>
           </button>
         ))}

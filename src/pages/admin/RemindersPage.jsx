@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { loadReminders, newReminder, completeReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
+import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
+import { onDataChange } from "../../utils/dataEvents";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
 
@@ -11,6 +13,7 @@ export default function RemindersPage() {
   const [params] = useSearchParams();
   const filter = params.get("project") || "all"; // "all" | "none" | project id (driven by the side panel)
 
+  const { confirm, dialog } = useConfirm();
   const [list, setList] = useState([]);
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -32,6 +35,9 @@ export default function RemindersPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Refresh when Frodo creates/updates/deletes reminders from the ChatBot
+  useEffect(() => onDataChange("reminders", load), []);
+
   const showEndOptions = form.recurrence !== "none";
 
   const filtered = useMemo(() => {
@@ -50,8 +56,17 @@ export default function RemindersPage() {
     try { await completeReminder(id); } catch { await load(); }
   };
 
+  const handleUncomplete = async (id) => {
+    const r = list.find((x) => x.id === id);
+    if (!(await confirm(`Mark "${r?.name || "this task"}" as incomplete?`, { title: "Undo completion", confirmLabel: "Undo" }))) return;
+    setList((prev) => prev.map((x) => x.id === id ? { ...x, completed: false, completed_date: null } : x));
+    try { await updateReminder(id, { completed: false, completed_date: null }); } catch { await load(); }
+  };
+
   const handleDelete = async (id) => {
-    setList((prev) => prev.filter((r) => r.id !== id));
+    const r = list.find((x) => x.id === id);
+    if (!(await confirm(`Delete "${r?.name || "this task"}"?`, { title: "Delete task", confirmLabel: "Delete" }))) return;
+    setList((prev) => prev.filter((x) => x.id !== id));
     try { await deleteReminder(id); } catch { await load(); }
   };
 
@@ -75,8 +90,12 @@ export default function RemindersPage() {
     setShowDescription(false);
     setShowDateTime(false);
     try {
-      await newReminder(fields);
-      await load();
+      const saved = await newReminder(fields);
+      if (saved?.id) {
+        setList((prev) => prev.map((r) => r.id === tempId ? { completed: false, ...saved } : r));
+      } else {
+        await load();
+      }
     } catch {
       setList((prev) => prev.filter((r) => r.id !== tempId));
     }
@@ -114,6 +133,7 @@ export default function RemindersPage() {
 
   return (
     <div className="module-page">
+      {dialog}
       <div className="module-header">
         <h1>Tasks &amp; Reminders</h1>
         <button className="btn" onClick={() => setShowForm((s) => !s)}>
@@ -236,8 +256,13 @@ export default function RemindersPage() {
               {completed.map((r) => (
                 <div className="completed-item" key={r.id} style={{ opacity: 0.6 }}>
                   <span style={{ textDecoration: "line-through" }}>{r.name}</span>
-                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    {formatDisplayDate(r.completed_date || r.date)}
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                      {formatDisplayDate(r.completed_date || r.date)}
+                    </span>
+                    <button type="button" className="btn-sm" style={{ opacity: 0.7, fontSize: "0.7rem" }} onClick={() => handleUncomplete(r.id)} title="Undo completion">
+                      ↩ Undo
+                    </button>
                   </span>
                 </div>
               ))}

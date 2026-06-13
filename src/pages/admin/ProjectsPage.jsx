@@ -91,30 +91,44 @@ export default function ProjectsPage() {
   const handleCreateProject = async (e) => {
     e.preventDefault();
     if (!projectForm.name.trim()) return;
-    const p = await newProject({ ...projectForm, parent_id: parentForCreate || null });
+    const fields = { ...projectForm, parent_id: parentForCreate || null };
+    const wasSubProject = parentForCreate;
     setProjectForm(emptyProject);
     setShowProjectForm(false);
-    await loadAll();
-    if (parentForCreate) {
-      // created a sub-project — stay on the parent and refresh
-      loadProjectDetail(parentForCreate);
-      setParentForCreate(null);
-    } else {
-      setSelected(p.id);
+    setParentForCreate(null);
+    try {
+      const p = await newProject(fields);
+      if (p?.id) {
+        // Splice the real row directly into state — no full reload needed
+        setProjects((prev) => [...prev, p]);
+        if (!wasSubProject) setSelected(p.id);
+      } else {
+        // Local mode: no id returned, fall back to full reload
+        await loadAll();
+        if (!wasSubProject && p) setSelected(p.id);
+      }
+    } catch {
+      // Nothing to roll back since we didn't add optimistically
     }
   };
 
   const addQuickTask = async (e) => {
     e.preventDefault();
     if (!quickTask.name.trim()) return;
-    await newReminder({
-      name: quickTask.name.trim(),
-      date: quickTask.date || null,
-      recurrence: quickTask.recurrence,
-      project_id: selected,
-    });
+    const fields = { name: quickTask.name.trim(), date: quickTask.date || null, recurrence: quickTask.recurrence, project_id: selected };
+    const tempId = `temp-${Date.now()}`;
+    setProjectTasks((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
     setQuickTask({ name: "", date: "", recurrence: "none" });
-    await loadProjectDetail(selected);
+    try {
+      const saved = await newReminder(fields);
+      if (saved?.id) {
+        setProjectTasks((prev) => prev.map((t) => t.id === tempId ? { ...saved, completed: false } : t));
+      } else {
+        await loadProjectDetail(selected);
+      }
+    } catch {
+      setProjectTasks((prev) => prev.filter((t) => t.id !== tempId));
+    }
   };
 
   const handleDeleteProject = async (id) => {

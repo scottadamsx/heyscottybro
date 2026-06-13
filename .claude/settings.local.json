@@ -26,7 +26,9 @@
       "mcp__claude_ai_Google_Calendar__list_events",
       "mcp__claude_ai_Google_Calendar__get_event",
       "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/projects/**)",
-      "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/**)"
+      "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://mogoybejtmkoheqvfvuc.supabase.co/rest/v1/\")",
+      "Bash(curl -s --max-time 10 \"https://mogoybejtmkoheqvfvuc.supabase.co/rest/v1/\")"
     ],
     "additionalDirectories": [
       "/Users/heyscottybro/Documents/GitHub/heyscottybro"

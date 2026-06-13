@@ -845,3 +845,30 @@ END $$;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS recurrence  TEXT DEFAULT 'none';
 ALTER TABLE events ADD COLUMN IF NOT EXISTS recur_until DATE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS recur_times INTEGER;
+
+-- ─────────────────────────────────────────────────────────────────
+-- Migration (2026-06-12): catch the live DB up to everything the app writes.
+-- The deployed project was created from an older version of this file, so
+-- inserts carrying these columns 400'd and silently fell back to localStorage.
+-- Safe to re-run (all IF NOT EXISTS).
+
+-- reminders: time/description/calendar visibility/priority/manual ordering
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS time             TIME;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS description      TEXT;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS show_on_calendar BOOLEAN DEFAULT TRUE;
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS priority         TEXT DEFAULT 'none';
+ALTER TABLE reminders ADD COLUMN IF NOT EXISTS sort_order       INTEGER;
+
+-- projects: sub-projects (parent_id), archive flag, due date, manual ordering
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS parent_id  UUID REFERENCES projects(id) ON DELETE CASCADE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS archived   BOOLEAN DEFAULT FALSE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS due_date   DATE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS sort_order INTEGER;
+
+-- events: scheduling detail used by the calendar + agent
+ALTER TABLE events ADD COLUMN IF NOT EXISTS cost     NUMERIC;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS time     TIME;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time TIME;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS end_date DATE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS location TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS all_day  BOOLEAN DEFAULT FALSE;

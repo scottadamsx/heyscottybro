@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
-  loadProjects, loadEventTypes, newReminder, completeReminder, deleteReminder,
+  loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
 } from "../../api/plannerApi";
-import { expandReminders, toDateStr } from "../../utils/plannerUtils";
+import { expandReminders, toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
+import { onDataChange } from "../../utils/dataEvents";
+import { useConfirm } from "../../hooks/useConfirm";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -12,7 +14,8 @@ function monthLabel(year, month) {
 
 export default function CalendarPage() {
   const now = new Date();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const { confirm, dialog } = useConfirm();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [reminders, setReminders] = useState([]);
@@ -24,6 +27,27 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [addMode, setAddMode] = useState("event"); // "event" | "task"
+
+  // Filters — stored in URL so the sidebar can read them
+  const filterProject = params.get("fp") || "";
+  const filterKind = params.get("fk") || "all";
+  const showCompleted = params.get("fc") !== "0";
+
+  const setFilter = (key, value) => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (!value || value === "all" || (key === "fc" && value === "1")) next.delete(key);
+      else next.set(key, value);
+      return next;
+    });
+  };
+  const clearFilters = () => {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("fp"); next.delete("fk"); next.delete("fc");
+      return next;
+    });
+  };
 
   // event form
   const [title, setTitle] = useState("");
@@ -51,6 +75,16 @@ export default function CalendarPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Refresh calendar when Frodo creates/updates/deletes items from the ChatBot
+  useEffect(() => {
+    const unsubs = [
+      onDataChange("reminders", load),
+      onDataChange("events", load),
+      onDataChange("transactions", load),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, []);
+
   // Sidebar "jump to date" — navigate the grid to that month and open the day
   useEffect(() => {
     const d = params.get("date");
@@ -67,37 +101,47 @@ export default function CalendarPage() {
   const itemsByDate = useMemo(() => {
     const first = new Date(year, month, 1);
     const last = new Date(year, month + 1, 0);
-    const visible = reminders.filter((r) => r.show_on_calendar !== false && !r.completed);
-    const expanded = expandReminders(visible, toDateStr(first), toDateStr(last));
     const map = {};
-    expanded.forEach((item) => {
-      map[item.date] = map[item.date] || [];
-      map[item.date].push({ kind: "reminder", label: item.name });
-    });
-    // Show completed tasks on the day they were finished so you can see what got done.
-    reminders
-      .filter((r) => r.completed && r.show_on_calendar !== false)
-      .forEach((r) => {
-        const doneDate = r.completed_date || r.date;
-        if (!doneDate) return;
-        const [dY, dM] = doneDate.split("-").map(Number);
-        if (dY === year && dM === month + 1) {
-          map[doneDate] = map[doneDate] || [];
-          map[doneDate].push({ kind: "done", label: r.name });
-        }
+
+    const byProject = (item) => !filterProject || String(item.project_id) === filterProject;
+
+    if (filterKind !== "events") {
+      const visible = reminders.filter((r) => r.show_on_calendar !== false && !r.completed && byProject(r));
+      expandReminders(visible, toDateStr(first), toDateStr(last)).forEach((item) => {
+        map[item.date] = map[item.date] || [];
+        map[item.date].push({ kind: "reminder", label: item.name });
       });
-    // expandReminders is generic over date/recurrence/recur_until/recur_times,
-    // so it expands recurring events too (events have no `completed` to skip).
-    expandReminders(events, toDateStr(first), toDateStr(last)).forEach((item) => {
-      map[item.date] = map[item.date] || [];
-      map[item.date].push({ kind: "event", label: item.title });
-    });
-    transactions.filter((t) => t.type === "future").forEach((item) => {
-      map[item.date] = map[item.date] || [];
-      map[item.date].push({ kind: "future", label: item.description });
-    });
+
+      if (showCompleted) {
+        reminders
+          .filter((r) => r.completed && r.show_on_calendar !== false && byProject(r))
+          .forEach((r) => {
+            const doneDate = r.date;
+            if (!doneDate) return;
+            const [dY, dM] = doneDate.split("-").map(Number);
+            if (dY === year && dM === month + 1) {
+              map[doneDate] = map[doneDate] || [];
+              map[doneDate].push({ kind: "done", label: r.name });
+            }
+          });
+      }
+    }
+
+    if (filterKind !== "tasks") {
+      // expandReminders is generic over date/recurrence/recur_until/recur_times,
+      // so it expands recurring events too (events have no `completed` to skip).
+      expandReminders(events.filter(byProject), toDateStr(first), toDateStr(last)).forEach((item) => {
+        map[item.date] = map[item.date] || [];
+        map[item.date].push({ kind: "event", label: item.title });
+      });
+      transactions.filter((t) => t.type === "future").forEach((item) => {
+        map[item.date] = map[item.date] || [];
+        map[item.date].push({ kind: "future", label: item.description });
+      });
+    }
+
     return map;
-  }, [year, month, reminders, events, transactions]);
+  }, [year, month, reminders, events, transactions, filterProject, filterKind, showCompleted]);
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -139,60 +183,97 @@ export default function CalendarPage() {
     if (Math.abs(dx) > 55) goToDay(dx < 0 ? 1 : -1);
   };
 
-  // Derived day data — auto-refreshes after load()
-  // Recurring events expand to the selected day; occurrences keep the series id.
-  const dayEvents = selectedDate ? expandReminders(events, selectedDate, selectedDate) : [];
-  // Active tasks: use expandReminders on incomplete reminders only (handles recurrence correctly)
-  const dayTasks = selectedDate ? expandReminders(reminders.filter((r) => !r.completed), selectedDate, selectedDate) : [];
-  // Completed tasks: show tasks finished on this day (by completed_date, falling back to date)
-  const dayDone = selectedDate
-    ? reminders.filter((r) => r.completed && (r.completed_date === selectedDate || (!r.completed_date && r.date === selectedDate)))
+  // Derived day data — auto-refreshes after load(). Filters applied.
+  const byProject = (item) => !filterProject || String(item.project_id) === filterProject;
+  const dayEvents = selectedDate && filterKind !== "tasks"
+    ? expandReminders(events.filter(byProject), selectedDate, selectedDate)
+    : [];
+  const dayTasks = selectedDate && filterKind !== "events"
+    ? expandReminders(reminders.filter((r) => !r.completed && byProject(r)), selectedDate, selectedDate)
+    : [];
+  const dayDone = selectedDate && filterKind !== "events" && showCompleted
+    ? reminders.filter((r) => r.completed && r.date === selectedDate && byProject(r))
     : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
   const saveEvent = async () => {
     if (!selectedDate || !title.trim()) return;
-    await newEvent({
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
       title: title.trim(),
       description: description.trim(),
       date: selectedDate,
       project_id: selectedProject || null,
       event_type_id: selectedEventType || null,
-    });
-
-    // Auto-create tasks based on event type template
-    if (selectedEventType) {
-      const et = eventTypes.find((x) => x.id === selectedEventType);
-      if (et?.auto_tasks?.length) {
-        const eventDate = new Date(selectedDate + "T00:00:00");
-        for (const task of et.auto_tasks) {
-          const taskDate = new Date(eventDate);
-          taskDate.setDate(eventDate.getDate() + Number(task.offset_days));
-          await newReminder({
-            name: `${task.name} — ${title.trim()}`,
-            date: toDateStr(taskDate),
-            recurrence: "none",
-            project_id: selectedProject || null,
-          });
+      recurrence: "none",
+    };
+    setEvents((prev) => [...prev, optimistic]);
+    setTitle(""); setDescription(""); setSelectedEventType("");
+    try {
+      await newEvent({
+        title: optimistic.title,
+        description: optimistic.description,
+        date: selectedDate,
+        project_id: selectedProject || null,
+        event_type_id: selectedEventType || null,
+      });
+      // Auto-create tasks based on event type template
+      if (selectedEventType) {
+        const et = eventTypes.find((x) => x.id === selectedEventType);
+        if (et?.auto_tasks?.length) {
+          const eventDate = new Date(selectedDate + "T00:00:00");
+          for (const task of et.auto_tasks) {
+            const taskDate = new Date(eventDate);
+            taskDate.setDate(eventDate.getDate() + Number(task.offset_days));
+            await newReminder({
+              name: `${task.name} — ${optimistic.title}`,
+              date: toDateStr(taskDate),
+              recurrence: "none",
+              project_id: selectedProject || null,
+            });
+          }
         }
       }
+      await load();
+    } catch {
+      setEvents((prev) => prev.filter((e) => e.id !== tempId));
     }
-
-    setTitle(""); setDescription(""); setCost(""); setSelectedEventType("");
-    await load();
   };
 
   const saveTask = async () => {
     if (!selectedDate || !taskName.trim()) return;
-    await newReminder({
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
       name: taskName.trim(),
       date: selectedDate,
       recurrence: taskRecur,
       project_id: selectedProject || null,
-    });
+      completed: false,
+      show_on_calendar: true,
+    };
+    setReminders((prev) => [...prev, optimistic]);
     setTaskName(""); setTaskRecur("none");
-    await load();
+    try {
+      await newReminder({
+        name: optimistic.name,
+        date: selectedDate,
+        recurrence: taskRecur,
+        project_id: selectedProject || null,
+      });
+      await load();
+    } catch {
+      setReminders((prev) => prev.filter((r) => r.id !== tempId));
+    }
+  };
+
+  const handleUncomplete = async (id) => {
+    const t = reminders.find((x) => x.id === id);
+    if (!(await confirm(`Mark "${t?.name || "this task"}" as incomplete?`, { title: "Undo completion", confirmLabel: "Undo" }))) return;
+    setReminders((prev) => prev.map((r) => r.id === id ? { ...r, completed: false, completed_date: null } : r));
+    try { await updateReminder(id, { completed: false, completed_date: null }); } catch { await load(); }
   };
 
   const longDate = selectedDate
@@ -201,12 +282,58 @@ export default function CalendarPage() {
 
   return (
     <div className="module-page">
+      {dialog}
       <div className="module-header">
         <h1>Calendar</h1>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button className="btn-sm btn-secondary-sm btn" onClick={prevMonth}>← Prev</button>
           <button className="btn-sm btn-secondary-sm btn" onClick={nextMonth}>Next →</button>
         </div>
+      </div>
+
+      {/* Filter bar */}
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
+        <select
+          className="form-select"
+          style={{ flex: "1", minWidth: "140px", maxWidth: "200px" }}
+          value={filterProject}
+          onChange={(e) => setFilter("fp", e.target.value)}
+        >
+          <option value="">All projects</option>
+          {projects.map((p) => (
+            <option key={p.id} value={String(p.id)}>{p.name}</option>
+          ))}
+        </select>
+
+        <div style={{ display: "flex", gap: "0.25rem" }}>
+          {[["all", "All"], ["events", "Events"], ["tasks", "Tasks"]].map(([val, label]) => (
+            <button
+              key={val}
+              className={`btn-sm ${filterKind === val ? "btn" : "btn-secondary-sm btn"}`}
+              style={filterKind === val ? { background: "var(--accent)", color: "#fff", border: "none" } : {}}
+              onClick={() => setFilter("fk", val)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          className={`btn-sm ${showCompleted ? "btn" : "btn-secondary-sm btn"}`}
+          style={showCompleted ? { background: "var(--accent)", color: "#fff", border: "none" } : {}}
+          onClick={() => setFilter("fc", showCompleted ? "0" : "1")}
+        >
+          ✓ Done
+        </button>
+
+        {(filterProject || filterKind !== "all" || !showCompleted) && (
+          <button
+            onClick={clearFilters}
+            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: "0.25rem 0" }}
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       <div className="db-card">
@@ -276,7 +403,7 @@ export default function CalendarPage() {
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
                     </div>
-                    <button className="icon-x sm" onClick={() => deleteEvent(e.id).then(load)} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
+                    <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
                   </div>
                 ))}
               </div>
@@ -298,7 +425,7 @@ export default function CalendarPage() {
                       <div className="day-item-title">{t.name}</div>
                       {t.recurrence && t.recurrence !== "none" && <div className="day-item-sub">{t.recurrence}</div>}
                     </div>
-                    <button className="icon-x sm" onClick={() => deleteReminder(t.id).then(load)} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                    <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
                   </div>
                 ))}
 
@@ -307,9 +434,12 @@ export default function CalendarPage() {
                     <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" /></span>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
-                      <div className="day-item-sub">Completed{t.completed_date ? ` · ${t.completed_date}` : ""}</div>
+                      <div className="day-item-sub">Completed{t.completed_date ? ` · ${formatDisplayDate(t.completed_date)}` : ""}</div>
                     </div>
-                    <button className="icon-x sm" onClick={() => deleteReminder(t.id).then(load)} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                    <span style={{ display: "flex", gap: "0.25rem" }}>
+                      <button className="btn-sm" onClick={() => handleUncomplete(t.id)} title="Undo completion">↩ Undo</button>
+                      <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                    </span>
                   </div>
                 ))}
               </div>
