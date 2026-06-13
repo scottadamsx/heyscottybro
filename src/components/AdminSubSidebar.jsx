@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { loadProjects, loadJournal, loadEvents, loadReminders } from "../api/plannerApi";
+import { loadAccountability } from "../api/accountabilityApi";
 import { loadHikeHistory } from "../api/hikerApi";
 import { formatDisplayDate, toDateStr } from "../utils/plannerUtils";
 
@@ -77,11 +78,6 @@ const VAULT_TYPES = [
   { key: "other", label: "Other", icon: "fa-circle-dot" },
 ];
 
-function readAccountabilityTrackers() {
-  try { return JSON.parse(localStorage.getItem("accountability"))?.trackers || []; }
-  catch { return []; }
-}
-
 export default function AdminSubSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -93,6 +89,7 @@ export default function AdminSubSidebar() {
   const [events, setEvents] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [hikes, setHikes] = useState([]);
+  const [accountabilityTrackers, setAccountabilityTrackers] = useState([]);
 
   // Load only what the active section needs (refreshes when section changes).
   useEffect(() => {
@@ -105,6 +102,7 @@ export default function AdminSubSidebar() {
     }
     if (section === "reminders") loadProjects().then((d) => alive && setProjects(d)).catch(() => {});
     if (section === "hikers") loadHikeHistory().then((d) => alive && setHikes(d || [])).catch(() => {});
+    if (section === "accountability") loadAccountability().then((d) => alive && setAccountabilityTrackers(d.trackers || [])).catch(() => {});
     return () => { alive = false; };
   }, [section, location.search]);
 
@@ -261,7 +259,7 @@ export default function AdminSubSidebar() {
     );
   } else if (section === "accountability") {
     const focus = params.get("focus");
-    const trackers = readAccountabilityTrackers();
+    const trackers = accountabilityTrackers;
     body = (
       <>
         <div className="admin-sub-label">Trackers</div>

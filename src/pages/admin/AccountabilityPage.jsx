@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
+import { loadAccountability, saveAccountability } from "../../api/accountabilityApi";
 import DatePicker from "../../components/DatePicker";
 
-const KEY = "accountability";
 const EMOJIS = ["🔥", "🏋️", "🏃", "🧘", "📚", "💧", "🥗", "💸", "🛌", "🧹", "🎸", "💖", "☕", "🚭", "✍️", "🙏"];
 const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
@@ -11,13 +11,6 @@ const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 function genId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-function loadData() {
-  try {
-    const d = JSON.parse(localStorage.getItem(KEY));
-    if (d && Array.isArray(d.trackers) && Array.isArray(d.logs)) return d;
-  } catch { /* ignore */ }
-  return { trackers: [], logs: [] };
 }
 function addDays(str, n) {
   const d = new Date(str + "T00:00:00");
@@ -63,7 +56,8 @@ function monthLabels(weeks) {
 
 export default function AccountabilityPage() {
   const [params] = useSearchParams();
-  const [data, setData] = useState(loadData);
+  const [data, setData] = useState({ trackers: [], logs: [] });
+  const [ready, setReady] = useState(false);
   const { trackers, logs } = data;
 
   const [showAdd, setShowAdd] = useState(false);
@@ -72,7 +66,21 @@ export default function AccountabilityPage() {
 
   const todayStr = toDateStr(new Date());
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(data)); }, [data]);
+  // Load from Supabase (with localStorage fallback) on mount.
+  useEffect(() => {
+    let alive = true;
+    loadAccountability().then((d) => { if (alive) { setData(d); setReady(true); } });
+    return () => { alive = false; };
+  }, []);
+
+  // Debounced save so rapid logging collapses into one write.
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    if (!ready) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { saveAccountability(data); }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [data, ready]);
 
   useEffect(() => {
     const f = params.get("focus");
@@ -228,6 +236,8 @@ export default function AccountabilityPage() {
       </div>
     );
   };
+
+  if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 
   if (detailId) {
     const t = trackers.find((x) => x.id === detailId);

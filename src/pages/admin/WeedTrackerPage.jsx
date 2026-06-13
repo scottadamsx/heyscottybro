@@ -1,14 +1,28 @@
-import { useState, useEffect } from "react";
-import { STORAGE_KEY, loadData } from "../../utils/weedCalc";
+import { useState, useEffect, useRef } from "react";
+import { freshState } from "../../utils/weedCalc";
+import { loadWeedState, saveWeedState } from "../../api/weedApi";
 import ScottyView from "../../components/weed/ScottyView";
 import MariaView from "../../components/weed/MariaView";
 
 export default function WeedTrackerPage() {
-  const [state, setState] = useState(loadData);
+  const [state, setState] = useState(freshState);
+  const [ready, setReady] = useState(false);
 
+  // Load from Supabase (with localStorage fallback) on mount.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    let alive = true;
+    loadWeedState().then((s) => { if (alive) { setState(s); setReady(true); } });
+    return () => { alive = false; };
+  }, []);
+
+  // Debounced save so rapid hits collapse into one write.
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    if (!ready) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { saveWeedState(state); }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [state, ready]);
 
   const onUpdate = (fn) => {
     setState(prev => {
@@ -19,6 +33,8 @@ export default function WeedTrackerPage() {
   };
 
   const { activeProfile } = state;
+
+  if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 
   return (
     <div className="module-page">

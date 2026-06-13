@@ -344,6 +344,9 @@ const DEFAULT_CONFIG = {
   recurringBills: [],
   taxRate: 0.18,
   startingBalance: 0,
+  paySchedule: { type: "biweekly", anchorDate: null, customDays: null },
+  simulations: [],
+  transactions: [],
 };
 
 export async function loadBudgetConfig() {
@@ -359,6 +362,9 @@ export async function loadBudgetConfig() {
         recurringBills: data.recurring_bills ?? [],
         taxRate: data.tax_rate != null ? Number(data.tax_rate) : 0.18,
         startingBalance: data.starting_balance != null ? Number(data.starting_balance) : 0,
+        paySchedule: data.pay_schedule ?? DEFAULT_CONFIG.paySchedule,
+        simulations: data.simulations ?? [],
+        transactions: data.transactions ?? [],
       };
     },
     () => local.singleton("budget_config") || { ...DEFAULT_CONFIG },
@@ -376,6 +382,9 @@ export async function saveBudgetConfig(config) {
         recurring_bills: config.recurringBills,
         tax_rate: config.taxRate ?? 0.18,
         starting_balance: config.startingBalance ?? 0,
+        pay_schedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
+        simulations: config.simulations ?? [],
+        transactions: config.transactions ?? [],
       }, { onConflict: "user_id" });
       if (error) throw error;
     },
@@ -385,6 +394,9 @@ export async function saveBudgetConfig(config) {
       recurringBills: config.recurringBills,
       taxRate: config.taxRate ?? 0.18,
       startingBalance: config.startingBalance ?? 0,
+      paySchedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
+      simulations: config.simulations ?? [],
+      transactions: config.transactions ?? [],
     }),
   );
 }
