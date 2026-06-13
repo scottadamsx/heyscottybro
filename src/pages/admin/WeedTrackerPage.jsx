@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
+import { Navigate } from "react-router-dom";
 import { freshState } from "../../utils/weedCalc";
 import { loadWeedState, saveWeedState } from "../../api/weedApi";
 import ScottyView from "../../components/weed/ScottyView";
 import MariaView from "../../components/weed/MariaView";
+import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
 export default function WeedTrackerPage() {
+  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
   const [state, setState] = useState(freshState);
   const [ready, setReady] = useState(false);
 
@@ -33,6 +36,9 @@ export default function WeedTrackerPage() {
   };
 
   const { activeProfile } = state;
+
+  // Hidden via Settings → keep the page unreachable even by direct URL.
+  if (hideSmoke) return <Navigate to="/admin/dashboard" replace />;
 
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 

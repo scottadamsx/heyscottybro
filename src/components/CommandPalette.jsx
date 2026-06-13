@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { HIDE_SMOKE_TRACKER, useSetting } from "../utils/settings";
 
 const COMMANDS = [
   { label: "Dashboard", to: "/admin/dashboard", icon: "fa-house", section: "Pages" },
@@ -18,6 +19,7 @@ const COMMANDS = [
   { label: "Documents", to: "/admin/documents", icon: "fa-file-lines", section: "Pages" },
   { label: "Smoke Tracker", to: "/admin/smoke", icon: "fa-leaf", section: "Pages" },
   { label: "Context", to: "/admin/context", icon: "fa-brain", section: "Pages" },
+  { label: "Settings", to: "/admin/settings", icon: "fa-gear", section: "Pages" },
   { label: "View Site", to: "/", icon: "fa-globe", section: "Site" },
 ];
 
@@ -27,14 +29,20 @@ export default function CommandPalette({ onClose }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const navigate = useNavigate();
+  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
+  const commands = useMemo(
+    () => COMMANDS.filter((c) => !(hideSmoke && c.to === "/admin/smoke")),
+    [hideSmoke]
+  );
+
   const results = useMemo(() => {
-    if (!query.trim()) return COMMANDS;
+    if (!query.trim()) return commands;
     const q = query.trim().toLowerCase();
-    return COMMANDS.filter((c) => c.label.toLowerCase().includes(q) || c.section.toLowerCase().includes(q));
-  }, [query]);
+    return commands.filter((c) => c.label.toLowerCase().includes(q) || c.section.toLowerCase().includes(q));
+  }, [query, commands]);
 
   useEffect(() => { setCursor(0); }, [results]);
 

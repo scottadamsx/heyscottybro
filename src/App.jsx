@@ -37,6 +37,7 @@ import AccountabilityPage from "./pages/admin/AccountabilityPage.jsx";
 import SnippetsPage from "./pages/admin/SnippetsPage.jsx";
 import WeedTrackerPage from "./pages/admin/WeedTrackerPage.jsx";
 import ContextPage from "./pages/admin/ContextPage.jsx";
+import SettingsPage from "./pages/admin/SettingsPage.jsx";
 
 export default function App() {
   return (
@@ -134,6 +135,7 @@ export default function App() {
           <Route path="snippets" element={<SnippetsPage />} />
           <Route path="smoke" element={<WeedTrackerPage />} />
           <Route path="context" element={<ContextPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="documents" element={Lazy(<DocumentsPage />)} />
           <Route path="nutrition" element={Lazy(<NutritionPage />)} />
           <Route path="recipes" element={Lazy(<RecipesPage />)} />

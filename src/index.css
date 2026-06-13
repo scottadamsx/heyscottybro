@@ -1368,6 +1368,52 @@ input, textarea, select { font-family: inherit; }
   font-weight: 800;
 }
 
+/* ── Settings rows + toggle switch ── */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.settings-row-body { min-width: 0; }
+.settings-row-title {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.settings-row-meta {
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.settings-switch {
+  flex: none;
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary, #333);
+  background: var(--bg-raised, #14171d);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.settings-switch.on {
+  background: var(--accent, #4ade80);
+  border-color: var(--accent, #4ade80);
+}
+.settings-switch-knob {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(0);
+  transition: transform 0.15s;
+}
+.settings-switch.on .settings-switch-knob { transform: translateX(20px); }
+
 /* Cards */
 .db-card {
   background: var(--bg-card);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
@@ -7,6 +7,7 @@ import AdminSubSidebar from "../../components/AdminSubSidebar";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
+import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
 // The real React logo — an inline SVG so it can spin and inherit colour.
 function ReactLogo({ className }) {
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { to: "/admin/documents", icon: "fa-file-lines", label: "Documents" },
   { to: "/admin/smoke", icon: "fa-leaf", label: "Smoke Tracker" },
   { to: "/admin/context", icon: "fa-brain", label: "Context" },
+  { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
 ];
 
 export default function AdminLayout() {
@@ -55,6 +57,13 @@ export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Settings-driven nav. Hiding the Smoke Tracker removes it from every menu.
+  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
+  const navItems = useMemo(
+    () => NAV_ITEMS.filter((item) => !(hideSmoke && item.to === "/admin/smoke")),
+    [hideSmoke]
+  );
 
   useEffect(() => {
     const onKey = (e) => {
@@ -118,7 +127,7 @@ export default function AdminLayout() {
               <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="admin-rail-pop">
                 <div className="admin-sub-label">Go to</div>
-                {NAV_ITEMS.map((item) => (
+                {navItems.map((item) => (
                   <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
                     <i className={`fa-solid ${item.icon}`} />
                     <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
@@ -177,7 +186,7 @@ export default function AdminLayout() {
           <span className="admin-rail-label">{subCollapsed ? "Show panel" : "Hide panel"}</span>
         </button>
 
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink key={item.to} to={item.to} className={railClass} title={item.label}>
             <i className={`fa-solid ${item.icon}`} />
             <span className="admin-rail-label">{item.label}</span>
@@ -229,7 +238,7 @@ export default function AdminLayout() {
           <div className="admin-pop-backdrop" onClick={() => setMobileMenuOpen(false)} />
           <div className="admin-mobile-sheet admin-rolodex">
             <div className="admin-sub-label">Menu</div>
-            {NAV_ITEMS.map((item, i) => (
+            {navItems.map((item, i) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -242,11 +251,11 @@ export default function AdminLayout() {
               </NavLink>
             ))}
             <div className="admin-pop-divider" />
-            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": NAV_ITEMS.length }}>
+            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length }}>
               <i className="fa-solid fa-globe" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
             </NavLink>
-            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": NAV_ITEMS.length + 1 }}>
+            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": navItems.length + 1 }}>
               <i className="fa-solid fa-right-from-bracket" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
             </button>
