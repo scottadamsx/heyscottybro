@@ -1450,7 +1450,7 @@ input, textarea, select { font-family: inherit; }
   .col-4, .col-6, .col-8 { grid-column: span 12; }
 }
 
-.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
 .stat-item { padding: 0.875rem; background: var(--bg-raised); border-radius: var(--radius-sm); }
 .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .stat-value { font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem; background: var(--grad-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
