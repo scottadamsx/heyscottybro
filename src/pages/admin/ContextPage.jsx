@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { loadContext, addContextEntry, deleteContextEntry, refineContextEntry, syncLocalToCloud } from "../../api/contextApi";
+import { supabase } from "../../utils/supabase";
 import { useConfirm } from "../../hooks/useConfirm";
 
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
@@ -59,6 +60,9 @@ export default function ContextPage() {
   const [filterBy, setFilterBy] = useState("all");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editInstruction, setEditInstruction] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
@@ -130,6 +134,38 @@ export default function ContextPage() {
       setError(e?.message || String(e));
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditInstruction("");
+  };
+
+  const saveEdit = async (item) => {
+    const instruction = editInstruction.trim();
+    if (!instruction || editSaving) return;
+    setEditSaving(true);
+    setError("");
+    try {
+      const prompt = `Current fact: "${item.text}"\n\nInstruction: ${instruction}\n\nRewrite the fact following the instruction. Keep it concise and third-person.`;
+      const refined = await refineContextEntry(prompt);
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) throw new Error("Not signed in.");
+      const { error } = await supabase
+        .from("context_entries")
+        .update({ text: refined.text, tags: (refined.tags || []).slice(0, 6), why: refined.why || "edited by Frodo" })
+        .eq("id", item.id)
+        .eq("user_id", userId);
+      if (error) throw error;
+      setEditingId(null);
+      setEditInstruction("");
+      await reload();
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -229,6 +265,25 @@ export default function ContextPage() {
                   ))}
                 </div>
               )}
+              {editingId === item.id ? (
+                <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                  <input
+                    className="ctx-search"
+                    style={{ width: "100%" }}
+                    placeholder={`e.g. "update to say he quit smoking" or "fix the typo"`}
+                    value={editInstruction}
+                    onChange={(e) => setEditInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(item); if (e.key === "Escape") setEditingId(null); }}
+                    autoFocus
+                  />
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <button className="btn-tiny-blue" onClick={() => saveEdit(item)} disabled={!editInstruction.trim() || editSaving}>
+                      {editSaving ? <><i className="fa-solid fa-spinner fa-spin" /> Rewriting…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> Rewrite</>}
+                    </button>
+                    <button className="btn-tiny-blue" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setEditingId(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : null}
               <div className="ctx-item-meta">
                 <span className="ctx-item-by" style={{ color: BY_COLOR[item.by] || BY_COLOR.manual }}>
                   <span className="ctx-dot" style={{ background: BY_COLOR[item.by] || BY_COLOR.manual }} />
@@ -238,6 +293,7 @@ export default function ContextPage() {
                 {item.why && item.why !== "saved manually" && (
                   <span className="ctx-item-why">{item.why}</span>
                 )}
+                <button className="ctx-del-btn" style={{ marginLeft: editingId === item.id ? 0 : "auto" }} onClick={() => startEdit(item)} title="Edit with Frodo"><i className="fa-solid fa-pen" /></button>
                 <button className="ctx-del-btn" onClick={() => remove(item)} title="Delete">✕</button>
               </div>
             </div>

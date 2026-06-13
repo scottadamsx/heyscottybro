@@ -624,3 +624,17 @@ Write Scott a short, friendly, personalised morning briefing (3-5 sentences). Co
   const result = await response.json();
   return result.content?.[0]?.text ?? "Unable to generate briefing.";
 }
+
+export async function loadAgentActions(limit = 20) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from("agent_actions")
+    .select("id, tier, tool, collection, item_id, status, error, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}

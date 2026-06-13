@@ -17,6 +17,28 @@ import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerA
 import { clearAllMembers } from "./hikerApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
+import { supabase } from "../utils/supabase";
+
+async function logAction({ tier, tool, input, result }) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const status = result?.error ? "error" : "ok";
+    const itemId = result?.id || input?.id || null;
+    const collection = input?.collection || null;
+    await supabase.from("agent_actions").insert({
+      user_id: userId,
+      tier,
+      tool,
+      collection,
+      item_id: itemId ? String(itemId) : null,
+      args: input || {},
+      status,
+      error: result?.error || null,
+    });
+  } catch { /* never let logging break tool execution */ }
+}
 
 export const TOOLS = [
   {
@@ -164,42 +186,51 @@ export const TOOLS = [
   },
 ];
 
-export async function executeTool(name, input) {
-  try {
-    switch (name) {
-      case "library_catalog": return await libraryCatalog(input || {});
-      case "query": return await libraryQuery(input);
-      case "create_item": return await libraryCreate(input);
-      case "update_item": return await libraryUpdate(input);
-      case "delete_item": return await libraryDelete(input);
-      case "complete_reminder": await completeReminder(input.id); return { success: true };
-      case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
-      case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
-      case "log_food": {
-        await createFoodLog(input.profile_id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: input.meal_type || "snack", date: input.date || nutritionToday(), source: "ai" });
-        return { success: true };
-      }
-      case "log_weight": {
-        await saveWeight(input.profile_id, { weight_kg: input.weight_kg, date: input.date || nutritionToday(), note: input.note || "" });
-        return { success: true };
-      }
-      case "list_food": {
-        const d = input.date || nutritionToday();
-        const logs = await loadFoodLogs(input.profile_id, { from: d, to: d });
-        return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
-      }
-      case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
-      case "list_context": { const items = await loadContext(); return { items: items.map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) }; }
-      case "save_context": { const entry = await addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
-      case "delete_context": await deleteContextEntry(input.id); return { success: true };
-      case "reorganize_context": {
-        if (!input.confirmed) return { error: "confirmed must be true — present the plan to Scott first and wait for a yes" };
-        const result = await replaceContext(input.entries || []);
-        return { success: true, count: result.length };
-      }
-      default: return { error: `Unknown tool: ${name}` };
+async function runTool(name, input) {
+  switch (name) {
+    case "library_catalog": return await libraryCatalog(input || {});
+    case "query": return await libraryQuery(input);
+    case "create_item": return await libraryCreate(input);
+    case "update_item": return await libraryUpdate(input);
+    case "delete_item": return await libraryDelete(input);
+    case "complete_reminder": await completeReminder(input.id); return { success: true };
+    case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
+    case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
+    case "log_food": {
+      await createFoodLog(input.profile_id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: input.meal_type || "snack", date: input.date || nutritionToday(), source: "ai" });
+      return { success: true };
     }
-  } catch (err) {
-    return { error: err.message };
+    case "log_weight": {
+      await saveWeight(input.profile_id, { weight_kg: input.weight_kg, date: input.date || nutritionToday(), note: input.note || "" });
+      return { success: true };
+    }
+    case "list_food": {
+      const d = input.date || nutritionToday();
+      const logs = await loadFoodLogs(input.profile_id, { from: d, to: d });
+      return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
+    }
+    case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
+    case "list_context": { const items = await loadContext(); return { items: items.map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) }; }
+    case "save_context": { const entry = await addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
+    case "delete_context": await deleteContextEntry(input.id); return { success: true };
+    case "reorganize_context": {
+      if (!input.confirmed) return { error: "confirmed must be true — present the plan to Scott first and wait for a yes" };
+      const rows = await replaceContext(input.entries || []);
+      return { success: true, count: rows.length };
+    }
+    default: return { error: `Unknown tool: ${name}` };
   }
+}
+
+export async function executeTool(name, input, tier = "frodo") {
+  let result;
+  try {
+    result = await runTool(name, input);
+  } catch (err) {
+    result = { error: err.message };
+  }
+  // Skip logging for read-only / high-frequency tools to avoid noise
+  const skipLog = ["library_catalog", "query", "list_context", "list_nutrition_profiles", "list_food"].includes(name);
+  if (!skipLog) logAction({ tier, tool: name, input, result });
+  return result;
 }

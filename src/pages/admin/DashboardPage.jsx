@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing } from "../../api/plannerApi";
+import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
 import { expandReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
@@ -30,6 +30,7 @@ function nextDueDate(bill, today) {
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ reminders: [], journal: [], config: { categories: [], recurringBills: [], incomeSources: [] }, events: [], projects: [], initiatives: [], transactions: [] });
+  const [agentActions, setAgentActions] = useState([]);
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -45,8 +46,10 @@ export default function DashboardPage() {
       loadProjects().catch(() => []),
       loadInitiatives().catch(() => []),
       loadTransactions().catch(() => []),
-    ]).then(([reminders, journal, config, events, projects, initiatives, transactions]) => {
+      loadAgentActions(10).catch(() => []),
+    ]).then(([reminders, journal, config, events, projects, initiatives, transactions, actions]) => {
       setData({ reminders, journal, config, events, projects, initiatives, transactions });
+      setAgentActions(actions);
       setLoading(false);
     });
   }, []);
@@ -305,6 +308,37 @@ export default function DashboardPage() {
           ))}
         </div>
       </Item>
+
+      {/* ── Frodo Activity ── */}
+      {agentActions.length > 0 && (
+        <Item className="db-card col-6">
+          <h3 className="db-card-title">Frodo&apos;s recent actions</h3>
+          <div className="db-list" style={{ marginTop: "0.5rem" }}>
+            {agentActions.map((a) => {
+              const label = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
+              const timeAgo = (() => {
+                const d = Date.now() - new Date(a.created_at).getTime();
+                if (d < 60000) return "just now";
+                if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
+                if (d < 86400000) return `${Math.floor(d / 3600000)}h ago`;
+                return `${Math.floor(d / 86400000)}d ago`;
+              })();
+              return (
+                <div className="db-list-item" key={a.id} style={{ opacity: a.status === "error" ? 0.7 : 1 }}>
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title" style={{ fontFamily: "monospace", fontSize: "0.82rem" }}>{label}</div>
+                    {a.error && <div className="db-list-item-subtitle" style={{ color: "var(--danger,#ef4444)" }}>{a.error}</div>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{timeAgo}</span>
+                    <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: a.status === "error" ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: a.status === "error" ? "var(--danger,#ef4444)" : "var(--accent,#4ade80)" }}>{a.tier}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Item>
+      )}
 
       <AccountabilitySummary />
 

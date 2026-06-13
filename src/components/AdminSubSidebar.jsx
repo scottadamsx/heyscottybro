@@ -75,6 +75,7 @@ const VAULT_TYPES = [
   { key: "wifi", label: "Wi-Fi", icon: "fa-wifi" },
   { key: "card", label: "Cards", icon: "fa-credit-card" },
   { key: "note", label: "Notes", icon: "fa-note-sticky" },
+  { key: "prompt", label: "Prompts", icon: "fa-robot" },
   { key: "other", label: "Other", icon: "fa-circle-dot" },
 ];
 

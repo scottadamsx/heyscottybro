@@ -14,6 +14,7 @@ const TYPES = [
   { key: "wifi", label: "Wi-Fi", icon: "fa-wifi", secret: true },
   { key: "card", label: "Card", icon: "fa-credit-card", secret: true },
   { key: "note", label: "Note", icon: "fa-note-sticky", secret: false },
+  { key: "prompt", label: "Prompt", icon: "fa-robot", secret: false },
   { key: "other", label: "Other", icon: "fa-circle-dot", secret: false },
 ];
 const typeInfo = (k) => TYPES.find((t) => t.key === k) || TYPES[5];
