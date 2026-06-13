@@ -266,10 +266,15 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
     if (error) throw error;
     insertedRows = data ?? [];
   }
-  for (const u of toUpdate) {
-    const { error } = await supabase.from("hiker_members")
-      .update({ attendance: u.attendance, first: u.first, last: u.last, email: u.email, phone: u.phone })
-      .eq("id", u.id);
+  // One batched upsert instead of N sequential UPDATEs (was the slow part of
+  // a large import). onConflict "id" → these existing rows take the UPDATE path;
+  // user_id/first/last are included to satisfy NOT NULL on the pre-conflict insert.
+  if (toUpdate.length) {
+    const updateRows = toUpdate.map((u) => ({
+      id: u.id, user_id: userId,
+      attendance: u.attendance, first: u.first, last: u.last, email: u.email, phone: u.phone,
+    }));
+    const { error } = await supabase.from("hiker_members").upsert(updateRows, { onConflict: "id" });
     if (error) throw error;
   }
 

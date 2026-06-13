@@ -12,7 +12,7 @@ import {
   COLLECTION_NAMES,
   libraryCatalog, libraryQuery, libraryCreate, libraryUpdate, libraryDelete,
 } from "./aiLibrary";
-import { getContext, addContextEntry, deleteContextEntry, replaceContext } from "./contextApi";
+import { loadContext, addContextEntry, deleteContextEntry, replaceContext } from "./contextApi";
 import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
 import { clearAllMembers } from "./hikerApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
@@ -189,15 +189,13 @@ export async function executeTool(name, input) {
         return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
       }
       case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
-      case "list_context": return { items: getContext().map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) };
-      case "save_context": { const entry = addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
-      case "delete_context": deleteContextEntry(input.id); return { success: true };
+      case "list_context": { const items = await loadContext(); return { items: items.map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) }; }
+      case "save_context": { const entry = await addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
+      case "delete_context": await deleteContextEntry(input.id); return { success: true };
       case "reorganize_context": {
         if (!input.confirmed) return { error: "confirmed must be true — present the plan to Scott first and wait for a yes" };
-        const genId = () => `ctx${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-        const stamped = (input.entries || []).map((e) => ({ id: e.id || genId(), ts: e.ts || Date.now(), text: e.text, tags: e.tags || [], by: e.by || "frodo", why: e.why || "" }));
-        replaceContext(stamped);
-        return { success: true, count: stamped.length };
+        const result = await replaceContext(input.entries || []);
+        return { success: true, count: result.length };
       }
       default: return { error: `Unknown tool: ${name}` };
     }

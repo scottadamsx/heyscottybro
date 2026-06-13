@@ -1500,6 +1500,29 @@ input, textarea, select { font-family: inherit; }
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Modal forms (nutrition meal logger, recipe builder/modal) use bare inputs
+   that aren't inside a .form-card — without this they fall back to the
+   browser's white default and break the dark theme. */
+.doc-viewer-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.doc-viewer-modal select,
+.doc-viewer-modal textarea {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.doc-viewer-modal input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.doc-viewer-modal select:focus,
+.doc-viewer-modal textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .form-row > * { flex: 1 1 120px; min-width: 0; }
 

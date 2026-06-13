@@ -1,5 +1,6 @@
-import { useMemo, useState, useCallback } from "react";
-import { getContext, addContextEntry, deleteContextEntry, refineContextEntry } from "../../api/contextApi";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { loadContext, addContextEntry, deleteContextEntry, refineContextEntry, syncLocalToCloud } from "../../api/contextApi";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
 const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays", "eats", "drinks", "takes"];
@@ -51,13 +52,30 @@ const BY_COLOR = { scott: "#e8915b", maria: "#b68bd6", frodo: "var(--accent,#4ad
 const BY_LABEL = { scott: "Scott", maria: "Maria", frodo: "Frodo", manual: "Manual" };
 
 export default function ContextPage() {
-  const [items, setItems] = useState(() => [...getContext()].reverse());
+  const { confirm, dialog } = useConfirm();
+  const [items, setItems] = useState([]);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
 
-  const reload = useCallback(() => setItems([...getContext()].reverse()), []);
+  const reload = useCallback(async () => {
+    setError("");
+    try {
+      const data = await loadContext();
+      setItems([...data].reverse());
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
 
   const verdict = useMemo(() => classify(input), [input]);
 
@@ -65,21 +83,55 @@ export default function ContextPage() {
     const raw = input.trim();
     if (!raw || saving) return;
     setSaving(true);
+    setError("");
     try {
-      // Frodo rewrites the note into a clean, tagged fact before saving.
-      const refined = await refineContextEntry(raw);
-      addContextEntry({ text: refined.text, tags: (refined.tags || []).slice(0, 6), by: "manual", why: refined.why || "rephrased by Frodo" });
-    } catch {
-      // Offline / API error — fall back to the local keyword classifier.
-      const c = classify(raw);
-      addContextEntry({ text: c.fact || raw, tags: c.tags, by: "manual", why: c.why || "saved manually" });
+      // Frodo rewrites the note into a clean, tagged fact; if that AI call
+      // fails, fall back to the local keyword classifier for the TEXT only —
+      // the save itself still goes to Supabase (no local data fallback).
+      let fields;
+      try {
+        const refined = await refineContextEntry(raw);
+        fields = { text: refined.text, tags: (refined.tags || []).slice(0, 6), by: "manual", why: refined.why || "rephrased by Frodo" };
+      } catch {
+        const c = classify(raw);
+        fields = { text: c.fact || raw, tags: c.tags, by: "manual", why: c.why || "saved manually" };
+      }
+      await addContextEntry(fields);
+      setInput("");
+      await reload();
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setSaving(false);
     }
-    setInput("");
-    setSaving(false);
-    reload();
   };
 
-  const remove = (id) => { deleteContextEntry(id); reload(); };
+  const remove = async (item) => {
+    const preview = item.text.length > 60 ? item.text.slice(0, 60) + "…" : item.text;
+    if (!(await confirm(`Delete this context?\n\n"${preview}"`, { title: "Delete context", confirmLabel: "Delete" }))) return;
+    setError("");
+    try {
+      await deleteContextEntry(item.id);
+      await reload();
+    } catch (e) {
+      setError(e?.message || String(e));
+    }
+  };
+
+  const runSync = async () => {
+    setSyncing(true);
+    setSyncMsg("");
+    setError("");
+    try {
+      const { pushed } = await syncLocalToCloud();
+      setSyncMsg(pushed > 0 ? `Synced ${pushed} local fact${pushed !== 1 ? "s" : ""} to the cloud.` : "Nothing new to sync — cloud is already up to date.");
+      await reload();
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -95,10 +147,18 @@ export default function ContextPage() {
 
   return (
     <div className="module-page">
+      {dialog}
       <div className="module-header">
         <h1>🧠 Context</h1>
         <span className="module-header-sub">{items.length} saved fact{items.length !== 1 ? "s" : ""}</span>
+        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={runSync} disabled={syncing}>
+          {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" /> Sync local facts</>}
+        </button>
       </div>
+
+      {error && <p className="error-message" style={{ marginBottom: "0.75rem" }}>{error}</p>}
+      {syncMsg && <p className="no-entries" style={{ marginBottom: "0.75rem", color: "var(--accent,#4ade80)" }}>{syncMsg}</p>}
+      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading context…</p>}
 
       {/* Add */}
       <div className="ctx-add-card">
@@ -178,7 +238,7 @@ export default function ContextPage() {
                 {item.why && item.why !== "saved manually" && (
                   <span className="ctx-item-why">{item.why}</span>
                 )}
-                <button className="ctx-del-btn" onClick={() => remove(item.id)} title="Delete">✕</button>
+                <button className="ctx-del-btn" onClick={() => remove(item)} title="Delete">✕</button>
               </div>
             </div>
           ))}

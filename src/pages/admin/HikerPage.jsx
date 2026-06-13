@@ -167,6 +167,11 @@ export default function HikerPage() {
         <div className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</div>
       </div>
 
+      {/* Import Error */}
+      {importError && (
+        <p className="error-message" style={{ marginTop: "0.75rem" }}>{importError}</p>
+      )}
+
       {/* Import Result */}
       {importResult && (
         <div className="hiker-import-result">

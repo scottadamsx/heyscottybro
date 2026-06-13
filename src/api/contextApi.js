@@ -1,36 +1,87 @@
 // src/api/contextApi.js
 // Shared context store — facts worth remembering about Scott & Maria.
-// Stored in localStorage so it works offline and doesn't need a DB table.
-import { getAuthHeaders } from "../utils/supabase";
+// Backed by Supabase (context_entries) as the SINGLE source of truth.
+// No localStorage fallback: if the DB is unreachable the error is surfaced,
+// never silently masked with stale local data.
+import { supabase, getAuthHeaders } from "../utils/supabase";
 
-const KEY = "context_store_v1";
+// Legacy localStorage key — read ONCE by syncLocalToCloud() to migrate the
+// old browser-only facts up to the cloud. Never written to anymore.
+const LEGACY_KEY = "context_store_v1";
 
-function genId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return `ctx${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+async function uid() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user?.id;
 }
 
-export function getContext() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; }
-  catch { return []; }
+/** Load context from Supabase. Throws the real error on failure (no fallback). */
+export async function loadContext() {
+  const userId = await uid();
+  if (!userId) throw new Error("Not signed in — cannot load context.");
+  const { data, error } = await supabase
+    .from("context_entries").select("*").eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data || []).map((r) => ({ id: r.id, ts: r.ts || Date.parse(r.created_at) || Date.now(), by: r.by, text: r.text, tags: r.tags || [], why: r.why }));
 }
 
-export function addContextEntry({ text, tags = [], by = "manual", why = "saved manually" }) {
-  const items = getContext();
-  const entry = { id: genId(), ts: Date.now(), by, text, tags, why };
-  items.push(entry);
-  localStorage.setItem(KEY, JSON.stringify(items));
-  return entry;
+export async function addContextEntry({ text, tags = [], by = "manual", why = "saved manually" }) {
+  const userId = await uid();
+  if (!userId) throw new Error("Not signed in — cannot save context.");
+  const { data, error } = await supabase
+    .from("context_entries")
+    .insert({ user_id: userId, text, tags, by, why, ts: Date.now() })
+    .select().single();
+  if (error) throw error;
+  return { id: data.id, ts: data.ts, by: data.by, text: data.text, tags: data.tags || [], why: data.why };
 }
 
-export function deleteContextEntry(id) {
-  const items = getContext().filter(x => x.id !== id);
-  localStorage.setItem(KEY, JSON.stringify(items));
+export async function deleteContextEntry(id) {
+  const userId = await uid();
+  if (!userId) throw new Error("Not signed in — cannot delete context.");
+  const { error } = await supabase.from("context_entries").delete().eq("id", id).eq("user_id", userId);
+  if (error) throw error;
 }
 
 /** Replace the entire context store — used by Frodo's reorganize tool (requires user confirmation). */
-export function replaceContext(entries) {
-  localStorage.setItem(KEY, JSON.stringify(entries));
+export async function replaceContext(entries) {
+  const userId = await uid();
+  if (!userId) throw new Error("Not signed in — cannot reorganize context.");
+  const del = await supabase.from("context_entries").delete().eq("user_id", userId);
+  if (del.error) throw del.error;
+  const clean = entries.map((e) => ({ text: e.text, tags: e.tags || [], by: e.by || "frodo", why: e.why || "", ts: e.ts || Date.now() }));
+  if (clean.length) {
+    const rows = clean.map((e) => ({ user_id: userId, ...e }));
+    const { data, error } = await supabase.from("context_entries").insert(rows).select();
+    if (error) throw error;
+    return (data || []).map((r) => ({ id: r.id, ts: r.ts, by: r.by, text: r.text, tags: r.tags || [], why: r.why }));
+  }
+  return [];
+}
+
+/**
+ * One-time migration: push the OLD browser-only facts (legacy localStorage)
+ * up to Supabase, de-duped by normalized text against what's already there.
+ * This is a recovery action, not an ongoing fallback. Throws on error.
+ */
+export async function syncLocalToCloud() {
+  const userId = await uid();
+  if (!userId) throw new Error("Sign in to sync context to the cloud.");
+  let legacy = [];
+  try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY)) || []; } catch { legacy = []; }
+
+  const norm = (t) => (t || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const { data: cloudRows, error } = await supabase.from("context_entries").select("text").eq("user_id", userId);
+  if (error) throw error;
+  const cloudKeys = new Set((cloudRows || []).map((r) => norm(r.text)));
+
+  const toPush = legacy.filter((e) => e.text && !cloudKeys.has(norm(e.text)));
+  if (toPush.length) {
+    const rows = toPush.map((e) => ({ user_id: userId, text: e.text, tags: e.tags || [], by: e.by || "manual", why: e.why || "", ts: e.ts || Date.now() }));
+    const { error: insErr } = await supabase.from("context_entries").insert(rows);
+    if (insErr) throw insErr;
+  }
+  return { pushed: toPush.length, alreadyInCloud: cloudKeys.size };
 }
 
 /* ── AI refinement ───────────────────────────────
