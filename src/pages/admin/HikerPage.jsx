@@ -13,6 +13,7 @@ export default function HikerPage() {
   const [sortDir, setSortDir] = useState("asc");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [importError, setImportError] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef();
 
@@ -55,19 +56,26 @@ export default function HikerPage() {
     setHikeModal(false);
     setImporting(true);
     setImportResult(null);
-    let totals = { first_timers: 0, returning: 0, total: 0, files: pendingFiles.length };
-    for (const file of Array.from(pendingFiles)) {
-      const text = await file.text();
-      const result = await importCSV(text, file.name, hikeName.trim(), hikeDate);
-      totals.first_timers += result.first_timers;
-      totals.returning += result.returning;
-      totals.total += result.total;
+    setImportError("");
+    try {
+      let totals = { first_timers: 0, returning: 0, total: 0, files: pendingFiles.length };
+      for (const file of Array.from(pendingFiles)) {
+        const text = await file.text();
+        const result = await importCSV(text, file.name, hikeName.trim(), hikeDate);
+        totals.first_timers += result.first_timers;
+        totals.returning += result.returning;
+        totals.total += result.total;
+      }
+      setImportResult(totals);
+      await reload();
+      await reloadHistory();
+      setView("dashboard");
+    } catch (e) {
+      setImportError(e?.message || "Import failed. Please try again.");
+    } finally {
+      // Always clear the spinner — a thrown error must never leave it stuck on "Importing…".
+      setImporting(false);
     }
-    setImportResult(totals);
-    setImporting(false);
-    await reload();
-    await reloadHistory();
-    setView("dashboard");
   };
 
   const openHike = async (hike) => {
