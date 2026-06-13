@@ -106,7 +106,7 @@ export default function BudgetPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>Budget</h1>
+        <h1>Finance</h1>
       </div>
 
       {/* Tab bar */}

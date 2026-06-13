@@ -30,7 +30,7 @@ const DASHBOARD_LINKS = [
   { to: "/admin/calendar", label: "Calendar", icon: "fa-calendar-days" },
   { to: "/admin/projects", label: "Projects", icon: "fa-folder-open" },
   { to: "/admin/journal", label: "Journal", icon: "fa-book" },
-  { to: "/admin/budget", label: "Budget", icon: "fa-wallet" },
+  { to: "/admin/finance", label: "Finance", icon: "fa-wallet" },
   { to: "/admin/hikers", label: "Hikers", icon: "fa-person-hiking" },
 ];
 
@@ -46,7 +46,7 @@ const TITLES = {
   calendar: "Calendar",
   projects: "Projects",
   journal: "Journal",
-  budget: "Budget",
+  finance: "Finance",
   hikers: "Hikers",
   dates: "Date Night",
   accountability: "Accountability",
@@ -220,7 +220,7 @@ export default function AdminSubSidebar() {
         ))}
       </>
     );
-  } else if (section === "budget") {
+  } else if (section === "finance") {
     const active = params.get("section");
     body = (
       <>

@@ -29,7 +29,6 @@ import JournalPage from "./pages/admin/JournalPage.jsx";
 import RemindersPage from "./pages/admin/RemindersPage.jsx";
 import CalendarPage from "./pages/admin/CalendarPage.jsx";
 import BudgetPage from "./pages/admin/BudgetPage.jsx";
-import FinanceApp from "./pages/admin/finance/FinanceApp.jsx";
 import ProjectsPage from "./pages/admin/ProjectsPage.jsx";
 import HikerPage from "./pages/admin/HikerPage.jsx";
 import DatePlannerPage from "./pages/admin/DatePlannerPage.jsx";
@@ -126,8 +125,8 @@ export default function App() {
           <Route path="journal" element={<JournalPage />} />
           <Route path="reminders" element={<RemindersPage />} />
           <Route path="calendar" element={<CalendarPage />} />
-          <Route path="budget" element={<BudgetPage />} />
-          <Route path="finance" element={<FinanceApp />} />
+          <Route path="finance" element={<BudgetPage />} />
+          <Route path="budget" element={<Navigate to="/admin/finance" replace />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="hikers" element={<HikerPage />} />
           <Route path="dates" element={<DatePlannerPage />} />
