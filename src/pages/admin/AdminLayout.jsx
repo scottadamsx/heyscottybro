@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
@@ -7,53 +7,14 @@ import AdminSubSidebar from "../../components/AdminSubSidebar";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
-import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
-const NAV_GROUPS = [
-  {
-    group: "Planner", icon: "fa-calendar-check",
-    items: [
-      { to: "/admin/reminders",     icon: "fa-list-check",    label: "Tasks" },
-      { to: "/admin/calendar",      icon: "fa-calendar-days", label: "Calendar" },
-      { to: "/admin/projects",      icon: "fa-folder-open",   label: "Projects" },
-      { to: "/admin/journal",       icon: "fa-book",          label: "Journal" },
-    ],
-  },
-  {
-    group: "Money", icon: "fa-wallet",
-    items: [
-      { to: "/admin/finance",       icon: "fa-wallet",        label: "Finance" },
-    ],
-  },
-  {
-    group: "Health", icon: "fa-heart-pulse",
-    items: [
-      { to: "/admin/nutrition",     icon: "fa-apple-whole",   label: "Nutrition" },
-      { to: "/admin/recipes",       icon: "fa-utensils",      label: "Recipes" },
-      { to: "/admin/accountability",icon: "fa-fire",          label: "Accountability" },
-      { to: "/admin/smoke",         icon: "fa-leaf",          label: "Smoke Tracker", smokeOnly: true },
-    ],
-  },
-  {
-    group: "SJHC", icon: "fa-person-hiking",
-    items: [
-      { to: "/admin/hikers",        icon: "fa-person-hiking", label: "Hikers" },
-    ],
-  },
-  {
-    group: "Personal", icon: "fa-user",
-    items: [
-      { to: "/admin/dates",         icon: "fa-heart",         label: "Date Night" },
-      { to: "/admin/context",       icon: "fa-brain",         label: "Context" },
-    ],
-  },
-  {
-    group: "Vault", icon: "fa-vault",
-    items: [
-      { to: "/admin/snippets",      icon: "fa-key",           label: "Vault" },
-      { to: "/admin/documents",     icon: "fa-file-lines",    label: "Documents" },
-    ],
-  },
+const NAV_ITEMS = [
+  { to: "/admin/planner",  icon: "fa-calendar-check", label: "Planner" },
+  { to: "/admin/finance",  icon: "fa-wallet",          label: "Money" },
+  { to: "/admin/health",   icon: "fa-heart-pulse",     label: "Health" },
+  { to: "/admin/tools",    icon: "fa-wrench",           label: "Tools" },
+  { to: "/admin/dates",    icon: "fa-heart",            label: "Date Night" },
+  { to: "/admin/vault",    icon: "fa-vault",            label: "Vault" },
 ];
 
 export default function AdminLayout() {
@@ -67,27 +28,12 @@ export default function AdminLayout() {
   const [subCollapsed, setSubCollapsed] = useState(
     () => localStorage.getItem("adminSubCollapsed") === "1"
   );
-  const [groupCollapsed, setGroupCollapsed] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("adminGroupCollapsed")) || {}; } catch { return {}; }
-  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
-
-  const groups = useMemo(
-    () => NAV_GROUPS.map((g) => ({
-      ...g,
-      items: g.items.filter((i) => !(hideSmoke && i.smokeOnly)),
-    })).filter((g) => g.items.length > 0),
-    [hideSmoke]
-  );
-
-  const flatItems = useMemo(
-    () => groups.flatMap((g) => g.items),
-    [groups]
-  );
+  // NAV_ITEMS is flat; smoke filtering happens inside HealthPage
+  const navItems = NAV_ITEMS;
 
   useEffect(() => {
     const onKey = (e) => {
@@ -106,16 +52,6 @@ export default function AdminLayout() {
     localStorage.setItem("adminRailCollapsed", "0");
     localStorage.setItem("adminSubCollapsed", "0");
   };
-
-  const toggleGroup = (name) => {
-    setGroupCollapsed((prev) => {
-      const next = { ...prev, [name]: !prev[name] };
-      localStorage.setItem("adminGroupCollapsed", JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const isGroupActive = (g) => g.items.some((i) => location.pathname.startsWith(i.to));
 
   const handleLogout = async () => { await logout(); navigate("/admin/login", { replace: true }); };
 
@@ -138,23 +74,16 @@ export default function AdminLayout() {
             <>
               <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="admin-rail-pop">
-                <div className="admin-sub-label">Dashboard</div>
                 <NavLink to="/admin/dashboard" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-house" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Dashboard</div></span>
                 </NavLink>
-                {groups.map((g) => (
-                  <div key={g.group}>
-                    <div className="admin-sub-label" style={{ marginTop: "0.5rem" }}>{g.group}</div>
-                    {g.items.map((item) => (
-                      <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
-                        <i className={`fa-solid ${item.icon}`} />
-                        <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-                      </NavLink>
-                    ))}
-                  </div>
+                {navItems.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
+                    <i className={`fa-solid ${item.icon}`} />
+                    <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
+                  </NavLink>
                 ))}
-                <div className="admin-sub-label" style={{ marginTop: "0.5rem" }}>System</div>
                 <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-gear" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
@@ -202,32 +131,12 @@ export default function AdminLayout() {
           <span className="admin-rail-label">Dashboard</span>
         </NavLink>
 
-        {/* Grouped nav */}
-        {groups.map((g) => {
-          const collapsed = groupCollapsed[g.group];
-          const active = isGroupActive(g);
-          return (
-            <div key={g.group} className="admin-rail-group">
-              {/* Group header — hidden in icon-only mode */}
-              <button
-                className={`admin-rail-group-hd${active ? " has-active" : ""}${collapsed ? "" : " open"}`}
-                onClick={() => toggleGroup(g.group)}
-                title={g.group}
-              >
-                <i className={`fa-solid ${g.icon}`} />
-                <span className="admin-rail-group-label">{g.group}</span>
-                <i className="fa-solid fa-chevron-right admin-rail-chevron" />
-              </button>
-              {/* Items — always visible in icon-only mode; hidden if group collapsed in full mode */}
-              {(!collapsed || railCollapsed) && g.items.map((item) => (
-                <NavLink key={item.to} to={item.to} className={({ isActive }) => `admin-rail-link admin-rail-child${isActive ? " active" : ""}`} title={item.label}>
-                  <i className={`fa-solid ${item.icon}`} />
-                  <span className="admin-rail-label">{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          );
-        })}
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={railClass} title={item.label}>
+            <i className={`fa-solid ${item.icon}`} />
+            <span className="admin-rail-label">{item.label}</span>
+          </NavLink>
+        ))}
 
         <div className="admin-rail-spacer" />
 
@@ -271,7 +180,7 @@ export default function AdminLayout() {
             <div className="admin-sub-label">Menu</div>
             {[
               { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
-              ...flatItems,
+              ...navItems,
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (
               <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
@@ -280,11 +189,11 @@ export default function AdminLayout() {
               </NavLink>
             ))}
             <div className="admin-pop-divider" />
-            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": flatItems.length + 2 }}>
+            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length + 2 }}>
               <i className="fa-solid fa-globe" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
             </NavLink>
-            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": flatItems.length + 3 }}>
+            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": navItems.length + 3 }}>
               <i className="fa-solid fa-right-from-bracket" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
             </button>
