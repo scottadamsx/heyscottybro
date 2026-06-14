@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useToast } from "../../contexts/ToastContext";
 import { toDateStr } from "../../utils/plannerUtils";
 import {
   loadDateIdeas, addDateIdea, deleteDateIdea,
@@ -11,6 +12,7 @@ const EMOJIS = ["💖", "🍷", "🍿", "🎬", "🥾", "🏖️", "🎨", "🍣
 
 export default function DatePlannerPage() {
   const [params] = useSearchParams();
+  const { addToast } = useToast();
 
   const [ideas, setIdeas] = useState([]);
   const [completed, setCompleted] = useState([]);
@@ -33,6 +35,7 @@ export default function DatePlannerPage() {
   const [flash, setFlash] = useState("");
   const [reveal, setReveal] = useState(null);
   const timerRef = useRef(null);
+  const memDebounceRef = useRef({});
 
   useEffect(() => () => clearInterval(timerRef.current), []);
 
@@ -107,9 +110,13 @@ export default function DatePlannerPage() {
     try { await deleteDateCompleted(id); } catch (e) { setError(e?.message || String(e)); await load(); }
   };
 
-  const setMemory = async (id, memory) => {
+  const setMemory = (id, memory) => {
     setCompleted((prev) => prev.map((c) => (c.id === id ? { ...c, memory } : c)));
-    try { await updateDateMemory(id, memory); } catch (e) { setError(e?.message || String(e)); }
+    clearTimeout(memDebounceRef.current[id]);
+    memDebounceRef.current[id] = setTimeout(async () => {
+      try { await updateDateMemory(id, memory); }
+      catch (e) { addToast(e?.message || "Failed to save note.", "error"); }
+    }, 600);
   };
 
   const runSync = async () => {

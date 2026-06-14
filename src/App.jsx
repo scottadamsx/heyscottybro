@@ -13,30 +13,30 @@ import GameEmbed from "./pages/GameEmbed.jsx";
 import TicTacToePage from "./pages/TicTacToePage.jsx";
 import OverviewDashboard from "./pages/OverviewDashboard.jsx";
 
-// Heavier / less-frequently used pages are code-split. DocumentsPage and
-// SharedDocPage pull in react-pdf, so lazy-loading keeps it out of the main bundle.
-const SharedDocPage = lazy(() => import("./pages/SharedDocPage.jsx"));
-const DocumentsPage = lazy(() => import("./pages/admin/DocumentsPage.jsx"));
-const NutritionPage = lazy(() => import("./pages/admin/NutritionPage.jsx"));
-const RecipesPage = lazy(() => import("./pages/admin/RecipesPage.jsx"));
-
-const Lazy = (el) => <Suspense fallback={<div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>}>{el}</Suspense>;
+// All admin pages are code-split so the public bundle stays lean.
+// AdminLayout + AdminLogin are eager (needed before auth resolves).
+const SharedDocPage    = lazy(() => import("./pages/SharedDocPage.jsx"));
+const DashboardPage    = lazy(() => import("./pages/admin/DashboardPage.jsx"));
+const JournalPage      = lazy(() => import("./pages/admin/JournalPage.jsx"));
+const RemindersPage    = lazy(() => import("./pages/admin/RemindersPage.jsx"));
+const CalendarPage     = lazy(() => import("./pages/admin/CalendarPage.jsx"));
+const BudgetPage       = lazy(() => import("./pages/admin/BudgetPage.jsx"));
+const ProjectsPage     = lazy(() => import("./pages/admin/ProjectsPage.jsx"));
+const HikerPage        = lazy(() => import("./pages/admin/HikerPage.jsx"));
+const DatePlannerPage  = lazy(() => import("./pages/admin/DatePlannerPage.jsx"));
+const AccountabilityPage = lazy(() => import("./pages/admin/AccountabilityPage.jsx"));
+const SnippetsPage     = lazy(() => import("./pages/admin/SnippetsPage.jsx"));
+const WeedTrackerPage  = lazy(() => import("./pages/admin/WeedTrackerPage.jsx"));
+const ContextPage      = lazy(() => import("./pages/admin/ContextPage.jsx"));
+const SettingsPage     = lazy(() => import("./pages/admin/SettingsPage.jsx"));
+const DocumentsPage    = lazy(() => import("./pages/admin/DocumentsPage.jsx"));
+const NutritionPage    = lazy(() => import("./pages/admin/NutritionPage.jsx"));
+const RecipesPage      = lazy(() => import("./pages/admin/RecipesPage.jsx"));
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
-import DashboardPage from "./pages/admin/DashboardPage.jsx";
-import JournalPage from "./pages/admin/JournalPage.jsx";
-import RemindersPage from "./pages/admin/RemindersPage.jsx";
-import CalendarPage from "./pages/admin/CalendarPage.jsx";
-import BudgetPage from "./pages/admin/BudgetPage.jsx";
-import ProjectsPage from "./pages/admin/ProjectsPage.jsx";
-import HikerPage from "./pages/admin/HikerPage.jsx";
-import DatePlannerPage from "./pages/admin/DatePlannerPage.jsx";
-import AccountabilityPage from "./pages/admin/AccountabilityPage.jsx";
-import SnippetsPage from "./pages/admin/SnippetsPage.jsx";
-import WeedTrackerPage from "./pages/admin/WeedTrackerPage.jsx";
-import ContextPage from "./pages/admin/ContextPage.jsx";
-import SettingsPage from "./pages/admin/SettingsPage.jsx";
+
+const Lazy = (el) => <Suspense fallback={<div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>}>{el}</Suspense>;
 
 export default function App() {
   return (
@@ -121,23 +121,23 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="journal" element={<JournalPage />} />
-          <Route path="reminders" element={<RemindersPage />} />
-          <Route path="calendar" element={<CalendarPage />} />
-          <Route path="finance" element={<BudgetPage />} />
-          <Route path="budget" element={<Navigate to="/admin/finance" replace />} />
-          <Route path="projects" element={<ProjectsPage />} />
-          <Route path="hikers" element={<HikerPage />} />
-          <Route path="dates" element={<DatePlannerPage />} />
-          <Route path="accountability" element={<AccountabilityPage />} />
-          <Route path="snippets" element={<SnippetsPage />} />
-          <Route path="smoke" element={<WeedTrackerPage />} />
-          <Route path="context" element={<ContextPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="documents" element={Lazy(<DocumentsPage />)} />
-          <Route path="nutrition" element={Lazy(<NutritionPage />)} />
-          <Route path="recipes" element={Lazy(<RecipesPage />)} />
+          <Route path="dashboard"      element={Lazy(<DashboardPage />)} />
+          <Route path="journal"        element={Lazy(<JournalPage />)} />
+          <Route path="reminders"      element={Lazy(<RemindersPage />)} />
+          <Route path="calendar"       element={Lazy(<CalendarPage />)} />
+          <Route path="finance"        element={Lazy(<BudgetPage />)} />
+          <Route path="budget"         element={<Navigate to="/admin/finance" replace />} />
+          <Route path="projects"       element={Lazy(<ProjectsPage />)} />
+          <Route path="hikers"         element={Lazy(<HikerPage />)} />
+          <Route path="dates"          element={Lazy(<DatePlannerPage />)} />
+          <Route path="accountability" element={Lazy(<AccountabilityPage />)} />
+          <Route path="snippets"       element={Lazy(<SnippetsPage />)} />
+          <Route path="smoke"          element={Lazy(<WeedTrackerPage />)} />
+          <Route path="context"        element={Lazy(<ContextPage />)} />
+          <Route path="settings"       element={Lazy(<SettingsPage />)} />
+          <Route path="documents"      element={Lazy(<DocumentsPage />)} />
+          <Route path="nutrition"      element={Lazy(<NutritionPage />)} />
+          <Route path="recipes"        element={Lazy(<RecipesPage />)} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

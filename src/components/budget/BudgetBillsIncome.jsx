@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel } from "../../utils/budgetCalc";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, notes: "" };
@@ -7,6 +8,7 @@ const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", nextDate: toDat
 
 export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
   const categories = config.categories || [];
+  const { confirm, dialog } = useConfirm();
   const [billForm, setBillForm] = useState({ ...EMPTY_BILL });
   const [billEditId, setBillEditId] = useState(null);
   const [showBillForm, setShowBillForm] = useState(false);
@@ -32,7 +34,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     else setConfig(c => ({ ...c, recurringBills: [...(c.recurringBills || []), nb] }));
     setShowBillForm(false); setBillEditId(null); flashFor("bill");
   };
-  const deleteBill = id => { if (!window.confirm("Delete this bill?")) return; setConfig(c => ({ ...c, recurringBills: c.recurringBills.filter(b => b.id !== id) })); };
+  const deleteBill = async id => { if (!await confirm("Delete this bill?", { title: "Delete bill", confirmLabel: "Delete" })) return; setConfig(c => ({ ...c, recurringBills: c.recurringBills.filter(b => b.id !== id) })); };
 
   // ── Income ──
   const openNewInc = () => { setIncEditId(null); setIncForm({ ...EMPTY_INC, nextDate: toDateStr() }); setShowIncForm(true); };
@@ -45,7 +47,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     else setConfig(c => ({ ...c, income: [...(c.income || []), ni] }));
     setShowIncForm(false); setIncEditId(null); flashFor("inc");
   };
-  const deleteInc = id => { if (!window.confirm("Delete this income source?")) return; setConfig(c => ({ ...c, income: c.income.filter(i => i.id !== id) })); };
+  const deleteInc = async id => { if (!await confirm("Delete this income source?", { title: "Delete income", confirmLabel: "Delete" })) return; setConfig(c => ({ ...c, income: c.income.filter(i => i.id !== id) })); };
 
   // ── One-time income ──
   const logOneTimeIncome = (desc, amount, date) => {
@@ -66,9 +68,9 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     setConfig(c => ({ ...c, categories: [...c.categories, n] }));
     setNewCat("");
   };
-  const removeCat = cat => {
+  const removeCat = async cat => {
     const used = transactions.some(t => t.category === cat);
-    if (used && !window.confirm(`"${cat}" is used by transactions. Delete anyway?`)) return;
+    if (used && !await confirm(`"${cat}" is used by transactions. Delete anyway?`, { title: "Delete category", confirmLabel: "Delete" })) return;
     setConfig(c => ({ ...c, categories: c.categories.filter(x => x !== cat) }));
   };
 
@@ -232,14 +234,15 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
         </div>
         <button className="btn"
-          onClick={() => {
-            if (!window.confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.")) return;
+          onClick={async () => {
+            if (!await confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.", { title: "Fresh start", confirmLabel: "Reset" })) return;
             if (onFreshStart) onFreshStart();
           }}
           style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 600, width: "100%" }}>
           Fresh start — clear transactions &amp; reset balance
         </button>
       </div>
+      {dialog}
     </div>
   );
 }

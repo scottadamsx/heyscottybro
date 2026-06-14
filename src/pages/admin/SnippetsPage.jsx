@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
+import EmptyState from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
 import {
   getSnippets,
   createSnippet,
@@ -34,6 +38,8 @@ const emptyForm = (type = "code") => ({
 export default function SnippetsPage() {
   const [params] = useSearchParams();
   const typeFilter = params.get("type") || "all";
+  const { confirm, dialog } = useConfirm();
+  const { addToast } = useToast();
 
   // Data
   const [items, setItems] = useState([]);
@@ -101,8 +107,9 @@ export default function SnippetsPage() {
       setItems((prev) => [created, ...prev]);
       setAddForm(emptyForm(addForm.type));
       setShowAdd(false);
+      addToast("Snippet saved.", "success");
     } catch {
-      setError("Failed to save snippet.");
+      addToast("Failed to save snippet.", "error");
     } finally {
       setAddSaving(false);
     }
@@ -134,21 +141,23 @@ export default function SnippetsPage() {
       });
       setItems((prev) => prev.map((i) => (i.id === editId ? updated : i)));
       setEditId(null);
+      addToast("Snippet updated.", "success");
     } catch {
-      setError("Failed to update snippet.");
+      addToast("Failed to update snippet.", "error");
     } finally {
       setEditSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Delete this snippet? This cannot be undone.")) return;
+    if (!await confirm("Delete this snippet? This cannot be undone.", { title: "Delete snippet", confirmLabel: "Delete" })) return;
     try {
       await deleteSnippet(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
       setRevealed((prev) => { const n = new Set(prev); n.delete(id); return n; });
+      addToast("Snippet deleted.", "success");
     } catch {
-      setError("Failed to delete snippet.");
+      addToast("Failed to delete snippet.", "error");
     }
   }
 
@@ -176,8 +185,9 @@ export default function SnippetsPage() {
       setItems((prev) => [...imported, ...prev]);
       localStorage.removeItem("vaultSnippets");
       setImportCount(0);
+      addToast(`Imported ${imported.length} snippet${imported.length === 1 ? "" : "s"}.`, "success");
     } catch {
-      setError("Import failed. Your local data is untouched.");
+      addToast("Import failed. Your local data is untouched.", "error");
     } finally {
       setImporting(false);
     }
@@ -286,14 +296,14 @@ export default function SnippetsPage() {
         style={{ maxWidth: 360 }}
       />
 
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading vault…</p>}
+      {loading && <SkeletonList rows={4} />}
       {error && (
         <p className="no-entries" style={{ color: "var(--danger, #ef4444)" }}>
           {error} <button className="btn-tiny-blue" onClick={loadItems}>Retry</button>
         </p>
       )}
       {!loading && !error && filtered.length === 0 && (
-        <p className="no-entries">Nothing here yet. Add a snippet to get started.</p>
+        <EmptyState icon="fa-key" title="Vault is empty" description="Store passwords, codes, Wi-Fi credentials, and more. They're hidden until you reveal them." action={<button className="btn" onClick={() => setShowAdd(true)}>Add first snippet</button>} />
       )}
 
       <div className="snip-grid">
@@ -351,6 +361,7 @@ export default function SnippetsPage() {
           );
         })}
       </div>
+      {dialog}
     </div>
   );
 }

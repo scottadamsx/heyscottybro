@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createProfile, updateProfile, deleteProfile } from "../../api/nutritionApi";
 import { toKg, toLb } from "../../utils/nutrition";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const EMOJIS = ["🙂", "💪", "🏃", "🧗", "🥗", "🍳", "👩", "👨", "🐻", "🦊", "🌟", "🔥"];
 const COLORS = ["#6366f1", "#22c55e", "#ec4899", "#f59e0b", "#38bdf8", "#a855f7"];
@@ -68,6 +69,7 @@ export default function ProfileBar({ profiles, activeId, onSelect, onChanged, un
 
 function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
   const isNew = !initial.id;
+  const { confirm, dialog } = useConfirm();
   const [form, setForm] = useState(() => ({
     ...blank(),
     ...initial,
@@ -114,12 +116,13 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete profile "${initial.name}" and ALL its food + weight logs? This cannot be undone.`)) return;
+    if (!await confirm(`Delete profile "${initial.name}" and ALL its food + weight logs? This cannot be undone.`, { title: "Delete profile", confirmLabel: "Delete" })) return;
     await deleteProfile(initial.id);
     onDeleted(initial.id);
   };
 
   return (
+    <>
     <div className="doc-viewer-overlay" onClick={onClose}>
       <div className="doc-viewer-modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
@@ -177,5 +180,7 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
         </form>
       </div>
     </div>
+    {dialog}
+    </>
   );
 }

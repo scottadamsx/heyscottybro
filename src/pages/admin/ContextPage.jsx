@@ -2,6 +2,9 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { loadContext, addContextEntry, deleteContextEntry, refineContextEntry, syncLocalToCloud } from "../../api/contextApi";
 import { supabase } from "../../utils/supabase";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
+import EmptyState from "../../components/EmptyState";
+import { SkeletonList } from "../../components/Skeleton";
 
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
 const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays", "eats", "drinks", "takes"];
@@ -54,6 +57,7 @@ const BY_LABEL = { scott: "Scott", maria: "Maria", frodo: "Frodo", manual: "Manu
 
 export default function ContextPage() {
   const { confirm, dialog } = useConfirm();
+  const { addToast } = useToast();
   const [items, setItems] = useState([]);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
@@ -65,7 +69,6 @@ export default function ContextPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
-  const [syncMsg, setSyncMsg] = useState("");
 
   const reload = useCallback(async () => {
     setError("");
@@ -103,8 +106,9 @@ export default function ContextPage() {
       await addContextEntry(fields);
       setInput("");
       await reload();
+      addToast("Context saved.", "success");
     } catch (e) {
-      setError(e?.message || String(e));
+      addToast(e?.message || "Failed to save context.", "error");
     } finally {
       setSaving(false);
     }
@@ -113,25 +117,23 @@ export default function ContextPage() {
   const remove = async (item) => {
     const preview = item.text.length > 60 ? item.text.slice(0, 60) + "…" : item.text;
     if (!(await confirm(`Delete this context?\n\n"${preview}"`, { title: "Delete context", confirmLabel: "Delete" }))) return;
-    setError("");
     try {
       await deleteContextEntry(item.id);
       await reload();
+      addToast("Context deleted.", "success");
     } catch (e) {
-      setError(e?.message || String(e));
+      addToast(e?.message || "Failed to delete context.", "error");
     }
   };
 
   const runSync = async () => {
     setSyncing(true);
-    setSyncMsg("");
-    setError("");
     try {
       const { pushed } = await syncLocalToCloud();
-      setSyncMsg(pushed > 0 ? `Synced ${pushed} local fact${pushed !== 1 ? "s" : ""} to the cloud.` : "Nothing new to sync — cloud is already up to date.");
+      addToast(pushed > 0 ? `Synced ${pushed} local fact${pushed !== 1 ? "s" : ""} to the cloud.` : "Already up to date.", "success");
       await reload();
     } catch (e) {
-      setError(e?.message || String(e));
+      addToast(e?.message || "Sync failed.", "error");
     } finally {
       setSyncing(false);
     }
@@ -162,8 +164,9 @@ export default function ContextPage() {
       setEditingId(null);
       setEditInstruction("");
       await reload();
+      addToast("Context updated.", "success");
     } catch (e) {
-      setError(e?.message || String(e));
+      addToast(e?.message || "Failed to update context.", "error");
     } finally {
       setEditSaving(false);
     }
@@ -193,8 +196,7 @@ export default function ContextPage() {
       </div>
 
       {error && <p className="error-message" style={{ marginBottom: "0.75rem" }}>{error}</p>}
-      {syncMsg && <p className="no-entries" style={{ marginBottom: "0.75rem", color: "var(--accent,#4ade80)" }}>{syncMsg}</p>}
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading context…</p>}
+      {loading && <SkeletonList rows={5} />}
 
       {/* Add */}
       <div className="ctx-add-card">
@@ -249,8 +251,8 @@ export default function ContextPage() {
       )}
 
       {/* List */}
-      {items.length === 0 ? (
-        <p className="no-entries">No context saved yet. Add a fact above, or ask Frodo — he'll save things he learns automatically.</p>
+      {!loading && items.length === 0 ? (
+        <EmptyState icon="fa-brain" title="No context yet" description="Add a fact above, or ask Frodo — he saves things he learns automatically." />
       ) : filtered.length === 0 ? (
         <p className="no-entries">Nothing matches.</p>
       ) : (

@@ -4,10 +4,12 @@ import { loadRecipes, deleteRecipe, updateRecipe } from "../../api/recipesApi";
 import RecipeBuilder from "../../components/recipes/RecipeBuilder";
 import RecipeModal from "../../components/recipes/RecipeModal";
 import { round } from "../../utils/nutrition";
+import { useConfirm } from "../../hooks/useConfirm";
 
 export default function RecipesPage() {
   const [params] = useSearchParams();
   const filter = params.get("filter") || "all";
+  const { confirm, dialog } = useConfirm();
 
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +27,7 @@ export default function RecipesPage() {
   const onSaved = (r) => { setRecipes((prev) => [r, ...prev]); setShowBuilder(false); setOpen(r); };
 
   const onDeleted = async (r) => {
-    if (!window.confirm(`Delete "${r.title}"?`)) return;
+    if (!await confirm(`Delete "${r.title}"?`, { title: "Delete recipe", confirmLabel: "Delete" })) return;
     await deleteRecipe(r.id);
     setRecipes((prev) => prev.filter((x) => x.id !== r.id));
     setOpen(null);
@@ -82,6 +84,7 @@ export default function RecipesPage() {
 
       {showBuilder && <RecipeBuilder onClose={() => setShowBuilder(false)} onSaved={onSaved} />}
       {open && <RecipeModal recipe={open} onClose={() => setOpen(null)} onDeleted={onDeleted} />}
+      {dialog}
     </div>
   );
 }

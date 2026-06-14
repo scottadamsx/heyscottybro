@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
+import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
 
 const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "" };
 
 export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions" }) {
   const categories = config.categories || [];
+  const { confirm, dialog } = useConfirm();
   const [viewMode, setViewMode] = useState(defaultView); // "transactions" | "ledger"
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM, date: toDateStr() });
@@ -47,7 +49,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
     setShowForm(false); setEditId(null);
   };
 
-  const deleteTx = id => { if (!window.confirm("Delete this transaction?")) return; setTransactions(p => p.filter(t => t.id !== id)); };
+  const deleteTx = async id => { if (!await confirm("Delete this transaction?", { title: "Delete transaction", confirmLabel: "Delete" })) return; setTransactions(p => p.filter(t => t.id !== id)); };
   const convertFuture = id => setTransactions(p => p.map(t => t.id === id ? { ...t, type: "expense", date: toDateStr() } : t));
 
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "14px 0 8px", fontWeight: 500 };
@@ -246,6 +248,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           }
         </>
       )}
+      {dialog}
     </div>
   );
 }

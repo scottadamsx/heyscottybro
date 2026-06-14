@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
+import { useConfirm } from "../../hooks/useConfirm";
 import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 
 function recalcBalances(rows, startBalance) {
@@ -12,6 +13,7 @@ function recalcBalances(rows, startBalance) {
 }
 
 export default function BudgetSimulator({ config, simulations, setSimulations, transactions = [] }) {
+  const { confirm, dialog } = useConfirm();
   const today = toDateStr();
   const sixMonths = (() => { const d = new Date(); d.setMonth(d.getMonth() + 6); return toDateStr(d); })();
 
@@ -99,8 +101,8 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     setLoadSel("");
   };
 
-  const deleteSimulation = id => {
-    if (!window.confirm("Delete this simulation?")) return;
+  const deleteSimulation = async id => {
+    if (!await confirm("Delete this simulation?", { title: "Delete simulation", confirmLabel: "Delete" })) return;
     setSimulations(p => p.filter(s => s.id !== id));
   };
 
@@ -244,6 +246,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
           </div>
         </>
       )}
+      {dialog}
     </div>
   );
 }
