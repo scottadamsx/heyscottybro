@@ -3,23 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../utils/settings";
 
 const COMMANDS = [
-  { label: "Dashboard", to: "/admin/dashboard", icon: "fa-house", section: "Pages" },
-  { label: "Tasks", to: "/admin/reminders", icon: "fa-list-check", section: "Pages" },
-  { label: "Calendar", to: "/admin/calendar", icon: "fa-calendar-days", section: "Pages" },
-  { label: "Projects", to: "/admin/projects", icon: "fa-folder-open", section: "Pages" },
-  { label: "Journal", to: "/admin/journal", icon: "fa-book", section: "Pages" },
-  { label: "Finance", to: "/admin/finance", icon: "fa-wallet", section: "Pages" },
-  { label: "Hikers", to: "/admin/hikers", icon: "fa-person-hiking", section: "Pages" },
-  { label: "Date Night", to: "/admin/dates", icon: "fa-heart", section: "Pages" },
-  { label: "Accountability", to: "/admin/accountability", icon: "fa-fire", section: "Pages" },
-  { label: "Nutrition", to: "/admin/nutrition", icon: "fa-apple-whole", section: "Pages" },
-  { label: "Recipes", to: "/admin/recipes", icon: "fa-utensils", section: "Pages" },
-  { label: "Vault", to: "/admin/snippets", icon: "fa-key", section: "Pages" },
-  { label: "Documents", to: "/admin/documents", icon: "fa-file-lines", section: "Pages" },
-  { label: "Smoke Tracker", to: "/admin/smoke", icon: "fa-leaf", section: "Pages" },
-  { label: "Context", to: "/admin/context", icon: "fa-brain", section: "Pages" },
-  { label: "Settings", to: "/admin/settings", icon: "fa-gear", section: "Pages" },
-  { label: "View Site", to: "/", icon: "fa-globe", section: "Site" },
+  { label: "Dashboard",      to: "/admin/dashboard",      icon: "fa-house",          section: "Home" },
+  { label: "Tasks",          to: "/admin/reminders",      icon: "fa-list-check",     section: "Planner" },
+  { label: "Calendar",       to: "/admin/calendar",       icon: "fa-calendar-days",  section: "Planner" },
+  { label: "Projects",       to: "/admin/projects",       icon: "fa-folder-open",    section: "Planner" },
+  { label: "Journal",        to: "/admin/journal",        icon: "fa-book",           section: "Planner" },
+  { label: "Finance",        to: "/admin/finance",        icon: "fa-wallet",         section: "Money" },
+  { label: "Nutrition",      to: "/admin/nutrition",      icon: "fa-apple-whole",    section: "Health" },
+  { label: "Recipes",        to: "/admin/recipes",        icon: "fa-utensils",       section: "Health" },
+  { label: "Accountability", to: "/admin/accountability", icon: "fa-fire",           section: "Health" },
+  { label: "Smoke Tracker",  to: "/admin/smoke",          icon: "fa-leaf",           section: "Health", smokeOnly: true },
+  { label: "Hikers",         to: "/admin/hikers",         icon: "fa-person-hiking",  section: "SJHC" },
+  { label: "Date Night",     to: "/admin/dates",          icon: "fa-heart",          section: "Personal" },
+  { label: "Context",        to: "/admin/context",        icon: "fa-brain",          section: "Personal" },
+  { label: "Vault",          to: "/admin/snippets",       icon: "fa-key",            section: "Vault" },
+  { label: "Documents",      to: "/admin/documents",      icon: "fa-file-lines",     section: "Vault" },
+  { label: "Settings",       to: "/admin/settings",       icon: "fa-gear",           section: "System" },
+  { label: "View Site",      to: "/",                     icon: "fa-globe",          section: "Site" },
 ];
 
 export default function CommandPalette({ onClose }) {
@@ -33,7 +33,7 @@ export default function CommandPalette({ onClose }) {
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const commands = useMemo(
-    () => COMMANDS.filter((c) => !(hideSmoke && c.to === "/admin/smoke")),
+    () => COMMANDS.filter((c) => !(hideSmoke && c.smokeOnly)),
     [hideSmoke]
   );
 

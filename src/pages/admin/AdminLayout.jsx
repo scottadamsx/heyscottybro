@@ -9,59 +9,84 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
-// The real React logo — an inline SVG so it can spin and inherit colour.
-function ReactLogo({ className }) {
-  return (
-    <svg className={className} viewBox="-11.5 -10.23174 23 20.46348" aria-hidden="true">
-      <circle cx="0" cy="0" r="2.05" fill="currentColor" />
-      <g fill="none" stroke="currentColor" strokeWidth="1">
-        <ellipse rx="11" ry="4.2" />
-        <ellipse rx="11" ry="4.2" transform="rotate(60)" />
-        <ellipse rx="11" ry="4.2" transform="rotate(120)" />
-      </g>
-    </svg>
-  );
-}
-
-const NAV_ITEMS = [
-  { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
-  { to: "/admin/reminders", icon: "fa-list-check", label: "Tasks" },
-  { to: "/admin/calendar", icon: "fa-calendar-days", label: "Calendar" },
-  { to: "/admin/projects", icon: "fa-folder-open", label: "Projects" },
-  { to: "/admin/journal", icon: "fa-book", label: "Journal" },
-  { to: "/admin/finance", icon: "fa-wallet", label: "Finance" },
-  { to: "/admin/hikers", icon: "fa-person-hiking", label: "Hikers" },
-  { to: "/admin/dates", icon: "fa-heart", label: "Date Night" },
-  { to: "/admin/accountability", icon: "fa-fire", label: "Accountability" },
-  { to: "/admin/nutrition", icon: "fa-apple-whole", label: "Nutrition" },
-  { to: "/admin/recipes", icon: "fa-utensils", label: "Recipes" },
-  { to: "/admin/snippets", icon: "fa-key", label: "Vault" },
-  { to: "/admin/documents", icon: "fa-file-lines", label: "Documents" },
-  { to: "/admin/smoke", icon: "fa-leaf", label: "Smoke Tracker" },
-  { to: "/admin/context", icon: "fa-brain", label: "Context" },
-  { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
+const NAV_GROUPS = [
+  {
+    group: "Planner", icon: "fa-calendar-check",
+    items: [
+      { to: "/admin/reminders",     icon: "fa-list-check",    label: "Tasks" },
+      { to: "/admin/calendar",      icon: "fa-calendar-days", label: "Calendar" },
+      { to: "/admin/projects",      icon: "fa-folder-open",   label: "Projects" },
+      { to: "/admin/journal",       icon: "fa-book",          label: "Journal" },
+    ],
+  },
+  {
+    group: "Money", icon: "fa-wallet",
+    items: [
+      { to: "/admin/finance",       icon: "fa-wallet",        label: "Finance" },
+    ],
+  },
+  {
+    group: "Health", icon: "fa-heart-pulse",
+    items: [
+      { to: "/admin/nutrition",     icon: "fa-apple-whole",   label: "Nutrition" },
+      { to: "/admin/recipes",       icon: "fa-utensils",      label: "Recipes" },
+      { to: "/admin/accountability",icon: "fa-fire",          label: "Accountability" },
+      { to: "/admin/smoke",         icon: "fa-leaf",          label: "Smoke Tracker", smokeOnly: true },
+    ],
+  },
+  {
+    group: "SJHC", icon: "fa-person-hiking",
+    items: [
+      { to: "/admin/hikers",        icon: "fa-person-hiking", label: "Hikers" },
+    ],
+  },
+  {
+    group: "Personal", icon: "fa-user",
+    items: [
+      { to: "/admin/dates",         icon: "fa-heart",         label: "Date Night" },
+      { to: "/admin/context",       icon: "fa-brain",         label: "Context" },
+    ],
+  },
+  {
+    group: "Vault", icon: "fa-vault",
+    items: [
+      { to: "/admin/snippets",      icon: "fa-key",           label: "Vault" },
+      { to: "/admin/documents",     icon: "fa-file-lines",    label: "Documents" },
+    ],
+  },
 ];
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
-  // Two independent toggles. When BOTH are collapsed → fully hidden (burger).
+
   const [railCollapsed, setRailCollapsed] = useState(
     () => localStorage.getItem("adminRailCollapsed") === "1"
   );
   const [subCollapsed, setSubCollapsed] = useState(
     () => localStorage.getItem("adminSubCollapsed") === "1"
   );
+  const [groupCollapsed, setGroupCollapsed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("adminGroupCollapsed")) || {}; } catch { return {}; }
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Settings-driven nav. Hiding the Smoke Tracker removes it from every menu.
   const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
-  const navItems = useMemo(
-    () => NAV_ITEMS.filter((item) => !(hideSmoke && item.to === "/admin/smoke")),
+
+  const groups = useMemo(
+    () => NAV_GROUPS.map((g) => ({
+      ...g,
+      items: g.items.filter((i) => !(hideSmoke && i.smokeOnly)),
+    })).filter((g) => g.items.length > 0),
     [hideSmoke]
+  );
+
+  const flatItems = useMemo(
+    () => groups.flatMap((g) => g.items),
+    [groups]
   );
 
   useEffect(() => {
@@ -74,64 +99,66 @@ export default function AdminLayout() {
 
   const hidden = railCollapsed && subCollapsed;
 
-  const toggleRail = () => {
-    setRailCollapsed((v) => {
-      const next = !v;
-      localStorage.setItem("adminRailCollapsed", next ? "1" : "0");
-      return next;
-    });
-  };
-  const toggleSub = () => {
-    setSubCollapsed((v) => {
-      const next = !v;
-      localStorage.setItem("adminSubCollapsed", next ? "1" : "0");
-      return next;
-    });
-  };
-  const showAll = () => {
-    setRailCollapsed(false);
-    setSubCollapsed(false);
+  const toggleRail = () => setRailCollapsed((v) => { const n = !v; localStorage.setItem("adminRailCollapsed", n ? "1" : "0"); return n; });
+  const toggleSub  = () => setSubCollapsed((v)  => { const n = !v; localStorage.setItem("adminSubCollapsed",  n ? "1" : "0"); return n; });
+  const showAll    = () => {
+    setRailCollapsed(false); setSubCollapsed(false);
     localStorage.setItem("adminRailCollapsed", "0");
     localStorage.setItem("adminSubCollapsed", "0");
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/admin/login", { replace: true });
+  const toggleGroup = (name) => {
+    setGroupCollapsed((prev) => {
+      const next = { ...prev, [name]: !prev[name] };
+      localStorage.setItem("adminGroupCollapsed", JSON.stringify(next));
+      return next;
+    });
   };
 
-  const railClass = ({ isActive }) => (isActive ? "admin-rail-link active" : "admin-rail-link");
-  const popClass = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
+  const isGroupActive = (g) => g.items.some((i) => location.pathname.startsWith(i.to));
+
+  const handleLogout = async () => { await logout(); navigate("/admin/login", { replace: true }); };
+
+  const railClass  = ({ isActive }) => (isActive ? "admin-rail-link active" : "admin-rail-link");
+  const popClass   = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
 
   const shellClass = hidden
     ? "admin-shell menu-hidden"
-    : ["admin-shell", railCollapsed ? "rail-icons" : "", subCollapsed ? "sub-hidden" : ""]
-        .filter(Boolean).join(" ");
+    : ["admin-shell", railCollapsed ? "rail-icons" : "", subCollapsed ? "sub-hidden" : ""].filter(Boolean).join(" ");
 
   return (
     <div className={shellClass}>
-      {/* Fully-collapsed: floating burger that opens a quick switch menu */}
+      {/* Fully-collapsed burger */}
       {hidden && (
         <>
-          <button
-            className="admin-rail-reopen"
-            onClick={() => setMenuOpen((o) => !o)}
-            title="Menu"
-            aria-label="Menu"
-          >
+          <button className="admin-rail-reopen" onClick={() => setMenuOpen((o) => !o)} title="Menu" aria-label="Menu">
             <i className="fa-solid fa-bars" />
           </button>
           {menuOpen && (
             <>
               <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="admin-rail-pop">
-                <div className="admin-sub-label">Go to</div>
-                {navItems.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
-                    <i className={`fa-solid ${item.icon}`} />
-                    <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-                  </NavLink>
+                <div className="admin-sub-label">Dashboard</div>
+                <NavLink to="/admin/dashboard" className={popClass} onClick={() => setMenuOpen(false)}>
+                  <i className="fa-solid fa-house" />
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Dashboard</div></span>
+                </NavLink>
+                {groups.map((g) => (
+                  <div key={g.group}>
+                    <div className="admin-sub-label" style={{ marginTop: "0.5rem" }}>{g.group}</div>
+                    {g.items.map((item) => (
+                      <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
+                        <i className={`fa-solid ${item.icon}`} />
+                        <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
+                      </NavLink>
+                    ))}
+                  </div>
                 ))}
+                <div className="admin-sub-label" style={{ marginTop: "0.5rem" }}>System</div>
+                <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
+                  <i className="fa-solid fa-gear" />
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
+                </NavLink>
                 <div className="admin-pop-divider" />
                 <button className="admin-sub-link" onClick={() => { showAll(); setMenuOpen(false); }}>
                   <i className="fa-solid fa-table-columns" />
@@ -151,49 +178,63 @@ export default function AdminLayout() {
         </>
       )}
 
-      {/* Context panel (sub-pages for the active section) */}
-      <aside className="admin-subbar">
-        <AdminSubSidebar />
-      </aside>
+      <aside className="admin-subbar"><AdminSubSidebar /></aside>
 
-      {/* Main nav rail (expands to labels) */}
+      {/* Main nav rail */}
       <aside className="admin-rail">
         <div className="admin-rail-head">
-          <NavLink to="/admin/dashboard" className="admin-rail-mark" title="heyScottyBro">
-            <span>S</span>
-          </NavLink>
+          <NavLink to="/admin/dashboard" className="admin-rail-mark" title="heyScottyBro"><span>S</span></NavLink>
           <span className="admin-rail-word">hey<span>Scotty</span>Bro</span>
         </div>
 
-        <button
-          className="admin-rail-link"
-          onClick={toggleRail}
-          title={railCollapsed ? "Expand menu" : "Collapse menu"}
-          aria-label={railCollapsed ? "Expand menu" : "Collapse menu"}
-        >
+        <button className="admin-rail-link" onClick={toggleRail} title={railCollapsed ? "Expand menu" : "Collapse menu"}>
           <i className={`fa-solid ${railCollapsed ? "fa-angles-left" : "fa-angles-right"}`} />
           <span className="admin-rail-label">Collapse menu</span>
         </button>
-
-        <button
-          className="admin-rail-link"
-          onClick={toggleSub}
-          title={subCollapsed ? "Show panel" : "Hide panel"}
-          aria-label={subCollapsed ? "Show panel" : "Hide panel"}
-        >
+        <button className="admin-rail-link" onClick={toggleSub} title={subCollapsed ? "Show panel" : "Hide panel"}>
           <i className="fa-solid fa-table-columns" />
           <span className="admin-rail-label">{subCollapsed ? "Show panel" : "Hide panel"}</span>
         </button>
 
-        {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} className={railClass} title={item.label}>
-            <i className={`fa-solid ${item.icon}`} />
-            <span className="admin-rail-label">{item.label}</span>
-          </NavLink>
-        ))}
+        {/* Dashboard — always pinned */}
+        <NavLink to="/admin/dashboard" className={railClass} title="Dashboard">
+          <i className="fa-solid fa-house" />
+          <span className="admin-rail-label">Dashboard</span>
+        </NavLink>
+
+        {/* Grouped nav */}
+        {groups.map((g) => {
+          const collapsed = groupCollapsed[g.group];
+          const active = isGroupActive(g);
+          return (
+            <div key={g.group} className="admin-rail-group">
+              {/* Group header — hidden in icon-only mode */}
+              <button
+                className={`admin-rail-group-hd${active ? " has-active" : ""}${collapsed ? "" : " open"}`}
+                onClick={() => toggleGroup(g.group)}
+                title={g.group}
+              >
+                <i className={`fa-solid ${g.icon}`} />
+                <span className="admin-rail-group-label">{g.group}</span>
+                <i className="fa-solid fa-chevron-right admin-rail-chevron" />
+              </button>
+              {/* Items — always visible in icon-only mode; hidden if group collapsed in full mode */}
+              {(!collapsed || railCollapsed) && g.items.map((item) => (
+                <NavLink key={item.to} to={item.to} className={({ isActive }) => `admin-rail-link admin-rail-child${isActive ? " active" : ""}`} title={item.label}>
+                  <i className={`fa-solid ${item.icon}`} />
+                  <span className="admin-rail-label">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
 
         <div className="admin-rail-spacer" />
 
+        <NavLink to="/admin/settings" className={railClass} title="Settings">
+          <i className="fa-solid fa-gear" />
+          <span className="admin-rail-label">Settings</span>
+        </NavLink>
         <NavLink to="/" className="admin-rail-link" title="View Site" end>
           <i className="fa-solid fa-globe" />
           <span className="admin-rail-label">View Site</span>
@@ -204,11 +245,8 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* Mobile top bar */}
       <header className="admin-topbar">
-        <NavLink to="/admin/dashboard" className="admin-logo">
-          hey<span>Scotty</span>Bro
-        </NavLink>
+        <NavLink to="/admin/dashboard" className="admin-logo">hey<span>Scotty</span>Bro</NavLink>
       </header>
 
       <main className="admin-main">
@@ -222,39 +260,31 @@ export default function AdminLayout() {
       <ChatBot />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
 
-      {/* Mobile menu — floating React-logo button (bottom-left), opposite the chat button */}
-      <button
-        className={`admin-mobile-fab${mobileMenuOpen ? " open" : ""}`}
-        onClick={() => setMobileMenuOpen((o) => !o)}
-        aria-label="Menu"
-      >
-        {mobileMenuOpen
-          ? <i className="fa-solid fa-xmark" />
-          : <i className="fa-solid fa-bars" />}
+      {/* Mobile FAB + sheet */}
+      <button className={`admin-mobile-fab${mobileMenuOpen ? " open" : ""}`} onClick={() => setMobileMenuOpen((o) => !o)} aria-label="Menu">
+        {mobileMenuOpen ? <i className="fa-solid fa-xmark" /> : <i className="fa-solid fa-bars" />}
       </button>
       {mobileMenuOpen && (
         <>
           <div className="admin-pop-backdrop" onClick={() => setMobileMenuOpen(false)} />
           <div className="admin-mobile-sheet admin-rolodex">
             <div className="admin-sub-label">Menu</div>
-            {navItems.map((item, i) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={popClass}
-                onClick={() => setMobileMenuOpen(false)}
-                style={{ "--roll": i }}
-              >
+            {[
+              { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
+              ...flatItems,
+              { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
+            ].map((item, i) => (
+              <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
                 <i className={`fa-solid ${item.icon}`} />
                 <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
               </NavLink>
             ))}
             <div className="admin-pop-divider" />
-            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length }}>
+            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": flatItems.length + 2 }}>
               <i className="fa-solid fa-globe" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
             </NavLink>
-            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": navItems.length + 1 }}>
+            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": flatItems.length + 3 }}>
               <i className="fa-solid fa-right-from-bracket" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
             </button>
