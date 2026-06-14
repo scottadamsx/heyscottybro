@@ -55,3 +55,6 @@ RewriteRule ^ index.html [QSA,L]
 - `/admin/calendar` — Calendar with events
 - `/admin/journal` — Personal journal
 - `/admin/budget` — Budget tracker
+
+## Docs
+- [`docs/STORAGE_USAGE.md`](docs/STORAGE_USAGE.md) — Supabase database + file-storage usage on the dashboard (run `MIGRATION_2026-06-14-storage-usage.sql`)

@@ -14,6 +14,21 @@
   --accent-bg:  rgba(91, 141, 239, 0.10);
 }
 
+/* CSS gotcha: a custom property's var() is substituted where it is
+   DECLARED, not where it is used. The :root aliases above therefore
+   compute against the light public palette and inherit those light
+   values into the admin area — which made Nutrition/Recipes/Documents
+   render white-until-hover (hover rules use --bg-raised directly).
+   Re-declaring the aliases on .admin-shell recomputes them against the
+   dark admin palette so the surfaces are dark by default. */
+.admin-shell {
+  --surface:    var(--bg-card);
+  --surface2:   var(--bg-raised);
+  --border:     var(--border-subtle);
+  --text:       var(--text-primary);
+  --bg:         var(--bg-base);
+}
+
 /* Info banner (vault import, etc.) */
 .banner-info {
   display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;

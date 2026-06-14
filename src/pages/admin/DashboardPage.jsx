@@ -3,6 +3,7 @@ import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects,
 import { expandReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
+import StorageUsage from "../../components/StorageUsage";
 import { Stagger, Item } from "../../components/motion/Stagger";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
@@ -341,6 +342,8 @@ export default function DashboardPage() {
       )}
 
       <AccountabilitySummary />
+
+      <StorageUsage />
 
       <ConnectionStatus />
 

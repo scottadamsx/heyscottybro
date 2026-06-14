@@ -26,10 +26,12 @@ import {
   addIncomeSource, updateIncomeSource, deleteIncomeSource,
 } from "./plannerApi";
 import { loadMembers, deleteMember } from "./hikerApi";
+import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"];
 
 const RECUR = ["none", "daily", "weekly", "monthly"];
+const SNIPPET_TYPES = ["code", "password", "wifi", "card", "note", "prompt", "other"];
 
 /* Field spec shorthand: { type, required?, values? (enum), updateOnly?, long? (excluded from default projection) } */
 const COLLECTIONS = {
@@ -169,6 +171,19 @@ const COLLECTIONS = {
     fields: {}, // read-only — no create/update
     load: () => loadMembers(""), loadSearch: (q) => loadMembers(q), remove: deleteMember,
   },
+  snippets: {
+    description: "The Vault — saved passwords, codes, Wi-Fi logins, cards, notes, prompts. 'secret' items are hidden in the UI by default. type tells you what it is; value is the stored secret.",
+    searchFields: ["title", "value", "notes"],
+    defaultFields: ["id", "title", "type", "secret", "notes"],
+    fields: {
+      title: { type: "string", required: true },
+      value: { type: "string", required: true, long: true },
+      type: { type: "enum", values: SNIPPET_TYPES },
+      secret: { type: "boolean" },
+      notes: { type: "string", long: true },
+    },
+    load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
+  },
 };
 
 export const COLLECTION_NAMES = Object.keys(COLLECTIONS);
@@ -185,11 +200,31 @@ function project(row, fields) {
   return out;
 }
 
+/**
+ * Coerce the tool's `data` argument into a plain field→value object.
+ * Some tool-call paths wrap the object in a single-element array
+ * (e.g. `[{ name: "x" }]`), which made Object.entries() read positional
+ * indexes as field names and reject every real field as "unknown". Unwrap
+ * that case; reject anything else that isn't a plain object.
+ */
+function normalizeData(data) {
+  if (Array.isArray(data)) {
+    if (data.length === 1 && data[0] && typeof data[0] === "object" && !Array.isArray(data[0])) return data[0];
+    return null; // a real array isn't a valid record body
+  }
+  if (data && typeof data === "object") return data;
+  return null;
+}
+
 function validate(spec, data, { partial }) {
   const errors = [];
   const clean = {};
   const allowed = Object.keys(spec.fields);
-  for (const [k, v] of Object.entries(data || {})) {
+  const record = normalizeData(data);
+  if (record === null) {
+    return { errors: [`data must be an object of field values (got ${Array.isArray(data) ? "an array" : typeof data})`], clean };
+  }
+  for (const [k, v] of Object.entries(record)) {
     const f = spec.fields[k];
     if (!f) { errors.push(`unknown field "${k}" — allowed: ${allowed.join(", ")}`); continue; }
     if (!partial && f.updateOnly) { errors.push(`"${k}" can only be set on update`); continue; }
@@ -198,6 +233,7 @@ function validate(spec, data, { partial }) {
     else if (f.type === "number" && Number.isNaN(Number(v))) errors.push(`${k} must be a number`);
     else if (f.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(String(v))) errors.push(`${k} must be YYYY-MM-DD`);
     else if (f.type === "array" && !Array.isArray(v)) errors.push(`${k} must be an array`);
+    else if (f.type === "boolean" && typeof v !== "boolean") errors.push(`${k} must be true or false`);
     clean[k] = v;
   }
   if (!partial) {

@@ -51,6 +51,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
 
   const deleteTx = async id => { if (!await confirm("Delete this transaction?", { title: "Delete transaction", confirmLabel: "Delete" })) return; setTransactions(p => p.filter(t => t.id !== id)); };
   const convertFuture = id => setTransactions(p => p.map(t => t.id === id ? { ...t, type: "expense", date: toDateStr() } : t));
+  const toggleBill = id => setTransactions(p => p.map(t => t.id === id ? { ...t, is_bill: !t.is_bill } : t));
 
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "14px 0 8px", fontWeight: 500 };
   const inp = { width: "100%", marginBottom: 8 };
@@ -230,11 +231,17 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                          {t.is_bill && <span style={{ fontSize: 10, color: "#f59e0b", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>Bill</span>}
                           {t.reconciled ? <span style={{ fontSize: 11, color: "#22c55e" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : "Expense"}
                         </td>
                         <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: 4 }}>
                             <button className="btn-sm" onClick={() => openEdit(t)} style={{ fontSize: 11, padding: "3px 8px" }}>Edit</button>
+                            {t.type === "expense" && (
+                              <button className="btn-sm" onClick={() => toggleBill(t.id)} style={{ fontSize: 11, padding: "3px 8px", ...(t.is_bill ? { color: "#f59e0b", borderColor: "#f59e0b" } : {}) }} title={t.is_bill ? "Unmark as bill" : "Mark as bill"}>
+                                {t.is_bill ? "Unbill" : "Bill"}
+                              </button>
+                            )}
                             {t.type === "future" && <button className="btn-sm btn-complete" onClick={() => convertFuture(t.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Purchased</button>}
                             <button className="btn-sm btn-delete" onClick={() => deleteTx(t.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Del</button>
                           </div>

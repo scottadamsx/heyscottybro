@@ -152,6 +152,104 @@ export function computePeriodTotals(transactions, config, period) {
   return { incomeTotal, spent, billsTotal, planned, remaining, periodTx };
 }
 
+// Month-to-date spend per category for a given month (YYYY-MM). Used by the
+// monthly category budgets (variable envelopes like Groceries / Gas / Toiletries).
+export function monthlyCategorySpend(transactions, monthKey) {
+  const m = {};
+  transactions.forEach(t => {
+    if (t.type !== "expense" || !t.date || t.date.slice(0, 7) !== monthKey) return;
+    m[t.category] = (m[t.category] || 0) + t.amount;
+  });
+  return m;
+}
+
+// Every bill that falls in the period, tagged with whether a transaction covers
+// it. A transaction counts as a bill payment if it's explicitly linked
+// (fulfills_recurring_id), if it fuzzily matches a recurring bill (legacy), or
+// if the user flagged it as a bill (is_bill). Returns the bill rows, how many
+// are paid, and the set of transaction ids that are bill payments (so weekly
+// spending can exclude them).
+export function getPeriodBills(transactions, config, period) {
+  const periodTx = transactions.filter(t => t.date >= period.start && t.date <= period.end);
+  const used = new Set();
+  const scheduled = [];
+
+  (config.recurringBills || []).forEach(bill => {
+    getBillDatesInRange(bill, period.start, period.end).forEach(bd => {
+      // Prefer an explicit link, then fall back to a fuzzy name+amount+date match.
+      let match = periodTx.find(t => !used.has(t.id) && t.fulfills_recurring_id === bill.id);
+      if (!match) {
+        match = periodTx.find(t =>
+          !used.has(t.id) &&
+          t.type === "expense" &&
+          t.description.toLowerCase().includes(bill.name.toLowerCase()) &&
+          Math.abs(t.amount - bill.amount) < 1 &&
+          Math.abs((parseDate(t.date) - parseDate(bd)) / 86400000) <= 5
+        );
+      }
+      if (match) used.add(match.id);
+      scheduled.push({
+        billId: bill.id, name: bill.name, amount: bill.amount,
+        category: bill.category, autoPay: !!bill.autoPay, date: bd,
+        recurring: true, paid: !!match, matchedTxId: match?.id ?? null,
+      });
+    });
+  });
+
+  // One-off bills: transactions the user flagged (or linked) that aren't already
+  // counted against a scheduled occurrence.
+  const oneOff = periodTx
+    .filter(t => t.type === "expense" && (t.is_bill || t.fulfills_recurring_id) && !used.has(t.id))
+    .map(t => ({
+      billId: null, name: t.description, amount: t.amount,
+      category: t.category, autoPay: false, date: t.date,
+      recurring: false, paid: true, matchedTxId: t.id,
+    }));
+
+  const bills = [...scheduled, ...oneOff].sort((a, b) => a.date.localeCompare(b.date));
+  const billTxIds = new Set(bills.map(b => b.matchedTxId).filter(Boolean));
+  return { bills, paidCount: bills.filter(b => b.paid).length, total: bills.length, billTxIds };
+}
+
+// Splits the pay period into 7-day weeks and computes a spending allowance per
+// week, rolling unspent money (or overspend) forward. "Spendable" is income
+// minus all bills (paid or not) minus planned purchases; discretionary spend is
+// every expense that isn't a bill payment.
+export function computeWeeklyAllowance(transactions, config, period) {
+  const { incomeTotal, planned } = computePeriodTotals(transactions, config, period);
+  const { bills, billTxIds } = getPeriodBills(transactions, config, period);
+  const billsObligation = bills.reduce((s, b) => s + b.amount, 0);
+  const spendable = incomeTotal - billsObligation - planned;
+
+  const start = parseDate(period.start), end = parseDate(period.end);
+  const totalDays = Math.round((end - start) / 86400000) + 1;
+  const numWeeks = Math.max(1, Math.ceil(totalDays / 7));
+  const weeklyBase = spendable / numWeeks;
+  const today = toDateStr();
+
+  let carry = 0;
+  const weeks = [];
+  for (let i = 0; i < numWeeks; i++) {
+    const ws = new Date(start); ws.setDate(ws.getDate() + i * 7);
+    let we = new Date(ws); we.setDate(we.getDate() + 6);
+    if (we > end) we = new Date(end);
+    const wsStr = toDateStr(ws), weStr = toDateStr(we);
+    const spent = transactions
+      .filter(t => t.type === "expense" && !billTxIds.has(t.id) && t.date >= wsStr && t.date <= weStr)
+      .reduce((s, t) => s + t.amount, 0);
+    const allowance = weeklyBase + carry;
+    const remaining = allowance - spent;
+    weeks.push({
+      index: i + 1, start: wsStr, end: weStr,
+      base: weeklyBase, carryIn: carry, allowance, spent, remaining,
+      isCurrent: today >= wsStr && today <= weStr,
+      isPast: weStr < today,
+    });
+    carry = remaining; // roll leftover (or overspend) into next week
+  }
+  return { spendable, weeklyBase, numWeeks, billsObligation, weeks };
+}
+
 export function genId() {
   return crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
 }

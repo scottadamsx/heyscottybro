@@ -40,7 +40,13 @@ export default function JournalPage() {
     <div className="module-page">
       <div className="module-header">
         <h1>Journal</h1>
-        <button className="btn btn-sm" onClick={() => setParams({ new: "1" })}>
+        <button className="btn btn-sm" onClick={() => {
+          // Preserve other params (e.g. tab=journal when embedded in Planner)
+          const next = new URLSearchParams(params);
+          next.set("new", "1");
+          next.delete("id");
+          setParams(next);
+        }}>
           <i className="fa-solid fa-plus" /> New Entry
         </button>
       </div>
@@ -86,8 +92,10 @@ export default function JournalPage() {
               key={e.id}
               className={`journal-list-item${String(e.id) === String(selectedId) ? " active" : ""}`}
               onClick={() => {
-                const next = new URLSearchParams();
+                // Preserve other params (e.g. tab=journal when embedded in Planner)
+                const next = new URLSearchParams(params);
                 next.set("id", String(e.id));
+                next.delete("new");
                 setParams(next);
               }}
             >

@@ -638,3 +638,13 @@ export async function loadAgentActions(limit = 20) {
   if (error) return [];
   return data || [];
 }
+
+// Supabase storage usage (DB size + per-table + file buckets), via the
+// storage_usage() RPC. Returns { db_bytes, tables[], buckets[], measured_at }
+// or null when unavailable (local mode, signed out, or migration not yet run).
+export async function loadStorageUsage() {
+  if (isLocalMode()) return null;
+  const { data, error } = await supabase.rpc("storage_usage");
+  if (error) throw error;
+  return data;
+}

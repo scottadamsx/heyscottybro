@@ -110,6 +110,8 @@ export const TOOLS = [
   },
   { name: "complete_reminder", description: "Mark a reminder/task complete (shortcut for update_item with completed: true)", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
+  { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
+  { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
   { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
   {
     name: "log_food",
@@ -195,6 +197,25 @@ async function runTool(name, input) {
     case "delete_item": return await libraryDelete(input);
     case "complete_reminder": await completeReminder(input.id); return { success: true };
     case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
+    case "set_category_budget": {
+      const cfg = await loadBudgetConfig();
+      const next = { ...(cfg.categoryBudgets || {}) };
+      if (!input.amount || input.amount <= 0) delete next[input.category];
+      else next[input.category] = input.amount;
+      await saveBudgetConfig({ ...cfg, categoryBudgets: next });
+      return { success: true, category: input.category, amount: input.amount || 0 };
+    }
+    case "consult_banker": {
+      // Lazy import to avoid a static cycle (banker.js imports this module).
+      const { runBanker } = await import("./banker.js");
+      const { getAuthHeaders } = await import("../utils/supabase");
+      const authHeaders = await getAuthHeaders();
+      const { text } = await runBanker({
+        messages: [{ role: "user", content: String(input.request || "") }],
+        authHeaders,
+      });
+      return { banker: "Griphook", reply: text };
+    }
     case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
     case "log_food": {
       await createFoodLog(input.profile_id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: input.meal_type || "snack", date: input.date || nutritionToday(), source: "ai" });
