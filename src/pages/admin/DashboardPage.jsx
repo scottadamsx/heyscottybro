@@ -28,6 +28,37 @@ function nextDueDate(bill, today) {
   return null;
 }
 
+// ── Agent action log: turn a raw tool call into a human one-liner ──
+const COLLECTION_NOUN = {
+  reminders: "reminder", events: "event", projects: "project", initiatives: "initiative",
+  transactions: "transaction", recurring_bills: "bill", income_sources: "income source",
+  snippets: "snippet", event_types: "event type", hikers: "hiker",
+};
+function itemLabel(data = {}) {
+  return data.name || data.title || data.description || data.text || data.first
+    || (data.category && data.amount != null ? `${data.category} $${data.amount}` : null);
+}
+function describeAction(a) {
+  const args = a.args || {};
+  const coll = a.collection || args.collection;
+  const noun = COLLECTION_NOUN[coll] || (coll ? coll.replace(/_/g, " ") : "item");
+  const quote = (s) => (s ? `: “${String(s).length > 80 ? String(s).slice(0, 80) + "…" : s}”` : "");
+  switch (a.tool) {
+    case "create_item": return `New ${noun}${quote(itemLabel(args.data))}`;
+    case "update_item": { const s = itemLabel(args.data); const f = Object.keys(args.data || {}); return `Edited ${noun}${s ? quote(s) : f.length ? ` (${f.join(", ")})` : ""}`; }
+    case "delete_item": return `Deleted a ${noun}`;
+    case "complete_reminder": return "Completed a reminder";
+    case "set_balance": return `Set balance to $${args.balance}`;
+    case "set_category_budget": return args.amount > 0 ? `Set ${args.category} budget to $${args.amount}/mo` : `Removed ${args.category} budget`;
+    case "consult_banker": return `Consulted Griphook${quote(args.request)}`;
+    case "log_food": return `Logged food${quote(args.name)}`;
+    case "log_weight": return "Logged a weigh-in";
+    case "save_context": return `Saved a memory${quote(args.text)}`;
+    default: return a.tool.replace(/_/g, " ");
+  }
+}
+const actionTime = (ts) => new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ reminders: [], journal: [], config: { categories: [], recurringBills: [], incomeSources: [] }, events: [], projects: [], initiatives: [], transactions: [] });
@@ -316,24 +347,25 @@ export default function DashboardPage() {
           <h3 className="db-card-title">Frodo&apos;s recent actions</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
             {agentActions.map((a) => {
-              const label = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
-              const timeAgo = (() => {
-                const d = Date.now() - new Date(a.created_at).getTime();
-                if (d < 60000) return "just now";
-                if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
-                if (d < 86400000) return `${Math.floor(d / 3600000)}h ago`;
-                return `${Math.floor(d / 86400000)}d ago`;
-              })();
+              const tool = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
+              const isErr = a.status === "error";
               return (
-                <div className="db-list-item" key={a.id} style={{ opacity: a.status === "error" ? 0.7 : 1 }}>
-                  <div className="db-list-item-content">
-                    <div className="db-list-item-title" style={{ fontFamily: "monospace", fontSize: "0.82rem" }}>{label}</div>
-                    {a.error && <div className="db-list-item-subtitle" style={{ color: "var(--danger,#ef4444)" }}>{a.error}</div>}
+                <div className="db-list-item" key={a.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 4, borderLeft: isErr ? "2px solid var(--danger,#ef4444)" : undefined, paddingLeft: isErr ? "0.5rem" : undefined }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="db-list-item-title" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{describeAction(a)}</div>
+                      <div style={{ fontFamily: "monospace", fontSize: "0.72rem", color: "var(--text-muted)" }}>{tool}</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", whiteSpace: "nowrap" }} title={new Date(a.created_at).toLocaleString()}>{actionTime(a.created_at)}</span>
+                      <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: isErr ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: isErr ? "var(--danger,#ef4444)" : "var(--accent,#4ade80)" }}>{a.tier}</span>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-                    <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{timeAgo}</span>
-                    <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: a.status === "error" ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: a.status === "error" ? "var(--danger,#ef4444)" : "var(--accent,#4ade80)" }}>{a.tier}</span>
-                  </div>
+                  {a.error && (
+                    <div title={a.error} style={{ color: "var(--danger,#ef4444)", fontSize: "0.72rem", background: "rgba(239,68,68,0.07)", borderRadius: 4, padding: "3px 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>
+                      {a.error}
+                    </div>
+                  )}
                 </div>
               );
             })}

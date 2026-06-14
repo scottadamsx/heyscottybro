@@ -3,10 +3,12 @@ import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
 
-const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "" };
+const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "", fulfills_recurring_id: "", is_bill: false };
 
 export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions" }) {
   const categories = config.categories || [];
+  const recurringBills = config.recurringBills || [];
+  const billName = id => recurringBills.find(b => b.id === id)?.name || null;
   const { confirm, dialog } = useConfirm();
   const [viewMode, setViewMode] = useState(defaultView); // "transactions" | "ledger"
   const [showForm, setShowForm] = useState(false);
@@ -38,12 +40,20 @@ export default function BudgetTransactions({ config, transactions, setTransactio
   const sortBy = col => { if (sortCol === col) setSortAsc(a => !a); else { setSortCol(col); setSortAsc(true); } };
 
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_FORM, date: toDateStr(), category: categories[0] || "" }); setShowForm(true); };
-  const openEdit = t => { setEditId(t.id); setForm({ description: t.description, amount: String(t.amount), type: t.type, category: t.category, date: t.date, notes: t.notes || "" }); setShowForm(true); };
+  const openEdit = t => { setEditId(t.id); setForm({ description: t.description, amount: String(t.amount), type: t.type, category: t.category, date: t.date, notes: t.notes || "", fulfills_recurring_id: t.fulfills_recurring_id || "", is_bill: t.is_bill || false }); setShowForm(true); };
+
+  // Tagging a transaction to a bill links it (so the dashboard marks that bill
+  // paid) and inherits the bill's category.
+  const pickBill = id => setForm(f => {
+    const bill = recurringBills.find(b => b.id === id);
+    return { ...f, fulfills_recurring_id: id, is_bill: !!id, type: id ? "expense" : f.type, category: bill?.category || f.category };
+  });
 
   const save = () => {
     const amt = parseFloat(form.amount);
     if (!form.description.trim() || isNaN(amt) || amt <= 0 || !form.date) return;
-    const tx = { id: editId || genId(), description: form.description.trim(), amount: amt, type: form.type, category: form.category || categories[0] || "Other", date: form.date, notes: form.notes.trim(), reconciled: false };
+    const billId = form.fulfills_recurring_id || null;
+    const tx = { id: editId || genId(), description: form.description.trim(), amount: amt, type: form.type, category: form.category || categories[0] || "Other", date: form.date, notes: form.notes.trim(), reconciled: false, fulfills_recurring_id: billId, is_bill: billId ? true : form.is_bill };
     if (editId) setTransactions(p => p.map(t => t.id === editId ? { ...t, ...tx } : t));
     else setTransactions(p => [tx, ...p]);
     setShowForm(false); setEditId(null);
@@ -102,9 +112,19 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             <input type="number" placeholder="Amount" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} style={{ flex: 1 }} />
             <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ flex: 1 }} />
           </div>
+          <label style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Category (Groceries, Gas…)</label>
           <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} style={inp}>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+          {form.type === "expense" && recurringBills.length > 0 && (
+            <>
+              <label style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Pays a bill? (Phone, Rent…)</label>
+              <select value={form.fulfills_recurring_id} onChange={e => pickBill(e.target.value)} style={inp}>
+                <option value="">— Not a bill —</option>
+                {recurringBills.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </>
+          )}
           <input placeholder="Notes (optional)" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn" onClick={save} style={{ flex: 1, background: "var(--accent,#6366f1)", color: "#fff", border: "none" }}>Save</button>
@@ -231,7 +251,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                          {t.is_bill && <span style={{ fontSize: 10, color: "#f59e0b", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>Bill</span>}
+                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "#f59e0b", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
                           {t.reconciled ? <span style={{ fontSize: 11, color: "#22c55e" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : "Expense"}
                         </td>
                         <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>

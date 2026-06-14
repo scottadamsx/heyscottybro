@@ -123,7 +123,10 @@
   color: var(--text-muted); font-family: var(--font-body); font-size: 0.9rem;
 }
 .nut-tab:hover { color: var(--text-secondary); }
-.nut-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+/* Reset the filled background that index.css's .nut-tab.active applies (this
+   sheet loads last and only set color, leaving accent text on an accent fill —
+   invisible). Underline style wins. */
+.nut-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: none; }
 
 .nut-daynav { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
 .nut-daynav-label { font-weight: 600; color: var(--text-primary); display: inline-flex; align-items: center; gap: 0.6rem; }

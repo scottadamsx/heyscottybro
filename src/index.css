@@ -4907,7 +4907,10 @@ input, textarea, select { font-family: inherit; }
 /* ── Embedded page: strip the module-page wrapper styles ── */
 .combined-embed {
   flex: 1;
-  overflow: hidden;
+  /* Must stay visible: overflow:hidden here clipped absolutely-positioned
+     popovers inside embedded pages (e.g. the DatePicker calendar in the
+     Accountability tracker). The admin shell handles page scrolling. */
+  overflow: visible;
 }
 .combined-embed > .module-page,
 .planner-panel > .module-page {
@@ -4915,8 +4918,20 @@ input, textarea, select { font-family: inherit; }
   gap: 0.875rem;
   min-height: unset;
 }
+/* In a combined/embedded page the wrapper already shows the page title + tabs,
+   so hide the sub-page's duplicate <h1> — but KEEP the header so its primary
+   action button (Log meal, New Snippet, Upload, …) stays reachable. Hiding the
+   whole header silently removed those buttons. */
 .combined-embed > .module-page > .module-header,
 .planner-panel > .module-page > .module-header {
+  justify-content: flex-end;
+}
+.combined-embed > .module-page > .module-header > h1,
+.planner-panel > .module-page > .module-header > h1 {
+  display: none;
+}
+.combined-embed > .module-page > .module-header:empty,
+.planner-panel > .module-page > .module-header:empty {
   display: none;
 }
 

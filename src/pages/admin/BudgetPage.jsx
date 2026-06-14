@@ -10,6 +10,7 @@ import BudgetReconcile from "../../components/budget/BudgetReconcile";
 import BudgetBillsIncome from "../../components/budget/BudgetBillsIncome";
 import BudgetSimulator from "../../components/budget/BudgetSimulator";
 import BudgetAnalytics from "../../components/budget/BudgetAnalytics";
+import BudgetBanker from "../../components/budget/BudgetBanker";
 
 const DEFAULT_CONFIG = {
   categories: ["Housing","Groceries","Transportation","Utilities","Entertainment","Dining Out","Personal","Subscriptions","Health","Savings","Other"],
@@ -80,6 +81,7 @@ function txChanged(a, b) {
 
 const TABS = [
   { id: "dashboard",    label: "Dashboard" },
+  { id: "banker",       label: "🧌 Banker" },
   { id: "transactions", label: "Transactions" },
   { id: "ledger",       label: "Ledger" },
   { id: "analytics",    label: "Analytics" },
@@ -133,6 +135,19 @@ export default function BudgetPage() {
       if (alive) { setTxState(rows); setReady(true); }
     })();
     return () => { alive = false; };
+  }, []);
+
+  // Re-pull config + transactions from the server. Used after Griphook (the
+  // banker agent) makes ledger changes, so the page reflects them immediately.
+  const reload = useCallback(async () => {
+    const cfg = await loadBudgetConfig().catch(() => null);
+    if (cfg) {
+      setConfig(apiToPage(cfg));
+      setSimulations(cfg.simulations ?? []);
+      setStartingBalance(cfg.startingBalance ?? 0);
+    }
+    const rows = (await loadTransactions().catch(() => [])).map(uiShape);
+    setTxState(rows);
   }, []);
 
   // Debounced save of config (NOT transactions — those persist immediately to
@@ -271,6 +286,9 @@ export default function BudgetPage() {
           onUnpayBill={handleUnpayBill}
           onSetCategoryBudget={handleSetCategoryBudget}
         />
+      )}
+      {tab === "banker" && (
+        <BudgetBanker onChanged={reload} />
       )}
       {tab === "transactions" && (
         <BudgetTransactions

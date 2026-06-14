@@ -631,7 +631,7 @@ export async function loadAgentActions(limit = 20) {
   if (!userId) return [];
   const { data, error } = await supabase
     .from("agent_actions")
-    .select("id, tier, tool, collection, item_id, status, error, created_at")
+    .select("id, tier, tool, collection, item_id, args, status, error, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);

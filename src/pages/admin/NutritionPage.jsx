@@ -243,7 +243,13 @@ function TodayView({ date, setDate, dayLogs, dayTotals, target, onRemove, onLog 
         );
       })}
 
-      {dayLogs.length === 0 && <p className="no-entries">Nothing logged for this day. <button className="btn-tiny-blue" onClick={onLog}>Log a meal</button></p>}
+      {dayLogs.length === 0 && <p className="no-entries">Nothing logged for this day.</p>}
+
+      {/* Always-visible logger: the module-header "Log meal" button is hidden
+          inside the combined Health page, so keep one here too. */}
+      <button className="btn nut-log-cta" onClick={onLog} style={{ width: "100%", marginTop: "0.75rem" }}>
+        <i className="fa-solid fa-plus" /> Log {dayLogs.length === 0 ? "a meal" : "another meal"}
+      </button>
     </>
   );
 }
