@@ -33,6 +33,7 @@ const SettingsPage       = lazy(() => import("./pages/admin/SettingsPage.jsx"));
 const DesignPage         = lazy(() => import("./pages/admin/DesignPage.jsx"));
 const BrainPage          = lazy(() => import("./pages/admin/BrainPage.jsx"));
 const CommandCenterPage  = lazy(() => import("./pages/admin/CommandCenterPage.jsx"));
+const GroceryPage        = lazy(() => import("./pages/admin/GroceryPage.jsx"));
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="planner"   element={Lazy(<PlannerPage />)} />
           <Route path="tasks/:id" element={Lazy(<TaskDetailPage />)} />
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
+          <Route path="grocery"   element={Lazy(<GroceryPage />)} />
           <Route path="health"    element={Lazy(<HealthPage />)} />
           <Route path="tools"     element={Lazy(<ToolsPage />)} />
           <Route path="dates"     element={Lazy(<DatePlannerPage />)} />

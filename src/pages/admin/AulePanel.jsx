@@ -10,7 +10,7 @@ const repoName = (p) => (p || "").split("/").filter(Boolean).pop();
  * WebSocket, lets you pick a repo and chat while real Claude Code (Max plan)
  * writes code; streams his messages, tool calls and results.
  */
-export default function AulePanel({ agent, onOpenDoc }) {
+export default function AulePanel({ agent, onOpenDoc, onState }) {
   const [status, setStatus] = useState("connecting"); // connecting | online | offline
   const [repos, setRepos] = useState([]);
   const [cwd, setCwd] = useState("");
@@ -27,6 +27,24 @@ export default function AulePanel({ agent, onOpenDoc }) {
 
   const push = (m) => setThread((t) => [...t, m]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [thread, statusLine]);
+
+  // Report live state up to the Command Center so Aulë's card can show whether
+  // he's online, whether he's working, and what he did most recently — even
+  // while another agent's panel is open.
+  useEffect(() => {
+    if (!onState) return;
+    const last = thread[thread.length - 1];
+    let recent = "";
+    if (busy && statusLine) recent = statusLine;
+    else if (last) {
+      if (last.role === "tool") recent = last.name + (last.input?.file_path ? `: ${repoName(last.input.file_path)}` : "");
+      else if (last.role === "assistant") recent = (last.text || "").replace(/\s+/g, " ").trim().slice(0, 90);
+      else if (last.role === "result") recent = last.isError ? "hit an error" : "finished a task";
+      else if (last.role === "user") recent = "you: " + (last.text || "").replace(/\s+/g, " ").trim().slice(0, 70);
+      else if (last.role === "error") recent = "hit an error";
+    }
+    onState({ status, busy, recent });
+  }, [onState, status, busy, statusLine, thread]);
 
   const connect = useCallback(() => {
     if (!configured) { setStatus("offline"); return; }

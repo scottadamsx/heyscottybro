@@ -33,9 +33,15 @@ export default function CommandCenterPage() {
   const [inputs, setInputs] = useState({});     // id -> draft message
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
   const [pdfDoc, setPdfDoc] = useState(null);        // { blob, title, filename } open in the PDF viewer
+  const [auleLive, setAuleLive] = useState({ status: "offline", busy: false, recent: "" }); // live state from AulePanel
   const scrollRef = useRef(null);
 
   const selected = selectedId ? getAgent(selectedId) : null;
+  // The local Aulë agent keeps a live WebSocket + conversation. We mount its
+  // panel ONCE and only hide it when another agent is selected (see below), so
+  // switching agents never tears down the connection or loses his thread.
+  const localAgent = useMemo(() => AGENTS.find((a) => a.kind === "local") || null, []);
+  const showAule = !!selected && selected.kind === "local" && view === "work";
   const thread = (selectedId && threads[selectedId]) || { convo: [], display: [] };
   const draft = (selectedId && inputs[selectedId]) || "";
   const selBusy = selectedId ? !!busy[selectedId] : false;
@@ -159,8 +165,16 @@ export default function CommandCenterPage() {
 
       <div className="cmd-grid">
         {AGENTS.map((a) => {
-          const offline = a.kind === "local";
-          const isBusy = !!busy[a.id];
+          const isLocal = a.kind === "local";
+          // The local agent (Aulë) reports live state from his panel; API agents
+          // use the per-agent busy map. "offline" only applies to Aulë when he
+          // isn't actually connected to the local agent server.
+          const offline = isLocal ? auleLive.status !== "online" : false;
+          const isBusy = isLocal ? auleLive.busy : !!busy[a.id];
+          const recent = isLocal ? auleLive.recent : "";
+          const foot = isLocal
+            ? (isBusy ? "working…" : recent || (offline ? "off" : "online"))
+            : (isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—");
           return (
             <button
               key={a.id}
@@ -176,14 +190,14 @@ export default function CommandCenterPage() {
               </div>
               <div className="cmd-card-name">{a.name}</div>
               <div className="cmd-card-title">{a.title}</div>
-              <div className="cmd-card-tagline">{a.tagline}</div>
+              <div className="cmd-card-tagline">{isLocal && recent ? recent : a.tagline}</div>
               <div className="cmd-card-meta">
                 <span><i className="fa-solid fa-microchip" /> {modelLabel(a.model)}</span>
                 {a.kind !== "local" && <span><i className="fa-solid fa-toolbox" /> {resolveTools(a).length} tools</span>}
               </div>
               <div className="cmd-card-foot">
                 <span className={`cmd-badge ${a.kind}`}>{a.kind === "local" ? "Max plan" : "API"}</span>
-                <span className="cmd-card-count">{isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—"}</span>
+                <span className="cmd-card-count" title={recent || undefined}>{foot}</span>
               </div>
             </button>
           );
@@ -217,9 +231,8 @@ export default function CommandCenterPage() {
 
               {view === "profile" && <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />}
 
-              {view === "work" && selected.kind === "local" && (
-                <AulePanel agent={selected} onOpenDoc={setViewerDoc} />
-              )}
+              {/* Aulë's live panel is rendered once, below, so it stays mounted
+                  across agent switches — see the always-mounted host. */}
 
               {view === "work" && selected.kind === "api" && (
                 <>
@@ -273,6 +286,16 @@ export default function CommandCenterPage() {
                 </>
               )}
             </>
+          )}
+
+          {/* Aulë host: mounted for the life of this page so his WebSocket and
+              conversation survive switching to another agent and back. Shown
+              only when Aulë is selected in the Status tab; otherwise hidden but
+              still alive. `display:contents` keeps the original flex layout. */}
+          {localAgent && (
+            <div style={{ display: showAule ? "contents" : "none" }}>
+              <AulePanel agent={localAgent} onOpenDoc={setViewerDoc} onState={setAuleLive} />
+            </div>
           )}
         </section>
 
