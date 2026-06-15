@@ -158,18 +158,24 @@ export const TOOLS = [
   { name: "export_bugs", description: "Package every bug and feature request into a downloadable .zip — a Markdown report (report.md) plus all attached screenshots. Call this when Scott asks to export, download, or send his bugs/feature requests. The download starts in his browser automatically.", input_schema: { type: "object", properties: {} } },
   {
     name: "log_bug",
-    description: "Create a bug report or feature request AND attach any screenshots Scott just dropped into the chat. ALWAYS use this (not create_item) when Scott shares a screenshot or describes something broken / something he wants added. Read any attached screenshot to write an accurate title and description.",
+    description:
+      "Create a bug report or feature request AND attach any screenshots Scott just dropped into the chat. ALWAYS use this (not create_item) when Scott shares a screenshot or describes something broken / something he wants added.\n\n" +
+      "A report is only useful if a developer can fix it WITHOUT coming back to ask questions, so EVERY entry must capture all five facets: the exact page, the specific element, the action Scott took, what he expected, and what actually happened. Never log something vague like \"button doesn't work\" — write it the way you'd want it written for you: \"clicking the 'Save' button on Settings doesn't persist the selected colour theme to localStorage.\"\n\n" +
+      "Read any attached screenshot to fill these in accurately — name what you can see. If Scott didn't say one of the facets, infer the most likely value from the screenshot and the conversation rather than leaving it vague. For a feature request, reframe the last two: 'expected' = the behaviour Scott wants, 'actual' = how it works today.",
     input_schema: {
       type: "object",
       properties: {
-        title: { type: "string", description: "Short, specific title" },
+        title: { type: "string", description: "Short, specific one-line summary — name the element and the problem, not just the area (e.g. \"Settings colour-theme toggle doesn't persist\", not \"Settings bug\")." },
         type: { type: "string", enum: ["bug", "feature"], description: "'bug' for a defect, 'feature' for a request. Default 'bug'." },
-        description: { type: "string", description: "What's wrong / what's wanted — describe what you can see in the screenshot too" },
-        steps: { type: "string", description: "Steps to reproduce (bugs only, optional)" },
-        page: { type: "string", description: "Which page/area, if known (e.g. 'Budget › Dashboard')" },
+        page: { type: "string", description: "The exact page or area where this happens, e.g. 'Settings', 'Budget › Dashboard', 'Frodo chat'." },
+        element: { type: "string", description: "The specific UI element involved, named precisely — e.g. \"the 'Save' button\", \"the colour-theme dropdown\", \"the transactions table header\"." },
+        action: { type: "string", description: "The exact action Scott took, e.g. 'clicked Save', 'typed a date and pressed Enter', 'dragged a screenshot into the chat'." },
+        expected: { type: "string", description: "What SHOULD have happened. For a feature request, the behaviour Scott wants." },
+        actual: { type: "string", description: "What ACTUALLY happened — the broken result or any error text. For a feature request, how it works today." },
+        steps: { type: "string", description: "Full numbered steps to reproduce, when there's more to it than the single action above (optional)." },
         priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
       },
-      required: ["title"],
+      required: ["title", "page", "element", "action", "expected", "actual"],
     },
   },
   { name: "web_fetch", description: "Fetch a web page or API URL and return its title + readable text (truncated). Use when Scott shares a link, asks you to read/check a page, or look something current up by URL.", input_schema: { type: "object", properties: { url: { type: "string", description: "Full http(s) URL" } }, required: ["url"] } },
@@ -253,9 +259,22 @@ async function runTool(name, input) {
     case "log_bug": {
       const { createBug, updateBug } = await import("./bugsApi");
       const { takePendingScreenshots } = await import("./pendingScreenshots");
+      // Stitch the five required facets into one fix-ready description. Plain
+      // labelled lines render cleanly both in the Bugs page (pre-wrap text) and
+      // in the exported Markdown report.
+      const isFeature = input.type === "feature";
+      const description = [
+        ["Element", input.element],
+        ["Action", input.action],
+        [isFeature ? "Wanted" : "Expected", input.expected],
+        [isFeature ? "Today" : "Actual", input.actual],
+        ["Notes", input.description],
+      ].filter(([, v]) => v && String(v).trim())
+       .map(([k, v]) => `${k}: ${String(v).trim()}`)
+       .join("\n");
       const bug = await createBug({
         title: input.title, type: input.type || "bug",
-        description: input.description, steps: input.steps,
+        description, steps: input.steps,
         page: input.page, priority: input.priority || "medium",
       });
       const shots = takePendingScreenshots();

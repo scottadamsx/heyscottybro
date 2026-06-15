@@ -29,6 +29,7 @@ const ToolsPage          = lazy(() => import("./pages/admin/ToolsPage.jsx"));
 const DatePlannerPage    = lazy(() => import("./pages/admin/DatePlannerPage.jsx"));
 const VaultPage          = lazy(() => import("./pages/admin/VaultPage.jsx"));
 const SettingsPage       = lazy(() => import("./pages/admin/SettingsPage.jsx"));
+const DesignPage         = lazy(() => import("./pages/admin/DesignPage.jsx"));
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="dates"     element={Lazy(<DatePlannerPage />)} />
           <Route path="vault"     element={Lazy(<VaultPage />)} />
           <Route path="settings"  element={Lazy(<SettingsPage />)} />
+          <Route path="design"    element={Lazy(<DesignPage />)} />
 
           {/* Legacy redirects — keeps old bookmarks working */}
           <Route path="reminders"      element={<Navigate to="/admin/planner" replace />} />

@@ -65,6 +65,28 @@
   /* Shadows */
   --shadow-card: 0 18px 40px -22px rgba(14,14,16,0.35), 0 2px 0 #fff inset;
   --shadow-glow: none;
+
+  /* ── Foundation additions (track C) ─────────
+     Appended, not edited — a spacing/type scale so pages stop hard-coding
+     ad-hoc rem values. Documented & exportable from the Design page. */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
 }
 
 /* ── Reset ────────────────────────────────── */

@@ -53,7 +53,7 @@ export default function JournalPage() {
 
       {/* Compose form */}
       {showForm && (
-        <form className="form-card" onSubmit={submit} style={{ marginBottom: "1.5rem" }}>
+        <form className="form-card" onSubmit={submit} style={{ marginBottom: "var(--space-lg)" }}>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Title (defaults to "${todayLong}")`} />
           <textarea
             value={entry}
@@ -70,12 +70,12 @@ export default function JournalPage() {
 
       {/* Single entry view */}
       {showEntry && (
-        <div className="db-card" style={{ marginBottom: "1.5rem" }}>
+        <div className="db-card" style={{ marginBottom: "var(--space-lg)" }}>
           <div className="db-card-header">
             <h3 className="db-card-title">{selectedEntry.title}</h3>
             <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
           </div>
-          <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: 1.7, fontSize: "0.92rem" }}>{selectedEntry.entry}</p>
+          <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: "var(--leading-relaxed)", fontSize: "var(--text-sm)" }}>{selectedEntry.entry}</p>
         </div>
       )}
 
