@@ -27,6 +27,7 @@ export default function CommandCenterPage() {
   const [busy, setBusy] = useState({});        // id -> true while running
   const [statuses, setStatuses] = useState({}); // id -> live status line
   const [inputs, setInputs] = useState({});     // id -> draft message
+  const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
   const scrollRef = useRef(null);
 
   const selected = selectedId ? getAgent(selectedId) : null;
@@ -187,7 +188,7 @@ export default function CommandCenterPage() {
                 </button>
               </div>
 
-              {view === "profile" && <AgentProfile agent={selected} docs={selectedDocs} />}
+              {view === "profile" && <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />}
 
               {view === "work" && selected.kind === "local" && (
                 <div className="cmd-local">
@@ -207,9 +208,19 @@ export default function CommandCenterPage() {
                     )}
                     {thread.display.map((m, i) => (
                       <div key={i} className={`cmd-msg ${m.role}`}>
-                        {m.role === "assistant"
-                          ? <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
-                          : <span>{m.text}</span>}
+                        {m.role === "assistant" ? (
+                          <>
+                            <button
+                              type="button"
+                              className="cmd-msg-expand"
+                              title="Open in viewer"
+                              onClick={() => setViewerDoc({ title: `${selected.name} · ${selected.title}`, body: m.text })}
+                            >
+                              <i className="fa-solid fa-up-right-and-down-left-from-center" />
+                            </button>
+                            <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                          </>
+                        ) : <span>{m.text}</span>}
                       </div>
                     ))}
                     {selBusy && selStatus && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" /> {selStatus}</div>}
@@ -259,13 +270,32 @@ export default function CommandCenterPage() {
           </div>
         </section>
       </div>
+
+      {/* Markdown viewer — agents present their work (filed docs + any reply) */}
+      {viewerDoc && (
+        <div className="cmd-viewer-backdrop" onClick={() => setViewerDoc(null)}>
+          <div className="cmd-viewer" onClick={(e) => e.stopPropagation()}>
+            <div className="cmd-viewer-head">
+              <h3 className="db-card-title"><i className="fa-solid fa-file-lines" /> {viewerDoc.title || viewerDoc.slug || "Document"}</h3>
+              <div className="cmd-viewer-actions">
+                <button className="btn-mini" title="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
+                  <i className="fa-solid fa-copy" />
+                </button>
+                {viewerDoc.slug && <a className="btn-mini" href="/admin/brain" title="Open in Brain"><i className="fa-solid fa-diagram-project" /></a>}
+                <button className="btn-mini" onClick={() => setViewerDoc(null)} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+              </div>
+            </div>
+            <div className="cmd-viewer-body chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(viewerDoc.body || "*(empty document)*") }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* Read-only inspector: how this agent connects, how it runs, what it can do,
  * and what it has filed into the Brain. */
-function AgentProfile({ agent, docs }) {
+function AgentProfile({ agent, docs, onOpenDoc }) {
   const conn = agentConnector(agent);
   const protocol = agentProtocol(agent);
   const tools = resolveTools(agent);
@@ -321,12 +351,12 @@ function AgentProfile({ agent, docs }) {
         ) : (
           <div className="cmd-doc-list">
             {docs.map((d) => (
-              <a key={d.id || d.slug} className="cmd-doc" href="/admin/brain" title={d.title || d.slug}>
+              <button key={d.id || d.slug} type="button" className="cmd-doc" title={`Open “${d.title || d.slug}”`} onClick={() => onOpenDoc(d)}>
                 <span className="cmd-doc-title"><i className="fa-solid fa-note-sticky" /> {d.title || d.slug}</span>
                 <span className="cmd-doc-meta">
                   {(d.type || "note")}{d.updated_at ? ` · ${new Date(d.updated_at).toLocaleDateString()}` : ""}
                 </span>
-              </a>
+              </button>
             ))}
           </div>
         )}

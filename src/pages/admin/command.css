@@ -157,3 +157,39 @@
 .cmd-feed-body { min-width: 0; }
 .cmd-feed-title { font-size: var(--text-sm); font-weight: 600; }
 .cmd-feed-meta { font-size: var(--text-xs); color: var(--text-muted); }
+
+/* ── Documents as buttons (open in the viewer) ── */
+.cmd-doc { width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+
+/* ── Expand an assistant reply into the viewer ── */
+.cmd-msg { position: relative; }
+.cmd-msg-expand {
+  position: absolute; top: 4px; right: 4px;
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 6px; cursor: pointer;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-muted); font-size: 0.62rem; opacity: 0; transition: opacity .15s;
+}
+.cmd-msg.assistant:hover .cmd-msg-expand { opacity: 1; }
+.cmd-msg-expand:hover { color: var(--accent); }
+
+/* ── Markdown viewer (present their work) ── */
+.cmd-viewer-backdrop {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(14, 14, 16, 0.5);
+  display: flex; align-items: center; justify-content: center; padding: var(--space-md);
+}
+.cmd-viewer {
+  width: min(820px, 100%); max-height: 86vh; display: flex; flex-direction: column;
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden;
+}
+.cmd-viewer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-subtle);
+}
+.cmd-viewer-actions { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
+.cmd-viewer-body {
+  padding: var(--space-lg); overflow-y: auto; line-height: var(--leading-relaxed);
+  font-size: var(--text-sm); color: var(--text-primary);
+}
