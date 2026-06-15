@@ -21,11 +21,16 @@ export async function loadBugs() {
 
 export async function createBug({ title, description, steps, page, priority = "medium", type = "bug" }) {
   const userId = await uid();
-  const { data, error } = await supabase
-    .from("bugs")
-    .insert({ user_id: userId, title, description: description || null, steps: steps || null, page: page || null, priority, type, status: "open", screenshots: [] })
-    .select()
-    .single();
+  const base = { user_id: userId, title, description: description || null, steps: steps || null, page: page || null, priority, status: "open" };
+  // Never insert `screenshots` — it has a DB default ('[]'), so sending it is
+  // what triggered the "could not find the 'screenshots' column" schema-cache
+  // error on databases where the migration hasn't run. We only add `type`; if
+  // that column is also missing, fall back to the core columns so creation
+  // always succeeds (just without the bug/feature distinction until migrated).
+  let { data, error } = await supabase.from("bugs").insert({ ...base, type }).select().single();
+  if (error && /could not find|column|schema cache|\btype\b/i.test(error.message || "")) {
+    ({ data, error } = await supabase.from("bugs").insert(base).select().single());
+  }
   if (error) throw error;
   return data;
 }

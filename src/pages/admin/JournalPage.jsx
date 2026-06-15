@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { loadJournal, newJournalEntry } from "../../api/plannerApi";
+import { loadJournal, newJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
 
 export default function JournalPage() {
   const [params, setParams] = useSearchParams();
@@ -11,9 +13,25 @@ export default function JournalPage() {
   const [entries, setEntries] = useState([]);
   const [title, setTitle] = useState("");
   const [entry, setEntry] = useState("");
+  const { confirm, dialog } = useConfirm();
+  const { addToast } = useToast();
 
   const load = async () => setEntries(await loadJournal());
   useEffect(() => { load(); }, []);
+
+  const handleDelete = async (e) => {
+    if (!await confirm(`Delete "${e.title}"? This can't be undone.`, { title: "Delete entry", confirmLabel: "Delete" })) return;
+    try {
+      await deleteJournalEntry(e.id);
+      await load();
+      const next = new URLSearchParams(params);
+      next.delete("id");
+      setParams(next);
+      addToast("Entry deleted.", "success");
+    } catch {
+      addToast("Couldn't delete entry.", "error");
+    }
+  };
 
   const todayLong = formatDisplayDate(toDateStr(new Date()));
 
@@ -73,7 +91,12 @@ export default function JournalPage() {
         <div className="db-card" style={{ marginBottom: "1.5rem" }}>
           <div className="db-card-header">
             <h3 className="db-card-title">{selectedEntry.title}</h3>
-            <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
+              <button className="btn-sm btn-delete" onClick={() => handleDelete(selectedEntry)} title="Delete entry" style={{ fontSize: 12, padding: "4px 10px" }}>
+                <i className="fa-solid fa-trash" style={{ marginRight: 4 }} /> Delete
+              </button>
+            </div>
           </div>
           <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: 1.7, fontSize: "0.92rem" }}>{selectedEntry.entry}</p>
         </div>
@@ -106,6 +129,7 @@ export default function JournalPage() {
           ))}
         </div>
       )}
+      {dialog}
     </div>
   );
 }

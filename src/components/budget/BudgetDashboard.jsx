@@ -80,6 +80,13 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   const variableBills = useMemo(() => bills.filter(b => b.variable), [bills]);
   const paidCount = fixedBills.filter(b => b.paid).length;
 
+  // Card breakdown: Bills (paid of total), Spent (non-bill), Saved (Savings category).
+  const billsPaid = fixedBills.filter(b => b.paid).reduce((s, b) => s + b.amount, 0);
+  const billsObligation = fixedBills.reduce((s, b) => s + b.amount, 0);
+  const fixedBillTxIds = useMemo(() => new Set(fixedBills.map(b => b.matchedTxId).filter(Boolean)), [fixedBills]);
+  const saved = periodTx.filter(t => t.type === "expense" && t.category === "Savings").reduce((s, t) => s + t.amount, 0);
+  const spentNonBill = periodTx.filter(t => t.type === "expense" && !fixedBillTxIds.has(t.id) && t.category !== "Savings").reduce((s, t) => s + t.amount, 0);
+
   const weekly = useMemo(() => computeWeeklyAllowance(transactions, config, period), [transactions, config, period]);
   const currentWeek = weekly.weeks.find(w => w.isCurrent) || null;
 
@@ -156,13 +163,12 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
     </div>
   );
 
-  const afterSavings = remaining - savingsThisPeriod;
   const summaryCards = [
     { label: "Income", value: incomeTotal, color: "#22c55e" },
-    { label: "Spent", value: spent, color: "#ef4444" },
-    { label: "Bills", value: billsTotal, color: "#f59e0b" },
-    { label: "To save", value: savingsThisPeriod, color: "#8b5cf6" },
-    { label: "Remaining", value: afterSavings, color: afterSavings < 0 ? "#ef4444" : afterSavings < 100 ? "#f59e0b" : "#22c55e" },
+    { label: "Bills paid", value: billsPaid, sub: `of ${formatMoney(billsObligation)}`, color: "#f59e0b" },
+    { label: "Spent", value: spentNonBill, sub: "non-bill", color: "#ef4444" },
+    { label: "Saved", value: saved, color: "#8b5cf6" },
+    { label: "Remaining", value: remaining, color: remaining < 0 ? "#ef4444" : remaining < 100 ? "#f59e0b" : "#22c55e" },
   ];
 
   return (
@@ -185,13 +191,16 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         {summaryCards.slice(0, 4).map(c => (
           <div key={c.label} style={{ ...card, marginBottom: 0 }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{c.label}</div>
-            <div style={{ ...mono, fontSize: 20, color: c.color, lineHeight: 1 }}>{formatMoney(c.value)}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ ...mono, fontSize: 20, color: c.color, lineHeight: 1 }}>{formatMoney(c.value)}</span>
+              {c.sub && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{c.sub}</span>}
+            </div>
           </div>
         ))}
       </div>
       <div style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Remaining{savingsThisPeriod > 0 ? " after savings" : " this period"}</div>
-        <div style={{ ...mono, fontSize: 24, color: summaryCards[4].color }}>{formatMoney(afterSavings)}</div>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Remaining this period</div>
+        <div style={{ ...mono, fontSize: 24, color: summaryCards[4].color }}>{formatMoney(remaining)}</div>
       </div>
 
       {/* Spendable this week (current week of the pay period) */}

@@ -28,6 +28,7 @@ import {
 import { loadMembers, deleteMember } from "./hikerApi";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
 import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
+import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"];
 
@@ -201,7 +202,27 @@ const COLLECTIONS = {
     },
     load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
   },
+  brain: {
+    description: "Scott's knowledge graph / second brain (Tools › Brain) — notes synced from his Obsidian + Claude memory vault. Each node is a markdown note; body holds its content. Read to recall context about Scott, his projects, and decisions.",
+    searchFields: ["title", "body", "slug"],
+    defaultFields: ["id", "slug", "title", "type", "tags"],
+    fields: {
+      slug: { type: "string", required: true },
+      title: { type: "string", required: true },
+      body: { type: "string", long: true },
+      type: { type: "string" },
+      tags: { type: "array" },
+      source: { type: "string" },
+    },
+    load: brainLoadNodes, create: createBrainNode, update: updateBrainNode, remove: deleteBrainNode,
+  },
 };
+
+// brain_nodes loader: the library expects an array of rows.
+async function brainLoadNodes() {
+  const { nodes } = await loadBrain();
+  return nodes;
+}
 
 export const COLLECTION_NAMES = Object.keys(COLLECTIONS);
 

@@ -3,10 +3,14 @@ import PageTabs from "../../components/PageTabs";
 import HikerPage from "./HikerPage";
 import BugsPage from "./BugsPage";
 import StoragePage from "./StoragePage";
+import UsagePage from "./UsagePage";
+import BrainPage from "./BrainPage";
 
 const TABS = [
   { key: "bugs",    label: "Bugs",    icon: "fa-bug" },
+  { key: "brain",   label: "Brain",   icon: "fa-brain" },
   { key: "storage", label: "Storage", icon: "fa-database" },
+  { key: "usage",   label: "Claude usage", icon: "fa-chart-line" },
   { key: "hikers",  label: "Hike DB", icon: "fa-person-hiking" },
 ];
 
@@ -25,7 +29,9 @@ export default function ToolsPage() {
       </div>
       <div className="combined-embed">
         {tab === "bugs"    && <BugsPage />}
+        {tab === "brain"   && <BrainPage />}
         {tab === "storage" && <StoragePage />}
+        {tab === "usage"   && <UsagePage />}
         {tab === "hikers"  && <HikerPage />}
       </div>
     </div>
