@@ -74,7 +74,7 @@ export function computeBudgetSnapshot(config, transactions, dateStr = toDateStr(
   // Dashboard widget): split this period's fixed bills into paid vs total
   // obligation, and split logged spend into non-bill vs Savings. Derived here —
   // not inline in a component — so the two screens can never disagree.
-  const fixedBills = getPeriodBills(transactions, config, period).filter((b) => !b.variable);
+  const fixedBills = getPeriodBills(transactions, config, period).bills.filter((b) => !b.variable);
   const billsPaid = fixedBills.filter((b) => b.paid).reduce((s, b) => s + b.amount, 0);
   const billsObligation = fixedBills.reduce((s, b) => s + b.amount, 0);
   const fixedBillTxIds = new Set(fixedBills.map((b) => b.matchedTxId).filter(Boolean));
