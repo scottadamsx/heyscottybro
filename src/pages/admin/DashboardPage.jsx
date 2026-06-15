@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
 import { expandReminders, remindersForDay, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
@@ -11,36 +12,8 @@ import { Stagger, Item } from "../../components/motion/Stagger";
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const weekdayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 
-// ── Agent action log: turn a raw tool call into a human one-liner ──
-const COLLECTION_NOUN = {
-  reminders: "reminder", events: "event", projects: "project", initiatives: "initiative",
-  transactions: "transaction", recurring_bills: "bill", income_sources: "income source",
-  snippets: "snippet", event_types: "event type", hikers: "hiker",
-};
-function itemLabel(data = {}) {
-  return data.name || data.title || data.description || data.text || data.first
-    || (data.category && data.amount != null ? `${data.category} $${data.amount}` : null);
-}
-function describeAction(a) {
-  const args = a.args || {};
-  const coll = a.collection || args.collection;
-  const noun = COLLECTION_NOUN[coll] || (coll ? coll.replace(/_/g, " ") : "item");
-  const quote = (s) => (s ? `: “${String(s).length > 80 ? String(s).slice(0, 80) + "…" : s}”` : "");
-  switch (a.tool) {
-    case "create_item": return `New ${noun}${quote(itemLabel(args.data))}`;
-    case "update_item": { const s = itemLabel(args.data); const f = Object.keys(args.data || {}); return `Edited ${noun}${s ? quote(s) : f.length ? ` (${f.join(", ")})` : ""}`; }
-    case "delete_item": return `Deleted a ${noun}`;
-    case "complete_reminder": return "Completed a reminder";
-    case "set_balance": return `Set balance to $${args.balance}`;
-    case "set_category_budget": return args.amount > 0 ? `Set ${args.category} budget to $${args.amount}/mo` : `Removed ${args.category} budget`;
-    case "consult_banker": return `Consulted Griphook${quote(args.request)}`;
-    case "log_food": return `Logged food${quote(args.name)}`;
-    case "log_weight": return "Logged a weigh-in";
-    case "save_context": return `Saved a memory${quote(args.text)}`;
-    default: return a.tool.replace(/_/g, " ");
-  }
-}
-const actionTime = (ts) => new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+// Agent action one-liners + timestamp helpers now live in utils/agentActions
+// (shared with the Command Center).
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);

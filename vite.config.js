@@ -100,8 +100,30 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Dev-only stand-in for api/overseer-run.js (Galadriel's daily summary). Sets
+  // the server-side env vars the handler reads, then runs it with a tiny res shim.
+  const devOverseerPlugin = {
+    name: "dev-api-overseer-run",
+    configureServer(server) {
+      server.middlewares.use("/api/overseer-run", (req, res) => {
+        for (const k of ["ANTHROPIC_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "OVERSEER_USER_ID", "CRON_SECRET"]) {
+          if (!process.env[k] && env[k]) process.env[k] = env[k];
+        }
+        const shim = {
+          statusCode: 200,
+          status(c) { this.statusCode = c; return this; },
+          json(o) { res.statusCode = this.statusCode; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); },
+          end() { res.end(); },
+        };
+        import("./api/overseer-run.js")
+          .then((m) => m.default({ headers: req.headers, url: req.url, method: req.method }, shim))
+          .catch((e) => { res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: e.message })); });
+      });
+    },
+  };
+
   return {
-    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin],
+    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin],
     build: {
       outDir: "dist",
     },

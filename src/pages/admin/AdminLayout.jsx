@@ -92,6 +92,10 @@ export default function AdminLayout() {
                   <i className="fa-solid fa-brain" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Brain</div></span>
                 </NavLink>
+                <NavLink to="/admin/command" className={popClass} onClick={() => setMenuOpen(false)}>
+                  <i className="fa-solid fa-satellite-dish" />
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Command</div></span>
+                </NavLink>
                 <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-gear" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
@@ -156,6 +160,10 @@ export default function AdminLayout() {
           <i className="fa-solid fa-brain" />
           <span className="admin-rail-label">Brain</span>
         </NavLink>
+        <NavLink to="/admin/command" className={railClass} title="Command Center">
+          <i className="fa-solid fa-satellite-dish" />
+          <span className="admin-rail-label">Command</span>
+        </NavLink>
         <NavLink to="/admin/settings" className={railClass} title="Settings">
           <i className="fa-solid fa-gear" />
           <span className="admin-rail-label">Settings</span>
@@ -199,6 +207,7 @@ export default function AdminLayout() {
               ...navItems,
               { to: "/admin/design", icon: "fa-swatchbook", label: "Design" },
               { to: "/admin/brain", icon: "fa-brain", label: "Brain" },
+              { to: "/admin/command", icon: "fa-satellite-dish", label: "Command" },
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (
               <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>

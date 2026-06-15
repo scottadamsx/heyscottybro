@@ -8,7 +8,7 @@
  *  - Frodo & co. via the `consult_banker` tool (they defer money work to him).
  *  - The Banker chat on the Budget page (Scott talks to him directly).
  */
-import { TOOLS, executeTool } from "./aiTools";
+import { runAgent } from "../agents/runAgent";
 import { catalogPromptBlock, TX_CATEGORIES } from "./aiLibrary";
 import { toDateStr } from "../utils/plannerUtils";
 
@@ -21,13 +21,7 @@ export const BANKER = {
   tagline: "Your Gringotts banker",
 };
 
-// Griphook never consults himself — drop that tool from his belt.
-const BANKER_TOOLS = TOOLS.filter((t) => t.name !== "consult_banker");
-
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const ERROR_STREAK_LIMIT = 3;
-const RETRY_STATUSES = new Set([429, 500, 503, 529]);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export function buildBankerPrompt() {
   const now = new Date();
@@ -57,67 +51,25 @@ SAFETY: a single, easily-reversible change needs no confirmation. Before a destr
 FORMAT: reply in Markdown. Use **bold**, bullet lists for steps, and a Markdown TABLE when reporting several records or a before/after. Keep prose short.`;
 }
 
-async function callClaude(payload, headers) {
-  for (let attempt = 0; ; attempt++) {
-    let res;
-    try {
-      res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
-        body: JSON.stringify(payload),
-      });
-    } catch (err) {
-      if (attempt >= 2) throw err;
-      await sleep(800 * 2 ** attempt);
-      continue;
-    }
-    if (RETRY_STATUSES.has(res.status) && attempt < 2) { await sleep(1200 * 2 ** attempt); continue; }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
-    return data;
-  }
-}
-
 /**
  * Run Griphook over a conversation until he replies without a tool call.
- * @param {{messages: Array, authHeaders: object, onStatus?: (s:string)=>void, maxToolTurns?: number}} opts
+ * Delegates to the shared agent runner so every agent uses one loop. Griphook
+ * never consults himself, so consult_banker is dropped from his belt.
  * @returns {Promise<{text: string, history: Array}>}
  */
 export async function runBanker({ messages, authHeaders, onStatus, maxToolTurns = 16 }) {
-  const system = [{ type: "text", text: buildBankerPrompt(), cache_control: { type: "ephemeral" } }];
-  let msgs = [...messages];
-  let turns = 0;
-  let errorStreak = 0;
-
-  for (;;) {
-    onStatus?.("Griphook is counting the gold…");
-    const data = await callClaude({ model: BANKER.model, max_tokens: 4096, system, tools: BANKER_TOOLS, messages: msgs }, authHeaders);
-    const toolBlocks = (data.content || []).filter((b) => b.type === "tool_use");
-
-    if (toolBlocks.length > 0) {
-      turns++;
-      const results = [];
-      for (const block of toolBlocks) {
-        onStatus?.(`Griphook: ${block.name.replace(/_/g, " ")}…`);
-        const result = await executeTool(block.name, block.input, "banker");
-        errorStreak = result?.error ? errorStreak + 1 : 0;
-        results.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(result) });
-      }
-      msgs = [...msgs, { role: "assistant", content: data.content }, { role: "user", content: results }];
-
-      if (errorStreak >= ERROR_STREAK_LIMIT || turns >= maxToolTurns) {
-        msgs = [...msgs.slice(0, -1), {
-          ...msgs[msgs.length - 1],
-          content: [...msgs[msgs.length - 1].content, { type: "text", text: "[system] Stop calling tools now — summarise honestly what you changed, what you couldn't, and what Scott should do next." }],
-        }];
-        const wrap = await callClaude({ model: BANKER.model, max_tokens: 2048, system, messages: msgs }, authHeaders);
-        const text = (wrap.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n\n").trim();
-        return { text: text || "The ledger is settled.", history: [...msgs, { role: "assistant", content: wrap.content }] };
-      }
-      continue;
-    }
-
-    const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n\n").trim();
-    return { text: text || "The ledger is settled.", history: [...msgs, { role: "assistant", content: data.content }] };
-  }
+  return runAgent({
+    agent: {
+      id: "banker",
+      name: BANKER.name,
+      model: BANKER.model,
+      maxToolTurns,
+      thinking: "Griphook is counting the gold…",
+      tools: (TOOLS) => TOOLS.filter((t) => t.name !== "consult_banker"),
+      buildPrompt: buildBankerPrompt,
+    },
+    messages,
+    authHeaders,
+    onStatus,
+  });
 }

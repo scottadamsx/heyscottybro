@@ -13,6 +13,7 @@ import {
   libraryCatalog, libraryQuery, libraryCreate, libraryUpdate, libraryDelete,
 } from "./aiLibrary";
 import { loadContext, addContextEntry, deleteContextEntry, replaceContext } from "./contextApi";
+import { linkNodes as linkBrainNodes } from "./brainApi";
 import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
 import { clearAllMembers } from "./hikerApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
@@ -179,6 +180,7 @@ export const TOOLS = [
     },
   },
   { name: "web_fetch", description: "Fetch a web page or API URL and return its title + readable text (truncated). Use when Scott shares a link, asks you to read/check a page, or look something current up by URL.", input_schema: { type: "object", properties: { url: { type: "string", description: "Full http(s) URL" } }, required: ["url"] } },
+  { name: "link_brain_nodes", description: "Connect two existing Brain notes in the knowledge graph (directed link source → target). Use real slugs from a brain query — don't invent them. Idempotent.", input_schema: { type: "object", properties: { source_slug: { type: "string" }, target_slug: { type: "string" } }, required: ["source_slug", "target_slug"] } },
   { name: "list_context", description: "Read all saved context facts about Scott and Maria. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
   {
     name: "save_context",
@@ -288,6 +290,7 @@ async function runTool(name, input) {
       if (!res.ok) return { error: data.error || "fetch failed" };
       return data;
     }
+    case "link_brain_nodes": { await linkBrainNodes(input.source_slug, input.target_slug); return { success: true, source_slug: input.source_slug, target_slug: input.target_slug }; }
     case "list_context": { const items = await loadContext(); return { items: items.map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) }; }
     case "save_context": { const entry = await addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
     case "delete_context": await deleteContextEntry(input.id); return { success: true };
