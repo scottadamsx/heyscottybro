@@ -2,13 +2,26 @@ import { useState, useRef, useEffect } from "react";
 import { renderMarkdown } from "../utils/markdown";
 import useAIAgent, { MAX_INPUT_CHARS } from "../hooks/useAIAgent";
 import { TIERS } from "../api/aiTiers";
+import { stageScreenshot } from "../api/bugsApi";
+import { setPendingScreenshots } from "../api/pendingScreenshots";
+import { useToast } from "../contexts/ToastContext";
 
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
+
+const readDataUrl = (file) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = rej;
+  r.readAsDataURL(file);
+});
 
 export default function ChatBot() {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
+  const [dragOver, setDragOver] = useState(false);
   const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory } = useAIAgent();
+  const { addToast } = useToast();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -21,16 +34,55 @@ export default function ChatBot() {
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   };
-
   const handleInput = (e) => { setInput(e.target.value); autoGrow(); };
 
-  const onKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (textareaRef.current) textareaRef.current.style.height = "auto";
-      sendMessage();
+  // Stage dropped/pasted images to storage so Frodo's log_bug can claim them.
+  const addFiles = async (fileList) => {
+    const files = [...fileList].filter((f) => f.type.startsWith("image/"));
+    for (const file of files) {
+      const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+      let dataUrl;
+      try { dataUrl = await readDataUrl(file); } catch { continue; }
+      setShots((prev) => [...prev, { id, dataUrl, media_type: file.type, path: null, uploading: true }]);
+      try {
+        const path = await stageScreenshot(file);
+        setShots((prev) => prev.map((s) => (s.id === id ? { ...s, path, uploading: false } : s)));
+      } catch {
+        setShots((prev) => prev.filter((s) => s.id !== id));
+        addToast("Screenshot upload failed.", "error");
+      }
     }
   };
+
+  const onDrop = (e) => {
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(e.dataTransfer.files);
+  };
+  const onPaste = (e) => {
+    const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.type.startsWith("image/")).map((i) => i.getAsFile()).filter(Boolean);
+    if (imgs.length) { e.preventDefault(); addFiles(imgs); }
+  };
+
+  const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
+
+  const doSend = () => {
+    if (loading) return;
+    const ready = shots.filter((s) => s.path && !s.uploading);
+    setPendingScreenshots(ready.map((s) => s.path));
+    const attachments = ready.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    sendMessage(attachments);
+    setShots([]);
+  };
+
+  const onKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); }
+  };
+
+  const uploading = shots.some((s) => s.uploading);
+  const canSend = !loading && !uploading && (input.trim() || shots.some((s) => s.path));
 
   return (
     <>
@@ -39,7 +91,10 @@ export default function ChatBot() {
       </button>
 
       {open && (
-        <div className={`chat-panel ${expanded ? "expanded" : ""}`}>
+        <div className={`chat-panel ${expanded ? "expanded" : ""}`}
+          onDragOver={(e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+          onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
+          onDrop={onDrop}>
           <div className="chat-panel-header">
             <span><i className="fa-solid fa-ring" /> Frodo</span>
             <div className="chat-header-actions">
@@ -58,9 +113,9 @@ export default function ChatBot() {
                 <p>Hi, I'm <strong>Frodo</strong> 🧭 — your planner sidekick. I can read and change anything. Try:</p>
                 <ul>
                   <li>"List my projects as a table"</li>
-                  <li>"Make a School project with Math, English &amp; Science classes"</li>
-                  <li>"Add a Test event type with study reminders 7 and 2 days before"</li>
-                  <li>"Complete all my gym tasks from this week"</li>
+                  <li>Drag a <strong>screenshot</strong> in and say "log this bug"</li>
+                  <li>"Fetch example.com and summarise it"</li>
+                  <li>"Export my bugs"</li>
                 </ul>
               </div>
             )}
@@ -88,13 +143,27 @@ export default function ChatBot() {
             <div ref={bottomRef} />
           </div>
 
-          <div className="chat-input-row">
+          {/* Staged screenshot thumbnails */}
+          {shots.length > 0 && (
+            <div className="chat-shots">
+              {shots.map((s) => (
+                <div key={s.id} className="chat-shot">
+                  <img src={s.dataUrl} alt="screenshot" />
+                  {s.uploading && <span className="chat-shot-spin"><i className="fa-solid fa-spinner fa-spin" /></span>}
+                  <button type="button" className="chat-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className={`chat-input-row${dragOver ? " drag-over" : ""}`}>
             <textarea ref={textareaRef} className="chat-input" value={input} maxLength={MAX_INPUT_CHARS}
-              onChange={handleInput} onKeyDown={onKey} placeholder="Ask Frodo anything..." rows={1} />
+              onChange={handleInput} onKeyDown={onKey} onPaste={onPaste}
+              placeholder={dragOver ? "Drop screenshot to attach…" : "Ask Frodo, or drop a screenshot…"} rows={1} />
             {input.length > MAX_INPUT_CHARS * 0.85 && (
               <span className="chat-char-count">{input.length}/{MAX_INPUT_CHARS}</span>
             )}
-            <button type="button" className="chat-send" onClick={sendMessage} disabled={loading || !input.trim()} aria-label="Send">
+            <button type="button" className="chat-send" onClick={doSend} disabled={!canSend} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />
             </button>
           </div>

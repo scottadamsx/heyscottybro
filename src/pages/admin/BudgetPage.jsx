@@ -18,6 +18,7 @@ const DEFAULT_CONFIG = {
   paySchedule: { type: "biweekly", anchorDate: toDateStr(), customDays: null },
   recurringBills: [],
   categoryBudgets: {},
+  savingsGoals: [],
   taxRate: 0.18,
 };
 
@@ -31,6 +32,7 @@ function apiToPage(cfg) {
     income: cfg.incomeSources ?? [],
     recurringBills: cfg.recurringBills ?? [],
     categoryBudgets: cfg.categoryBudgets ?? {},
+    savingsGoals: cfg.savingsGoals ?? [],
     paySchedule: cfg.paySchedule ?? DEFAULT_CONFIG.paySchedule,
     taxRate: cfg.taxRate ?? DEFAULT_CONFIG.taxRate,
   };
@@ -44,6 +46,7 @@ function pageToApi(config, simulations, startingBalance) {
     incomeSources: config.income,
     recurringBills: config.recurringBills,
     categoryBudgets: config.categoryBudgets ?? {},
+    savingsGoals: config.savingsGoals ?? [],
     paySchedule: config.paySchedule,
     taxRate: config.taxRate ?? DEFAULT_CONFIG.taxRate,
     startingBalance,
@@ -246,6 +249,8 @@ export default function BudgetPage() {
     });
   };
 
+  const handleSaveGoals = (goals) => setConfig(c => ({ ...c, savingsGoals: goals }));
+
   const handleFreshStart = () => {
     setTransactions([]);
     setStartingBalance(0);
@@ -285,6 +290,7 @@ export default function BudgetPage() {
           onPayBill={handlePayBill}
           onUnpayBill={handleUnpayBill}
           onSetCategoryBudget={handleSetCategoryBudget}
+          onSaveGoals={handleSaveGoals}
         />
       )}
       {tab === "banker" && (

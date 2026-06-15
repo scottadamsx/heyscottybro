@@ -36,3 +36,33 @@ CREATE POLICY "bugs_owner" ON public.bugs
 
 -- Index for fast user queries (most common access pattern)
 CREATE INDEX IF NOT EXISTS bugs_user_created ON public.bugs (user_id, created_at DESC);
+
+-- ── Feature requests + screenshots (added 2026-06-14) ──────────────────────
+-- type distinguishes bug reports from feature requests in the same tracker.
+ALTER TABLE public.bugs
+  ADD COLUMN IF NOT EXISTS type TEXT NOT NULL DEFAULT 'bug'
+    CHECK (type IN ('bug','feature'));
+
+-- screenshots holds an array of storage paths in the 'bug-screenshots' bucket.
+ALTER TABLE public.bugs
+  ADD COLUMN IF NOT EXISTS screenshots JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- ── Private storage bucket for screenshots ─────────────────────────────────
+-- Files are stored under <user_id>/<bug_id>/<file>; RLS scopes each user to
+-- their own folder, matching the 'documents' / 'nutrition' bucket pattern.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('bug-screenshots', 'bug-screenshots', false, 10485760,
+        ARRAY['image/png','image/jpeg','image/webp','image/gif'])
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "bug shots owner upload" ON storage.objects;
+CREATE POLICY "bug shots owner upload" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'bug-screenshots' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+DROP POLICY IF EXISTS "bug shots owner read" ON storage.objects;
+CREATE POLICY "bug shots owner read" ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'bug-screenshots' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+DROP POLICY IF EXISTS "bug shots owner delete" ON storage.objects;
+CREATE POLICY "bug shots owner delete" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'bug-screenshots' AND (storage.foldername(name))[1] = auth.uid()::text);

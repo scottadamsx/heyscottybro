@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { computePeriodTotals, computeWeeklyAllowance, getPeriodBills, monthlyCategorySpend, getPayPeriod, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatPeriodLabel, parseDate, toDateStr } from "../../utils/budgetCalc";
+import { computePeriodTotals, computeWeeklyAllowance, getPeriodBills, getQuantifiableBudgets, getIncomePayPeriod, savingsPlan, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatPeriodLabel, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
 
 function MoneyChart({ config, transactions, period }) {
   const W = 600, H = 160, padX = 48, padY = 16;
@@ -57,23 +57,29 @@ function MoneyChart({ config, transactions, period }) {
   );
 }
 
-export default function BudgetDashboard({ config, transactions, startingBalance, paySchedule, periodOffset, setPeriodOffset, onPayBill, onUnpayBill, onSetCategoryBudget }) {
+export default function BudgetDashboard({ config, transactions, startingBalance, paySchedule, periodOffset, setPeriodOffset, onPayBill, onUnpayBill, onSetCategoryBudget, onSaveGoals }) {
   const today = toDateStr();
-  const period = useMemo(() => getPayPeriod(today, periodOffset, paySchedule), [today, periodOffset, paySchedule]);
-  const { incomeTotal, spent, billsTotal, planned, remaining, periodTx } = useMemo(
+
+  // Pay-period dashboard: the period runs payday → day before next payday,
+  // derived from the income sources in Bills & Income. periodOffset moves whole
+  // pay periods. Everything below is scoped to this period so the analytics
+  // reflect "this paycheque": the bills due in it + every categorized expense.
+  const period = useMemo(() => getIncomePayPeriod(config, today, periodOffset), [config, today, periodOffset]);
+
+  const { incomeTotal, spent, billsTotal, remaining, periodTx } = useMemo(
     () => computePeriodTotals(transactions, config, period),
     [transactions, config, period]
   );
 
-  // Bills display uses the calendar month so that monthly bills (rent, phone)
-  // always appear regardless of where the biweekly period boundaries fall.
-  const monthPeriod = useMemo(() => {
-    const ref = period.end; // use the end date so a period like May 31–Jun 13 shows June
-    const y = ref.slice(0, 4), m = ref.slice(5, 7);
-    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-    return { start: `${y}-${m}-01`, end: `${y}-${m}-${String(lastDay).padStart(2, "0")}` };
-  }, [period]);
-  const { bills, paidCount } = useMemo(() => getPeriodBills(transactions, config, monthPeriod), [transactions, config, monthPeriod]);
+  // Savings goals — how much to set aside this paycheque for each goal.
+  const goals = useMemo(() => savingsPlan(config, today), [config, today]);
+  const savingsThisPeriod = goals.reduce((s, g) => s + g.perPeriod, 0);
+
+  const { bills } = useMemo(() => getPeriodBills(transactions, config, period), [transactions, config, period]);
+  const fixedBills = useMemo(() => bills.filter(b => !b.variable), [bills]);
+  const variableBills = useMemo(() => bills.filter(b => b.variable), [bills]);
+  const paidCount = fixedBills.filter(b => b.paid).length;
+
   const weekly = useMemo(() => computeWeeklyAllowance(transactions, config, period), [transactions, config, period]);
   const currentWeek = weekly.weeks.find(w => w.isCurrent) || null;
 
@@ -85,15 +91,10 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   const maxCat = catTotals.length > 0 ? catTotals[0][1] : 1;
   const totalSpent = spent || 1;
 
-  // ── Monthly category budgets (variable envelopes: Groceries, Gas, …) ──
-  const monthKey = period.start.slice(0, 7);
-  const monthLabel = parseDate(period.start).toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  const monthSpend = useMemo(() => monthlyCategorySpend(transactions, monthKey), [transactions, monthKey]);
-  const categoryBudgets = config.categoryBudgets || {};
-  const budgetedCats = useMemo(
-    () => Object.keys(categoryBudgets).filter(c => categoryBudgets[c] > 0).sort((a, b) => a.localeCompare(b)),
-    [categoryBudgets]
-  );
+  // ── Quantifiable category budgets (Groceries, Gas… set via "Add budget") ──
+  const periodLabel = formatPeriodLabel(period.start, period.end);
+  const quantBudgets = useMemo(() => getQuantifiableBudgets(transactions, config, period), [transactions, config, period]);
+  const budgetedCats = quantBudgets.map(q => q.category);
   const unbudgetedCats = (config.categories || []).filter(c => !budgetedCats.includes(c));
   const [editCat, setEditCat] = useState(null);   // category whose amount is being edited
   const [editVal, setEditVal] = useState("");
@@ -101,7 +102,23 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   const [addCat, setAddCat] = useState("");
   const [addVal, setAddVal] = useState("");
 
-  const startEdit = (cat) => { setEditCat(cat); setEditVal(String(categoryBudgets[cat] || "")); };
+  // Savings-goal form state
+  const [goalForm, setGoalForm] = useState({ name: "", target: "", targetDate: "", saved: "" });
+  const [goalEditId, setGoalEditId] = useState(null);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const resetGoal = () => { setGoalForm({ name: "", target: "", targetDate: "", saved: "" }); setGoalEditId(null); setGoalOpen(false); };
+  const saveGoal = () => {
+    const target = parseFloat(goalForm.target);
+    if (!goalForm.name.trim() || isNaN(target) || target <= 0 || !goalForm.targetDate) return;
+    const g = { id: goalEditId || genId(), name: goalForm.name.trim(), target, targetDate: goalForm.targetDate, saved: parseFloat(goalForm.saved) || 0 };
+    const list = config.savingsGoals || [];
+    onSaveGoals?.(goalEditId ? list.map(x => x.id === goalEditId ? g : x) : [...list, g]);
+    resetGoal();
+  };
+  const editGoal = (g) => { setGoalEditId(g.id); setGoalForm({ name: g.name, target: String(g.target), targetDate: g.targetDate || "", saved: String(g.saved || "") }); setGoalOpen(true); };
+  const deleteGoal = (id) => onSaveGoals?.((config.savingsGoals || []).filter(g => g.id !== id));
+
+  const startEdit = (cat) => { setEditCat(cat); setEditVal(String((config.categoryBudgets || {})[cat] || "")); };
   const commitEdit = (cat) => { onSetCategoryBudget?.(cat, parseFloat(editVal)); setEditCat(null); setEditVal(""); };
   const commitAdd = () => {
     const amt = parseFloat(addVal);
@@ -114,28 +131,53 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   // this-period number).
   const recent = useMemo(() => [...periodTx].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10), [periodTx]);
 
+  // Click-to-drill: which row's transactions are expanded.
+  const [openRow, setOpenRow] = useState(null);
+  const toggleRow = (key) => setOpenRow(k => (k === key ? null : key));
+  const catTx = (cat) => periodTx.filter(t => t.type === "expense" && t.category === cat).sort((a, b) => b.date.localeCompare(a.date));
+  // Variable bills track ONLY transactions explicitly tagged to them, so the drill matches.
+  const billTx = (billId) => periodTx.filter(t => t.type === "expense" && t.fulfills_recurring_id === billId).sort((a, b) => b.date.localeCompare(a.date));
+
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "16px 0 8px", fontWeight: 500 };
   const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.5rem", padding: "0.875rem 1.125rem", marginBottom: 8 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
 
+  // Small transaction list shown when a category / bill row is expanded.
+  const TxDrill = ({ txs, empty = "No transactions this pay period." }) => (
+    <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border)", paddingTop: 8 }}>
+      {txs.length === 0
+        ? <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{empty}</div>
+        : txs.map(t => (
+          <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, padding: "3px 0" }}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text-secondary)" }}>{t.description || t.category}</span>
+            <span style={{ whiteSpace: "nowrap", color: "var(--text-muted)" }}>{t.date} · <span style={mono}>{formatMoney(t.amount)}</span></span>
+          </div>
+        ))}
+    </div>
+  );
+
+  const afterSavings = remaining - savingsThisPeriod;
   const summaryCards = [
     { label: "Income", value: incomeTotal, color: "#22c55e" },
     { label: "Spent", value: spent, color: "#ef4444" },
     { label: "Bills", value: billsTotal, color: "#f59e0b" },
-    { label: "Planned", value: planned, color: "#6366f1" },
-    { label: "Remaining", value: remaining, color: remaining < 0 ? "#ef4444" : remaining < 100 ? "#f59e0b" : "#22c55e" },
+    { label: "To save", value: savingsThisPeriod, color: "#8b5cf6" },
+    { label: "Remaining", value: afterSavings, color: afterSavings < 0 ? "#ef4444" : afterSavings < 100 ? "#f59e0b" : "#22c55e" },
   ];
 
   return (
     <div>
-      {/* Period navigator */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      {/* Pay-period navigator */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <button onClick={() => setPeriodOffset(o => o - 1)} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>‹</button>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
-          {formatPeriodLabel(period.start, period.end)}
+          {periodLabel}
           {periodOffset === 0 ? " (Current)" : periodOffset === 1 ? " (Next)" : periodOffset === -1 ? " (Previous)" : ""}
         </span>
         <button onClick={() => setPeriodOffset(o => o + 1)} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>›</button>
+      </div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
+        {period.fallback ? "No paydays set — showing this calendar month. Add an income source in Bills & Income for true pay-period analytics." : "Pay period · payday → next payday"}
       </div>
 
       {/* Summary cards */}
@@ -148,8 +190,8 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         ))}
       </div>
       <div style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Remaining this period</div>
-        <div style={{ ...mono, fontSize: 24, color: summaryCards[4].color }}>{formatMoney(remaining)}</div>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Remaining{savingsThisPeriod > 0 ? " after savings" : " this period"}</div>
+        <div style={{ ...mono, fontSize: 24, color: summaryCards[4].color }}>{formatMoney(afterSavings)}</div>
       </div>
 
       {/* Spendable this week (current week of the pay period) */}
@@ -179,7 +221,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       <div style={card}>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
           {formatMoney(weekly.weeklyBase)} / week · {formatMoney(weekly.spendable)} spendable this period
-          <span style={{ display: "block", marginTop: 2 }}>({formatMoney(weekly.incomeForPlanning)} scheduled − {formatMoney(weekly.billsObligation)} bills − {formatMoney(planned)} planned)</span>
+          <span style={{ display: "block", marginTop: 2 }}>({formatMoney(weekly.incomeForPlanning)} scheduled − {formatMoney(weekly.billsObligation)} bills − {formatMoney(weekly.savings)} savings)</span>
         </div>
         {weekly.weeks.map(w => {
           const over = w.remaining < 0;
@@ -205,53 +247,100 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         })}
       </div>
 
-      {/* Bills — monthly view so bills always appear regardless of pay period window */}
+      {/* Bills this pay period — fixed bills (paid/unpaid) + variable bills (progress) */}
       {bills.length > 0 && <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <p style={sh}>Bills · {monthLabel}</p>
-          <span style={{ fontSize: 12, color: paidCount === bills.length ? "#22c55e" : "var(--text-muted)" }}>{paidCount} of {bills.length} paid</span>
+          <p style={sh}>Bills</p>
+          {fixedBills.length > 0 && <span style={{ fontSize: 12, color: paidCount === fixedBills.length ? "#22c55e" : "var(--text-muted)" }}>{paidCount} of {fixedBills.length} paid</span>}
         </div>
-        <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
-          <div style={{ height: "100%", width: `${bills.length ? paidCount / bills.length * 100 : 0}%`, background: "#22c55e", borderRadius: 4 }} />
-        </div>
-        {bills.map((b, i) => (
-          <div key={b.matchedTxId || `${b.billId}-${b.date}-${i}`} style={{ ...card, display: "flex", alignItems: "center" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, opacity: b.paid ? 0.6 : 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.name}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.recurring ? `Due ${b.date}` : `Paid ${b.date}`}{b.category ? ` · ${b.category}` : ""}</div>
-            </div>
-            <span style={{ ...mono, fontSize: 14, marginRight: 12, textDecoration: b.paid ? "line-through" : "none", color: b.paid ? "var(--text-muted)" : undefined }}>{formatMoney(b.amount)}</span>
-            {b.paid
-              ? <button className="btn" style={{ fontSize: 11, padding: "3px 8px", color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "none" }} onClick={() => onUnpayBill?.(b.matchedTxId)} title="Undo">✓ Paid</button>
-              : b.autoPay
-                ? <span style={{ fontSize: 11, color: "#22c55e", background: "rgba(34,197,94,0.1)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
-                : <button className="btn" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => onPayBill(b)}>Pay now</button>}
+        {fixedBills.length > 0 && (
+          <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ height: "100%", width: `${fixedBills.length ? paidCount / fixedBills.length * 100 : 0}%`, background: "#22c55e", borderRadius: 4 }} />
           </div>
-        ))}
+        )}
+        {fixedBills.map((b, i) => {
+          const key = `bill:${b.billId}-${b.date}-${i}`;
+          const isOpen = openRow === key;
+          const payTx = b.matchedTxId ? transactions.find(t => t.id === b.matchedTxId) : null;
+          return (
+            <div key={key} style={{ ...card }}>
+              <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => toggleRow(key)}>
+                <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 10, color: "var(--text-muted)", marginRight: 8, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, opacity: b.paid ? 0.6 : 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Due {b.date}{b.category ? ` · ${b.category}` : ""}</div>
+                </div>
+                <span style={{ ...mono, fontSize: 14, marginRight: 12, textDecoration: b.paid ? "line-through" : "none", color: b.paid ? "var(--text-muted)" : undefined }}>{formatMoney(b.amount)}</span>
+                {b.paid
+                  ? <button className="btn" style={{ fontSize: 11, padding: "3px 8px", color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
+                  : b.autoPay
+                    ? <span style={{ fontSize: 11, color: "#22c55e", background: "rgba(34,197,94,0.1)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
+                    : <button className="btn" style={{ fontSize: 12, padding: "4px 10px" }} onClick={(e) => { e.stopPropagation(); onPayBill(b); }}>Pay now</button>}
+              </div>
+              {isOpen && (
+                <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border)", paddingTop: 8, fontSize: 12 }}>
+                  {b.paid
+                    ? <span style={{ color: "#22c55e" }}><i className="fa-solid fa-check" style={{ marginRight: 5 }} />Paid {payTx ? `${payTx.date} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
+                    : <span style={{ color: "var(--text-muted)" }}>Not paid yet — due {b.date}.</span>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {/* Variable bills — progress bars (spend in their category this pay period); click to drill in */}
+        {variableBills.map((b) => {
+          const pct = b.budget > 0 ? Math.min(b.spent / b.budget * 100, 100) : 0;
+          const over = b.spent > b.budget;
+          const barColor = over ? "#ef4444" : pct > 80 ? "#f59e0b" : "#22c55e";
+          const key = `varbill:${b.billId}`;
+          const isOpen = openRow === key;
+          return (
+            <div key={key} style={{ ...card }}>
+              <div style={{ cursor: "pointer" }} onClick={() => toggleRow(key)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, fontSize: 13 }}>
+                  <span style={{ fontWeight: 500 }}>
+                    <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 10, color: "var(--text-muted)", marginRight: 8 }} />
+                    {b.name} <span style={{ fontSize: 10, color: "var(--text-muted)", border: "0.5px solid var(--border)", borderRadius: 4, padding: "0 4px", marginLeft: 4 }}>{b.category}</span>
+                  </span>
+                  <span style={{ ...mono, fontSize: 12, color: over ? "#ef4444" : "var(--text-muted)" }}>{formatMoney(b.spent)} / {formatMoney(b.budget)} ({Math.round(b.budget > 0 ? b.spent / b.budget * 100 : 0)}%)</span>
+                </div>
+                <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
+                </div>
+                {over && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{formatMoney(b.spent - b.budget)} over</div>}
+              </div>
+              {isOpen && <TxDrill txs={billTx(b.billId)} empty="No transactions tagged to this bill yet — tag them via “Pays a bill?” when logging." />}
+            </div>
+          );
+        })}
       </>}
 
-      {/* Monthly category budgets (variable spending envelopes) */}
+      {/* Quantifiable budgets (Groceries, Gas, Maria… — category budgets + variable bills) */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <p style={sh}>Monthly budgets</p>
-        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{monthLabel}</span>
+        <p style={sh}>Category budgets</p>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>this pay period</span>
       </div>
       <div style={card}>
-        {budgetedCats.length === 0 && !adding && (
+        {quantBudgets.length === 0 && !adding && (
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "2px 0 10px" }}>
-            Set a monthly budget on variable categories (Groceries, Gas, Toiletries…) to track them with a progress bar.
+            Track variable spending (Groceries, Gas, Maria…) here. Add a budget below, or in Bills &amp; Income tick &ldquo;variable&rdquo; on a bill.
           </p>
         )}
-        {budgetedCats.map(cat => {
-          const budget = categoryBudgets[cat];
-          const spentCat = monthSpend[cat] || 0;
+        {quantBudgets.map(({ category: cat, budget, spent: spentCat, fromBill, editable }) => {
           const pct = budget > 0 ? Math.min(spentCat / budget * 100, 100) : 0;
           const over = spentCat > budget;
           const barColor = over ? "#ef4444" : pct > 80 ? "#f59e0b" : "#22c55e";
           const isEditing = editCat === cat;
+          const key = `cat:${cat}`;
+          const isOpen = openRow === key;
           return (
             <div key={cat} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: 13 }}>
-                <span style={{ fontWeight: 500 }}>{cat}</span>
+                <span style={{ fontWeight: 500, cursor: "pointer" }} onClick={() => toggleRow(key)}>
+                  <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 10, color: "var(--text-muted)", marginRight: 8 }} />
+                  {cat}
+                  {fromBill && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6, border: "0.5px solid var(--border)", borderRadius: 4, padding: "0 4px" }}>bill</span>}
+                </span>
                 {isEditing ? (
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ color: "var(--text-muted)", fontSize: 12 }}>$</span>
@@ -261,17 +350,22 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                     <button className="btn-sm btn-complete" style={{ fontSize: 11, padding: "3px 7px" }} onClick={() => commitEdit(cat)}>Save</button>
                     <button className="btn-sm btn-delete" style={{ fontSize: 11, padding: "3px 7px" }} onClick={() => { onSetCategoryBudget?.(cat, 0); setEditCat(null); setEditVal(""); }} title="Remove budget">Remove</button>
                   </span>
-                ) : (
+                ) : editable ? (
                   <button onClick={() => startEdit(cat)} title="Edit budget"
                     style={{ background: "none", border: "none", cursor: "pointer", color: over ? "#ef4444" : "var(--text-muted)", fontSize: 12, ...mono }}>
                     {formatMoney(spentCat)} / {formatMoney(budget)} ({Math.round(budget > 0 ? spentCat / budget * 100 : 0)}%) <i className="fa-solid fa-pen" style={{ fontSize: 9, marginLeft: 3, opacity: 0.6 }} />
                   </button>
+                ) : (
+                  <span style={{ color: over ? "#ef4444" : "var(--text-muted)", fontSize: 12, ...mono }}>
+                    {formatMoney(spentCat)} / {formatMoney(budget)} ({Math.round(budget > 0 ? spentCat / budget * 100 : 0)}%)
+                  </span>
                 )}
               </div>
               <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
               </div>
               {over && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{formatMoney(spentCat - budget)} over budget</div>}
+              {isOpen && <TxDrill txs={catTx(cat)} />}
             </div>
           );
         })}
@@ -294,6 +388,67 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
               <i className="fa-solid fa-plus" style={{ fontSize: 10, marginRight: 4 }} /> Add category budget
             </button>
           )
+        )}
+      </div>
+
+      {/* Savings goals — spread a future purchase across paychecks */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <p style={sh}>Savings goals</p>
+        {savingsThisPeriod > 0 && <span style={{ fontSize: 11, color: "#8b5cf6" }}>set aside {formatMoney(savingsThisPeriod)} this paycheque</span>}
+      </div>
+      <div style={card}>
+        {goals.length === 0 && !goalOpen && (
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "2px 0 10px" }}>
+            Saving for something? Add a goal with a target amount and date, and I&apos;ll tell you how much to set aside each paycheque.
+          </p>
+        )}
+        {goals.map(g => {
+          const pct = g.target > 0 ? Math.min(g.saved / g.target * 100, 100) : 0;
+          const barColor = g.done ? "#22c55e" : "#8b5cf6";
+          return (
+            <div key={g.id} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: 13 }}>
+                <span style={{ fontWeight: 500 }}>{g.name} {g.done && <span style={{ color: "#22c55e", fontSize: 11 }}>✓ funded</span>}</span>
+                <span style={{ ...mono, fontSize: 12, color: "var(--text-muted)" }}>{formatMoney(g.saved)} / {formatMoney(g.target)}</span>
+              </div>
+              <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
+                <span style={{ fontSize: 11, color: g.done ? "#22c55e" : "#8b5cf6" }}>
+                  {g.done
+                    ? "Goal reached!"
+                    : g.periodsLeft > 0
+                      ? <><b>{formatMoney(g.perPeriod)}</b> / paycheque · {g.periodsLeft} left · by {g.targetDate}</>
+                      : <>Set aside {formatMoney(g.remaining)} — target date {g.targetDate || "not set"} {g.targetDate && g.targetDate < today ? "(past)" : "(no paydays before it)"}</>}
+                </span>
+                <span style={{ display: "flex", gap: 4 }}>
+                  <button className="btn-sm" style={{ fontSize: 11, padding: "3px 7px" }} onClick={() => editGoal(g)}>Edit</button>
+                  <button className="btn-sm btn-delete" style={{ fontSize: 11, padding: "3px 7px" }} onClick={() => deleteGoal(g.id)}>Del</button>
+                </span>
+              </div>
+            </div>
+          );
+        })}
+
+        {goalOpen ? (
+          <div style={{ borderTop: goals.length ? "0.5px solid var(--border)" : "none", paddingTop: goals.length ? 10 : 0 }}>
+            <input placeholder="What for? (e.g. New laptop)" value={goalForm.name} onChange={e => setGoalForm(f => ({ ...f, name: e.target.value }))} style={{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+              <input type="number" placeholder="Target $" value={goalForm.target} onChange={e => setGoalForm(f => ({ ...f, target: e.target.value }))} style={{ flex: 1, minWidth: 90 }} />
+              <input type="number" placeholder="Saved so far $" value={goalForm.saved} onChange={e => setGoalForm(f => ({ ...f, saved: e.target.value }))} style={{ flex: 1, minWidth: 90 }} />
+            </div>
+            <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Need it by</label>
+            <input type="date" value={goalForm.targetDate} onChange={e => setGoalForm(f => ({ ...f, targetDate: e.target.value }))} style={{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-sm btn-complete" style={{ fontSize: 12, padding: "5px 12px" }} onClick={saveGoal}>{goalEditId ? "Save" : "Add goal"}</button>
+              <button className="btn-sm" style={{ fontSize: 12, padding: "5px 12px" }} onClick={resetGoal}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn" style={{ fontSize: 12, padding: "4px 10px", marginTop: 2 }} onClick={() => setGoalOpen(true)}>
+            <i className="fa-solid fa-plus" style={{ fontSize: 10, marginRight: 4 }} /> Add savings goal
+          </button>
         )}
       </div>
 

@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
-import { getPayPeriod, formatMoney, formatPeriodLabel, getIncomeDatesInRange, toDateStr } from "../../utils/budgetCalc";
+import { getIncomePayPeriod, formatMoney, formatPeriodLabel, getIncomeDatesInRange, toDateStr } from "../../utils/budgetCalc";
 
-export default function BudgetReconcile({ config, transactions, setTransactions, paySchedule }) {
+export default function BudgetReconcile({ config, transactions, setTransactions }) {
   const today = toDateStr();
   const periodOptions = useMemo(() => {
     const opts = [];
     for (let i = 0; i >= -5; i--) {
-      const p = getPayPeriod(today, i, paySchedule);
-      opts.push({ ...p, label: formatPeriodLabel(p.start, p.end) + (i === 0 ? " (Current)" : ""), key: `${p.start}|${p.end}` });
+      const p = getIncomePayPeriod(config, today, i);
+      opts.push({ start: p.start, end: p.end, label: formatPeriodLabel(p.start, p.end) + (i === 0 ? " (Current)" : ""), key: `${p.start}|${p.end}` });
     }
     return opts;
-  }, [today, paySchedule]);
+  }, [today, config]);
 
   const [periodKey, setPeriodKey] = useState(periodOptions[0]?.key || "");
   const [selectAll, setSelectAll] = useState(false);

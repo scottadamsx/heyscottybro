@@ -97,13 +97,13 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}>×</button>
           </div>
           <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {["expense", "income", "future"].map(t => (
+            {["expense", "income"].map(t => (
               <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
                 style={{ flex: 1, padding: "7px 0", borderRadius: "0.375rem", fontSize: 12, fontWeight: form.type === t ? 600 : 400,
-                  background: form.type === t ? (t === "income" ? "rgba(34,197,94,0.15)" : t === "future" ? "rgba(99,102,241,0.15)" : "rgba(239,68,68,0.15)") : "var(--bg-raised,#1e1e1e)",
-                  color: form.type === t ? (t === "income" ? "#22c55e" : t === "future" ? "#6366f1" : "#ef4444") : "var(--text-muted)",
-                  border: `1px solid ${form.type === t ? (t === "income" ? "#22c55e" : t === "future" ? "#6366f1" : "#ef4444") : "var(--border)"}`, cursor: "pointer" }}>
-                {t === "future" ? "Planned" : t.charAt(0).toUpperCase() + t.slice(1)}
+                  background: form.type === t ? (t === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)") : "var(--bg-raised,#1e1e1e)",
+                  color: form.type === t ? (t === "income" ? "#22c55e" : "#ef4444") : "var(--text-muted)",
+                  border: `1px solid ${form.type === t ? (t === "income" ? "#22c55e" : "#ef4444") : "var(--border)"}`, cursor: "pointer" }}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>
@@ -211,7 +211,6 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               <option value="all">All types</option>
               <option value="expense">Expenses</option>
               <option value="income">Income</option>
-              <option value="future">Planned</option>
             </select>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ fontSize: 13 }}>
               <option value="all">All categories</option>

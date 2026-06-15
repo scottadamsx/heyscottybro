@@ -3,7 +3,7 @@ import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel } from "
 import { useConfirm } from "../../hooks/useConfirm";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
-const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, notes: "" };
+const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, variable: false, notes: "" };
 const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", startDate: toDateStr(), endDate: "" };
 
 export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
@@ -25,11 +25,11 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
 
   // ── Bills ──
   const openNewBill = () => { setBillEditId(null); setBillForm({ ...EMPTY_BILL, startDate: toDateStr(), category: categories[0] || "Other" }); setShowBillForm(true); };
-  const openEditBill = b => { setBillEditId(b.id); setBillForm({ name: b.name, amount: String(b.amount), category: b.category, frequency: b.frequency, startDate: b.startDate || toDateStr(), autoPay: b.autoPay, notes: b.notes || "" }); setShowBillForm(true); };
+  const openEditBill = b => { setBillEditId(b.id); setBillForm({ name: b.name, amount: String(b.amount), category: b.category, frequency: b.frequency, startDate: b.startDate || toDateStr(), autoPay: b.autoPay, variable: !!b.variable, notes: b.notes || "" }); setShowBillForm(true); };
   const saveBill = () => {
     const amt = parseFloat(billForm.amount);
     if (!billForm.name.trim() || isNaN(amt) || amt <= 0) return;
-    const nb = { id: billEditId || genId(), name: billForm.name.trim(), amount: amt, category: billForm.category, frequency: billForm.frequency, startDate: billForm.startDate, autoPay: billForm.autoPay, notes: billForm.notes };
+    const nb = { id: billEditId || genId(), name: billForm.name.trim(), amount: amt, category: billForm.category, frequency: billForm.frequency, startDate: billForm.startDate, autoPay: billForm.autoPay, variable: billForm.variable, notes: billForm.notes };
     if (billEditId) setConfig(c => ({ ...c, recurringBills: c.recurringBills.map(b => b.id === billEditId ? nb : b) }));
     else setConfig(c => ({ ...c, recurringBills: [...(c.recurringBills || []), nb] }));
     setShowBillForm(false); setBillEditId(null); flashFor("bill");
@@ -179,7 +179,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <div key={b.id} style={{ ...card, display: "flex", alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 500 }}>{b.name}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{b.autoPay ? " · auto" : ""}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{b.variable ? " · variable" : b.autoPay ? " · auto" : ""}</div>
             </div>
             <span style={{ ...mono, fontSize: 14, marginRight: 12 }}>{formatMoney(b.amount)}</span>
             <div style={{ display: "flex", gap: 4 }}>
@@ -204,10 +204,16 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           </select>
           <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Start date (first billing date)</label>
           <input type="date" value={billForm.startDate} onChange={e => setBillForm(f => ({ ...f, startDate: e.target.value }))} style={inp} />
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 10, cursor: "pointer" }}>
-            <input type="checkbox" checked={billForm.autoPay} onChange={e => setBillForm(f => ({ ...f, autoPay: e.target.checked }))} />
-            Auto-pay (won't prompt to pay manually)
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>
+            <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} style={{ marginTop: 3 }} />
+            <span>Variable / quantifiable <span style={{ color: "var(--text-muted)" }}>— track spending against this amount (e.g. Groceries, Gas, Maria). Shows a progress bar instead of paid/unpaid.</span></span>
           </label>
+          {!billForm.variable && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 10, cursor: "pointer" }}>
+              <input type="checkbox" checked={billForm.autoPay} onChange={e => setBillForm(f => ({ ...f, autoPay: e.target.checked }))} />
+              Auto-pay (won't prompt to pay manually)
+            </label>
+          )}
           <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn" onClick={saveBill} style={{ flex: 1, background: flash === "bill" ? "#22c55e" : "#f59e0b", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>

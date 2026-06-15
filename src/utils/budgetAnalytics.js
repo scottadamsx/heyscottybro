@@ -1,4 +1,4 @@
-import { getPayPeriod } from "./budgetCalc";
+import { getIncomePayPeriod } from "./budgetCalc";
 
 function periodLabel(start, end) {
   const s = new Date(start + "T12:00:00");
@@ -12,11 +12,10 @@ function periodLabel(start, end) {
 
 /** Returns the last `numPeriods` pay periods with income/spending/category breakdowns. */
 export function getPeriodHistory(transactions, config, numPeriods = 6) {
-  if (!config?.paySchedule) return [];
   const today = new Date().toLocaleDateString("en-CA");
   const result = [];
   for (let i = numPeriods - 1; i >= 0; i--) {
-    const p = getPayPeriod(today, -i, config.paySchedule);
+    const p = getIncomePayPeriod(config, today, -i);
     const inPeriod = transactions.filter(t => t.date >= p.start && t.date <= p.end);
     const income = inPeriod.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
     const spending = inPeriod.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);

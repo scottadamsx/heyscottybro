@@ -105,16 +105,25 @@ export default function useAIAgent() {
     } catch { /* storage full — non-fatal */ }
   }, [displayMsgs, apiHistory]);
 
-  const sendMessage = async () => {
+  const sendMessage = async (attachments = []) => {
     const text = input.trim();
-    if (!text || loading) return;
+    if ((!text && attachments.length === 0) || loading) return;
     setInput("");
     setLoading(true);
 
-    let display = [...displayMsgs, { role: "user", text }];
+    const shown = text || (attachments.length ? `📎 ${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
+    let display = [...displayMsgs, { role: "user", text: shown }];
     setDisplayMsgs(display);
 
-    let msgs = trimHistory([...apiHistory, { role: "user", content: text }]);
+    // With image attachments, the user turn becomes a content array (vision).
+    const userContent = attachments.length
+      ? [
+          ...attachments.map((a) => ({ type: "image", source: { type: "base64", media_type: a.media_type, data: a.data } })),
+          { type: "text", text: text || "Here's a screenshot — log it." },
+        ]
+      : text;
+
+    let msgs = trimHistory([...apiHistory, { role: "user", content: userContent }]);
     // Last fully-completed exchange — what we fall back to if the turn dies
     // mid-flight, so already-executed tool side effects stay in history.
     let committed = msgs;

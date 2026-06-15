@@ -186,11 +186,12 @@ const COLLECTIONS = {
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
   },
   bugs: {
-    description: "Bug tracker (Tools › Bugs). Log app issues; track status from open → resolved.",
+    description: "Bug & feature-request tracker (Tools › Bugs). type 'bug' logs an app issue, type 'feature' logs a feature request. Track status open → resolved. Use export_bugs to download a zip report. Screenshots are added by Scott in the UI.",
     searchFields: ["title", "description", "page"],
-    defaultFields: ["id", "title", "page", "priority", "status", "created_at"],
+    defaultFields: ["id", "title", "type", "page", "priority", "status", "created_at"],
     fields: {
       title: { type: "string", required: true },
+      type: { type: "enum", values: ["bug", "feature"] },
       description: { type: "string", long: true },
       steps: { type: "string", long: true },
       page: { type: "string" },

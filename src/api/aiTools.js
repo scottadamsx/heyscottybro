@@ -17,7 +17,7 @@ import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerA
 import { clearAllMembers } from "./hikerApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
-import { supabase } from "../utils/supabase";
+import { supabase, getAuthHeaders } from "../utils/supabase";
 
 async function logAction({ tier, tool, input, result }) {
   try {
@@ -155,6 +155,24 @@ export const TOOLS = [
     },
   },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
+  { name: "export_bugs", description: "Package every bug and feature request into a downloadable .zip — a Markdown report (report.md) plus all attached screenshots. Call this when Scott asks to export, download, or send his bugs/feature requests. The download starts in his browser automatically.", input_schema: { type: "object", properties: {} } },
+  {
+    name: "log_bug",
+    description: "Create a bug report or feature request AND attach any screenshots Scott just dropped into the chat. ALWAYS use this (not create_item) when Scott shares a screenshot or describes something broken / something he wants added. Read any attached screenshot to write an accurate title and description.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Short, specific title" },
+        type: { type: "string", enum: ["bug", "feature"], description: "'bug' for a defect, 'feature' for a request. Default 'bug'." },
+        description: { type: "string", description: "What's wrong / what's wanted — describe what you can see in the screenshot too" },
+        steps: { type: "string", description: "Steps to reproduce (bugs only, optional)" },
+        page: { type: "string", description: "Which page/area, if known (e.g. 'Budget › Dashboard')" },
+        priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
+      },
+      required: ["title"],
+    },
+  },
+  { name: "web_fetch", description: "Fetch a web page or API URL and return its title + readable text (truncated). Use when Scott shares a link, asks you to read/check a page, or look something current up by URL.", input_schema: { type: "object", properties: { url: { type: "string", description: "Full http(s) URL" } }, required: ["url"] } },
   { name: "list_context", description: "Read all saved context facts about Scott and Maria. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
   {
     name: "save_context",
@@ -231,6 +249,26 @@ async function runTool(name, input) {
       return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
     }
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
+    case "export_bugs": { const { exportBugsZip } = await import("./bugsApi"); const r = await exportBugsZip(); return { success: true, ...r }; }
+    case "log_bug": {
+      const { createBug, updateBug } = await import("./bugsApi");
+      const { takePendingScreenshots } = await import("./pendingScreenshots");
+      const bug = await createBug({
+        title: input.title, type: input.type || "bug",
+        description: input.description, steps: input.steps,
+        page: input.page, priority: input.priority || "medium",
+      });
+      const shots = takePendingScreenshots();
+      if (shots.length) await updateBug(bug.id, { screenshots: shots });
+      return { success: true, id: bug.id, title: bug.title, type: bug.type, screenshots: shots.length };
+    }
+    case "web_fetch": {
+      const headers = await getAuthHeaders();
+      const res = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ url: input.url }) });
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || "fetch failed" };
+      return data;
+    }
     case "list_context": { const items = await loadContext(); return { items: items.map((c) => ({ id: c.id, text: c.text, tags: c.tags, by: c.by, why: c.why, ts: c.ts })) }; }
     case "save_context": { const entry = await addContextEntry({ text: input.text, tags: input.tags || [], by: "frodo", why: input.why || "noted by Frodo" }); return { success: true, id: entry.id }; }
     case "delete_context": await deleteContextEntry(input.id); return { success: true };

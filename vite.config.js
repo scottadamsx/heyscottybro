@@ -24,8 +24,35 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Dev-only stand-in for api/fetch.js (Frodo's web_fetch) — vite dev doesn't
+  // run the Vercel serverless functions, so handle /api/fetch here.
+  const devFetchPlugin = {
+    name: "dev-api-fetch",
+    configureServer(server) {
+      server.middlewares.use("/api/fetch", (req, res, next) => {
+        if (req.method !== "POST") return next();
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", async () => {
+          const json = (code, obj) => { res.statusCode = code; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(obj)); };
+          try {
+            const { url } = JSON.parse(body || "{}");
+            if (!url || !/^https?:\/\//i.test(url)) return json(400, { error: "Provide a full http(s) URL" });
+            const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (heyScottyBro-Frodo)" }, redirect: "follow" });
+            const ctype = r.headers.get("content-type") || "";
+            const raw = await r.text();
+            const strip = (h) => h.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+            const text = ctype.includes("html") ? strip(raw) : raw;
+            const m = raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            json(200, { url, status: r.status, title: m ? strip(m[1]) : "", text: text.slice(0, 12000), truncated: text.length > 12000 });
+          } catch (e) { json(500, { error: e.message }); }
+        });
+      });
+    },
+  };
+
   return {
-    plugins: [react()],
+    plugins: [react(), devFetchPlugin],
     build: {
       outDir: "dist",
     },
