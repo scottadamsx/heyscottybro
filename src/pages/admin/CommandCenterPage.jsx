@@ -6,11 +6,14 @@ import { resolveTools, agentConnector, agentProtocol, modelLabel } from "../../a
 import { getAuthHeaders } from "../../utils/supabase";
 import { loadAgentActions } from "../../api/plannerApi";
 import { loadBrain } from "../../api/brainApi";
+import { loadAgentSessions, saveAgentSession } from "../../api/agentSessionsApi";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { renderMarkdown } from "../../utils/markdown";
 import { useToast } from "../../contexts/ToastContext";
 import { toDateStr } from "../../utils/plannerUtils";
 import AulePanel from "./AulePanel";
+import PdfViewer from "../../components/PdfViewer";
+import { markdownToPdfBlob } from "../../lib/markdownToPdf";
 import "./command.css";
 
 const todayStr = () => toDateStr(new Date());
@@ -29,6 +32,7 @@ export default function CommandCenterPage() {
   const [statuses, setStatuses] = useState({}); // id -> live status line
   const [inputs, setInputs] = useState({});     // id -> draft message
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
+  const [pdfDoc, setPdfDoc] = useState(null);        // { blob, title, filename } open in the PDF viewer
   const scrollRef = useRef(null);
 
   const selected = selectedId ? getAgent(selectedId) : null;
@@ -41,6 +45,8 @@ export default function CommandCenterPage() {
   useEffect(() => { refreshActions(); }, []);
   // Brain notes power each agent's "Documents" — nodes are attributed by source.
   useEffect(() => { loadBrain().then((b) => setNodes(b.nodes || [])).catch(() => {}); }, []);
+  // Restore saved conversations so they survive a refresh.
+  useEffect(() => { loadAgentSessions().then((s) => { if (s && Object.keys(s).length) setThreads((prev) => ({ ...s, ...prev })); }).catch(() => {}); }, []);
 
   const selectedDocs = useMemo(
     () => (selectedId ? nodes.filter((n) => n.source === selectedId) : []),
@@ -68,6 +74,22 @@ export default function CommandCenterPage() {
   const setStatusFor = (id, s) => setStatuses((p) => ({ ...p, [id]: s }));
   const setInputFor = (id, v) => setInputs((p) => ({ ...p, [id]: v }));
 
+  // Render any markdown (an agent reply, or a filed doc) into a real PDF and
+  // open it in the PDF viewer — this is how agents "show their work" as a doc.
+  const openAsPdf = (title, body, subtitle) => {
+    try {
+      const blob = markdownToPdfBlob(body || "", {
+        title: title || "Agent reply",
+        subtitle: subtitle || "",
+        footer: `heyscottybro · Command Center · ${new Date().toLocaleString()}`,
+      });
+      const filename = `${(title || "agent-reply").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "agent-reply"}.pdf`;
+      setPdfDoc({ blob, title: title || "Agent reply", filename });
+    } catch {
+      addToast("Couldn't build that PDF.", "error");
+    }
+  };
+
   const sendTo = async (agent, text) => {
     if (!text.trim() || busy[agent.id]) return;
     setBusyFor(agent.id, true);
@@ -81,10 +103,13 @@ export default function CommandCenterPage() {
         agent, messages: convo, authHeaders,
         onStatus: (s) => setStatusFor(agent.id, s),
       });
+      let saved;
       setThreads((prev) => {
         const t = prev[agent.id] || { convo: [], display: [] };
-        return { ...prev, [agent.id]: { convo: history, display: [...t.display, { role: "assistant", text: reply }] } };
+        saved = { convo: history, display: [...t.display, { role: "assistant", text: reply }] };
+        return { ...prev, [agent.id]: saved };
       });
+      if (saved) saveAgentSession(agent.id, saved);
       refreshActions();
     } catch (e) {
       pushDisplay(agent.id, { role: "error", text: e.message || "Something went wrong." });
@@ -104,6 +129,7 @@ export default function CommandCenterPage() {
       const authHeaders = await getAuthHeaders();
       const { text } = await runOverseer({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
       pushDisplay(id, { role: "assistant", text });
+      setThreads((prev) => { if (prev[id]) saveAgentSession(id, prev[id]); return prev; });
       addToast("Galadriel filed today's summary into the Brain.", "success");
       refreshActions();
     } catch (e) {
@@ -208,6 +234,15 @@ export default function CommandCenterPage() {
                             <button
                               type="button"
                               className="cmd-msg-expand"
+                              style={{ right: 30 }}
+                              title="View as PDF"
+                              onClick={() => openAsPdf(`${selected.name} · ${selected.title}`, m.text, selected.tagline)}
+                            >
+                              <i className="fa-solid fa-file-pdf" />
+                            </button>
+                            <button
+                              type="button"
+                              className="cmd-msg-expand"
                               title="Open in viewer"
                               onClick={() => setViewerDoc({ title: `${selected.name} · ${selected.title}`, body: m.text })}
                             >
@@ -273,6 +308,9 @@ export default function CommandCenterPage() {
             <div className="cmd-viewer-head">
               <h3 className="db-card-title"><i className="fa-solid fa-file-lines" /> {viewerDoc.title || viewerDoc.slug || "Document"}</h3>
               <div className="cmd-viewer-actions">
+                <button className="btn-mini" title="View as PDF" onClick={() => { openAsPdf(viewerDoc.title || viewerDoc.slug, viewerDoc.body); setViewerDoc(null); }}>
+                  <i className="fa-solid fa-file-pdf" />
+                </button>
                 <button className="btn-mini" title="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
                   <i className="fa-solid fa-copy" />
                 </button>
@@ -283,6 +321,16 @@ export default function CommandCenterPage() {
             <div className="cmd-viewer-body chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(viewerDoc.body || "*(empty document)*") }} />
           </div>
         </div>
+      )}
+
+      {/* PDF viewer — agents' work rendered as a real, downloadable document */}
+      {pdfDoc && (
+        <PdfViewer
+          blob={pdfDoc.blob}
+          title={pdfDoc.title}
+          filename={pdfDoc.filename}
+          onClose={() => setPdfDoc(null)}
+        />
       )}
     </div>
   );

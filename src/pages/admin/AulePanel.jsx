@@ -18,6 +18,7 @@ export default function AulePanel({ agent, onOpenDoc }) {
   const [busy, setBusy] = useState(false);
   const [statusLine, setStatusLine] = useState("");
   const [input, setInput] = useState("");
+  const [starting, setStarting] = useState(false);
   const wsRef = useRef(null);
   const scrollRef = useRef(null);
   const cwdRef = useRef("");
@@ -61,6 +62,16 @@ export default function AulePanel({ agent, onOpenDoc }) {
     ws.onerror = () => setStatus("offline");
   }, [configured]);
 
+  // Dev-only: ask the Vite server to spawn `npm run agents`, then reconnect.
+  const turnOn = useCallback(async () => {
+    setStarting(true);
+    try {
+      const r = await fetch("/api/aule-control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start" }) });
+      await r.json().catch(() => ({}));
+    } catch { /* not in dev / no endpoint */ }
+    setTimeout(() => { connect(); setStarting(false); }, 2500);
+  }, [connect]);
+
   useEffect(() => {
     connect();
     return () => { try { wsRef.current?.close(); } catch { /* noop */ } };
@@ -86,10 +97,18 @@ export default function AulePanel({ agent, onOpenDoc }) {
       <div className="cmd-local">
         <p className="cmd-offline-note">
           <i className="fa-solid fa-plug-circle-xmark" /> {agent.name} is offline.
-          {" "}Run <code>npm run agents</code> on your Mac (logged into Claude Code / Max), set
-          {" "}<code>VITE_AULE_URL</code> + <code>VITE_AULE_TOKEN</code> in <code>.env</code>, then reconnect.
+          {" "}Make sure Claude Code is logged in (Max), and that <code>AULE_TOKEN</code> /
+          {" "}<code>VITE_AULE_TOKEN</code> / <code>VITE_AULE_URL</code> are set in <code>.env</code>.
+          {" "}Then turn him on below — or run <code>npm run agents</code> yourself.
         </p>
-        {configured && <button className="btn btn-sm" onClick={connect}><i className="fa-solid fa-rotate-right" /> Reconnect</button>}
+        <div className="aule-actions">
+          <button className="btn btn-sm" onClick={turnOn} disabled={starting}>
+            <i className={`fa-solid ${starting ? "fa-spinner fa-spin" : "fa-power-off"}`} /> {starting ? "Starting Aulë…" : "Turn on Aulë"}
+          </button>
+          <button className="btn btn-sm btn-secondary-sm" onClick={connect} disabled={starting}>
+            <i className="fa-solid fa-rotate-right" /> Reconnect
+          </button>
+        </div>
       </div>
     );
   }

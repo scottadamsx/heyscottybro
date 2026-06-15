@@ -1,0 +1,138 @@
+/* PdfViewer — full-screen modal PDF reader. Dark stage, light page, sticky
+   toolbar. Uses theme vars where available, with safe fallbacks. */
+
+.pdfv-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000; /* above the markdown viewer (10000) and doc viewer */
+  background: rgba(8, 10, 16, 0.78);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 2vw, 28px);
+}
+
+.pdfv-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 100%);
+  height: min(94vh, 100%);
+  background: var(--card, #fff);
+  color: var(--text, #1a1d24);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────────── */
+.pdfv-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--card-2, var(--card, #14161d));
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+}
+
+.pdfv-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  min-width: 0;
+}
+.pdfv-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 42vw;
+}
+.pdfv-title i { color: var(--red, #e5484d); }
+
+.pdfv-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.pdfv-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg, rgba(127, 127, 127, 0.1));
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  border-radius: 9px;
+}
+
+.pdfv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  background: transparent;
+  color: var(--text, #1a1d24);
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.pdfv-btn:hover:not(:disabled) { background: var(--blue, #3b82f6); color: #fff; }
+.pdfv-btn:disabled { opacity: 0.35; cursor: default; }
+.pdfv-close:hover { background: var(--red, #e5484d) !important; color: #fff; }
+
+.pdfv-pageno {
+  min-width: 64px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+.pdfv-zoomlabel {
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+.pdfv-stage {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 22px;
+  background:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.015) 0 10px, transparent 10px 20px),
+    var(--bg, #2a2d36);
+}
+
+.pdfv-page {
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+  background: #fff;
+}
+.pdfv-page canvas { border-radius: 2px; display: block; }
+
+.pdfv-msg {
+  margin: auto;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted, #cfd2da);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.pdfv-error { color: var(--red, #e5484d); }
+
+@media (max-width: 640px) {
+  .pdfv-title span { max-width: 30vw; }
+  .pdfv-toolbar { padding: 8px; gap: 8px; }
+  .pdfv-stage { padding: 10px; }
+}

@@ -1,16 +1,12 @@
 import { useEffect, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import { getSignedUrl } from "../../api/documentsApi";
+import PdfViewer from "../PdfViewer";
 
-// Worker copied to /public during setup (matches the installed pdfjs-dist version).
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-
+// Fetches a signed URL for a stored document, then shows it. PDFs open in the
+// shared full-featured PdfViewer (paging/zoom/download); images and other types
+// use the lightweight modal below.
 export default function DocumentViewer({ doc, onClose }) {
   const [url, setUrl] = useState(null);
-  const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,6 +28,11 @@ export default function DocumentViewer({ doc, onClose }) {
   const isPdf = doc.mime_type === "application/pdf";
   const isImage = doc.mime_type?.startsWith("image/");
 
+  // PDFs → the shared viewer (once the signed URL is ready).
+  if (isPdf && url && !error) {
+    return <PdfViewer fileUrl={url} title={doc.name} filename={doc.filename} onClose={onClose} />;
+  }
+
   return (
     <div className="doc-viewer-overlay" onClick={onClose}>
       <div className="doc-viewer-modal" onClick={(e) => e.stopPropagation()}>
@@ -45,31 +46,8 @@ export default function DocumentViewer({ doc, onClose }) {
 
         {!loading && !error && url && (
           <div className="doc-viewer-body">
-            {isPdf && (
-              <>
-                <Document
-                  file={url}
-                  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                  loading={<div className="center"><i className="fa-solid fa-spinner fa-spin" /></div>}
-                  error={<div className="center">Could not render this PDF.</div>}
-                >
-                  <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 80, 800)} />
-                </Document>
-                {numPages > 1 && (
-                  <div className="doc-viewer-pager">
-                    <button className="btn-tiny-blue" disabled={pageNumber <= 1} onClick={() => setPageNumber((p) => p - 1)}>
-                      <i className="fa-solid fa-chevron-left" />
-                    </button>
-                    <span>Page {pageNumber} / {numPages}</span>
-                    <button className="btn-tiny-blue" disabled={pageNumber >= numPages} onClick={() => setPageNumber((p) => p + 1)}>
-                      <i className="fa-solid fa-chevron-right" />
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
             {isImage && <img src={url} alt={doc.name} style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain" }} />}
-            {!isPdf && !isImage && (
+            {!isImage && (
               <div className="center">
                 <i className="fa-solid fa-file-lines" style={{ fontSize: "4rem", opacity: 0.4 }} />
                 <p>Preview not available for this file type.</p>

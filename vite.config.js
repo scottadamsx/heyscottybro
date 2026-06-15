@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { spawn } from "node:child_process";
+import net from "node:net";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -122,8 +124,48 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Dev-only: turn the Aulë coding agent on/off from the Command Center. The
+  // browser can't spawn a process, but the Vite dev server (Node, on the Mac)
+  // can — so this starts `npm run agents` as a detached child. Not present in
+  // production (the deployed app has no local machine to run Claude Code on).
+  const AULE_PORT_N = Number(env.AULE_PORT) || 8787;
+  let auleChild = null;
+  const portOpen = (port) => new Promise((res) => {
+    const s = net.connect({ host: "127.0.0.1", port }, () => { s.destroy(); res(true); });
+    s.on("error", () => res(false));
+    s.setTimeout(600, () => { s.destroy(); res(false); });
+  });
+  const devAuleControlPlugin = {
+    name: "dev-api-aule-control",
+    configureServer(server) {
+      server.middlewares.use("/api/aule-control", (req, res) => {
+        const json = (c, o) => { res.statusCode = c; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); };
+        let body = "";
+        req.on("data", (c) => (body += c));
+        req.on("end", async () => {
+          const running = await portOpen(AULE_PORT_N);
+          if (req.method === "GET") return json(200, { running, port: AULE_PORT_N });
+          if (req.method !== "POST") return json(405, { error: "method not allowed" });
+          let action = "start";
+          try { action = JSON.parse(body || "{}").action || "start"; } catch { /* default */ }
+          if (action === "stop") {
+            if (auleChild) { try { process.kill(-auleChild.pid); } catch { try { auleChild.kill(); } catch { /* gone */ } } auleChild = null; }
+            return json(200, { stopped: true });
+          }
+          if (running) return json(200, { running: true, alreadyRunning: true });
+          if (!env.AULE_TOKEN) return json(200, { error: "no_token", message: "Add AULE_TOKEN to .env, then try again." });
+          try {
+            auleChild = spawn("npm", ["run", "agents"], { cwd: process.cwd(), detached: true, stdio: "ignore", env: { ...process.env } });
+            auleChild.unref();
+            return json(200, { started: true });
+          } catch (e) { return json(500, { error: e.message }); }
+        });
+      });
+    },
+  };
+
   return {
-    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin],
+    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devAuleControlPlugin],
     build: {
       outDir: "dist",
     },

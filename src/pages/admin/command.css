@@ -215,3 +215,4 @@
 }
 .aule-tool i { color: var(--accent); margin-right: 4px; }
 .aule-cost { font-size: 0.66rem; color: var(--text-muted); margin-top: var(--space-2xs); }
+.aule-actions { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
