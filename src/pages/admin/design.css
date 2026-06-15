@@ -1,0 +1,315 @@
+/* ═══════════════════════════════════════════
+   Design System Library & Style Picker
+   Dogfoods the heyScottyBro tokens it documents.
+   ═══════════════════════════════════════════ */
+
+.design-page .ds-header-actions {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.design-page .ds-intro {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  max-width: 70ch;
+  margin: 0 0 var(--space-lg);
+}
+
+.ds-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ds-layout { grid-template-columns: 1fr; }
+}
+
+.ds-library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+}
+
+.ds-group + .ds-group { margin-top: 0; }
+
+.ds-group-head { margin-bottom: var(--space-md); }
+
+.ds-group-desc {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  margin: var(--space-2xs) 0 0;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-sm);
+}
+
+/* ── Token card ─────────────────────────────── */
+.ds-token {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  text-align: left;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+.ds-token:hover { border-color: var(--border-primary); transform: translateY(-1px); }
+.ds-token.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ds-token-check {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  line-height: 1;
+}
+.ds-token.selected .ds-token-check { color: var(--accent); }
+
+.ds-token-ex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+}
+
+.ds-token-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ds-token-label { font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
+.ds-token-name {
+  font-size: var(--text-xs);
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.ds-token-desc { font-size: var(--text-xs); color: var(--text-secondary); line-height: var(--leading-normal); }
+.ds-token-val {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── Per-kind examples ──────────────────────── */
+.ds-ex-color {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.ds-ex-gradient {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.ds-ex-radius {
+  width: 56px;
+  height: 40px;
+  background: var(--accent);
+}
+.ds-ex-shadow {
+  width: 60px;
+  height: 40px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-sm);
+}
+.ds-ex-font { font-size: var(--text-lg); color: var(--text-primary); }
+.ds-ex-space {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.ds-ex-space span {
+  display: block;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 99px;
+}
+.ds-ex-size { color: var(--text-primary); font-weight: 700; line-height: 1; }
+
+/* ── Draft workspace / side column ──────────── */
+.ds-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  position: sticky;
+  top: var(--space-md);
+}
+@media (max-width: 1024px) {
+  .ds-side { position: static; }
+}
+
+.ds-preview {
+  margin: var(--space-md) 0;
+  transition: all .15s ease;
+}
+.ds-preview-title { font-size: var(--text-xl); font-weight: 800; letter-spacing: -0.02em; }
+.ds-preview-body { font-size: var(--text-sm); line-height: var(--leading-relaxed); margin: var(--space-xs) 0 var(--space-md); }
+.ds-preview-actions { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+.ds-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #fff;
+}
+.ds-preview-btn.outline {
+  background: transparent;
+  border: 1px solid;
+}
+
+.ds-selected-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-md);
+}
+.ds-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 2px var(--space-xs);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 99px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ds-chip code { color: var(--accent); font-size: var(--text-xs); }
+.ds-chip:hover { border-color: var(--red); color: var(--red); }
+
+.ds-save-row { display: flex; gap: var(--space-xs); }
+.ds-save-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+.ds-save-input:focus { outline: none; border-color: var(--accent); }
+
+/* ── Saved presets ──────────────────────────── */
+.ds-preset-list { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); }
+.ds-preset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+.ds-preset-info { display: flex; flex-direction: column; }
+.ds-preset-actions { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
+
+/* ── Export modal ───────────────────────────── */
+.ds-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(14, 14, 16, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+.ds-modal {
+  width: min(820px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.ds-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ds-modal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  flex-wrap: wrap;
+}
+.ds-modal-toolbar-btns { display: flex; gap: var(--space-xs); }
+.ds-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.ds-guide-text {
+  flex: 1;
+  min-height: 320px;
+  margin: 0 var(--space-lg) var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  resize: vertical;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* shared tiny buttons used on this page */
+.design-page .btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 2px var(--space-xs);
+  font-size: var(--text-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.design-page .btn-mini:hover { border-color: var(--border-primary); color: var(--text-primary); }
+.design-page .btn-mini.danger:hover { border-color: var(--red); color: var(--red); }
+.design-page .ds-btn-ghost {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}

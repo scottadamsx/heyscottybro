@@ -42,6 +42,8 @@ const DATE_SECTIONS = [
 
 const TITLES = {
   dashboard: "Dashboard",
+  design: "Design",
+  settings: "Settings",
   reminders: "Tasks",
   calendar: "Calendar",
   projects: "Projects",

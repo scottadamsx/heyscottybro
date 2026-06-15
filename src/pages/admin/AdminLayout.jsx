@@ -84,6 +84,10 @@ export default function AdminLayout() {
                     <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
                   </NavLink>
                 ))}
+                <NavLink to="/admin/design" className={popClass} onClick={() => setMenuOpen(false)}>
+                  <i className="fa-solid fa-swatchbook" />
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Design</div></span>
+                </NavLink>
                 <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-gear" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
@@ -140,6 +144,10 @@ export default function AdminLayout() {
 
         <div className="admin-rail-spacer" />
 
+        <NavLink to="/admin/design" className={railClass} title="Design">
+          <i className="fa-solid fa-swatchbook" />
+          <span className="admin-rail-label">Design</span>
+        </NavLink>
         <NavLink to="/admin/settings" className={railClass} title="Settings">
           <i className="fa-solid fa-gear" />
           <span className="admin-rail-label">Settings</span>
@@ -181,6 +189,7 @@ export default function AdminLayout() {
             {[
               { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
               ...navItems,
+              { to: "/admin/design", icon: "fa-swatchbook", label: "Design" },
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (
               <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
