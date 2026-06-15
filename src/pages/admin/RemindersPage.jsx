@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
@@ -11,6 +11,8 @@ const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "
 
 export default function RemindersPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const openTask = (id) => navigate(`/admin/tasks/${id}`);
   const filter = params.get("project") || "all"; // "all" | "none" | project id (driven by the side panel)
 
   const { confirm, dialog } = useConfirm();
@@ -106,7 +108,14 @@ export default function RemindersPage() {
 
   const renderTask = (r) => (
     <div className="completed-item" key={r.id}>
-      <span style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      <span
+        className="task-row-main"
+        role="button"
+        tabIndex={0}
+        onClick={() => openTask(r.id)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+        style={{ display: "flex", flexDirection: "column", gap: "2px", cursor: "pointer", minWidth: 0 }}
+      >
         <strong>{r.name}</strong>
         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           {r.date && <span style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{formatDisplayDate(r.date)}</span>}

@@ -23,6 +23,7 @@ import OverviewDashboard from "./pages/OverviewDashboard.jsx";
 const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
 const DashboardPage      = lazy(() => import("./pages/admin/DashboardPage.jsx"));
 const PlannerPage        = lazy(() => import("./pages/admin/PlannerPage.jsx"));
+const TaskDetailPage     = lazy(() => import("./pages/admin/TaskDetailPage.jsx"));
 const BudgetPage         = lazy(() => import("./pages/admin/BudgetPage.jsx"));
 const HealthPage         = lazy(() => import("./pages/admin/HealthPage.jsx"));
 const ToolsPage          = lazy(() => import("./pages/admin/ToolsPage.jsx"));
@@ -75,6 +76,7 @@ export default function App() {
           {/* Primary portals */}
           <Route path="dashboard" element={Lazy(<DashboardPage />)} />
           <Route path="planner"   element={Lazy(<PlannerPage />)} />
+          <Route path="tasks/:id" element={Lazy(<TaskDetailPage />)} />
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
           <Route path="health"    element={Lazy(<HealthPage />)} />
           <Route path="tools"     element={Lazy(<ToolsPage />)} />
