@@ -97,43 +97,61 @@ export function getBillDatesInRange(bill, startStr, endStr) {
 export function getIncomeDatesInRange(inc, startStr, endStr) {
   const start = parseDate(startStr), end = parseDate(endStr);
   const dates = [], freq = inc.frequency || "biweekly";
-  const nextDate = parseDate(inc.nextDate || toDateStr());
+  // startDate is the canonical anchor (replaces legacy nextDate)
+  const anchor = parseDate(inc.startDate || inc.nextDate || toDateStr());
   const interval = freq === "weekly" ? 7 : freq === "monthly" ? 30 : freq === "semimonthly" ? 15 : 14;
+
+  // Active window: income only applies between its own startDate and endDate.
+  const activeFrom = inc.startDate ? parseDate(inc.startDate) : null;
+  const activeTo   = inc.endDate   ? parseDate(inc.endDate)   : null;
+
+  const inActiveWindow = d =>
+    (!activeFrom || d >= activeFrom) && (!activeTo || d <= activeTo);
 
   if (freq === "semimonthly") {
     let cur = new Date(start.getFullYear(), start.getMonth(), 1);
     for (let i = 0; i < 14; i++) {
       const d1 = new Date(cur.getFullYear(), cur.getMonth(), 1);
       const d15 = new Date(cur.getFullYear(), cur.getMonth(), 15);
-      if (d1 >= start && d1 <= end) dates.push(toDateStr(d1));
-      if (d15 >= start && d15 <= end) dates.push(toDateStr(d15));
+      if (d1 >= start && d1 <= end && inActiveWindow(d1)) dates.push(toDateStr(d1));
+      if (d15 >= start && d15 <= end && inActiveWindow(d15)) dates.push(toDateStr(d15));
       cur.setMonth(cur.getMonth() + 1);
     }
   } else if (freq === "monthly") {
-    const day = nextDate.getDate();
+    const day = anchor.getDate();
     let cur = new Date(start.getFullYear(), start.getMonth(), 1);
     for (let i = 0; i < 14; i++) {
       const lastDay = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
       const d = new Date(cur.getFullYear(), cur.getMonth(), Math.min(day, lastDay));
-      if (d >= start && d <= end) dates.push(toDateStr(d));
+      if (d >= start && d <= end && inActiveWindow(d)) dates.push(toDateStr(d));
       cur.setMonth(cur.getMonth() + 1);
     }
   } else {
-    let cur = new Date(nextDate);
+    let cur = new Date(anchor);
     while (cur > start) cur.setDate(cur.getDate() - interval);
-    while (cur <= end) { if (cur >= start) dates.push(toDateStr(cur)); cur.setDate(cur.getDate() + interval); }
+    while (cur <= end) {
+      if (cur >= start && inActiveWindow(cur)) dates.push(toDateStr(cur));
+      cur.setDate(cur.getDate() + interval);
+    }
   }
   return dates;
 }
 
 export function computePeriodTotals(transactions, config, period) {
   const periodTx = transactions.filter(t => t.date >= period.start && t.date <= period.end);
-  let incomeTotal = 0;
+
+  // Two income sources: actual logged transactions vs the configured schedule.
+  // Never add both — that double-counts when a user logs their paycheque while
+  // also having income sources configured. Logged income takes precedence; fall
+  // back to scheduled only when no income has been logged for the period.
+  const loggedIncome = periodTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  let scheduledIncome = 0;
   (config.income || []).forEach(inc => {
     const dates = getIncomeDatesInRange(inc, period.start, period.end);
-    incomeTotal += dates.length * inc.amount;
+    scheduledIncome += dates.length * inc.amount;
   });
-  incomeTotal += periodTx.filter(t => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const incomeTotal = loggedIncome > 0 ? loggedIncome : scheduledIncome;
+
   const spent = periodTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const planned = periodTx.filter(t => t.type === "future").reduce((s, t) => s + t.amount, 0);
   let billsTotal = 0;
@@ -149,7 +167,7 @@ export function computePeriodTotals(transactions, config, period) {
     });
   });
   const remaining = incomeTotal - spent - billsTotal - planned;
-  return { incomeTotal, spent, billsTotal, planned, remaining, periodTx };
+  return { incomeTotal, scheduledIncome, loggedIncome, spent, billsTotal, planned, remaining, periodTx };
 }
 
 // Month-to-date spend per category for a given month (YYYY-MM). Used by the
@@ -196,18 +214,21 @@ export function getPeriodBills(transactions, config, period) {
     });
   });
 
-  // One-off bills: transactions the user flagged (or linked) that aren't already
-  // counted against a scheduled occurrence.
-  const oneOff = periodTx
-    .filter(t => t.type === "expense" && (t.is_bill || t.fulfills_recurring_id) && !used.has(t.id))
-    .map(t => ({
-      billId: null, name: t.description, amount: t.amount,
-      category: t.category, autoPay: false, date: t.date,
-      recurring: false, paid: true, matchedTxId: t.id,
-    }));
+  // One-off is_bill transactions: transactions the user flagged that don't match
+  // any scheduled recurring bill. They are excluded from discretionary spending
+  // (via billTxIds) but are NOT shown as separate bill rows in the dashboard —
+  // that would surface every "Costco run" as a bill line item, which is wrong.
+  const oneOffIds = new Set(
+    periodTx
+      .filter(t => t.type === "expense" && (t.is_bill || t.fulfills_recurring_id) && !used.has(t.id))
+      .map(t => t.id)
+  );
 
-  const bills = [...scheduled, ...oneOff].sort((a, b) => a.date.localeCompare(b.date));
-  const billTxIds = new Set(bills.map(b => b.matchedTxId).filter(Boolean));
+  const bills = [...scheduled].sort((a, b) => a.date.localeCompare(b.date));
+  const billTxIds = new Set([
+    ...bills.map(b => b.matchedTxId).filter(Boolean),
+    ...oneOffIds,
+  ]);
   return { bills, paidCount: bills.filter(b => b.paid).length, total: bills.length, billTxIds };
 }
 
@@ -216,10 +237,14 @@ export function getPeriodBills(transactions, config, period) {
 // minus all bills (paid or not) minus planned purchases; discretionary spend is
 // every expense that isn't a bill payment.
 export function computeWeeklyAllowance(transactions, config, period) {
-  const { incomeTotal, planned } = computePeriodTotals(transactions, config, period);
+  const { scheduledIncome, loggedIncome, planned } = computePeriodTotals(transactions, config, period);
+  // Weekly allowance is a planning tool: use the scheduled income (what the
+  // income sources say you'll have). Fall back to logged income if no sources
+  // are configured (e.g. one-time jobs or self-employed irregular income).
+  const incomeForPlanning = scheduledIncome > 0 ? scheduledIncome : loggedIncome;
   const { bills, billTxIds } = getPeriodBills(transactions, config, period);
   const billsObligation = bills.reduce((s, b) => s + b.amount, 0);
-  const spendable = incomeTotal - billsObligation - planned;
+  const spendable = incomeForPlanning - billsObligation - planned;
 
   const start = parseDate(period.start), end = parseDate(period.end);
   const totalDays = Math.round((end - start) / 86400000) + 1;
@@ -247,7 +272,7 @@ export function computeWeeklyAllowance(transactions, config, period) {
     });
     carry = remaining; // roll leftover (or overspend) into next week
   }
-  return { spendable, weeklyBase, numWeeks, billsObligation, weeks };
+  return { spendable, weeklyBase, numWeeks, billsObligation, incomeForPlanning, weeks };
 }
 
 export function genId() {

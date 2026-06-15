@@ -27,6 +27,7 @@ import {
 } from "./plannerApi";
 import { loadMembers, deleteMember } from "./hikerApi";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
+import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"];
 
@@ -183,6 +184,21 @@ const COLLECTIONS = {
       notes: { type: "string", long: true },
     },
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
+  },
+  bugs: {
+    description: "Bug tracker (Tools › Bugs). Log app issues; track status from open → resolved.",
+    searchFields: ["title", "description", "page"],
+    defaultFields: ["id", "title", "page", "priority", "status", "created_at"],
+    fields: {
+      title: { type: "string", required: true },
+      description: { type: "string", long: true },
+      steps: { type: "string", long: true },
+      page: { type: "string" },
+      priority: { type: "enum", values: ["low", "medium", "high", "critical"] },
+      status: { type: "enum", values: ["open", "in_progress", "resolved", "closed"], updateOnly: true },
+      notes: { type: "string", long: true, updateOnly: true },
+    },
+    load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
   },
 };
 

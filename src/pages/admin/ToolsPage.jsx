@@ -1,15 +1,19 @@
 import { useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import HikerPage from "./HikerPage";
+import BugsPage from "./BugsPage";
+import StoragePage from "./StoragePage";
 
 const TABS = [
-  { key: "hikers", label: "Hike DB", icon: "fa-person-hiking" },
+  { key: "bugs",    label: "Bugs",    icon: "fa-bug" },
+  { key: "storage", label: "Storage", icon: "fa-database" },
+  { key: "hikers",  label: "Hike DB", icon: "fa-person-hiking" },
 ];
 
 export default function ToolsPage() {
   const [params, setParams] = useSearchParams();
-  const tab = TABS.find((t) => t.key === params.get("tab")) ? params.get("tab") : "hikers";
-  const setTab = (key) => setParams(key === "hikers" ? {} : { tab: key }, { replace: true });
+  const tab = TABS.find((t) => t.key === params.get("tab")) ? params.get("tab") : "bugs";
+  const setTab = (key) => setParams(key === "bugs" ? {} : { tab: key }, { replace: true });
 
   return (
     <div className="combined-page">
@@ -20,7 +24,9 @@ export default function ToolsPage() {
         {TABS.length > 1 && <PageTabs tabs={TABS} active={tab} onChange={setTab} />}
       </div>
       <div className="combined-embed">
-        {tab === "hikers" && <HikerPage />}
+        {tab === "bugs"    && <BugsPage />}
+        {tab === "storage" && <StoragePage />}
+        {tab === "hikers"  && <HikerPage />}
       </div>
     </div>
   );

@@ -9,6 +9,12 @@ import HomePage from "./pages/HomePage.jsx";
 import Never86Page from "./pages/Never86Page.jsx";
 import SJHCPage from "./pages/SJHCPage.jsx";
 import GamesPage from "./pages/GamesPage.jsx";
+import GuideLayout from "./pages/guide/GuideLayout.jsx";
+import GuideStart from "./pages/guide/GuideStart.jsx";
+import GuideStep from "./pages/guide/GuideStep.jsx";
+import GuideSetup from "./pages/guide/GuideSetup.jsx";
+import GuideToolkit from "./pages/guide/GuideToolkit.jsx";
+import GuideHelp from "./pages/guide/GuideHelp.jsx";
 import GameEmbed from "./pages/GameEmbed.jsx";
 import TicTacToePage from "./pages/TicTacToePage.jsx";
 import OverviewDashboard from "./pages/OverviewDashboard.jsx";
@@ -46,6 +52,13 @@ export default function App() {
         <Route path="/never86" element={<><Navbar /><Never86Page /><Footer /></>} />
         <Route path="/sjhc" element={<><Navbar /><SJHCPage /><Footer /></>} />
         <Route path="/games" element={<><Navbar /><GamesPage /><Footer /></>} />
+        <Route path="/guide" element={<><Navbar /><GuideLayout /><Footer /></>}>
+          <Route index element={<GuideStart />} />
+          <Route path="step/:slug" element={<GuideStep />} />
+          <Route path="setup" element={<GuideSetup />} />
+          <Route path="toolkit" element={<GuideToolkit />} />
+          <Route path="help" element={<GuideHelp />} />
+        </Route>
         <Route path="/games/minecraft-trivia" element={<GameEmbed src="/games/minecraft-trivia/index.html" title="Minecraft Trivia" />} />
         <Route path="/games/monopoly-banker"  element={<GameEmbed src="/games/monopoly-banker/index.html" title="Monopoly Banker" />} />
         <Route path="/games/tictactoe" element={<><Navbar /><TicTacToePage /><Footer /></>} />

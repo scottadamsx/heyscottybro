@@ -65,7 +65,15 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
     [transactions, config, period]
   );
 
-  const { bills, paidCount } = useMemo(() => getPeriodBills(transactions, config, period), [transactions, config, period]);
+  // Bills display uses the calendar month so that monthly bills (rent, phone)
+  // always appear regardless of where the biweekly period boundaries fall.
+  const monthPeriod = useMemo(() => {
+    const ref = period.end; // use the end date so a period like May 31–Jun 13 shows June
+    const y = ref.slice(0, 4), m = ref.slice(5, 7);
+    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+    return { start: `${y}-${m}-01`, end: `${y}-${m}-${String(lastDay).padStart(2, "0")}` };
+  }, [period]);
+  const { bills, paidCount } = useMemo(() => getPeriodBills(transactions, config, monthPeriod), [transactions, config, monthPeriod]);
   const weekly = useMemo(() => computeWeeklyAllowance(transactions, config, period), [transactions, config, period]);
   const currentWeek = weekly.weeks.find(w => w.isCurrent) || null;
 
@@ -171,7 +179,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       <div style={card}>
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
           {formatMoney(weekly.weeklyBase)} / week · {formatMoney(weekly.spendable)} spendable this period
-          <span style={{ display: "block", marginTop: 2 }}>(income − {formatMoney(weekly.billsObligation)} bills − {formatMoney(planned)} planned)</span>
+          <span style={{ display: "block", marginTop: 2 }}>({formatMoney(weekly.incomeForPlanning)} scheduled − {formatMoney(weekly.billsObligation)} bills − {formatMoney(planned)} planned)</span>
         </div>
         {weekly.weeks.map(w => {
           const over = w.remaining < 0;
@@ -197,10 +205,10 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         })}
       </div>
 
-      {/* Bills */}
+      {/* Bills — monthly view so bills always appear regardless of pay period window */}
       {bills.length > 0 && <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <p style={sh}>Bills</p>
+          <p style={sh}>Bills · {monthLabel}</p>
           <span style={{ fontSize: 12, color: paidCount === bills.length ? "#22c55e" : "var(--text-muted)" }}>{paidCount} of {bills.length} paid</span>
         </div>
         <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>

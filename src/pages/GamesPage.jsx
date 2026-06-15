@@ -1,30 +1,33 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ease } from "../lib/motion";
+import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const GAMES = [
   {
     id: "minecraft-trivia",
-    emoji: "⛏️",
+    icon: "fa-cube",
     title: "Minecraft Trivia",
     desc: "Test your Minecraft knowledge. Blocks, mobs, biomes, crafting — how much do you actually know?",
-    bg: "linear-gradient(135deg, #2d5016 0%, #1a3a0a 100%)",
+    bg: "linear-gradient(135deg, #1a2e1a 0%, #0f1f0f 100%)",
     to: "/games/minecraft-trivia",
     label: "Play Trivia",
   },
   {
     id: "monopoly-banker",
-    emoji: "🎩",
+    icon: "fa-building-columns",
     title: "Monopoly Banker",
     desc: "The digital Monopoly bank. Manage everyone's money without the paper bills and arguments.",
-    bg: "linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%)",
+    bg: "linear-gradient(135deg, #14213a 0%, #0d1526 100%)",
     to: "/games/monopoly-banker",
     label: "Open Banker",
   },
   {
     id: "tictactoe",
-    emoji: "⭕",
+    icon: "fa-hashtag",
     title: "Tic-Tac-Toe",
     desc: "Classic Tic-Tac-Toe. Two players, score tracking, and the eternal question: X or O?",
-    bg: "linear-gradient(135deg, #0d0d2b 0%, #1a1a4a 100%)",
+    bg: "linear-gradient(135deg, #0d0d2b 0%, #15152e 100%)",
     to: "/games/tictactoe",
     label: "Play Game",
   },
@@ -32,51 +35,44 @@ const GAMES = [
 
 export default function GamesPage() {
   return (
-    <main className="games-page">
-      <div className="container">
-        <div className="section-label">Play</div>
-        <h1 className="section-title">Games</h1>
-        <p className="section-desc" style={{ marginBottom: "0" }}>
+    <div className="lp">
+      <ScrollProgress />
+
+      {/* Hero */}
+      <header className="lp-subhero">
+        <span className="lp-kicker">ls ~/games</span>
+        <h1 className="lp-subhero-title"><em>Games</em></h1>
+        <p className="lp-subhero-sub">
           Built for fun. These are small projects I made to sharpen my skills — and because
           building things you&apos;d actually use is the best way to learn.
         </p>
+        <div className="lp-subhero-cta">
+          <Link to="/" className="pill pill-ghost"><i className="fa-solid fa-arrow-left" /> back home</Link>
+        </div>
+      </header>
 
-        <div className="games-grid">
-          {GAMES.map((g) => (
-            <Link to={g.to} className="game-card" key={g.id} style={{ textDecoration: "none" }}>
-              <div className="game-card-preview" style={{ background: g.bg }}>
-                <span>{g.emoji}</span>
-                <div style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(0,0,0,0.2)",
-                  transition: "background 0.3s",
-                }} />
-              </div>
-              <div className="game-card-body">
-                <div className="game-card-title">{g.title}</div>
-                <div className="game-card-desc">{g.desc}</div>
-                <span className="card-btn-primary" style={{
-                  display: "inline-block",
-                  padding: "0.5rem 1rem",
-                  borderRadius: "var(--radius-sm)",
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                }}>
-                  <i className="fa-solid fa-play" style={{ marginRight: "0.375rem" }} />
-                  {g.label}
-                </span>
-              </div>
-            </Link>
+      {/* Games grid */}
+      <section className="lp-section" style={{ paddingTop: 0 }}>
+        <div className="lp-work-grid" style={{ marginTop: 0 }}>
+          {GAMES.map((g, i) => (
+            <motion.div key={g.id}
+              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: (i % 3) * 0.06 }}>
+              <Link className="lp-card" to={g.to}>
+                <div className="lp-card-media ph" style={{ background: g.bg }}>
+                  <i className={`fa-solid ${g.icon}`} style={{ fontSize: "2.6rem", color: "var(--green)", opacity: 0.9 }} />
+                </div>
+                <div className="lp-card-body">
+                  <span className="lp-tag">Game</span>
+                  <h3 className="lp-card-title">{g.title}</h3>
+                  <p className="lp-card-desc">{g.desc}</p>
+                  <span className="lp-card-link">{g.label} <i className="fa-solid fa-play" /></span>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
-
-        <div style={{ marginTop: "4rem", textAlign: "center" }}>
-          <Link to="/" className="btn-secondary">
-            <i className="fa-solid fa-arrow-left" /> Back to Home
-          </Link>
-        </div>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }

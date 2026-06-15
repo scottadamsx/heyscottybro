@@ -27,6 +27,7 @@ export default function Navbar() {
             <li><NavLink to="/never86">NEVER86</NavLink></li>
             <li><NavLink to="/sjhc">Hike Club</NavLink></li>
             <li><NavLink to="/games">Games</NavLink></li>
+            <li><NavLink to="/guide">Guide</NavLink></li>
             <li>
               <NavLink to="/admin/login" className="nav-cta">
                 <i className="fa-solid fa-lock" /> Admin
@@ -53,6 +54,7 @@ export default function Navbar() {
         <NavLink to="/never86" onClick={close}>NEVER86</NavLink>
         <NavLink to="/sjhc" onClick={close}>St. John&apos;s Hike Club</NavLink>
         <NavLink to="/games" onClick={close}>Games</NavLink>
+        <NavLink to="/guide" onClick={close}>Guide</NavLink>
         <NavLink to="/admin/login" onClick={close}>
           <i className="fa-solid fa-lock" /> Admin
         </NavLink>

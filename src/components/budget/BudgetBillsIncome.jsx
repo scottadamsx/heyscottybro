@@ -4,7 +4,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, notes: "" };
-const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", nextDate: toDateStr() };
+const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", startDate: toDateStr(), endDate: "" };
 
 export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
   const categories = config.categories || [];
@@ -37,12 +37,12 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
   const deleteBill = async id => { if (!await confirm("Delete this bill?", { title: "Delete bill", confirmLabel: "Delete" })) return; setConfig(c => ({ ...c, recurringBills: c.recurringBills.filter(b => b.id !== id) })); };
 
   // ── Income ──
-  const openNewInc = () => { setIncEditId(null); setIncForm({ ...EMPTY_INC, nextDate: toDateStr() }); setShowIncForm(true); };
-  const openEditInc = inc => { setIncEditId(inc.id); setIncForm({ name: inc.name, amount: String(inc.amount), frequency: inc.frequency, nextDate: inc.nextDate }); setShowIncForm(true); };
+  const openNewInc = () => { setIncEditId(null); setIncForm({ ...EMPTY_INC, startDate: toDateStr() }); setShowIncForm(true); };
+  const openEditInc = inc => { setIncEditId(inc.id); setIncForm({ name: inc.name, amount: String(inc.amount), frequency: inc.frequency, startDate: inc.startDate || inc.nextDate || toDateStr(), endDate: inc.endDate || "" }); setShowIncForm(true); };
   const saveInc = () => {
     const amt = parseFloat(incForm.amount);
-    if (!incForm.name.trim() || isNaN(amt) || amt <= 0 || !incForm.nextDate) return;
-    const ni = { id: incEditId || genId(), name: incForm.name.trim(), amount: amt, frequency: incForm.frequency, nextDate: incForm.nextDate };
+    if (!incForm.name.trim() || isNaN(amt) || amt <= 0 || !incForm.startDate) return;
+    const ni = { id: incEditId || genId(), name: incForm.name.trim(), amount: amt, frequency: incForm.frequency, startDate: incForm.startDate, endDate: incForm.endDate || null };
     if (incEditId) setConfig(c => ({ ...c, income: c.income.map(i => i.id === incEditId ? ni : i) }));
     else setConfig(c => ({ ...c, income: [...(c.income || []), ni] }));
     setShowIncForm(false); setIncEditId(null); flashFor("inc");
@@ -119,11 +119,24 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
       </div>
       {(config.income || []).length === 0
         ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No income sources added yet.</p>
-        : (config.income || []).map(inc => (
-          <div key={inc.id} style={{ ...card, display: "flex", alignItems: "center" }}>
+        : (config.income || []).map(inc => {
+          const from = inc.startDate || inc.nextDate;
+          const to = inc.endDate;
+          const todayStr = toDateStr();
+          const isActive = (!from || from <= todayStr) && (!to || to >= todayStr);
+          const isPast = to && to < todayStr;
+          const isFuture = from && from > todayStr;
+          const statusColor = isPast ? "var(--text-muted)" : isFuture ? "#f59e0b" : "#22c55e";
+          return (
+          <div key={inc.id} style={{ ...card, display: "flex", alignItems: "center", opacity: isPast ? 0.55 : 1 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>{inc.name}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{inc.frequency} · next: {inc.nextDate}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{inc.name}</span>
+                <span style={{ fontSize: 10, color: statusColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{isPast ? "ended" : isFuture ? "upcoming" : "active"}</span>
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                {inc.frequency} · {from ? `from ${from}` : "no start"}{to ? ` → ${to}` : " → ongoing"}
+              </div>
             </div>
             <span style={{ ...mono, fontSize: 14, marginRight: 12 }}>{formatMoney(inc.amount)}</span>
             <div style={{ display: "flex", gap: 4 }}>
@@ -131,7 +144,8 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
               <button className="btn-sm btn-delete" onClick={() => deleteInc(inc.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Del</button>
             </div>
           </div>
-        ))
+          );
+        })
       }
       {showIncForm && (
         <div style={{ ...card, borderColor: "var(--accent,#6366f1)" }}>
@@ -143,8 +157,10 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
               {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Next payday</label>
-          <input type="date" value={incForm.nextDate} onChange={e => setIncForm(f => ({ ...f, nextDate: e.target.value }))} style={inp} />
+          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Start date (first payday)</label>
+          <input type="date" value={incForm.startDate} onChange={e => setIncForm(f => ({ ...f, startDate: e.target.value }))} style={inp} />
+          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
+          <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
             <button className="btn" onClick={saveInc} style={{ flex: 1, background: flash === "inc" ? "#22c55e" : "var(--accent,#6366f1)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
             <button className="btn" onClick={() => setShowIncForm(false)} style={{ flex: 1 }}>Cancel</button>
