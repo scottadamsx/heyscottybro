@@ -193,3 +193,25 @@
   padding: var(--space-lg); overflow-y: auto; line-height: var(--leading-relaxed);
   font-size: var(--text-sm); color: var(--text-primary);
 }
+
+/* ── Aulë coding panel ─────────────────────────── */
+.aule { display: flex; flex-direction: column; min-height: 0; }
+.aule-bar { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.aule-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.aule-dot.online { background: var(--green); }
+.aule-dot.connecting { background: var(--orange); animation: cmd-pulse 1s ease-in-out infinite; }
+.aule-dot.offline { background: var(--text-muted); }
+.aule-state { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.aule-repo {
+  margin-left: auto; height: 30px; padding: 0 var(--space-sm);
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-xs);
+}
+.aule-tool {
+  align-self: flex-start; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-xs); color: var(--text-secondary);
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); padding: 3px var(--space-xs);
+}
+.aule-tool i { color: var(--accent); margin-right: 4px; }
+.aule-cost { font-size: 0.66rem; color: var(--text-muted); margin-top: var(--space-2xs); }

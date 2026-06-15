@@ -10,6 +10,7 @@ import { describeAction, actionTime } from "../../utils/agentActions";
 import { renderMarkdown } from "../../utils/markdown";
 import { useToast } from "../../contexts/ToastContext";
 import { toDateStr } from "../../utils/plannerUtils";
+import AulePanel from "./AulePanel";
 import "./command.css";
 
 const todayStr = () => toDateStr(new Date());
@@ -191,13 +192,7 @@ export default function CommandCenterPage() {
               {view === "profile" && <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />}
 
               {view === "work" && selected.kind === "local" && (
-                <div className="cmd-local">
-                  <p className="cmd-offline-note">
-                    <i className="fa-solid fa-plug-circle-xmark" /> The coding agent needs the local agent server (Phase 2).
-                    Once it ships: run <code>npm run agents</code> on your Mac, log into Claude Code (Max plan),
-                    and {selected.name} will appear online here to write code while you chat.
-                  </p>
-                </div>
+                <AulePanel agent={selected} onOpenDoc={setViewerDoc} />
               )}
 
               {view === "work" && selected.kind === "api" && (
