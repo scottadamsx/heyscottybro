@@ -1,8 +1,8 @@
 -- Brain graph + agent provenance
 -- The app already reads/writes brain_nodes & brain_links (src/api/brainApi.js)
--- but they were never in source control. This makes them reproducible and adds
--- provenance (`source`/`agent_id`) so the Command Center & 3D Brain can show
--- which agent filed a node. Idempotent — safe to re-run.
+-- but they were never in source control. This makes them reproducible. Node
+-- provenance rides on the `source` column (e.g. "galadriel"). Idempotent — safe
+-- to re-run; mirrors the live schema.
 
 -- ── brain_nodes ──────────────────────────────────────────────────────────────
 create table if not exists public.brain_nodes (
@@ -14,14 +14,12 @@ create table if not exists public.brain_nodes (
   type        text default 'note',          -- root | projects | checkpoints | procedures | note
   tags        text[] default '{}',
   source      text,                          -- vault | manual | agent id (e.g. galadriel)
-  agent_id    text,                          -- optional explicit agent provenance
   created_at  timestamptz default now(),
   updated_at  timestamptz default now(),
   unique (user_id, slug)
 );
 
-alter table public.brain_nodes add column if not exists source   text;
-alter table public.brain_nodes add column if not exists agent_id text;
+alter table public.brain_nodes add column if not exists source text;
 
 create index if not exists brain_nodes_user_idx on public.brain_nodes(user_id);
 
@@ -31,12 +29,9 @@ create table if not exists public.brain_links (
   user_id      uuid not null references auth.users(id) on delete cascade,
   source_slug  text not null,
   target_slug  text not null,
-  agent_id     text,
   created_at   timestamptz default now(),
   unique (user_id, source_slug, target_slug)
 );
-
-alter table public.brain_links add column if not exists agent_id text;
 
 create index if not exists brain_links_user_idx on public.brain_links(user_id);
 

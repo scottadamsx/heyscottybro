@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     await sbUpsert("brain_nodes", [{
       user_id: userId, slug, title: `Daily Summary — ${today}`,
       body, type: "checkpoints", tags: ["daily", "summary", today.slice(0, 7)],
-      source: "galadriel", agent_id: "galadriel",
+      source: "galadriel",
     }], "user_id,slug");
 
     return res.status(200).json({ ok: true, slug, summary: body });

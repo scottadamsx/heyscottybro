@@ -38,13 +38,14 @@ export async function deleteNode(id) {
   if (error) throw error;
 }
 
-/** Connect two nodes by slug (idempotent — won't duplicate an existing link). */
-export async function linkNodes(sourceSlug, targetSlug, agentId = null) {
+/** Connect two nodes by slug (idempotent — the table's unique constraint on
+ *  (user_id, source_slug, target_slug) means the upsert won't duplicate). */
+export async function linkNodes(sourceSlug, targetSlug) {
   if (!sourceSlug || !targetSlug) throw new Error("source and target slugs are required");
   if (sourceSlug === targetSlug) throw new Error("a node can't link to itself");
   const userId = await uid();
   const { error } = await supabase.from("brain_links")
-    .upsert({ user_id: userId, source_slug: sourceSlug, target_slug: targetSlug, agent_id: agentId }, { onConflict: "user_id,source_slug,target_slug" });
+    .upsert({ user_id: userId, source_slug: sourceSlug, target_slug: targetSlug }, { onConflict: "user_id,source_slug,target_slug" });
   if (error) throw error;
   return { source_slug: sourceSlug, target_slug: targetSlug };
 }
