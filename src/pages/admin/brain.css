@@ -1,0 +1,84 @@
+/* ═══════════════════════════════════════════
+   Brain — 3D knowledge graph
+   ═══════════════════════════════════════════ */
+
+.brain-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+  align-items: start;
+}
+.brain-layout.with-panel {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.brain-stage {
+  position: relative;
+  height: min(70vh, 640px);
+  min-height: 380px;
+  /* Stop the browser from hijacking touch gestures — let Three.js orbit/pinch. */
+  touch-action: none;
+  background: #0b1020;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* The library injects an absolutely-sized canvas; this just centres fallbacks. */
+.brain-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  color: #9aa0b5;
+  font-size: var(--text-sm);
+}
+
+.brain-legend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  flex-wrap: wrap;
+  padding: var(--space-xs) var(--space-sm);
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55));
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  pointer-events: none;
+}
+.brain-legend-types {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.brain-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1rem 1.1rem;
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+}
+.brain-panel .icon-x {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .brain-layout.with-panel { grid-template-columns: 1fr; }
+  .brain-stage { height: 62vh; min-height: 320px; }
+  .brain-panel { max-height: none; }
+  /* Keep the legend readable but out of the thumb zone */
+  .brain-legend { font-size: 10px; }
+}
