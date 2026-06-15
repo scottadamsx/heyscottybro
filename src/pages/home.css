@@ -521,6 +521,8 @@
 .lp-card-media img { width: 100%; height: 100%; object-fit: cover; opacity: .92; transition: transform .5s var(--t-ease), opacity .3s; }
 .lp-card:hover .lp-card-media img { transform: scale(1.05); opacity: 1; }
 .lp-card-media.ph span { font-size: 3rem; filter: grayscale(.2); }
+.lp-card-media.ph i { font-size: 2.4rem; color: var(--green); opacity: .85; }
+.lp-card:hover .lp-card-media.ph i { opacity: 1; }
 .lp-card-body { padding: 1.3rem; display: flex; flex-direction: column; gap: 0.45rem; flex: 1; }
 .lp-tag {
   align-self: flex-start; font-family: var(--mono);

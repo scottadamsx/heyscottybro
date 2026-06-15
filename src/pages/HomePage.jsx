@@ -114,12 +114,12 @@ function TerminalHero() {
 const MARQUEE = ["Builder", "Founder", "React", "Python", "Supabase", "St. John's · NL", "scotty.3xe", "Restaurant tech", "Hike club", "Always shipping"];
 
 const PROJECTS = [
-  { id: "never86", tag: "Live Product", title: "NEVER86", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", emoji: "🍽️", img: "/images/never86_website_concept.png", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://never86.ca", cta: "Visit site" },
-  { id: "sjhc", tag: "Live Community", title: "St. John's Hike Club", desc: "More than a walking group — a community movement exploring Newfoundland's most stunning trails.", emoji: "🥾", img: "/images/hikeclub.JPG", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://stjohnshikeclub.com", cta: "Visit site" },
-  { id: "minecraft-trivia", tag: "Game", title: "Minecraft Trivia", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more.", emoji: "⛏️", img: null, bg: "linear-gradient(135deg,#161a22,#11141b)", to: "/games/minecraft-trivia", href: null, cta: "Play now" },
-  { id: "monopoly", tag: "Game", title: "Monopoly Banker", desc: "The digital Monopoly bank. No paper money, no arguments — clean, fast, fun.", emoji: "🎩", img: null, bg: "linear-gradient(135deg,#1d1a14,#15120d)", to: "/games/monopoly-banker", href: null, cta: "Play now" },
-  { id: "tictactoe", tag: "Game", title: "Tic-Tac-Toe", desc: "Classic Tic-Tac-Toe with score tracking. Challenge a friend between deploys.", emoji: "⭕", img: null, bg: "linear-gradient(135deg,#21161a,#180f13)", to: "/games/tictactoe", href: null, cta: "Play now" },
-  { id: "planner", tag: "Admin Tool", title: "Personal Planner", desc: "My all-in-one personal command centre — reminders, calendar, journal, budget. Password protected.", emoji: "📋", img: null, bg: "linear-gradient(135deg,#181822,#101019)", to: "/admin/login", href: null, cta: "Open planner" },
+  { id: "never86", tag: "Live Product", title: "NEVER86", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", icon: "fa-utensils", img: "/images/never86_website_concept.png", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://never86.ca", cta: "Visit site" },
+  { id: "sjhc", tag: "Live Community", title: "St. John's Hike Club", desc: "More than a walking group — a community movement exploring Newfoundland's most stunning trails.", icon: "fa-person-hiking", img: "/images/hikeclub.JPG", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://stjohnshikeclub.com", cta: "Visit site" },
+  { id: "minecraft-trivia", tag: "Game", title: "Minecraft Trivia", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more.", icon: "fa-cube", img: null, bg: "linear-gradient(135deg,#161a22,#11141b)", to: "/games/minecraft-trivia", href: null, cta: "Play now" },
+  { id: "monopoly", tag: "Game", title: "Monopoly Banker", desc: "The digital Monopoly bank. No paper money, no arguments — clean, fast, fun.", icon: "fa-sack-dollar", img: null, bg: "linear-gradient(135deg,#1d1a14,#15120d)", to: "/games/monopoly-banker", href: null, cta: "Play now" },
+  { id: "tictactoe", tag: "Game", title: "Tic-Tac-Toe", desc: "Classic Tic-Tac-Toe with score tracking. Challenge a friend between deploys.", icon: "fa-hashtag", img: null, bg: "linear-gradient(135deg,#21161a,#180f13)", to: "/games/tictactoe", href: null, cta: "Play now" },
+  { id: "planner", tag: "Admin Tool", title: "Personal Planner", desc: "My all-in-one personal command centre — reminders, calendar, journal, budget. Password protected.", icon: "fa-list-check", img: null, bg: "linear-gradient(135deg,#181822,#101019)", to: "/admin/login", href: null, cta: "Open planner" },
 ];
 
 const SKILLS = ["python", "react", "javascript", "typescript", "postgresql", "supabase", "flask", "css/html", "git", "godot"];
@@ -128,7 +128,7 @@ function WorkCard({ p }) {
   const inner = (
     <>
       <div className={`lp-card-media ${p.img ? "" : "ph"}`} style={p.img ? undefined : { background: p.bg }}>
-        {p.img ? <img src={p.img} alt={p.title} loading="lazy" /> : <span>{p.emoji}</span>}
+        {p.img ? <img src={p.img} alt={p.title} loading="lazy" /> : <i className={`fa-solid ${p.icon}`} aria-hidden="true" />}
       </div>
       <div className="lp-card-body">
         <span className="lp-tag">{p.tag}</span>
