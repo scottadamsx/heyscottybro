@@ -186,7 +186,7 @@ export default function ProjectsPage() {
       {/* ── Header ── */}
       <div className="module-header">
         <h1>Projects</h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button className="btn btn-sm" onClick={() => setShowEventTypeForm(true)}>
             <i className="fa-solid fa-tag" /> Event Types
           </button>
@@ -277,7 +277,7 @@ export default function ProjectsPage() {
             <div className="db-card-header">
               <h3 className="db-card-title"><i className="fa-solid fa-list-check" /> Tasks &amp; Due Dates</h3>
             </div>
-            <form className="form-card form-inline" style={{ background: "transparent", border: "none", padding: 0, marginBottom: "0.75rem" }} onSubmit={addQuickTask}>
+            <form className="form-card form-inline proj-quick-form" style={{ background: "transparent", border: "none", padding: 0, marginBottom: "0.75rem" }} onSubmit={addQuickTask}>
               <div className="form-row">
                 <input className="field-grow" placeholder="Task / test (e.g. Midterm)" value={quickTask.name} onChange={e => setQuickTask({ ...quickTask, name: e.target.value })} required />
                 <DatePicker value={quickTask.date} onChange={(v) => setQuickTask({ ...quickTask, date: v })} placeholder="Due date" />

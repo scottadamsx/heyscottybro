@@ -2,7 +2,7 @@
 // Run with: node src/utils/plannerUtils.test.js
 // (No test framework — plain assertions, same style as budgetProjection.test.js.)
 
-import { expandReminders, toDateStr, parseDate, getWeekRange } from "./plannerUtils.js";
+import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange } from "./plannerUtils.js";
 
 let passed = 0;
 let failed = 0;
@@ -107,6 +107,36 @@ test("monthly recurrence still works far in the future (beyond 3 years)", () => 
   const r = [{ id: "1", name: "x", date: "2026-01-10", recurrence: "monthly" }];
   const far = datesOf(expandReminders(r, "2030-06-01", "2030-06-30"));
   assert(far.length === 1 && far[0] === "2030-06-10", `got ${far.join(",")}`);
+});
+
+test("expandReminders dedupes the same (id, date) from duplicated input", () => {
+  const dup = { id: "1", name: "x", date: "2026-06-15", recurrence: "none" };
+  const out = expandReminders([dup, { ...dup }], "2026-06-15", "2026-06-15");
+  assert(out.length === 1, `expected 1 after dedupe, got ${out.length}`);
+});
+
+test("remindersForDay returns every same-day occurrence (Today count matches)", () => {
+  const r = [
+    { id: "1", name: "a", date: "2026-06-15", recurrence: "none" },
+    { id: "2", name: "b", date: "2026-06-15", recurrence: "none" },
+    { id: "3", name: "c", date: "2026-06-15", recurrence: "none" },
+    { id: "4", name: "d", date: "2026-06-15", recurrence: "none" },
+    { id: "5", name: "e", date: "2026-06-15", recurrence: "none" },
+    { id: "6", name: "future", date: "2026-06-20", recurrence: "none" },
+    { id: "7", name: "done", date: "2026-06-15", completed: true },
+  ];
+  const today = remindersForDay(r, "2026-06-15");
+  // 5 active same-day reminders — the old slice(0,4) would have dropped one.
+  assert(today.length === 5, `expected 5 today, got ${today.length}`);
+  assert(!today.some((x) => x.id === "6"), "future task excluded");
+  assert(!today.some((x) => x.id === "7"), "completed task excluded");
+});
+
+test("remindersForDay includes a recurring occurrence landing on the day", () => {
+  // Daily series started a week ago — it should still surface today, deduped once.
+  const r = [{ id: "1", name: "daily", date: "2026-06-08", recurrence: "daily" }];
+  const today = remindersForDay(r, "2026-06-15");
+  assert(today.length === 1 && today[0].date === "2026-06-15", `got ${JSON.stringify(datesOf(today))}`);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

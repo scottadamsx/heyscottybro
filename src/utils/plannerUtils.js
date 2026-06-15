@@ -104,6 +104,30 @@ export function expandReminders(reminders, startDate, endDate) {
     }
   });
 
-  expanded.sort((a, b) => a.date.localeCompare(b.date));
-  return expanded;
+  // Dedupe by reminder id + occurrence date. A single call shouldn't ever
+  // produce the same (id, date) twice, but overlapping recurrence edits or a
+  // duplicated input row can sneak one in — and a double-counted occurrence is
+  // exactly what makes the "Today" count disagree with the real list.
+  const seen = new Set();
+  const deduped = expanded.filter((r) => {
+    const key = `${r.id}-${r.date}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  deduped.sort((a, b) => a.date.localeCompare(b.date));
+  return deduped;
+}
+
+/**
+ * All reminder occurrences that fall on a single local calendar day, deduped by
+ * id. Use this for the Dashboard "Today" view so the count always matches the
+ * same-day reminders in the full list (no slice() silently dropping items, and
+ * the day boundary is the user's local day — America/St_Johns — never UTC).
+ */
+export function remindersForDay(reminders, dayStr) {
+  const items = expandReminders(reminders, dayStr, dayStr);
+  const seen = new Set();
+  return items.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
 }

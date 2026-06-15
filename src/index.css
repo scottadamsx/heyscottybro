@@ -1496,9 +1496,29 @@ input, textarea, select { font-family: inherit; }
 
 .db-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .db-list-item { padding: 0.625rem 0.75rem; background: var(--bg-raised); border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; }
-.db-list-item-content { display: flex; flex-direction: column; gap: 0.15rem; }
+.db-list-item-content { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 .db-list-item-title { font-size: 0.875rem; font-weight: 600; }
 .db-list-item-subtitle { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Clickable list rows (e.g. Dashboard tasks → task detail page) */
+.db-list-item--clickable { cursor: pointer; gap: 0.5rem; transition: background 0.15s; }
+.db-list-item--clickable:hover { background: var(--bg-hover); }
+.db-list-item--clickable:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+.db-list-item-chevron { color: var(--text-muted); font-size: 0.7rem; flex-shrink: 0; }
+
+/* Subheadings inside a dashboard card (Today / Upcoming) */
+.db-subhead {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0.85rem 0 0.45rem;
+}
+.db-subhead:first-of-type { margin-top: 0.4rem; }
+.db-count {
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--bg-hover); color: var(--text-secondary);
+  border-radius: 100px; padding: 0 0.45rem; line-height: 1.4;
+}
 
 .todo-sections { display: flex; flex-direction: column; gap: 1rem; }
 .todo-section h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.5rem; }
@@ -1696,6 +1716,9 @@ input, textarea, select { font-family: inherit; }
 .day-check.done { color: var(--green); cursor: default; }
 .day-item.done { opacity: 0.65; }
 .day-item.done .day-item-title { text-decoration: line-through; }
+.day-item--clickable { cursor: pointer; transition: background 0.15s; }
+.day-item--clickable:hover { background: var(--bg-hover); }
+.day-item--clickable:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
 .icon-x.sm { width: 24px; height: 24px; font-size: 0.76rem; }
 
 .day-add { border-top: 1px solid var(--border-subtle); padding: 0.9rem 1.2rem 1.1rem; background: var(--bg-surface); }
@@ -2260,6 +2283,10 @@ input, textarea, select { font-family: inherit; }
 
 /* Completed / Journal items */
 .completed-item { display: flex; justify-content: space-between; align-items: center; padding: 0.625rem 0.75rem; background: var(--bg-raised); border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.875rem; flex-wrap: wrap; gap: 0.5rem; }
+/* Clickable task title region → task detail page */
+.task-row-main { flex: 1; border-radius: var(--radius-sm); transition: color 0.15s; }
+.task-row-main:hover strong { color: var(--accent); }
+.task-row-main:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
 
 .journal-card { background: var(--bg-raised); border-radius: var(--radius-sm); margin-bottom: 0.625rem; overflow: hidden; }
 .journal-card-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; cursor: pointer; list-style: none; }
@@ -2571,7 +2598,7 @@ input, textarea, select { font-family: inherit; }
 }
 
 .project-tile-body { flex: 1; min-width: 0; }
-.project-tile-name { font-size: 0.95rem; font-weight: 700; }
+.project-tile-name { font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .project-tile-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .project-detail-header {
@@ -2582,7 +2609,71 @@ input, textarea, select { font-family: inherit; }
   border-radius: var(--radius-md);
 }
 
-.project-detail-header h2 { font-size: 1.3rem; font-weight: 800; }
+/* Keep the title block from forcing horizontal overflow on narrow screens */
+.project-detail-header > div { min-width: 0; }
+.project-detail-header h2 { font-size: 1.3rem; font-weight: 800; word-break: break-word; overflow-wrap: anywhere; }
+
+/* Project "quick add task" toolbar: stack cleanly (full-width fields) on phones.
+   The shared .form-inline centres its row, which leaves cramped ~140px fields
+   once it wraps — so stretch them to full width here. */
+@media (max-width: 600px) {
+  .proj-quick-form .form-row { flex-direction: column; align-items: stretch; }
+  .proj-quick-form .form-row > * { width: 100%; min-width: 0; flex: 1 1 auto; }
+}
+
+/* ── Task Detail page ── */
+.task-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+.task-detail-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  margin-bottom: 0.35rem;
+}
+.task-detail-project:hover { text-decoration: underline; }
+.task-detail-project-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.task-detail-title { font-size: 1.4rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
+.task-detail-title.is-done { text-decoration: line-through; color: var(--text-muted); }
+.task-detail-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.task-badge {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem; border-radius: 100px;
+  background: var(--bg-hover); color: var(--text-secondary);
+}
+.task-badge--today { background: rgba(31, 98, 255, 0.12); color: var(--accent); }
+.task-badge--overdue { background: rgba(255, 34, 51, 0.12); color: var(--red); }
+.task-badge--done { background: rgba(31, 157, 77, 0.14); color: var(--green); }
+.task-detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 0.6rem 1rem;
+  margin: 0;
+}
+.task-detail-grid dt { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+.task-detail-grid dd { font-size: 0.875rem; margin: 0; word-break: break-word; }
+.task-detail-notes { font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.task-detail-danger { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+@media (max-width: 600px) {
+  .task-detail-header { flex-direction: column; }
+  .task-detail-actions { width: 100%; justify-content: flex-start; }
+  .task-detail-grid { grid-template-columns: 1fr; gap: 0.15rem 0; }
+  .task-detail-grid dd { margin-bottom: 0.5rem; }
+}
 
 /* Color Picker */
 .color-picker { display: flex; gap: 0.5rem; flex-wrap: wrap; }

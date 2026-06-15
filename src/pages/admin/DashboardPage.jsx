@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
-import { expandReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { expandReminders, remindersForDay, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
@@ -68,6 +69,9 @@ export default function DashboardPage() {
   const [aiError, setAiError] = useState("");
   const [aiLoaded, setAiLoaded] = useState(false);
   const [showWeek, setShowWeek] = useState(false);
+  const navigate = useNavigate();
+  // Clicking a task opens its dedicated detail page (no inline modal).
+  const openTask = (id) => navigate(`/admin/tasks/${id}`);
 
   useEffect(() => {
     Promise.all([
@@ -157,9 +161,15 @@ export default function DashboardPage() {
   }
   const freeThisWeek = weeklyIncome - billsDueThisWeek - spentThisWeek;
 
-  // ── Reminders: next few + this-week grouped by day ──
+  // ── Reminders: today + upcoming + this-week grouped by day ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
-  const upcomingAll = expandReminders(activeReminders, todayStr, addDaysStr(todayStr, 30))
+  // Today is its own list (every same-day occurrence, deduped) so the count
+  // always matches the full reminders list. The old code lumped today into a
+  // 30-day window and sliced to 4, which silently dropped same-day items once
+  // more than four things were coming up.
+  const todayItems = remindersForDay(activeReminders, todayStr);
+  // Upcoming = the next 30 days *after* today, capped for the compact card.
+  const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30))
     .sort((a, b) => a.date.localeCompare(b.date));
   const nextFew = upcomingAll.slice(0, 4);
   const wr = getWeekRange(today);
@@ -216,17 +226,62 @@ export default function DashboardPage() {
             <i className="fa-solid fa-up-right-and-down-left-from-center" /> This week
           </button>
         </div>
-        <div className="db-list" style={{ marginTop: "0.4rem" }}>
-          {nextFew.length === 0 && <p className="no-entries">Nothing coming up — you&apos;re clear 🎉</p>}
-          {nextFew.map((r) => (
-            <div className="db-list-item" key={`${r.id}-${r.date}`}>
+
+        {/* Today — every same-day reminder, so the count matches the full list */}
+        <div className="db-subhead">
+          <span>Today</span>
+          <span className="db-count">{todayItems.length}</span>
+        </div>
+        <div className="db-list">
+          {todayItems.length === 0 && <p className="no-entries">Nothing due today.</p>}
+          {todayItems.map((r) => (
+            <div
+              className="db-list-item db-list-item--clickable"
+              key={`${r.id}-${r.date}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => openTask(r.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+            >
               <div className="db-list-item-content">
                 <div className="db-list-item-title">{r.name}</div>
-                <div className="db-list-item-subtitle" style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{r.date === todayStr ? "Today" : formatDisplayDate(r.date)}</div>
+                <div className="db-list-item-subtitle">{r.time ? r.time : "Today"}</div>
               </div>
+              <i className="fa-solid fa-chevron-right db-list-item-chevron" />
             </div>
           ))}
         </div>
+
+        {/* Upcoming — next 30 days after today */}
+        {nextFew.length > 0 && (
+          <>
+            <div className="db-subhead">
+              <span>Upcoming</span>
+            </div>
+            <div className="db-list">
+              {nextFew.map((r) => (
+                <div
+                  className="db-list-item db-list-item--clickable"
+                  key={`${r.id}-${r.date}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openTask(r.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+                >
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{r.name}</div>
+                    <div className="db-list-item-subtitle">{formatDisplayDate(r.date)}</div>
+                  </div>
+                  <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {todayItems.length === 0 && nextFew.length === 0 && (
+          <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear 🎉</p>
+        )}
         {upcomingAll.length > 4 && (
           <button className="dashboard-expand" onClick={() => setShowWeek(true)}>
             +{upcomingAll.length - 4} more · view the week
@@ -399,7 +454,14 @@ export default function DashboardPage() {
                   </div>
                   {d.items.length === 0 && <p className="day-empty">—</p>}
                   {d.items.map((r) => (
-                    <div className="day-item" key={`${r.id}-${r.date}`}>
+                    <div
+                      className="day-item day-item--clickable"
+                      key={`${r.id}-${r.date}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setShowWeek(false); openTask(r.id); }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowWeek(false); openTask(r.id); } }}
+                    >
                       <span className="day-item-dot" style={{ background: "var(--accent)" }} />
                       <div className="day-item-body"><div className="day-item-title">{r.name}</div></div>
                     </div>
