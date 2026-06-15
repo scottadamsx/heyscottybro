@@ -8,6 +8,8 @@ export default function DocumentUploader({ onUploaded, onClose }) {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [agentWork, setAgentWork] = useState(false);
+  const [agentName, setAgentName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -32,7 +34,10 @@ export default function DocumentUploader({ onUploaded, onClose }) {
     setUploading(true);
     setError(null);
     try {
-      const doc = await uploadDocument(file, { name, description });
+      const tags = agentWork
+        ? ["agent", ...(agentName.trim() ? [`agent:${agentName.trim()}`] : [])]
+        : [];
+      const doc = await uploadDocument(file, { name, description, tags });
       onUploaded(doc);
       onClose();
     } catch (err) {
@@ -79,6 +84,20 @@ export default function DocumentUploader({ onUploaded, onClose }) {
             rows={2}
             style={{ resize: "vertical" }}
           />
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.5rem 0", fontSize: "0.85rem" }}>
+            <input type="checkbox" checked={agentWork} onChange={(e) => setAgentWork(e.target.checked)} />
+            <span><i className="fa-solid fa-robot" /> This is agent work (show under “Agent work”)</span>
+          </label>
+          {agentWork && (
+            <div className="form-row">
+              <input
+                className="field-grow"
+                placeholder="Agent name (optional, e.g. Aulë)"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+              />
+            </div>
+          )}
           <div className="form-row">
             <button className="btn" type="submit" disabled={uploading}>
               {uploading ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading…</> : "Upload"}

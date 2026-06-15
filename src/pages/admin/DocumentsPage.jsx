@@ -1,18 +1,29 @@
-import { useEffect, useState } from "react";
-import { loadDocuments, deleteDocument } from "../../api/documentsApi";
+import { useEffect, useMemo, useState } from "react";
+import { loadDocuments, deleteDocument, getSignedUrl } from "../../api/documentsApi";
 import DocumentCard from "../../components/documents/DocumentCard";
 import DocumentUploader from "../../components/documents/DocumentUploader";
 import DocumentViewer from "../../components/documents/DocumentViewer";
 import ShareModal from "../../components/documents/ShareModal";
+import PdfViewer from "../../components/PdfViewer";
+
+// A document counts as "agent work" if it carries an `agent` tag (or `agent:<name>`).
+const isAgentDoc = (d) =>
+  (d.tags || []).some((t) => typeof t === "string" && t.toLowerCase().startsWith("agent"));
+const agentLabel = (d) => {
+  const tag = (d.tags || []).find((t) => typeof t === "string" && t.toLowerCase().startsWith("agent:"));
+  return tag ? tag.slice(tag.indexOf(":") + 1).trim() : null;
+};
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showUploader, setShowUploader] = useState(false);
-  const [viewing, setViewing] = useState(null);
+  const [viewing, setViewing] = useState(null);          // non-PDF (image/other) → DocumentViewer
+  const [pdfView, setPdfView] = useState(null);          // { url, doc } → full PdfViewer
   const [sharing, setSharing] = useState(null);
   const [search, setSearch] = useState("");
+  const [onlyAgent, setOnlyAgent] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   function load() {
@@ -25,7 +36,24 @@ export default function DocumentsPage() {
   }
   useEffect(() => { load(); }, []);
 
+  const agentCount = useMemo(() => docs.filter(isAgentDoc).length, [docs]);
+
   const handleUploaded = (doc) => setDocs((d) => [doc, ...d]);
+
+  // PDFs open in the full viewer (paging/zoom/download); everything else uses
+  // the lightweight DocumentViewer.
+  const handleView = async (doc) => {
+    if (doc.mime_type === "application/pdf") {
+      try {
+        const url = await getSignedUrl(doc.storage_path, 3600);
+        setPdfView({ url, doc });
+      } catch {
+        setError("Failed to open that PDF.");
+      }
+    } else {
+      setViewing(doc);
+    }
+  };
 
   const handleDelete = async (doc) => {
     try {
@@ -37,11 +65,16 @@ export default function DocumentsPage() {
     }
   };
 
-  const filtered = docs.filter((d) =>
-    !search ||
-    d.name.toLowerCase().includes(search.toLowerCase()) ||
-    (d.description || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = docs.filter((d) => {
+    if (onlyAgent && !isAgentDoc(d)) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      d.name.toLowerCase().includes(q) ||
+      (d.description || "").toLowerCase().includes(q) ||
+      (d.tags || []).some((t) => String(t).toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="module-page">
@@ -53,20 +86,41 @@ export default function DocumentsPage() {
       </div>
 
       <p className="no-entries" style={{ marginTop: "-0.4rem" }}>
-        <i className="fa-solid fa-lock" /> Private storage. Generate expiring share links to send documents to anyone.
+        <i className="fa-solid fa-lock" /> Private storage. Agents drop deliverables here (tagged <code>agent</code>) and you review them in the PDF viewer.
       </p>
 
       {showUploader && (
         <DocumentUploader onUploaded={handleUploaded} onClose={() => setShowUploader(false)} />
       )}
 
-      <input
-        className="hiker-search"
-        placeholder="Search documents…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{ maxWidth: 360, marginBottom: "1rem" }}
-      />
+      <div className="doc-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center", marginBottom: "1rem" }}>
+        <input
+          className="hiker-search"
+          placeholder="Search documents…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ maxWidth: 360, margin: 0 }}
+        />
+        <div className="doc-filter-chips" style={{ display: "flex", gap: "0.35rem" }}>
+          <button
+            type="button"
+            className={`btn-tiny-blue${!onlyAgent ? " active" : ""}`}
+            onClick={() => setOnlyAgent(false)}
+            aria-pressed={!onlyAgent}
+          >
+            All ({docs.length})
+          </button>
+          <button
+            type="button"
+            className={`btn-tiny-blue${onlyAgent ? " active" : ""}`}
+            onClick={() => setOnlyAgent(true)}
+            aria-pressed={onlyAgent}
+            title="Show only deliverables your agents produced"
+          >
+            <i className="fa-solid fa-robot" /> Agent work ({agentCount})
+          </button>
+        </div>
+      </div>
 
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
       {error && (
@@ -75,7 +129,9 @@ export default function DocumentsPage() {
         </p>
       )}
       {!loading && !error && filtered.length === 0 && (
-        <p className="no-entries">No documents yet. Upload one to get started.</p>
+        <p className="no-entries">
+          {onlyAgent ? "No agent work yet. Agents publish here by uploading a PDF tagged “agent”." : "No documents yet. Upload one to get started."}
+        </p>
       )}
 
       <div className="doc-grid">
@@ -83,7 +139,8 @@ export default function DocumentsPage() {
           <DocumentCard
             key={doc.id}
             doc={doc}
-            onView={setViewing}
+            agentLabel={isAgentDoc(doc) ? (agentLabel(doc) || "Agent") : null}
+            onView={handleView}
             onShare={setSharing}
             onDelete={setConfirmDelete}
           />
@@ -103,6 +160,14 @@ export default function DocumentsPage() {
       )}
 
       {viewing && <DocumentViewer doc={viewing} onClose={() => setViewing(null)} />}
+      {pdfView && (
+        <PdfViewer
+          fileUrl={pdfView.url}
+          title={pdfView.doc.name}
+          filename={pdfView.doc.filename}
+          onClose={() => setPdfView(null)}
+        />
+      )}
       {sharing && <ShareModal doc={sharing} onClose={() => setSharing(null)} />}
     </div>
   );

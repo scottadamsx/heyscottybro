@@ -18,7 +18,7 @@ export const formatBytes = (b) => {
   return `${(b / 1048576).toFixed(1)} MB`;
 };
 
-export default function DocumentCard({ doc, onView, onShare, onDelete }) {
+export default function DocumentCard({ doc, onView, onShare, onDelete, agentLabel = null }) {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
@@ -41,6 +41,16 @@ export default function DocumentCard({ doc, onView, onShare, onDelete }) {
       <div className="doc-card-icon"><i className={`fa-solid ${getIcon(doc.mime_type)}`} /></div>
       <div className="doc-card-body">
         <div className="doc-card-name">{doc.name}</div>
+        {agentLabel && (
+          <div className="doc-card-agent" style={{
+            display: "inline-flex", alignItems: "center", gap: "0.3rem",
+            fontSize: "0.7rem", fontWeight: 600, padding: "0.1rem 0.45rem",
+            borderRadius: 999, marginBottom: "0.25rem",
+            color: "var(--blue, #3b82f6)", background: "color-mix(in srgb, var(--blue, #3b82f6) 14%, transparent)",
+          }}>
+            <i className="fa-solid fa-robot" /> {agentLabel}
+          </div>
+        )}
         <div className="doc-card-meta">
           {formatBytes(doc.size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
         </div>
