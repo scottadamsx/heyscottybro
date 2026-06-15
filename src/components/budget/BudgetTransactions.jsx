@@ -80,18 +80,18 @@ export default function BudgetTransactions({ config, transactions, setTransactio
       {/* Header row */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
         <button className="btn" onClick={openNew} style={{ flex: 1 }}><i className="fa-solid fa-plus" /> Log transaction</button>
-        <div style={{ display: "flex", background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border)", borderRadius: "0.375rem", padding: 3, gap: 3 }}>
-          <button onClick={() => setViewMode("transactions")} style={{ padding: "5px 12px", borderRadius: "0.25rem", border: "none", fontSize: 12, cursor: "pointer", background: viewMode === "transactions" ? "var(--bg-raised,#222)" : "transparent", color: viewMode === "transactions" ? "var(--text-primary)" : "var(--text-muted)", fontWeight: viewMode === "transactions" ? 600 : 400 }}>
+        <div style={{ display: "flex", background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.375rem", padding: 3, gap: 3 }}>
+          <button onClick={() => setViewMode("transactions")} style={{ padding: "5px 12px", borderRadius: "0.25rem", border: "none", fontSize: 12, cursor: "pointer", background: viewMode === "transactions" ? "var(--bg-raised)" : "transparent", color: viewMode === "transactions" ? "var(--text-primary)" : "var(--text-muted)", fontWeight: viewMode === "transactions" ? 600 : 400 }}>
             Transactions
           </button>
-          <button onClick={() => setViewMode("ledger")} style={{ padding: "5px 12px", borderRadius: "0.25rem", border: "none", fontSize: 12, cursor: "pointer", background: viewMode === "ledger" ? "var(--bg-raised,#222)" : "transparent", color: viewMode === "ledger" ? "var(--text-primary)" : "var(--text-muted)", fontWeight: viewMode === "ledger" ? 600 : 400 }}>
+          <button onClick={() => setViewMode("ledger")} style={{ padding: "5px 12px", borderRadius: "0.25rem", border: "none", fontSize: 12, cursor: "pointer", background: viewMode === "ledger" ? "var(--bg-raised)" : "transparent", color: viewMode === "ledger" ? "var(--text-primary)" : "var(--text-muted)", fontWeight: viewMode === "ledger" ? 600 : 400 }}>
             Ledger
           </button>
         </div>
       </div>
 
       {showForm && (
-        <div style={{ background: "var(--bg-elevated,#1a1a1a)", border: "1px solid var(--border)", borderRadius: "0.75rem", padding: "1.25rem", marginBottom: 16 }}>
+        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "0.75rem", padding: "1.25rem", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 style={{ margin: 0, fontSize: "0.95rem" }}>{editId ? "Edit Transaction" : "Log Transaction"}</h3>
             <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}>×</button>
@@ -100,9 +100,9 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             {["expense", "income"].map(t => (
               <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
                 style={{ flex: 1, padding: "7px 0", borderRadius: "0.375rem", fontSize: 12, fontWeight: form.type === t ? 600 : 400,
-                  background: form.type === t ? (t === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)") : "var(--bg-raised,#1e1e1e)",
-                  color: form.type === t ? (t === "income" ? "#22c55e" : "#ef4444") : "var(--text-muted)",
-                  border: `1px solid ${form.type === t ? (t === "income" ? "#22c55e" : "#ef4444") : "var(--border)"}`, cursor: "pointer" }}>
+                  background: form.type === t ? (t === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)") : "var(--bg-raised)",
+                  color: form.type === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--text-muted)",
+                  border: `1px solid ${form.type === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--border-subtle)"}`, cursor: "pointer" }}>
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -127,7 +127,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           )}
           <input placeholder="Notes (optional)" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={save} style={{ flex: 1, background: "var(--accent,#6366f1)", color: "#fff", border: "none" }}>Save</button>
+            <button className="btn" onClick={save} style={{ flex: 1, background: "var(--accent)", color: "#fff", border: "none" }}>Save</button>
             <button className="btn" onClick={() => setShowForm(false)} style={{ flex: 1 }}>Cancel</button>
           </div>
         </div>
@@ -139,11 +139,11 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           {/* Summary strip */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
             {[
-              { label: "Total in", val: ledgerTotals.totalIn, color: "#22c55e" },
-              { label: "Total out", val: ledgerTotals.totalOut, color: "#ef4444" },
-              { label: "Current balance", val: ledgerTotals.finalBal, color: ledgerTotals.finalBal >= 0 ? "#22c55e" : "#ef4444" },
+              { label: "Total in", val: ledgerTotals.totalIn, color: "var(--green)" },
+              { label: "Total out", val: ledgerTotals.totalOut, color: "var(--red)" },
+              { label: "Current balance", val: ledgerTotals.finalBal, color: ledgerTotals.finalBal >= 0 ? "var(--green)" : "var(--red)" },
             ].map(({ label, val, color }) => (
-              <div key={label} style={{ background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border)", borderRadius: "0.5rem", padding: "0.75rem" }}>
+              <div key={label} style={{ background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "0.75rem" }}>
                 <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{label}</div>
                 <div style={{ ...mono, fontSize: 16, color }}>{formatMoney(val)}</div>
               </div>
@@ -156,7 +156,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                       {["Date", "Description", "Category", "Debit", "Credit", "Balance"].map(h => (
                         <th key={h} style={{ padding: "6px 8px", textAlign: ["Debit", "Credit", "Balance"].includes(h) ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
@@ -164,7 +164,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                   </thead>
                   <tbody>
                     {/* Opening balance row */}
-                    <tr style={{ borderBottom: "0.5px solid var(--border)", background: "rgba(255,255,255,0.02)" }}>
+                    <tr style={{ borderBottom: "0.5px solid var(--border-subtle)", background: "rgba(255,255,255,0.02)" }}>
                       <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>Opening</td>
                       <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontStyle: "italic", fontSize: 11 }}>Starting balance</td>
                       <td /><td /><td />
@@ -174,7 +174,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                       const isIncome = t.type === "income";
                       const balNeg = t.runningBalance < 0;
                       return (
-                        <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border)", background: balNeg ? "rgba(239,68,68,0.04)" : "transparent" }}>
+                        <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border-subtle)", background: balNeg ? "rgba(239,68,68,0.04)" : "transparent" }}>
                           <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap", fontSize: 11 }}>{t.date}</td>
                           <td style={{ padding: "7px 8px", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {t.description}
@@ -183,13 +183,13 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           <td style={{ padding: "7px 8px" }}>
                             <span style={{ fontSize: 10, background: "var(--bg-raised)", borderRadius: 4, padding: "2px 6px" }}>{t.category}</span>
                           </td>
-                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: "#ef4444" }}>
+                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: "var(--red)" }}>
                             {!isIncome ? formatMoney(t.amount) : ""}
                           </td>
-                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: "#22c55e" }}>
+                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: "var(--green)" }}>
                             {isIncome ? formatMoney(t.amount) : ""}
                           </td>
-                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, fontSize: 13, fontWeight: 600, color: balNeg ? "#ef4444" : t.runningBalance < startingBalance * 0.2 ? "#f59e0b" : "var(--text-primary)", whiteSpace: "nowrap" }}>
+                          <td style={{ padding: "7px 8px", textAlign: "right", ...mono, fontSize: 13, fontWeight: 600, color: balNeg ? "var(--red)" : t.runningBalance < startingBalance * 0.2 ? "var(--orange)" : "var(--text-primary)", whiteSpace: "nowrap" }}>
                             {formatMoney(t.runningBalance)}
                           </td>
                         </tr>
@@ -228,7 +228,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                       {[["date", "Date"], ["description", "Description"], ["category", "Category"], ["amount", "Amount"], ["type", "Type"], ["", ""]].map(([col, label]) => (
                         <th key={label} onClick={col ? () => sortBy(col) : undefined}
                           style={{ padding: "6px 8px", textAlign: col === "amount" ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", cursor: col ? "pointer" : "default", whiteSpace: "nowrap" }}>
@@ -239,25 +239,25 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                   </thead>
                   <tbody>
                     {filtered.map(t => (
-                      <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                      <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border-subtle)" }}>
                         <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t.date}</td>
                         <td style={{ padding: "7px 8px", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {t.description}
                           {t.notes && <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6 }}>· {t.notes}</span>}
                         </td>
                         <td style={{ padding: "7px 8px" }}><span style={{ fontSize: 11, background: "var(--bg-raised)", borderRadius: 4, padding: "2px 6px" }}>{t.category}</span></td>
-                        <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "#22c55e" : t.type === "future" ? "#6366f1" : "#ef4444", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : "var(--red)", whiteSpace: "nowrap" }}>
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "#f59e0b", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
-                          {t.reconciled ? <span style={{ fontSize: 11, color: "#22c55e" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : "Expense"}
+                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
+                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : "Expense"}
                         </td>
                         <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: 4 }}>
                             <button className="btn-sm" onClick={() => openEdit(t)} style={{ fontSize: 11, padding: "3px 8px" }}>Edit</button>
                             {t.type === "expense" && (
-                              <button className="btn-sm" onClick={() => toggleBill(t.id)} style={{ fontSize: 11, padding: "3px 8px", ...(t.is_bill ? { color: "#f59e0b", borderColor: "#f59e0b" } : {}) }} title={t.is_bill ? "Unmark as bill" : "Mark as bill"}>
+                              <button className="btn-sm" onClick={() => toggleBill(t.id)} style={{ fontSize: 11, padding: "3px 8px", ...(t.is_bill ? { color: "var(--orange)", borderColor: "var(--orange)" } : {}) }} title={t.is_bill ? "Unmark as bill" : "Mark as bill"}>
                                 {t.is_bill ? "Unbill" : "Bill"}
                               </button>
                             )}

@@ -11,32 +11,10 @@ import BudgetBillsIncome from "../../components/budget/BudgetBillsIncome";
 import BudgetSimulator from "../../components/budget/BudgetSimulator";
 import BudgetAnalytics from "../../components/budget/BudgetAnalytics";
 import BudgetBanker from "../../components/budget/BudgetBanker";
+// Config/transaction normalisers live in budgetSummary so the home Dashboard
+// widget and this page read the data in exactly the same shape.
+import { DEFAULT_CONFIG, apiToPage, uiShape } from "../../components/budget/budgetSummary";
 
-const DEFAULT_CONFIG = {
-  categories: ["Housing","Groceries","Transportation","Utilities","Entertainment","Dining Out","Personal","Subscriptions","Health","Savings","Other"],
-  income: [],
-  paySchedule: { type: "biweekly", anchorDate: toDateStr(), customDays: null },
-  recurringBills: [],
-  categoryBudgets: {},
-  savingsGoals: [],
-  taxRate: 0.18,
-};
-
-// The budget lives as a single row in budget_config (Supabase) with a
-// localStorage fallback baked into the API — so it syncs across devices.
-// These helpers translate between the page's shape (income, paySchedule)
-// and the API's shape (incomeSources, …).
-function apiToPage(cfg) {
-  return {
-    categories: cfg.categories ?? DEFAULT_CONFIG.categories,
-    income: cfg.incomeSources ?? [],
-    recurringBills: cfg.recurringBills ?? [],
-    categoryBudgets: cfg.categoryBudgets ?? {},
-    savingsGoals: cfg.savingsGoals ?? [],
-    paySchedule: cfg.paySchedule ?? DEFAULT_CONFIG.paySchedule,
-    taxRate: cfg.taxRate ?? DEFAULT_CONFIG.taxRate,
-  };
-}
 // Transactions now live in the standalone `transactions` table (shared with
 // Frodo), NOT the config blob — so we persist an empty array here to keep the
 // legacy blob clear and prevent the two stores from diverging again.
@@ -52,24 +30,6 @@ function pageToApi(config, simulations, startingBalance) {
     startingBalance,
     simulations,
     transactions: [],
-  };
-}
-
-// The transactions table stores SIGNED amounts (expenses negative); the budget
-// UI works in positive amount + type. Normalise on read.
-function uiShape(row) {
-  return {
-    id: row.id,
-    description: row.description,
-    amount: Math.abs(Number(row.amount) || 0),
-    type: row.type,
-    category: row.category,
-    date: row.date,
-    notes: row.notes ?? "",
-    reconciled: row.reconciled ?? false,
-    is_bill: row.is_bill ?? false,
-    fulfills_recurring_id: row.fulfills_recurring_id ?? null,
-    fulfills_income_id: row.fulfills_income_id ?? null,
   };
 }
 

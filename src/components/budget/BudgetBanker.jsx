@@ -70,12 +70,12 @@ export default function BudgetBanker({ onChanged }) {
   const grow = (e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; };
   const clear = () => { setDisplay([]); setHistory([]); };
 
-  const bubble = (bg) => ({ background: bg, border: "0.5px solid var(--border,#333)", borderRadius: 12, padding: "0.6rem 0.85rem", maxWidth: "85%", fontSize: 14, lineHeight: 1.5 });
+  const bubble = (bg) => ({ background: bg, border: "0.5px solid var(--border-subtle)", borderRadius: 12, padding: "0.6rem 0.85rem", maxWidth: "85%", fontSize: 14, lineHeight: 1.5 });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, borderBottom: "0.5px solid var(--border,#333)", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, borderBottom: "0.5px solid var(--border-subtle)", marginBottom: 10 }}>
         <div style={{ fontSize: 26, lineHeight: 1 }}>{BANKER.emoji}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{BANKER.name} <i className={`fa-solid ${BANKER.icon}`} style={{ fontSize: 12, opacity: 0.6, marginLeft: 2 }} /></div>
@@ -96,7 +96,7 @@ export default function BudgetBanker({ onChanged }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {SUGGESTIONS.map((s) => (
                 <button key={s} onClick={() => send(s)} disabled={loading}
-                  style={{ textAlign: "left", background: "var(--bg-raised,#1e1e1e)", border: "0.5px solid var(--border,#333)", borderRadius: 8, padding: "7px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 13 }}>
+                  style={{ textAlign: "left", background: "var(--bg-raised)", border: "0.5px solid var(--border-subtle)", borderRadius: 8, padding: "7px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 13 }}>
                   {s}
                 </button>
               ))}
@@ -105,14 +105,14 @@ export default function BudgetBanker({ onChanged }) {
         )}
         {display.map((m, i) => (
           m.role === "user"
-            ? <div key={i} style={{ alignSelf: "flex-end", ...bubble("var(--accent,#6366f1)"), color: "#fff" }}>{m.text}</div>
-            : <div key={i} className="chat-md" style={{ alignSelf: "flex-start", ...bubble("var(--bg-elevated,#1a1a1a)") }}>
+            ? <div key={i} style={{ alignSelf: "flex-end", ...bubble("var(--accent)"), color: "#fff" }}>{m.text}</div>
+            : <div key={i} className="chat-md" style={{ alignSelf: "flex-start", ...bubble("var(--bg-card)") }}>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>{BANKER.emoji} {BANKER.name}</div>
                 <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
               </div>
         ))}
         {loading && (
-          <div style={{ alignSelf: "flex-start", ...bubble("var(--bg-elevated,#1a1a1a)"), color: "var(--text-muted)", fontStyle: "italic", fontSize: 13 }}>
+          <div style={{ alignSelf: "flex-start", ...bubble("var(--bg-card)"), color: "var(--text-muted)", fontStyle: "italic", fontSize: 13 }}>
             {status || `${BANKER.name} is counting the gold…`}
           </div>
         )}
@@ -120,7 +120,7 @@ export default function BudgetBanker({ onChanged }) {
       </div>
 
       {/* Input */}
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 10, borderTop: "0.5px solid var(--border,#333)", paddingTop: 10 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 10, borderTop: "0.5px solid var(--border-subtle)", paddingTop: 10 }}>
         <textarea ref={taRef} value={input} maxLength={MAX_INPUT} onChange={grow} onKeyDown={onKey} rows={1}
           placeholder={`Tell ${BANKER.name} what to do with your money…`}
           style={{ flex: 1, resize: "none", fontSize: 14, padding: "8px 10px", maxHeight: 120, lineHeight: 1.4 }} />
