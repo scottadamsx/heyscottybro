@@ -4,6 +4,7 @@ import {
   loadBudgetConfig, saveBudgetConfig,
   loadTransactions, newTransaction, updateTransaction, deleteTransaction,
 } from "../../api/plannerApi";
+import PageTabs from "../../components/PageTabs";
 import BudgetDashboard from "../../components/budget/BudgetDashboard";
 import BudgetTransactions from "../../components/budget/BudgetTransactions";
 import BudgetReconcile from "../../components/budget/BudgetReconcile";
@@ -42,15 +43,17 @@ function txChanged(a, b) {
   return TX_PERSIST_FIELDS.some((f) => (a[f] ?? null) !== (b[f] ?? null));
 }
 
+// `key` (not `id`) + `icon` so these feed the shared PageTabs component the
+// other portal pages use, keeping the Finance header consistent with them.
 const TABS = [
-  { id: "dashboard",    label: "Dashboard" },
-  { id: "banker",       label: "🧌 Banker" },
-  { id: "transactions", label: "Transactions" },
-  { id: "ledger",       label: "Ledger" },
-  { id: "analytics",    label: "Analytics" },
-  { id: "reconcile",    label: "Reconcile" },
-  { id: "bills",        label: "Bills & Income" },
-  { id: "simulator",    label: "Simulator" },
+  { key: "dashboard",    label: "Dashboard",      icon: "fa-gauge" },
+  { key: "banker",       label: "🧌 Banker" },
+  { key: "transactions", label: "Transactions",   icon: "fa-list-ul" },
+  { key: "ledger",       label: "Ledger",         icon: "fa-book" },
+  { key: "analytics",    label: "Analytics",      icon: "fa-chart-pie" },
+  { key: "reconcile",    label: "Reconcile",      icon: "fa-scale-balanced" },
+  { key: "bills",        label: "Bills & Income", icon: "fa-file-invoice-dollar" },
+  { key: "simulator",    label: "Simulator",      icon: "fa-flask" },
 ];
 
 export default function BudgetPage() {
@@ -219,94 +222,86 @@ export default function BudgetPage() {
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 
   return (
-    <div className="module-page">
-      <div className="module-header">
-        <h1>Finance</h1>
+    <div className="combined-page">
+      <div className="combined-page-header">
+        <h1 className="combined-page-title">
+          <i className="fa-solid fa-wallet" /> Finance
+        </h1>
+        <PageTabs tabs={TABS} active={tab} onChange={switchTab} />
       </div>
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", borderBottom: "0.5px solid var(--border,#333)", marginBottom: 16, overflowX: "auto", flexShrink: 0 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => switchTab(t.id)} style={{
-            padding: "9px 14px", fontSize: 12, fontWeight: tab === t.id ? 600 : 400,
-            color: tab === t.id ? "var(--text-primary,#fff)" : "var(--text-muted,#666)",
-            background: "none", border: "none",
-            borderBottom: `2px solid ${tab === t.id ? "var(--accent)" : "transparent"}`,
-            cursor: "pointer", whiteSpace: "nowrap",
-          }}>
-            {t.label}
-          </button>
-        ))}
+      <div className="combined-embed">
+        <div className="module-page">
+          {tab === "dashboard" && (
+            <BudgetDashboard
+              config={config}
+              transactions={transactions}
+              startingBalance={startingBalance}
+              paySchedule={config.paySchedule}
+              periodOffset={periodOffset}
+              setPeriodOffset={setPeriodOffset}
+              onPayBill={handlePayBill}
+              onUnpayBill={handleUnpayBill}
+              onSetCategoryBudget={handleSetCategoryBudget}
+              onSaveGoals={handleSaveGoals}
+            />
+          )}
+          {tab === "banker" && (
+            <BudgetBanker onChanged={reload} />
+          )}
+          {tab === "transactions" && (
+            <BudgetTransactions
+              config={config}
+              transactions={transactions}
+              setTransactions={setTransactions}
+              startingBalance={startingBalance}
+            />
+          )}
+          {tab === "ledger" && (
+            <BudgetTransactions
+              config={config}
+              transactions={transactions}
+              setTransactions={setTransactions}
+              startingBalance={startingBalance}
+              defaultView="ledger"
+            />
+          )}
+          {tab === "analytics" && (
+            <BudgetAnalytics
+              config={config}
+              transactions={transactions}
+              startingBalance={startingBalance}
+            />
+          )}
+          {tab === "reconcile" && (
+            <BudgetReconcile
+              config={config}
+              transactions={transactions}
+              setTransactions={setTransactions}
+              paySchedule={config.paySchedule}
+            />
+          )}
+          {tab === "bills" && (
+            <BudgetBillsIncome
+              config={config}
+              setConfig={setConfig}
+              transactions={transactions}
+              setTransactions={setTransactions}
+              startingBalance={startingBalance}
+              setStartingBalance={setStartingBalance}
+              onFreshStart={handleFreshStart}
+            />
+          )}
+          {tab === "simulator" && (
+            <BudgetSimulator
+              config={config}
+              simulations={simulations}
+              setSimulations={setSimulations}
+              transactions={transactions}
+            />
+          )}
+        </div>
       </div>
-
-      {tab === "dashboard" && (
-        <BudgetDashboard
-          config={config}
-          transactions={transactions}
-          startingBalance={startingBalance}
-          paySchedule={config.paySchedule}
-          periodOffset={periodOffset}
-          setPeriodOffset={setPeriodOffset}
-          onPayBill={handlePayBill}
-          onUnpayBill={handleUnpayBill}
-          onSetCategoryBudget={handleSetCategoryBudget}
-          onSaveGoals={handleSaveGoals}
-        />
-      )}
-      {tab === "banker" && (
-        <BudgetBanker onChanged={reload} />
-      )}
-      {tab === "transactions" && (
-        <BudgetTransactions
-          config={config}
-          transactions={transactions}
-          setTransactions={setTransactions}
-          startingBalance={startingBalance}
-        />
-      )}
-      {tab === "ledger" && (
-        <BudgetTransactions
-          config={config}
-          transactions={transactions}
-          setTransactions={setTransactions}
-          startingBalance={startingBalance}
-          defaultView="ledger"
-        />
-      )}
-      {tab === "analytics" && (
-        <BudgetAnalytics
-          config={config}
-          transactions={transactions}
-          startingBalance={startingBalance}
-        />
-      )}
-      {tab === "reconcile" && (
-        <BudgetReconcile
-          config={config}
-          transactions={transactions}
-          setTransactions={setTransactions}
-          paySchedule={config.paySchedule}
-        />
-      )}
-      {tab === "bills" && (
-        <BudgetBillsIncome
-          config={config}
-          setConfig={setConfig}
-          transactions={transactions}
-          setTransactions={setTransactions}
-          startingBalance={startingBalance}
-          setStartingBalance={setStartingBalance}
-          onFreshStart={handleFreshStart}
-        />
-      )}
-      {tab === "simulator" && (
-        <BudgetSimulator
-          config={config}
-          simulations={simulations}
-          setSimulations={setSimulations}
-          transactions={transactions}
-        />
-      )}
     </div>
   );
 }
