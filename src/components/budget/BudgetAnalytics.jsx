@@ -20,30 +20,30 @@ function OverviewChart({ periodHistory }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, height: "auto", display: "block" }}>
       {yTicks.map(v => (
-        <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+        <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} style={{ stroke: "var(--border-subtle)" }} strokeWidth="1" />
       ))}
       <polygon points={spnArea} fill="rgba(239,68,68,0.09)" />
-      <polyline points={spnPts} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <polyline points={incPts} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={spnPts} fill="none" style={{ stroke: "var(--red)" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={incPts} fill="none" style={{ stroke: "var(--green)" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {active.map((p, i) => (
         <g key={i}>
           <line x1={toX(i)} y1={toY(p.income)} x2={toX(i)} y2={toY(p.spending)} stroke={p.net >= 0 ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"} strokeWidth="2" />
-          <circle cx={toX(i)} cy={toY(p.income)} r="4" fill="#22c55e" />
-          <circle cx={toX(i)} cy={toY(p.spending)} r="4" fill="#ef4444" />
+          <circle cx={toX(i)} cy={toY(p.income)} r="4" style={{ fill: "var(--green)" }} />
+          <circle cx={toX(i)} cy={toY(p.spending)} r="4" style={{ fill: "var(--red)" }} />
         </g>
       ))}
       {yTicks.map(v => (
-        <text key={v} x={P.l - 5} y={toY(v) + 3} textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize="9" fontFamily="monospace">
+        <text key={v} x={P.l - 5} y={toY(v) + 3} textAnchor="end" style={{ fill: "var(--text-muted)" }} fontSize="9" fontFamily="monospace">
           {v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${Math.round(v)}`}
         </text>
       ))}
       {active.map((p, i) => (
-        <text key={i} x={toX(i)} y={H - 5} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="9">{p.label}</text>
+        <text key={i} x={toX(i)} y={H - 5} textAnchor="middle" style={{ fill: "var(--text-muted)" }} fontSize="9">{p.label}</text>
       ))}
-      <circle cx={P.l + 8} cy={P.t - 7} r="3" fill="#22c55e" />
-      <text x={P.l + 14} y={P.t - 3} fill="rgba(255,255,255,0.45)" fontSize="9">Income</text>
-      <circle cx={P.l + 68} cy={P.t - 7} r="3" fill="#ef4444" />
-      <text x={P.l + 74} y={P.t - 3} fill="rgba(255,255,255,0.45)" fontSize="9">Spending</text>
+      <circle cx={P.l + 8} cy={P.t - 7} r="3" style={{ fill: "var(--green)" }} />
+      <text x={P.l + 14} y={P.t - 3} style={{ fill: "var(--text-secondary)" }} fontSize="9">Income</text>
+      <circle cx={P.l + 68} cy={P.t - 7} r="3" style={{ fill: "var(--red)" }} />
+      <text x={P.l + 74} y={P.t - 3} style={{ fill: "var(--text-secondary)" }} fontSize="9">Spending</text>
     </svg>
   );
 }
@@ -51,27 +51,27 @@ function OverviewChart({ periodHistory }) {
 // ── Tiny sparkline per category ───────────────────────────
 function Sparkline({ values, trend }) {
   const hasData = values.some(v => v > 0);
-  if (!hasData || values.length < 2) return <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>—</span>;
+  if (!hasData || values.length < 2) return <span style={{ color: "var(--text-muted)", fontSize: 10 }}>—</span>;
   const W = 64, H = 22;
   const max = Math.max(...values, 1);
   const n = values.length;
   const pts = values.map((v, i) => `${(n < 2 ? W / 2 : (i / (n - 1)) * (W - 6)) + 3},${H - (v / max) * (H - 7) - 3}`).join(" ");
-  const color = trend === "up" ? "#ef4444" : trend === "down" ? "#22c55e" : "#6b7280";
+  const color = trend === "up" ? "var(--red)" : trend === "down" ? "var(--green)" : "var(--text-muted)";
   const lx = n < 2 ? W / 2 : ((n - 1) / (n - 1)) * (W - 6) + 3;
   const ly = H - (values[n - 1] / max) * (H - 7) - 3;
   return (
     <svg width={W} height={H} style={{ verticalAlign: "middle", display: "inline-block" }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-      <circle cx={lx} cy={ly} r="2.5" fill={color} />
+      <polyline points={pts} fill="none" style={{ stroke: color }} strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx={lx} cy={ly} r="2.5" style={{ fill: color }} />
     </svg>
   );
 }
 
 function TrendBadge({ trend, pctChange }) {
   const abs = Math.abs(pctChange).toFixed(0);
-  if (trend === "up") return <span style={{ color: "#ef4444", fontSize: 11, fontWeight: 700 }}>↑ {abs}%</span>;
-  if (trend === "down") return <span style={{ color: "#22c55e", fontSize: 11, fontWeight: 700 }}>↓ {abs}%</span>;
-  return <span style={{ color: "#6b7280", fontSize: 11 }}>→</span>;
+  if (trend === "up") return <span style={{ color: "var(--red)", fontSize: 11, fontWeight: 700 }}>↑ {abs}%</span>;
+  if (trend === "down") return <span style={{ color: "var(--green)", fontSize: 11, fontWeight: 700 }}>↓ {abs}%</span>;
+  return <span style={{ color: "var(--text-muted)", fontSize: 11 }}>→</span>;
 }
 
 // ── Auto-generated insights ───────────────────────────────
@@ -116,10 +116,10 @@ function generateInsights(periodHistory, trends, projection, lastIncome) {
 }
 
 const INSIGHT_STYLES = {
-  success: { bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.22)", icon: "✓", c: "#22c55e" },
-  warning: { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.22)", icon: "!", c: "#f59e0b" },
-  danger:  { bg: "rgba(239,68,68,0.08)",  border: "rgba(239,68,68,0.22)",  icon: "↑", c: "#ef4444" },
-  info:    { bg: "rgba(99,102,241,0.08)", border: "rgba(99,102,241,0.22)", icon: "i", c: "#6366f1" },
+  success: { bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.22)", icon: "✓", c: "var(--green)" },
+  warning: { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.22)", icon: "!", c: "var(--orange)" },
+  danger:  { bg: "rgba(239,68,68,0.08)",  border: "rgba(239,68,68,0.22)",  icon: "↑", c: "var(--red)" },
+  info:    { bg: "rgba(99,102,241,0.08)", border: "rgba(99,102,241,0.22)", icon: "i", c: "var(--accent)" },
 };
 
 // ── Main component ────────────────────────────────────────
@@ -131,7 +131,7 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
   const insights      = useMemo(() => generateInsights(periodHistory, trends, projection, lastIncome), [periodHistory, trends, projection, lastIncome]);
 
   const sh = { fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)", margin: "20px 0 10px", fontWeight: 700 };
-  const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border)", borderRadius: "0.5rem", padding: "1rem", marginBottom: 12 };
+  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "1rem", marginBottom: 12 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 600 };
 
   if (!transactions.length) {
@@ -163,7 +163,7 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
               <div key={i} style={{ fontSize: 11 }}>
                 <span style={{ color: "var(--text-muted)" }}>{p.label}</span>
                 {" · "}
-                <span style={{ color: p.net >= 0 ? "#22c55e" : "#ef4444", fontWeight: 500 }}>
+                <span style={{ color: p.net >= 0 ? "var(--green)" : "var(--red)", fontWeight: 500 }}>
                   {p.net >= 0 ? "+" : ""}{formatMoney(p.net)}
                 </span>
               </div>
@@ -179,17 +179,17 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
           <div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
               Assumed income
-              {lastIncome > 0 && <span style={{ color: "#22c55e", marginLeft: 4 }}>← last paycheck</span>}
+              {lastIncome > 0 && <span style={{ color: "var(--green)", marginLeft: 4 }}>← last paycheck</span>}
             </div>
-            <div style={{ ...mono, fontSize: 20, color: "#22c55e" }}>{formatMoney(assumed)}</div>
+            <div style={{ ...mono, fontSize: 20, color: "var(--green)" }}>{formatMoney(assumed)}</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Projected spend</div>
-            <div style={{ ...mono, fontSize: 20, color: "#ef4444" }}>{formatMoney(projection.spending)}</div>
+            <div style={{ ...mono, fontSize: 20, color: "var(--red)" }}>{formatMoney(projection.spending)}</div>
           </div>
           <div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Projected net</div>
-            <div style={{ ...mono, fontSize: 20, color: projNet >= 0 ? "#22c55e" : "#ef4444" }}>
+            <div style={{ ...mono, fontSize: 20, color: projNet >= 0 ? "var(--green)" : "var(--red)" }}>
               {projNet >= 0 ? "+" : ""}{formatMoney(projNet)}
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
                 <span style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>{formatMoney(amt)}</span>
               </div>
               <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: trend?.trend === "up" ? "#ef4444" : "#6366f1", borderRadius: 999, transition: "width .3s" }} />
+                <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: trend?.trend === "up" ? "var(--red)" : "var(--accent)", borderRadius: 999, transition: "width .3s" }} />
               </div>
               <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, textAlign: "right" }}>{pct.toFixed(0)}% of projected spending</div>
             </div>
@@ -242,7 +242,7 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
           <div style={{ overflowX: "auto", marginBottom: 8 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                   {["Category", "Last 6 periods", "Last period", "Avg/period", "Trend", "Projected"].map(h => (
                     <th key={h} style={{ padding: "7px 8px", textAlign: ["Last period", "Avg/period", "Projected"].includes(h) ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
@@ -250,24 +250,24 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
               </thead>
               <tbody>
                 {trends.sort((a, b) => b.avg - a.avg).map(t => (
-                  <tr key={t.category} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                  <tr key={t.category} style={{ borderBottom: "0.5px solid var(--border-subtle)" }}>
                     <td style={{ padding: "8px 8px", fontWeight: 500 }}>{t.category}</td>
                     <td style={{ padding: "8px 8px" }}><Sparkline values={t.values} trend={t.trend} /></td>
                     <td style={{ padding: "8px 8px", textAlign: "right", ...mono }}>{formatMoney(t.last)}</td>
                     <td style={{ padding: "8px 8px", textAlign: "right", ...mono, color: "var(--text-muted)" }}>{formatMoney(t.avg)}</td>
                     <td style={{ padding: "8px 8px" }}><TrendBadge trend={t.trend} pctChange={t.pctChange} /></td>
-                    <td style={{ padding: "8px 8px", textAlign: "right", ...mono, color: "#6366f1" }}>{formatMoney(t.projected)}</td>
+                    <td style={{ padding: "8px 8px", textAlign: "right", ...mono, color: "var(--accent)" }}>{formatMoney(t.projected)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ borderTop: "1px solid var(--border)" }}>
+                <tr style={{ borderTop: "1px solid var(--border-subtle)" }}>
                   <td style={{ padding: "8px 8px", fontWeight: 600, fontSize: 11 }}>Total</td>
                   <td />
                   <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600 }}>{formatMoney(trends.reduce((s, t) => s + t.last, 0))}</td>
                   <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600, color: "var(--text-muted)" }}>{formatMoney(trends.reduce((s, t) => s + t.avg, 0))}</td>
                   <td />
-                  <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600, color: "#6366f1" }}>{formatMoney(trends.reduce((s, t) => s + t.projected, 0))}</td>
+                  <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600, color: "var(--accent)" }}>{formatMoney(trends.reduce((s, t) => s + t.projected, 0))}</td>
                 </tr>
               </tfoot>
             </table>

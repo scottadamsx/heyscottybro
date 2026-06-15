@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { computePeriodTotals, computeWeeklyAllowance, getPeriodBills, getQuantifiableBudgets, getIncomePayPeriod, savingsPlan, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatPeriodLabel, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
+import { getPeriodBills, getQuantifiableBudgets, savingsPlan, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatPeriodLabel, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
+import { computeBudgetSnapshot } from "./budgetSummary";
 
 function MoneyChart({ config, transactions, period }) {
   const W = 600, H = 160, padX = 48, padY = 16;
@@ -38,21 +39,21 @@ function MoneyChart({ config, transactions, period }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H, display: "block" }} role="img" aria-label="Money in vs out">
       <defs>
-        <linearGradient id="gin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22c55e" stopOpacity="0.25"/><stop offset="100%" stopColor="#22c55e" stopOpacity="0"/></linearGradient>
-        <linearGradient id="gout" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity="0.25"/><stop offset="100%" stopColor="#ef4444" stopOpacity="0"/></linearGradient>
+        <linearGradient id="gin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style={{ stopColor: "var(--green)", stopOpacity: 0.25 }}/><stop offset="100%" style={{ stopColor: "var(--green)", stopOpacity: 0 }}/></linearGradient>
+        <linearGradient id="gout" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style={{ stopColor: "var(--red)", stopOpacity: 0.25 }}/><stop offset="100%" style={{ stopColor: "var(--red)", stopOpacity: 0 }}/></linearGradient>
       </defs>
       {ticks.map((t, i) => (
         <g key={i}>
-          <line x1={padX} x2={W-8} y1={y(t)} y2={y(t)} stroke="var(--border,#333)" strokeWidth="0.5"/>
-          <text x={4} y={y(t)+4} fontSize="9" fill="var(--text-muted,#666)" textAnchor="start">${Math.round(t).toLocaleString()}</text>
+          <line x1={padX} x2={W-8} y1={y(t)} y2={y(t)} style={{ stroke: "var(--border-subtle)" }} strokeWidth="0.5"/>
+          <text x={4} y={y(t)+4} fontSize="9" style={{ fill: "var(--text-muted)" }} textAnchor="start">${Math.round(t).toLocaleString()}</text>
         </g>
       ))}
       <path d={inArea} fill="url(#gin)"/>
       <path d={outArea} fill="url(#gout)"/>
-      <polyline points={inPts} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round"/>
-      <polyline points={outPts} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinejoin="round"/>
-      <text x={W-8} y={12} fontSize="9" fill="#22c55e" textAnchor="end">In</text>
-      <text x={W-8} y={24} fontSize="9" fill="#ef4444" textAnchor="end">Out</text>
+      <polyline points={inPts} fill="none" style={{ stroke: "var(--green)" }} strokeWidth="2" strokeLinejoin="round"/>
+      <polyline points={outPts} fill="none" style={{ stroke: "var(--red)" }} strokeWidth="2" strokeLinejoin="round"/>
+      <text x={W-8} y={12} fontSize="9" style={{ fill: "var(--green)" }} textAnchor="end">In</text>
+      <text x={W-8} y={24} fontSize="9" style={{ fill: "var(--red)" }} textAnchor="end">Out</text>
     </svg>
   );
 }
@@ -64,24 +65,19 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   // derived from the income sources in Bills & Income. periodOffset moves whole
   // pay periods. Everything below is scoped to this period so the analytics
   // reflect "this paycheque": the bills due in it + every categorized expense.
-  const period = useMemo(() => getIncomePayPeriod(config, today, periodOffset), [config, today, periodOffset]);
+  // ONE shared snapshot — the home Dashboard widget derives its budget numbers
+  // from this exact same function, so the two screens can never disagree.
+  const snap = useMemo(() => computeBudgetSnapshot(config, transactions, today, periodOffset), [config, transactions, today, periodOffset]);
+  const { period, incomeTotal, spent, billsTotal, remaining, periodTx, weekly, currentWeek, savingsThisPeriod, afterSavings } = snap;
 
-  const { incomeTotal, spent, billsTotal, remaining, periodTx } = useMemo(
-    () => computePeriodTotals(transactions, config, period),
-    [transactions, config, period]
-  );
-
-  // Savings goals — how much to set aside this paycheque for each goal.
+  // Savings goals — how much to set aside this paycheque for each goal (the
+  // detailed per-goal rows; the period total comes from the snapshot above).
   const goals = useMemo(() => savingsPlan(config, today), [config, today]);
-  const savingsThisPeriod = goals.reduce((s, g) => s + g.perPeriod, 0);
 
   const { bills } = useMemo(() => getPeriodBills(transactions, config, period), [transactions, config, period]);
   const fixedBills = useMemo(() => bills.filter(b => !b.variable), [bills]);
   const variableBills = useMemo(() => bills.filter(b => b.variable), [bills]);
   const paidCount = fixedBills.filter(b => b.paid).length;
-
-  const weekly = useMemo(() => computeWeeklyAllowance(transactions, config, period), [transactions, config, period]);
-  const currentWeek = weekly.weeks.find(w => w.isCurrent) || null;
 
   const catTotals = useMemo(() => {
     const m = {};
@@ -139,12 +135,12 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   const billTx = (billId) => periodTx.filter(t => t.type === "expense" && t.fulfills_recurring_id === billId).sort((a, b) => b.date.localeCompare(a.date));
 
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "16px 0 8px", fontWeight: 500 };
-  const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.5rem", padding: "0.875rem 1.125rem", marginBottom: 8 };
+  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "0.875rem 1.125rem", marginBottom: 8 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
 
   // Small transaction list shown when a category / bill row is expanded.
   const TxDrill = ({ txs, empty = "No transactions this pay period." }) => (
-    <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border)", paddingTop: 8 }}>
+    <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border-subtle)", paddingTop: 8 }}>
       {txs.length === 0
         ? <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{empty}</div>
         : txs.map(t => (
@@ -156,25 +152,24 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
     </div>
   );
 
-  const afterSavings = remaining - savingsThisPeriod;
   const summaryCards = [
-    { label: "Income", value: incomeTotal, color: "#22c55e" },
-    { label: "Spent", value: spent, color: "#ef4444" },
-    { label: "Bills", value: billsTotal, color: "#f59e0b" },
-    { label: "To save", value: savingsThisPeriod, color: "#8b5cf6" },
-    { label: "Remaining", value: afterSavings, color: afterSavings < 0 ? "#ef4444" : afterSavings < 100 ? "#f59e0b" : "#22c55e" },
+    { label: "Income", value: incomeTotal, color: "var(--green)" },
+    { label: "Spent", value: spent, color: "var(--red)" },
+    { label: "Bills", value: billsTotal, color: "var(--orange)" },
+    { label: "To save", value: savingsThisPeriod, color: "var(--accent)" },
+    { label: "Remaining", value: afterSavings, color: afterSavings < 0 ? "var(--red)" : afterSavings < 100 ? "var(--orange)" : "var(--green)" },
   ];
 
   return (
     <div>
       {/* Pay-period navigator */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-        <button onClick={() => setPeriodOffset(o => o - 1)} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>‹</button>
+        <button onClick={() => setPeriodOffset(o => o - 1)} style={{ background: "none", border: "0.5px solid var(--border-subtle)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>‹</button>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           {periodLabel}
           {periodOffset === 0 ? " (Current)" : periodOffset === 1 ? " (Next)" : periodOffset === -1 ? " (Previous)" : ""}
         </span>
-        <button onClick={() => setPeriodOffset(o => o + 1)} style={{ background: "none", border: "0.5px solid var(--border)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>›</button>
+        <button onClick={() => setPeriodOffset(o => o + 1)} style={{ background: "none", border: "0.5px solid var(--border-subtle)", borderRadius: 6, padding: "4px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14 }}>›</button>
       </div>
       <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>
         {period.fallback ? "No paydays set — showing this calendar month. Add an income source in Bills & Income for true pay-period analytics." : "Pay period · payday → next payday"}
@@ -196,10 +191,10 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
 
       {/* Spendable this week (current week of the pay period) */}
       {currentWeek && (
-        <div style={{ ...card, marginBottom: 12, background: "rgba(99,102,241,0.06)", borderColor: "var(--accent,#6366f1)" }}>
+        <div style={{ ...card, marginBottom: 12, background: "rgba(99,102,241,0.06)", borderColor: "var(--accent)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>Left to spend this week</div>
-            <div style={{ ...mono, fontSize: 24, color: currentWeek.remaining < 0 ? "#ef4444" : currentWeek.remaining < currentWeek.allowance * 0.25 ? "#f59e0b" : "#22c55e" }}>
+            <div style={{ ...mono, fontSize: 24, color: currentWeek.remaining < 0 ? "var(--red)" : currentWeek.remaining < currentWeek.allowance * 0.25 ? "var(--orange)" : "var(--green)" }}>
               {formatMoney(currentWeek.remaining)}
             </div>
           </div>
@@ -228,15 +223,15 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
           const pct = w.allowance > 0 ? Math.min(Math.max(w.spent / w.allowance * 100, 0), 100) : (w.spent > 0 ? 100 : 0);
           const dr = `${parseDate(w.start).getDate()}–${parseDate(w.end).getDate()}`;
           return (
-            <div key={w.index} style={{ marginBottom: 12, opacity: w.isPast ? 0.5 : 1, ...(w.isCurrent ? { borderLeft: "2px solid var(--accent,#6366f1)", paddingLeft: 10, marginLeft: -2 } : {}) }}>
+            <div key={w.index} style={{ marginBottom: 12, opacity: w.isPast ? 0.5 : 1, ...(w.isCurrent ? { borderLeft: "2px solid var(--accent)", paddingLeft: 10, marginLeft: -2 } : {}) }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
                 <span style={{ fontWeight: w.isCurrent ? 600 : 400 }}>
                   Week {w.index}{w.isCurrent ? " · now" : ""} <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{dr}</span>
                 </span>
-                <span style={{ ...mono, color: over ? "#ef4444" : "#22c55e" }}>{formatMoney(w.remaining)} left</span>
+                <span style={{ ...mono, color: over ? "var(--red)" : "var(--green)" }}>{formatMoney(w.remaining)} left</span>
               </div>
-              <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: over ? "#ef4444" : pct > 75 ? "#f59e0b" : "#22c55e", borderRadius: 4 }} />
+              <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: over ? "var(--red)" : pct > 75 ? "var(--orange)" : "var(--green)", borderRadius: 4 }} />
               </div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                 {formatMoney(w.spent)} spent of {formatMoney(w.allowance)}
@@ -251,11 +246,11 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       {bills.length > 0 && <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <p style={sh}>Bills</p>
-          {fixedBills.length > 0 && <span style={{ fontSize: 12, color: paidCount === fixedBills.length ? "#22c55e" : "var(--text-muted)" }}>{paidCount} of {fixedBills.length} paid</span>}
+          {fixedBills.length > 0 && <span style={{ fontSize: 12, color: paidCount === fixedBills.length ? "var(--green)" : "var(--text-muted)" }}>{paidCount} of {fixedBills.length} paid</span>}
         </div>
         {fixedBills.length > 0 && (
-          <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
-            <div style={{ height: "100%", width: `${fixedBills.length ? paidCount / fixedBills.length * 100 : 0}%`, background: "#22c55e", borderRadius: 4 }} />
+          <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ height: "100%", width: `${fixedBills.length ? paidCount / fixedBills.length * 100 : 0}%`, background: "var(--green)", borderRadius: 4 }} />
           </div>
         )}
         {fixedBills.map((b, i) => {
@@ -272,15 +267,15 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 </div>
                 <span style={{ ...mono, fontSize: 14, marginRight: 12, textDecoration: b.paid ? "line-through" : "none", color: b.paid ? "var(--text-muted)" : undefined }}>{formatMoney(b.amount)}</span>
                 {b.paid
-                  ? <button className="btn" style={{ fontSize: 11, padding: "3px 8px", color: "#22c55e", background: "rgba(34,197,94,0.1)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
+                  ? <button className="btn" style={{ fontSize: 11, padding: "3px 8px", color: "var(--green)", background: "rgba(34,197,94,0.1)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
                   : b.autoPay
-                    ? <span style={{ fontSize: 11, color: "#22c55e", background: "rgba(34,197,94,0.1)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
+                    ? <span style={{ fontSize: 11, color: "var(--green)", background: "rgba(34,197,94,0.1)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
                     : <button className="btn" style={{ fontSize: 12, padding: "4px 10px" }} onClick={(e) => { e.stopPropagation(); onPayBill(b); }}>Pay now</button>}
               </div>
               {isOpen && (
-                <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border)", paddingTop: 8, fontSize: 12 }}>
+                <div style={{ marginTop: 8, borderTop: "0.5px dashed var(--border-subtle)", paddingTop: 8, fontSize: 12 }}>
                   {b.paid
-                    ? <span style={{ color: "#22c55e" }}><i className="fa-solid fa-check" style={{ marginRight: 5 }} />Paid {payTx ? `${payTx.date} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
+                    ? <span style={{ color: "var(--green)" }}><i className="fa-solid fa-check" style={{ marginRight: 5 }} />Paid {payTx ? `${payTx.date} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
                     : <span style={{ color: "var(--text-muted)" }}>Not paid yet — due {b.date}.</span>}
                 </div>
               )}
@@ -291,7 +286,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         {variableBills.map((b) => {
           const pct = b.budget > 0 ? Math.min(b.spent / b.budget * 100, 100) : 0;
           const over = b.spent > b.budget;
-          const barColor = over ? "#ef4444" : pct > 80 ? "#f59e0b" : "#22c55e";
+          const barColor = over ? "var(--red)" : pct > 80 ? "var(--orange)" : "var(--green)";
           const key = `varbill:${b.billId}`;
           const isOpen = openRow === key;
           return (
@@ -300,14 +295,14 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, fontSize: 13 }}>
                   <span style={{ fontWeight: 500 }}>
                     <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 10, color: "var(--text-muted)", marginRight: 8 }} />
-                    {b.name} <span style={{ fontSize: 10, color: "var(--text-muted)", border: "0.5px solid var(--border)", borderRadius: 4, padding: "0 4px", marginLeft: 4 }}>{b.category}</span>
+                    {b.name} <span style={{ fontSize: 10, color: "var(--text-muted)", border: "0.5px solid var(--border-subtle)", borderRadius: 4, padding: "0 4px", marginLeft: 4 }}>{b.category}</span>
                   </span>
-                  <span style={{ ...mono, fontSize: 12, color: over ? "#ef4444" : "var(--text-muted)" }}>{formatMoney(b.spent)} / {formatMoney(b.budget)} ({Math.round(b.budget > 0 ? b.spent / b.budget * 100 : 0)}%)</span>
+                  <span style={{ ...mono, fontSize: 12, color: over ? "var(--red)" : "var(--text-muted)" }}>{formatMoney(b.spent)} / {formatMoney(b.budget)} ({Math.round(b.budget > 0 ? b.spent / b.budget * 100 : 0)}%)</span>
                 </div>
-                <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
                 </div>
-                {over && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{formatMoney(b.spent - b.budget)} over</div>}
+                {over && <div style={{ fontSize: 11, color: "var(--red)", marginTop: 3 }}>{formatMoney(b.spent - b.budget)} over</div>}
               </div>
               {isOpen && <TxDrill txs={billTx(b.billId)} empty="No transactions tagged to this bill yet — tag them via “Pays a bill?” when logging." />}
             </div>
@@ -329,7 +324,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         {quantBudgets.map(({ category: cat, budget, spent: spentCat, fromBill, editable }) => {
           const pct = budget > 0 ? Math.min(spentCat / budget * 100, 100) : 0;
           const over = spentCat > budget;
-          const barColor = over ? "#ef4444" : pct > 80 ? "#f59e0b" : "#22c55e";
+          const barColor = over ? "var(--red)" : pct > 80 ? "var(--orange)" : "var(--green)";
           const isEditing = editCat === cat;
           const key = `cat:${cat}`;
           const isOpen = openRow === key;
@@ -339,7 +334,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 <span style={{ fontWeight: 500, cursor: "pointer" }} onClick={() => toggleRow(key)}>
                   <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"}`} style={{ fontSize: 10, color: "var(--text-muted)", marginRight: 8 }} />
                   {cat}
-                  {fromBill && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6, border: "0.5px solid var(--border)", borderRadius: 4, padding: "0 4px" }}>bill</span>}
+                  {fromBill && <span style={{ fontSize: 10, color: "var(--text-muted)", marginLeft: 6, border: "0.5px solid var(--border-subtle)", borderRadius: 4, padding: "0 4px" }}>bill</span>}
                 </span>
                 {isEditing ? (
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -352,19 +347,19 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                   </span>
                 ) : editable ? (
                   <button onClick={() => startEdit(cat)} title="Edit budget"
-                    style={{ background: "none", border: "none", cursor: "pointer", color: over ? "#ef4444" : "var(--text-muted)", fontSize: 12, ...mono }}>
+                    style={{ background: "none", border: "none", cursor: "pointer", color: over ? "var(--red)" : "var(--text-muted)", fontSize: 12, ...mono }}>
                     {formatMoney(spentCat)} / {formatMoney(budget)} ({Math.round(budget > 0 ? spentCat / budget * 100 : 0)}%) <i className="fa-solid fa-pen" style={{ fontSize: 9, marginLeft: 3, opacity: 0.6 }} />
                   </button>
                 ) : (
-                  <span style={{ color: over ? "#ef4444" : "var(--text-muted)", fontSize: 12, ...mono }}>
+                  <span style={{ color: over ? "var(--red)" : "var(--text-muted)", fontSize: 12, ...mono }}>
                     {formatMoney(spentCat)} / {formatMoney(budget)} ({Math.round(budget > 0 ? spentCat / budget * 100 : 0)}%)
                   </span>
                 )}
               </div>
-              <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
               </div>
-              {over && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 3 }}>{formatMoney(spentCat - budget)} over budget</div>}
+              {over && <div style={{ fontSize: 11, color: "var(--red)", marginTop: 3 }}>{formatMoney(spentCat - budget)} over budget</div>}
               {isOpen && <TxDrill txs={catTx(cat)} />}
             </div>
           );
@@ -394,7 +389,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       {/* Savings goals — spread a future purchase across paychecks */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <p style={sh}>Savings goals</p>
-        {savingsThisPeriod > 0 && <span style={{ fontSize: 11, color: "#8b5cf6" }}>set aside {formatMoney(savingsThisPeriod)} this paycheque</span>}
+        {savingsThisPeriod > 0 && <span style={{ fontSize: 11, color: "var(--accent)" }}>set aside {formatMoney(savingsThisPeriod)} this paycheque</span>}
       </div>
       <div style={card}>
         {goals.length === 0 && !goalOpen && (
@@ -404,18 +399,18 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         )}
         {goals.map(g => {
           const pct = g.target > 0 ? Math.min(g.saved / g.target * 100, 100) : 0;
-          const barColor = g.done ? "#22c55e" : "#8b5cf6";
+          const barColor = g.done ? "var(--green)" : "var(--accent)";
           return (
             <div key={g.id} style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: 13 }}>
-                <span style={{ fontWeight: 500 }}>{g.name} {g.done && <span style={{ color: "#22c55e", fontSize: 11 }}>✓ funded</span>}</span>
+                <span style={{ fontWeight: 500 }}>{g.name} {g.done && <span style={{ color: "var(--green)", fontSize: 11 }}>✓ funded</span>}</span>
                 <span style={{ ...mono, fontSize: 12, color: "var(--text-muted)" }}>{formatMoney(g.saved)} / {formatMoney(g.target)}</span>
               </div>
-              <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 4 }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
-                <span style={{ fontSize: 11, color: g.done ? "#22c55e" : "#8b5cf6" }}>
+                <span style={{ fontSize: 11, color: g.done ? "var(--green)" : "var(--accent)" }}>
                   {g.done
                     ? "Goal reached!"
                     : g.periodsLeft > 0
@@ -432,7 +427,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         })}
 
         {goalOpen ? (
-          <div style={{ borderTop: goals.length ? "0.5px solid var(--border)" : "none", paddingTop: goals.length ? 10 : 0 }}>
+          <div style={{ borderTop: goals.length ? "0.5px solid var(--border-subtle)" : "none", paddingTop: goals.length ? 10 : 0 }}>
             <input placeholder="What for? (e.g. New laptop)" value={goalForm.name} onChange={e => setGoalForm(f => ({ ...f, name: e.target.value }))} style={{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
             <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
               <input type="number" placeholder="Target $" value={goalForm.target} onChange={e => setGoalForm(f => ({ ...f, target: e.target.value }))} style={{ flex: 1, minWidth: 90 }} />
@@ -462,8 +457,8 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 <span>{cat}</span>
                 <span style={{ color: "var(--text-muted)" }}>{formatMoney(amt)} ({Math.round(amt/totalSpent*100)}%)</span>
               </div>
-              <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${(amt/maxCat*100).toFixed(1)}%`, background: "var(--accent,#6366f1)", borderRadius: 4 }}/>
+              <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(amt/maxCat*100).toFixed(1)}%`, background: "var(--accent)", borderRadius: 4 }}/>
               </div>
             </div>
           ))}
@@ -480,7 +475,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
               <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{t.category} · {t.date}</div>
             </div>
-            <span style={{ ...mono, fontSize: 13, color: t.type === "income" ? "#22c55e" : t.type === "future" ? "#6366f1" : "#ef4444", flexShrink: 0 }}>
+            <span style={{ ...mono, fontSize: 13, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : "var(--red)", flexShrink: 0 }}>
               {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
             </span>
           </div>

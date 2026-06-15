@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
 import { expandReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
@@ -8,25 +9,6 @@ import { Stagger, Item } from "../../components/motion/Stagger";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const weekdayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-
-const WEEKS_PER_MONTH = 4.33;
-const ym = (s) => (s || "").slice(0, 7);
-const isFunBill = (b) => /fun/i.test(b.name || "") || b.category === "Entertainment" || b.category === "Fun";
-const billActiveIn = (b, mk) => ym(b.startDate) <= mk && (!b.endDate || ym(b.endDate) >= mk);
-
-function nextDueDate(bill, today) {
-  const dueDay = bill.dueDay ? Number(bill.dueDay) : null;
-  if (!dueDay) return null; // continuous bill, no fixed due date
-  const todayStr = toDateStr(today);
-  for (let m = 0; m < 14; m++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + m, 1);
-    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    const day = Math.min(dueDay, last);
-    const candidate = toDateStr(new Date(d.getFullYear(), d.getMonth(), day));
-    if (candidate >= todayStr && billActiveIn(bill, candidate.slice(0, 7))) return candidate;
-  }
-  return null;
-}
 
 // ── Agent action log: turn a raw tool call into a human one-liner ──
 const COLLECTION_NOUN = {
@@ -120,42 +102,13 @@ export default function DashboardPage() {
 
   const todayFormatted = today.toLocaleDateString("en-AU", { weekday: "long", month: "long", day: "numeric" });
 
-  // ── Budget: upcoming bills + free-to-spend this week ──
-  const bills = data.config?.recurringBills || [];
-  const incomeSources = data.config?.incomeSources || [];
-  const txns = data.transactions || [];
-
-  const upcomingBills = bills
-    .map((b) => ({ bill: b, due: nextDueDate(b, today) }))
-    .filter((x) => x.due)
-    .sort((a, b) => a.due.localeCompare(b.due))
-    .slice(0, 6)
-    .map((x) => ({ ...x, paid: txns.some((t) => t.fulfills_recurring_id === x.bill.id && ym(t.date) === ym(x.due)) }));
-
-  const range = getWeekRange(today);
-  const weekTxs = txns.filter((t) => t.date >= range.startStr && t.date <= range.endStr);
-  const spentThisWeek = weekTxs.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
-  const mk = range.startStr.slice(0, 7);
-  const weeklyIncome = incomeSources
-    .filter((s) => s.startDate && ym(s.startDate) <= mk && (!s.endDate || ym(s.endDate) >= mk))
-    .reduce((s, src) => s + Number(src.amount || 0), 0) / WEEKS_PER_MONTH;
-  let billsDueThisWeek = 0;
-  for (const b of bills) {
-    if (isFunBill(b)) continue;
-    const dd = b.dueDay ? Number(b.dueDay) : null;
-    if (!dd) continue;
-    const cur = new Date(range.start);
-    while (cur <= range.end) {
-      if (cur.getDate() === dd) {
-        const ds = toDateStr(cur);
-        if (billActiveIn(b, ds.slice(0, 7)) && !txns.some((t) => t.fulfills_recurring_id === b.id && ym(t.date) === ds.slice(0, 7))) {
-          billsDueThisWeek += Math.abs(Number(b.amount || 0));
-        }
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-  }
-  const freeThisWeek = weeklyIncome - billsDueThisWeek - spentThisWeek;
+  // ── Budget: derived from the SAME snapshot the Budget page uses, so the
+  // "free to spend this week" figure and bills always match across screens. ──
+  const budgetConfig = apiToPage(data.config || {});
+  const budgetTx = (data.transactions || []).map(uiShape);
+  const budget = computeBudgetSnapshot(budgetConfig, budgetTx, todayStr);
+  const currentWeek = budget.currentWeek;
+  const upcomingBills = getUpcomingBills(budgetConfig, budgetTx, todayStr, 6);
 
   // ── Reminders: next few + this-week grouped by day ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
@@ -308,33 +261,39 @@ export default function DashboardPage() {
         )}
       </Item>
 
-      {/* ── Free to spend this week ── */}
+      {/* ── Free to spend this week (same figure as Budget → Dashboard) ── */}
       <Item className="db-card col-6">
         <h3 className="db-card-title">Free to spend this week</h3>
-        <div style={{ fontSize: "2.1rem", fontWeight: 800, marginTop: "0.25rem", color: freeThisWeek >= 0 ? "var(--green)" : "var(--red)" }}>
-          {formatMoney(freeThisWeek)}
-        </div>
-        <div className="stat-grid" style={{ marginTop: "0.75rem" }}>
-          <div className="stat-item"><div className="stat-label">Weekly income</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(weeklyIncome)}</div></div>
-          <div className="stat-item"><div className="stat-label">Bills due</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(billsDueThisWeek)}</div></div>
-          <div className="stat-item"><div className="stat-label">Spent so far</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(spentThisWeek)}</div></div>
-          <div className="stat-item"><div className="stat-label">Week of</div><div style={{ fontWeight: 700, marginTop: "0.2rem", fontSize: "0.9rem" }}>{formatDisplayDate(range.startStr)}</div></div>
-        </div>
+        {currentWeek ? (
+          <>
+            <div style={{ fontSize: "2.1rem", fontWeight: 800, marginTop: "0.25rem", color: currentWeek.remaining >= 0 ? "var(--green)" : "var(--red)" }}>
+              {formatMoney(currentWeek.remaining)}
+            </div>
+            <div className="stat-grid" style={{ marginTop: "0.75rem" }}>
+              <div className="stat-item"><div className="stat-label">Allowance</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(currentWeek.allowance)}</div></div>
+              <div className="stat-item"><div className="stat-label">Spent so far</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(currentWeek.spent)}</div></div>
+              <div className="stat-item"><div className="stat-label">Rolled over</div><div style={{ fontWeight: 700, marginTop: "0.2rem" }}>{formatMoney(currentWeek.carryIn)}</div></div>
+              <div className="stat-item"><div className="stat-label">Week of</div><div style={{ fontWeight: 700, marginTop: "0.2rem", fontSize: "0.9rem" }}>{formatDisplayDate(currentWeek.start)}</div></div>
+            </div>
+          </>
+        ) : (
+          <p className="no-entries">Add an income source in Budget → Bills &amp; Income to see your weekly spending allowance.</p>
+        )}
       </Item>
 
-      {/* ── Upcoming bills ── */}
+      {/* ── Upcoming bills (same scheduling model as the Budget page) ── */}
       <Item className="db-card col-6">
         <h3 className="db-card-title">Upcoming bills</h3>
-        {upcomingBills.length === 0 && <p className="no-entries">No scheduled bills with a due date. Add a due day to a bill in Budget.</p>}
+        {upcomingBills.length === 0 && <p className="no-entries">No upcoming bills. Add recurring bills in Budget → Bills &amp; Income.</p>}
         <div className="db-list" style={{ marginTop: "0.5rem" }}>
-          {upcomingBills.map(({ bill, due, paid }) => (
-            <div className="db-list-item" key={bill.id}>
+          {upcomingBills.map((b) => (
+            <div className="db-list-item" key={`${b.id}-${b.due}`}>
               <div className="db-list-item-content">
-                <div className="db-list-item-title">{bill.name}</div>
-                <div className="db-list-item-subtitle">{formatDisplayDate(due)}{paid ? " · paid this month" : ""}</div>
+                <div className="db-list-item-title">{b.name}</div>
+                <div className="db-list-item-subtitle">{formatDisplayDate(b.due)}{b.paid ? " · paid" : b.autoPay ? " · auto-pay" : ""}</div>
               </div>
-              <div style={{ fontWeight: 700, color: paid ? "var(--text-muted)" : "var(--text-primary)", textDecoration: paid ? "line-through" : "none" }}>
-                {formatMoney(Math.abs(Number(bill.amount || 0)))}
+              <div style={{ fontWeight: 700, color: b.paid ? "var(--text-muted)" : "var(--text-primary)", textDecoration: b.paid ? "line-through" : "none" }}>
+                {formatMoney(b.amount)}
               </div>
             </div>
           ))}

@@ -48,7 +48,7 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
 
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "14px 0 8px", fontWeight: 500 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
-  const statCard = { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "8px 12px", background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border)", borderRadius: "0.375rem", marginBottom: 6 };
+  const statCard = { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "8px 12px", background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.375rem", marginBottom: 6 };
 
   return (
     <div>
@@ -59,9 +59,9 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
 
       {/* Summary */}
       <p style={sh}>Period summary</p>
-      <div style={statCard}><span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Expected balance</span><span style={{ ...mono, fontSize: 14, color: "#22c55e" }}>{formatMoney(expected)}</span></div>
+      <div style={statCard}><span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Expected balance</span><span style={{ ...mono, fontSize: 14, color: "var(--green)" }}>{formatMoney(expected)}</span></div>
       <div style={statCard}><span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Reconciled expenses</span><span style={{ ...mono, fontSize: 14 }}>{formatMoney(reconciledTotal)}</span></div>
-      <div style={statCard}><span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Unreconciled expenses</span><span style={{ ...mono, fontSize: 14, color: "#f59e0b" }}>{formatMoney(unreconciledTotal)}</span></div>
+      <div style={statCard}><span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Unreconciled expenses</span><span style={{ ...mono, fontSize: 14, color: "var(--orange)" }}>{formatMoney(unreconciledTotal)}</span></div>
 
       {/* Unreconciled */}
       <p style={{ ...sh, marginTop: 18 }}>Unreconciled ({unreconciled.length})</p>
@@ -76,7 +76,7 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead><tr style={{ borderBottom: "1px solid var(--border)" }}>
+              <thead><tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                 <th style={{ padding: "6px 8px", width: 32 }}/>
                 {["Date","Description","Category","Amount",""].map(h => (
                   <th key={h} style={{ padding: "6px 8px", textAlign: h === "Amount" ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 11, textTransform: "uppercase" }}>{h}</th>
@@ -84,12 +84,12 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
               </tr></thead>
               <tbody>
                 {unreconciled.map(t => (
-                  <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border)" }}>
+                  <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border-subtle)" }}>
                     <td style={{ padding: "7px 8px" }}><input type="checkbox" checked={checked.has(t.id)} onChange={() => toggleCheck(t.id)} /></td>
                     <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t.date}</td>
                     <td style={{ padding: "7px 8px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</td>
                     <td style={{ padding: "7px 8px" }}><span style={{ fontSize: 11, background: "var(--bg-raised)", borderRadius: 4, padding: "2px 6px" }}>{t.category}</span></td>
-                    <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "#22c55e" : "#ef4444" }}>{t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}</td>
+                    <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "var(--green)" : "var(--red)" }}>{t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}</td>
                     <td style={{ padding: "7px 8px" }}><button className="btn-sm btn-complete" onClick={() => reconcileOne(t.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Reconcile</button></td>
                   </tr>
                 ))}
@@ -104,18 +104,18 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
         <p style={{ ...sh, marginTop: 18 }}>Reconciled ({reconciled.length})</p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead><tr style={{ borderBottom: "1px solid var(--border)" }}>
+            <thead><tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
               {["Date","Description","Category","Amount",""].map(h => (
                 <th key={h} style={{ padding: "6px 8px", textAlign: h === "Amount" ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 11, textTransform: "uppercase" }}>{h}</th>
               ))}
             </tr></thead>
             <tbody>
               {reconciled.map(t => (
-                <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border)", opacity: 0.7 }}>
+                <tr key={t.id} style={{ borderBottom: "0.5px solid var(--border-subtle)", opacity: 0.7 }}>
                   <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t.date}</td>
                   <td style={{ padding: "7px 8px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</td>
                   <td style={{ padding: "7px 8px" }}><span style={{ fontSize: 11, background: "var(--bg-raised)", borderRadius: 4, padding: "2px 6px" }}>{t.category}</span></td>
-                  <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "#22c55e" : "#ef4444" }}>{t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}</td>
+                  <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "var(--green)" : "var(--red)" }}>{t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}</td>
                   <td style={{ padding: "7px 8px" }}><button className="btn-sm" onClick={() => unreconcileOne(t.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Un-reconcile</button></td>
                 </tr>
               ))}

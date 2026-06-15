@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 
@@ -22,6 +22,21 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
   const [flash, setFlash] = useState("");
 
   const flashFor = key => { setFlash(key); setTimeout(() => setFlash(""), 1800); };
+
+  // The Add/Edit forms render inline below long lists, so opening one from the
+  // top of the page leaves it off-screen. Scroll the form into view and focus
+  // its first field whenever it opens (preventScroll so it doesn't fight the
+  // smooth scroll). Covers both income and recurring-bill forms.
+  const billFormRef = useRef(null);
+  const incFormRef = useRef(null);
+  const revealForm = (ref) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.querySelector("input, select, textarea")?.focus({ preventScroll: true });
+  };
+  useEffect(() => { if (showBillForm) revealForm(billFormRef); }, [showBillForm]);
+  useEffect(() => { if (showIncForm) revealForm(incFormRef); }, [showIncForm]);
 
   // ── Bills ──
   const openNewBill = () => { setBillEditId(null); setBillForm({ ...EMPTY_BILL, startDate: toDateStr(), category: categories[0] || "Other" }); setShowBillForm(true); };
@@ -84,7 +99,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
   })();
 
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "16px 0 8px", fontWeight: 500 };
-  const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border)", borderRadius: "0.5rem", padding: "0.875rem", marginBottom: 8 };
+  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "0.875rem", marginBottom: 8 };
   const inp = { width: "100%", marginBottom: 8 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
 
@@ -107,7 +122,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             </select>
             <input type="date" value={schedForm.anchorDate} onChange={e => setSchedForm(f => ({ ...f, anchorDate: e.target.value }))} placeholder="Anchor/next payday" style={inp} />
             {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" style={inp} />}
-            <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent,#6366f1)", color: "#fff", border: "none" }}>Save schedule</button>
+            <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none" }}>Save schedule</button>
           </div>
         )}
       </div>
@@ -126,7 +141,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           const isActive = (!from || from <= todayStr) && (!to || to >= todayStr);
           const isPast = to && to < todayStr;
           const isFuture = from && from > todayStr;
-          const statusColor = isPast ? "var(--text-muted)" : isFuture ? "#f59e0b" : "#22c55e";
+          const statusColor = isPast ? "var(--text-muted)" : isFuture ? "var(--orange)" : "var(--green)";
           return (
           <div key={inc.id} style={{ ...card, display: "flex", alignItems: "center", opacity: isPast ? 0.55 : 1 }}>
             <div style={{ flex: 1 }}>
@@ -148,7 +163,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
         })
       }
       {showIncForm && (
-        <div style={{ ...card, borderColor: "var(--accent,#6366f1)" }}>
+        <div ref={incFormRef} style={{ ...card, borderColor: "var(--accent)" }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{incEditId ? "Edit income" : "Add income source"}</div>
           <input placeholder="Name (e.g. TxtSquad)" value={incForm.name} onChange={e => setIncForm(f => ({ ...f, name: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -162,7 +177,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
           <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={saveInc} style={{ flex: 1, background: flash === "inc" ? "#22c55e" : "var(--accent,#6366f1)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
+            <button className="btn" onClick={saveInc} style={{ flex: 1, background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
             <button className="btn" onClick={() => setShowIncForm(false)} style={{ flex: 1 }}>Cancel</button>
           </div>
         </div>
@@ -190,7 +205,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
         ))
       }
       {showBillForm && (
-        <div style={{ ...card, borderColor: "#f59e0b" }}>
+        <div ref={billFormRef} style={{ ...card, borderColor: "var(--orange)" }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{billEditId ? "Edit bill" : "Add recurring bill"}</div>
           <input placeholder="Name (e.g. Rent, Netflix)" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -216,7 +231,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           )}
           <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={saveBill} style={{ flex: 1, background: flash === "bill" ? "#22c55e" : "#f59e0b", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
+            <button className="btn" onClick={saveBill} style={{ flex: 1, background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
             <button className="btn" onClick={() => setShowBillForm(false)} style={{ flex: 1 }}>Cancel</button>
           </div>
         </div>
@@ -226,7 +241,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
       <p style={sh}>Categories</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
         {categories.map(c => (
-          <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--bg-raised,#1e1e1e)", border: "0.5px solid var(--border)", borderRadius: 99, padding: "4px 10px", fontSize: 12 }}>
+          <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--bg-raised)", border: "0.5px solid var(--border-subtle)", borderRadius: 99, padding: "4px 10px", fontSize: 12 }}>
             {c}
             <button onClick={() => removeCat(c)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1, marginLeft: 2 }}>×</button>
           </span>
@@ -243,7 +258,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
         <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>The balance you're starting from. Used in the ledger running total and simulator.</div>
         <div style={{ display: "flex", gap: 8 }}>
           <input type="number" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0.00" style={{ flex: 1, fontFamily: "var(--font-mono,monospace)" }} />
-          <button className="btn" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ fontSize: 12, padding: "4px 12px", background: flash === "bal" ? "#22c55e" : undefined, color: flash === "bal" ? "#000" : undefined }}>
+          <button className="btn" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ fontSize: 12, padding: "4px 12px", background: flash === "bal" ? "var(--green)" : undefined, color: flash === "bal" ? "#000" : undefined }}>
             {flash === "bal" ? "✓ Saved!" : "Set balance"}
           </button>
         </div>
@@ -260,7 +275,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             if (!await confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.", { title: "Fresh start", confirmLabel: "Reset" })) return;
             if (onFreshStart) onFreshStart();
           }}
-          style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 600, width: "100%" }}>
+          style={{ background: "rgba(239,68,68,0.12)", color: "var(--red)", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 600, width: "100%" }}>
           Fresh start — clear transactions &amp; reset balance
         </button>
       </div>
