@@ -61,7 +61,7 @@ export default function RecipesPage() {
       <input className="hiker-search" placeholder="Search recipes…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 360 }} />
 
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
-      {error && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error} <button className="btn-tiny-blue" onClick={load}>Retry</button></p>}
+      {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error} <button className="btn-tiny-blue" onClick={load}>Retry</button></p>}
       {!loading && !error && filtered.length === 0 && <p className="no-entries">No recipes yet. Create one to get started.</p>}
 
       <div className="nut-recipe-grid">

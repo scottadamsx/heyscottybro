@@ -170,7 +170,7 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
           </div>
           <input type="number" placeholder="Daily calorie target (optional — auto-calculated if blank)" value={form.target_calories} onChange={(e) => set("target_calories", e.target.value)} />
 
-          {error && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error}</p>}
+          {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
           <div className="form-row" style={{ justifyContent: "space-between" }}>
             <button className="btn" type="submit" disabled={saving}>
               {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : (isNew ? "Create profile" : "Save")}

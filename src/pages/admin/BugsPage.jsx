@@ -13,18 +13,18 @@ const STATUS_LABELS = { open: "Open", in_progress: "In Progress", resolved: "Res
 const PRIORITY_COLOR = {
   low:      { bg: "rgba(100,116,139,0.15)", text: "#94a3b8" },
   medium:   { bg: "rgba(234,179,8,0.15)",   text: "#eab308" },
-  high:     { bg: "rgba(249,115,22,0.15)",  text: "#f97316" },
-  critical: { bg: "rgba(239,68,68,0.18)",   text: "#ef4444" },
+  high:     { bg: "rgba(249,115,22,0.15)",  text: "var(--orange)" },
+  critical: { bg: "rgba(239,68,68,0.18)",   text: "var(--red)" },
 };
 const STATUS_COLOR = {
-  open:        { bg: "rgba(239,68,68,0.12)",  text: "#ef4444" },
-  in_progress: { bg: "rgba(99,102,241,0.15)", text: "#818cf8" },
-  resolved:    { bg: "rgba(34,197,94,0.15)",  text: "#22c55e" },
+  open:        { bg: "rgba(239,68,68,0.12)",  text: "var(--red)" },
+  in_progress: { bg: "rgba(99,102,241,0.15)", text: "var(--accent)" },
+  resolved:    { bg: "rgba(34,197,94,0.15)",  text: "var(--green)" },
   closed:      { bg: "rgba(100,116,139,0.12)", text: "#94a3b8" },
 };
 const TYPE_META = {
-  bug:     { label: "Bug",     icon: "fa-bug",         bg: "rgba(239,68,68,0.12)",  text: "#f87171" },
-  feature: { label: "Feature", icon: "fa-lightbulb",   bg: "rgba(99,102,241,0.15)", text: "#818cf8" },
+  bug:     { label: "Bug",     icon: "fa-bug",         bg: "rgba(239,68,68,0.12)",  text: "var(--red)" },
+  feature: { label: "Feature", icon: "fa-lightbulb",   bg: "rgba(99,102,241,0.15)", text: "var(--accent)" },
 };
 
 const EMPTY_FORM = { title: "", description: "", steps: "", page: "", priority: "medium", type: "bug" };
@@ -177,7 +177,7 @@ export default function BugsPage() {
   const card  = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.5rem", padding: "0.75rem 1rem", marginBottom: 8 };
   const inp   = { width: "100%", marginBottom: 8, boxSizing: "border-box" };
   const sh    = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 4px", fontWeight: 500 };
-  const pill  = (active) => ({ fontSize: 12, padding: "4px 11px", borderRadius: 99, border: "0.5px solid var(--border)", cursor: "pointer", background: active ? "var(--accent,#6366f1)" : "var(--bg-elevated,#1a1a1a)", color: active ? "#fff" : "var(--text-secondary)" });
+  const pill  = (active) => ({ fontSize: 12, padding: "4px 11px", borderRadius: 99, border: "0.5px solid var(--border)", cursor: "pointer", background: active ? "var(--accent)" : "var(--bg-elevated,#1a1a1a)", color: active ? "#fff" : "var(--text-secondary)" });
   const FILTER_TABS = [
     { key: "active", label: "Active" }, { key: "open", label: "Open" },
     { key: "in_progress", label: "In Progress" }, { key: "resolved", label: "Resolved" }, { key: "all", label: "All" },
@@ -204,7 +204,7 @@ export default function BugsPage() {
 
       {/* New item form */}
       {showForm && (
-        <div style={{ ...card, borderColor: "var(--accent,#6366f1)", marginBottom: 16 }}>
+        <div style={{ ...card, borderColor: "var(--accent)", marginBottom: 16 }}>
           {/* Type toggle */}
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
             {["bug", "feature"].map(t => (
@@ -229,7 +229,7 @@ export default function BugsPage() {
           )}
           <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 10px" }}>You can drag in screenshots after saving — open the item below.</p>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={handleCreate} disabled={saving || !form.title.trim()} style={{ flex: 1, background: "var(--accent,#6366f1)", color: "#fff", border: "none" }}>
+            <button className="btn" onClick={handleCreate} disabled={saving || !form.title.trim()} style={{ flex: 1, background: "var(--accent)", color: "#fff", border: "none" }}>
               {saving ? "Saving…" : "Submit"}
             </button>
             <button className="btn" onClick={() => setShowForm(false)} style={{ flex: 1 }}>Cancel</button>
@@ -260,7 +260,7 @@ export default function BugsPage() {
         const type = TYPE_META[bug.type] || TYPE_META.bug;
         const shots = bug.screenshots || [];
         return (
-          <div key={bug.id} style={{ ...card, borderColor: isOpen ? "var(--accent,#6366f1)" : undefined }}>
+          <div key={bug.id} style={{ ...card, borderColor: isOpen ? "var(--accent)" : undefined }}>
             {/* Row summary */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }} onClick={() => toggleExpand(bug)}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -319,7 +319,7 @@ export default function BugsPage() {
                     onDrop={e => { e.preventDefault(); setDragId(null); uploadFiles(bug, e.dataTransfer.files); }}
                     onClick={() => { if (expanded === bug.id) fileRef.current?.click(); }}
                     style={{
-                      border: `1.5px dashed ${dragId === bug.id ? "var(--accent,#6366f1)" : "var(--border,#333)"}`,
+                      border: `1.5px dashed ${dragId === bug.id ? "var(--accent)" : "var(--border,#333)"}`,
                       background: dragId === bug.id ? "rgba(99,102,241,0.08)" : "transparent",
                       borderRadius: 8, padding: "14px", textAlign: "center", cursor: "pointer",
                       fontSize: 12, color: "var(--text-muted)", transition: "all .15s",
@@ -380,12 +380,12 @@ export default function BugsPage() {
 
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   {bug.status !== "resolved" && (
-                    <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "none" }}
+                    <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(34,197,94,0.12)", color: "var(--green)", border: "none" }}
                       onClick={() => patch(bug.id, { status: "resolved", resolved_at: new Date().toISOString() })}>
                       <i className="fa-solid fa-check" style={{ marginRight: 4 }} />Resolve
                     </button>
                   )}
-                  <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none" }}
+                  <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(239,68,68,0.1)", color: "var(--red)", border: "none" }}
                     onClick={() => handleDelete(bug.id)}>
                     <i className="fa-solid fa-trash" style={{ marginRight: 4 }} />Delete
                   </button>

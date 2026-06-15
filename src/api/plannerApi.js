@@ -456,7 +456,7 @@ export async function loadProjects() {
 }
 
 export async function newProject({ name, description, color, parent_id }) {
-  const row = { name, description: description || "", color: color || "#6366f1" };
+  const row = { name, description: description || "", color: color || "var(--accent)" };
   if (parent_id) row.parent_id = parent_id;
   return op(
     async () => { const userId = await uid(); const { data, error } = await supabase.from("projects").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },

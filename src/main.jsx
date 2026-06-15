@@ -12,7 +12,7 @@ import "./styles/features.css"; // documents · nutrition · recipes (loads afte
 const REQUIRED_ENV = ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY"];
 const missing = REQUIRED_ENV.filter((k) => !import.meta.env[k]);
 if (missing.length > 0) {
-  document.body.innerHTML = `<pre style="color:#ef4444;padding:2rem;font-family:monospace">Missing required environment variables:\n\n${missing.join("\n")}\n\nCheck your .env file.</pre>`;
+  document.body.innerHTML = `<pre style="color:var(--red);padding:2rem;font-family:monospace">Missing required environment variables:\n\n${missing.join("\n")}\n\nCheck your .env file.</pre>`;
   throw new Error(`Missing env vars: ${missing.join(", ")}`);
 }
 

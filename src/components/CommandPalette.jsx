@@ -80,7 +80,7 @@ export default function CommandPalette({ onClose }) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
             placeholder="Go to…"
-            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "1rem", color: "var(--text-primary, #fff)", caretColor: "var(--accent, #6366f1)" }}
+            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "1rem", color: "var(--text-primary, #fff)", caretColor: "var(--accent)" }}
           />
           <kbd style={{ fontSize: "0.7rem", color: "var(--text-muted)", background: "var(--bg-raised, #1e1e1e)", border: "1px solid var(--border, #333)", borderRadius: "0.25rem", padding: "0.1rem 0.35rem" }}>Esc</kbd>
         </div>

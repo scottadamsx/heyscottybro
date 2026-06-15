@@ -67,7 +67,7 @@ export default function ScottyView({ state, onUpdate }) {
             <div className="wt-stat-lbl">smoked today</div>
           </div>
           <div className="wt-stat">
-            <div className="wt-stat-val" style={{ color: isOver ? "var(--red,#f87171)" : "var(--accent,#4ade80)" }}>
+            <div className="wt-stat-val" style={{ color: isOver ? "var(--red)" : "var(--accent)" }}>
               {remaining.toFixed(2)}g
             </div>
             <div className="wt-stat-lbl">remaining</div>
@@ -79,11 +79,11 @@ export default function ScottyView({ state, onUpdate }) {
         </div>
         <div className="wt-bar-wrap">
           <div className="wt-bar-track">
-            <div className="wt-bar-fill" style={{ width: `${progressPct}%`, background: isOver ? "linear-gradient(90deg,#f59e0b,#f87171)" : undefined }} />
+            <div className="wt-bar-fill" style={{ width: `${progressPct}%`, background: isOver ? "linear-gradient(90deg,var(--orange),var(--red))" : undefined }} />
           </div>
           <div className="wt-bar-labels">
             <span>{todayTotal.toFixed(2)}g of {effectiveCap.toFixed(2)}g cap</span>
-            <span style={{ color: isOver ? "#f87171" : todayTotal >= effectiveCap ? "#f59e0b" : "#4ade80" }}>
+            <span style={{ color: isOver ? "var(--red)" : todayTotal >= effectiveCap ? "var(--orange)" : "var(--green)" }}>
               {isOver ? "over cap" : todayTotal >= effectiveCap ? "at cap" : "under cap"}
             </span>
           </div>

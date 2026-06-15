@@ -79,9 +79,9 @@ function ToastItem({ toast: t, dismiss }) {
   const isLong = full.length > PREVIEW_CHARS;
   const shown = isLong && !expanded ? `${full.slice(0, PREVIEW_CHARS).trimEnd()}…` : full;
 
-  const accent = t.type === "error" ? "var(--red, #ef4444)"
-    : t.type === "success" ? "var(--green, #4ade80)"
-    : t.type === "warning" ? "var(--orange, #f59e0b)"
+  const accent = t.type === "error" ? "var(--red)"
+    : t.type === "success" ? "var(--green)"
+    : t.type === "warning" ? "var(--orange)"
     : "var(--text-primary, #fff)";
 
   const copyFull = () => {
@@ -102,9 +102,9 @@ function ToastItem({ toast: t, dismiss }) {
       borderRadius: "0.5rem",
       background: "var(--bg-raised, #1e1e1e)",
       border: `1px solid ${
-        t.type === "error" ? "var(--red, #ef4444)"
-        : t.type === "success" ? "var(--green, #4ade80)"
-        : t.type === "warning" ? "var(--orange, #f59e0b)"
+        t.type === "error" ? "var(--red)"
+        : t.type === "success" ? "var(--green)"
+        : t.type === "warning" ? "var(--orange)"
         : "var(--border-primary, #333)"}`,
       boxShadow: "var(--shadow-card, 0 4px 16px rgba(0,0,0,0.4))",
       fontSize: "0.875rem",
@@ -130,7 +130,7 @@ function ToastItem({ toast: t, dismiss }) {
 
         {isLong && (
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
-            <button onClick={copyFull} style={{ ...microBtn, color: "var(--accent, #6366f1)" }}>
+            <button onClick={copyFull} style={{ ...microBtn, color: "var(--accent)" }}>
               {copied ? "✓ Copied" : "Copy full message"}
             </button>
             <button onClick={() => setExpanded((v) => !v)} style={{ ...microBtn, color: "var(--text-muted, #888)" }}>
@@ -144,7 +144,7 @@ function ToastItem({ toast: t, dismiss }) {
         {t.retry && (
           <button
             onClick={() => { t.retry(); dismiss(t.id); }}
-            style={{ fontSize: "0.75rem", color: "var(--accent, #6366f1)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            style={{ fontSize: "0.75rem", color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >
             Retry
           </button>

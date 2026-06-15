@@ -17,7 +17,7 @@ function fmt(b) {
 
 function Bar({ label, used, limit }) {
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
-  const color = pct >= 90 ? "var(--red,#ef4444)" : pct >= 75 ? "var(--gold,#f59e0b)" : "var(--green,#22c55e)";
+  const color = pct >= 90 ? "var(--red)" : pct >= 75 ? "var(--gold,var(--orange))" : "var(--green)";
   return (
     <div style={{ marginBottom: "0.85rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 5 }}>

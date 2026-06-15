@@ -16,7 +16,7 @@ function fmt(b) {
 }
 
 function colorFor(pct) {
-  return pct >= 90 ? "#ef4444" : pct >= 75 ? "#f59e0b" : "#22c55e";
+  return pct >= 90 ? "var(--red)" : pct >= 75 ? "var(--orange)" : "var(--green)";
 }
 
 // Big quota bar (Database / File storage vs plan limit)
@@ -57,7 +57,7 @@ function ItemRow({ name, sub, bytes, maxBytes, totalBytes }) {
         </span>
       </div>
       <div style={{ height: 5, background: "var(--bg-raised,#222)", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pctOfMax}%`, background: "var(--accent,#6366f1)", borderRadius: 3 }} />
+        <div style={{ height: "100%", width: `${pctOfMax}%`, background: "var(--accent)", borderRadius: 3 }} />
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ export default function StoragePage() {
 
       {status === "error" && (
         <div style={{ ...card, borderColor: "rgba(239,68,68,0.3)" }}>
-          <p style={{ color: "#ef4444", fontSize: 13, margin: 0 }}>
+          <p style={{ color: "var(--red)", fontSize: 13, margin: 0 }}>
             {/function .*does not exist|could not find/i.test(error)
               ? "storage_usage() isn’t in the database yet — run MIGRATION_2026-06-14-storage-usage.sql in the Supabase SQL editor, then refresh."
               : error}

@@ -118,7 +118,7 @@ export default function RemindersPage() {
       >
         <strong>{r.name}</strong>
         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {r.date && <span style={r.date < todayStr ? { color: "var(--danger, #ef4444)" } : undefined}>{formatDisplayDate(r.date)}</span>}
+          {r.date && <span style={r.date < todayStr ? { color: "var(--danger, var(--red))" } : undefined}>{formatDisplayDate(r.date)}</span>}
           {r.time && <span>· {r.time}</span>}
           {r.show_on_calendar === false && <span>· off calendar</span>}
           {r.recurrence !== "none" && <span>· {r.recurrence}</span>}

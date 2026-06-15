@@ -205,7 +205,7 @@ function TodayView({ date, setDate, dayLogs, dayTotals, target, onRemove, onLog 
           <div className="nut-big-cal">{round(dayTotals.calories)}<span> kcal</span></div>
           {target != null ? (
             <>
-              <div className="nut-progress"><div className="nut-progress-fill" style={{ width: `${pct}%`, background: remaining < 0 ? "var(--danger,#ef4444)" : undefined }} /></div>
+              <div className="nut-progress"><div className="nut-progress-fill" style={{ width: `${pct}%`, background: remaining < 0 ? "var(--danger,var(--red))" : undefined }} /></div>
               <div className="nut-target-line">
                 {remaining >= 0
                   ? <><strong>{remaining}</strong> kcal left of {target} target</>
@@ -341,7 +341,7 @@ function WeightView({ active, weights, unit, onSaved, onDeleted }) {
           <label className="nut-qty">Date<input type="date" value={d} onChange={(e) => setD(e.target.value)} max={todayStr()} /></label>
         </div>
         <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-        {err && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{err}</p>}
+        {err && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{err}</p>}
         <button className="btn" type="submit" disabled={busy} style={{ width: "fit-content" }}>
           {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save weigh-in"}
         </button>

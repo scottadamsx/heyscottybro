@@ -130,7 +130,7 @@ export default function UsagePage() {
           <div style={card}>
             <p style={sh}>By agent</p>
             {a.byTier.map(([tier, n]) => {
-              const t = TIER[tier] || { label: tier, color: "#94a3b8", icon: "fa-robot" };
+              const t = TIER[tier] || { label: tier, color: "var(--text-muted)", icon: "fa-robot" };
               const pct = a.total > 0 ? (n / a.total) * 100 : 0;
               return (
                 <div key={tier} style={{ marginBottom: 10 }}>
@@ -200,7 +200,7 @@ export default function UsagePage() {
             <div style={card}>
               <p style={sh}>Recent actions</p>
               {a.recent.map((r) => {
-                const t = TIER[r.tier] || { label: r.tier, color: "#94a3b8" };
+                const t = TIER[r.tier] || { label: r.tier, color: "var(--text-muted)" };
                 return (
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, padding: "5px 0", borderBottom: "0.5px solid var(--border)" }}>
                     <span style={{ color: t.color, fontWeight: 600, minWidth: 56 }}>{t.label}</span>

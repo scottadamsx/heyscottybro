@@ -298,7 +298,7 @@ export default function SnippetsPage() {
 
       {loading && <SkeletonList rows={4} />}
       {error && (
-        <p className="no-entries" style={{ color: "var(--danger, #ef4444)" }}>
+        <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>
           {error} <button className="btn-tiny-blue" onClick={loadItems}>Retry</button>
         </p>
       )}

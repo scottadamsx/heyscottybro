@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component {
     if (!this.state.hasError) return this.props.children;
     return (
       <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p style={{ color: "var(--danger, #ef4444)", marginBottom: "0.75rem", fontWeight: 600 }}>
+        <p style={{ color: "var(--danger, var(--red))", marginBottom: "0.75rem", fontWeight: 600 }}>
           Something went wrong in this section.
         </p>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1rem" }}>

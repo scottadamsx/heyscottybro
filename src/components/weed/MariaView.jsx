@@ -35,11 +35,11 @@ export default function MariaView({ state, onUpdate }) {
   const idealRemain = m.cartridgeMg * Math.max(0, 1 - elapsed / m.daysTarget);
   const diff = remain - idealRemain;
   let paceLabel, paceColor;
-  if (remain <= 0) { paceLabel = "pen empty"; paceColor = "#f87171"; }
-  else if (diff >= m.cartridgeMg * 0.06) { paceLabel = "ahead — nicely paced"; paceColor = "#4ade80"; }
-  else if (diff >= -m.cartridgeMg * 0.06) { paceLabel = "on track"; paceColor = "#4ade80"; }
-  else if (diff >= -m.cartridgeMg * 0.18) { paceLabel = "a bit fast"; paceColor = "#f59e0b"; }
-  else { paceLabel = "burning too fast"; paceColor = "#f87171"; }
+  if (remain <= 0) { paceLabel = "pen empty"; paceColor = "var(--red)"; }
+  else if (diff >= m.cartridgeMg * 0.06) { paceLabel = "ahead — nicely paced"; paceColor = "var(--green)"; }
+  else if (diff >= -m.cartridgeMg * 0.06) { paceLabel = "on track"; paceColor = "var(--green)"; }
+  else if (diff >= -m.cartridgeMg * 0.18) { paceLabel = "a bit fast"; paceColor = "var(--orange)"; }
+  else { paceLabel = "burning too fast"; paceColor = "var(--red)"; }
 
   let emptyTxt = "Runs out ~—";
   const daysUsed = Math.max(0.5, elapsed);
@@ -119,12 +119,12 @@ export default function MariaView({ state, onUpdate }) {
           <div className="wt-bar-track">
             <div className="wt-bar-fill" style={{
               width: `${hitBarPct}%`,
-              background: isOver ? "linear-gradient(90deg,#f59e0b,#f87171)" : "linear-gradient(90deg,#b68bd6,#cda6e8)"
+              background: isOver ? "linear-gradient(90deg,var(--orange),var(--red))" : "linear-gradient(90deg,#b68bd6,#cda6e8)"
             }} />
           </div>
           <div className="wt-bar-labels">
             <span>{todayGrams.toFixed(2)}g of {effectiveCapG.toFixed(2)}g (≈{todayHitCount.toFixed(1)} hits)</span>
-            <span style={{ color: isOver ? "#f87171" : "#b68bd6" }}>{Math.round(todayMg)}mg pen today</span>
+            <span style={{ color: isOver ? "var(--red)" : "#b68bd6" }}>{Math.round(todayMg)}mg pen today</span>
           </div>
         </div>
         {todayLogs.length > 0 && (
@@ -150,7 +150,7 @@ export default function MariaView({ state, onUpdate }) {
             💨 Log a hit
             <small>{m.hitSec}s @ 3.5V · ≈{mgPerHit}mg</small>
           </button>
-          <button className="wt-logbtn" style={{ "--lb": "#e8915b", "--lb-glow": "#f0a87a", flex: 1 }}
+          <button className="wt-logbtn" style={{ "--lb": "var(--orange)", "--lb-glow": "#f0a87a", flex: 1 }}
             onClick={() => setShowJointLog(v => !v)}>
             🌿 Log a joint
             <small>grams → hit equivalent</small>

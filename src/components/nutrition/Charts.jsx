@@ -1,7 +1,7 @@
 // Lightweight, dependency-free SVG charts for the nutrition module.
 
 /** Weight line chart. data: [{date, value}] ascending. goal optional (same unit). */
-export function LineChart({ data, goal, unit = "kg", color = "#6366f1", height = 200 }) {
+export function LineChart({ data, goal, unit = "kg", color = "var(--accent)", height = 200 }) {
   if (!data || data.length === 0) {
     return <div className="chart-empty">No data yet.</div>;
   }

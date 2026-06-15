@@ -70,7 +70,7 @@ export default function DocumentsPage() {
 
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
       {error && (
-        <p className="no-entries" style={{ color: "var(--danger, #ef4444)" }}>
+        <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>
           {error} <button className="btn-tiny-blue" onClick={load}>Retry</button>
         </p>
       )}

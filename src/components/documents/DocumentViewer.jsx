@@ -41,7 +41,7 @@ export default function DocumentViewer({ doc, onClose }) {
         </div>
 
         {loading && <div className="doc-viewer-body center"><i className="fa-solid fa-spinner fa-spin" /> Loading…</div>}
-        {error && <div className="doc-viewer-body center" style={{ color: "var(--danger, #ef4444)" }}>{error}</div>}
+        {error && <div className="doc-viewer-body center" style={{ color: "var(--danger, var(--red))" }}>{error}</div>}
 
         {!loading && !error && url && (
           <div className="doc-viewer-body">

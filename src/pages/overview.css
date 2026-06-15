@@ -10,11 +10,11 @@
   --ovd-border: rgba(255,255,255,0.07);
   --ovd-text: #e7e9ee;
   --ovd-muted: #868d9e;
-  --ovd-blue: #4f7cff;
+  --ovd-blue: var(--accent);
   --ovd-blue-2: #6f93ff;
   --ovd-blue-3: #a9bcff;
   --ovd-teal: #2dd4bf;
-  --ovd-green: #34d399;
+  --ovd-green: var(--green);
   --ovd-track: rgba(255,255,255,0.08);
   --ovd-gray: #2a3140;
 
@@ -102,7 +102,7 @@
   color: var(--ovd-muted); font-size: 0.9rem;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.ovd-plus { background: linear-gradient(135deg, #f97316, #fb923c); color: #fff; border: none; border-radius: 50%; }
+.ovd-plus { background: var(--orange); color: #fff; border: none; border-radius: 50%; }
 .ovd-acct {
   display: inline-flex; align-items: center; gap: 0.5rem;
   background: var(--ovd-raised); border: 1px solid var(--ovd-border);

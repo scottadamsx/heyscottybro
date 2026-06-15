@@ -9,7 +9,7 @@
   --border:     var(--border-subtle);
   --text:       var(--text-primary);
   --bg:         var(--bg-base);
-  --danger:     #f87171;
+  --danger:     var(--red);
   --danger-bg:  rgba(248, 113, 113, 0.12);
   --accent-bg:  rgba(91, 141, 239, 0.10);
 }

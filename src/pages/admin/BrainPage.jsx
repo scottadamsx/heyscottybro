@@ -5,8 +5,8 @@ import { renderMarkdown } from "../../utils/markdown";
 
 const W = 900, H = 560, CX = W / 2, CY = H / 2;
 const TYPE_COLOR = {
-  root: "#8b5cf6", projects: "#22c55e", checkpoints: "#f59e0b",
-  procedures: "#14b8a6", note: "#6366f1",
+  root: "#8b5cf6", projects: "var(--green)", checkpoints: "var(--orange)",
+  procedures: "#14b8a6", note: "var(--accent)",
 };
 const colorFor = (t) => TYPE_COLOR[t] || "#94a3b8";
 
@@ -151,7 +151,7 @@ export default function BrainPage() {
         </div>
       </div>
 
-      {status === "error" && <p style={{ color: "#ef4444", fontSize: 13 }}>{error}</p>}
+      {status === "error" && <p style={{ color: "var(--red)", fontSize: 13 }}>{error}</p>}
       {status === "ready" && graph.nodes.length === 0 && (
         <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
           Your brain is empty. Run the app locally (<code>npm run dev</code>) and click <strong>Sync from vault</strong> to import your Obsidian / Claude memory notes.

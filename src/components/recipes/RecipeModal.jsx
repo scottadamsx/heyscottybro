@@ -100,7 +100,7 @@ export default function RecipeModal({ recipe, onClose, onDeleted }) {
                 </select>
                 <label className="nut-qty">Servings<input type="number" step="0.5" min="0.5" value={servingsEaten} onChange={(e) => setServingsEaten(e.target.value)} /></label>
               </div>
-              {err && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{err}</p>}
+              {err && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{err}</p>}
               <div className="form-row">
                 <button className="btn" onClick={logIt} disabled={busy}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Logging…</> : `Log ${round((recipe.calories_per_serving || 0) * (Number(servingsEaten) || 1))} kcal`}</button>
                 <button className="btn btn-ghost" onClick={() => setLogging(false)}>Cancel</button>

@@ -52,7 +52,7 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-const BY_COLOR = { scott: "#e8915b", maria: "#b68bd6", frodo: "var(--accent,#4ade80)", manual: "var(--text-muted)" };
+const BY_COLOR = { scott: "var(--orange)", maria: "#b68bd6", frodo: "var(--accent)", manual: "var(--text-muted)" };
 const BY_LABEL = { scott: "Scott", maria: "Maria", frodo: "Frodo", manual: "Manual" };
 
 export default function ContextPage() {
@@ -181,7 +181,7 @@ export default function ContextPage() {
     });
   }, [items, search, filterBy]);
 
-  const verdictColor = { idle: "var(--text-muted)", keep: "var(--accent,#4ade80)", maybe: "#f59e0b" };
+  const verdictColor = { idle: "var(--text-muted)", keep: "var(--accent)", maybe: "var(--orange)" };
   const bys = [...new Set(items.map(i => i.by))];
 
   return (

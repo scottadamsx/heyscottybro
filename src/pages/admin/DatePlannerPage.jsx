@@ -180,7 +180,7 @@ export default function DatePlannerPage() {
       </div>
 
       {error && <p className="error-message" style={{ marginBottom: "0.75rem" }}>{error}</p>}
-      {syncMsg && <p className="no-entries" style={{ marginBottom: "0.75rem", color: "var(--accent,#4ade80)" }}>{syncMsg}</p>}
+      {syncMsg && <p className="no-entries" style={{ marginBottom: "0.75rem", color: "var(--accent)" }}>{syncMsg}</p>}
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
 
       {/* ── Pick-a-date pack opener ── */}

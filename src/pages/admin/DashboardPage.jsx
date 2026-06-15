@@ -364,7 +364,7 @@ export default function DashboardPage() {
               const tool = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
               const isErr = a.status === "error";
               return (
-                <div className="db-list-item" key={a.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 4, borderLeft: isErr ? "2px solid var(--danger,#ef4444)" : undefined, paddingLeft: isErr ? "0.5rem" : undefined }}>
+                <div className="db-list-item" key={a.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 4, borderLeft: isErr ? "2px solid var(--danger,var(--red))" : undefined, paddingLeft: isErr ? "0.5rem" : undefined }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="db-list-item-title" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{describeAction(a)}</div>
@@ -372,11 +372,11 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
                       <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", whiteSpace: "nowrap" }} title={new Date(a.created_at).toLocaleString()}>{actionTime(a.created_at)}</span>
-                      <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: isErr ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: isErr ? "var(--danger,#ef4444)" : "var(--accent,#4ade80)" }}>{a.tier}</span>
+                      <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: isErr ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: isErr ? "var(--danger,var(--red))" : "var(--accent)" }}>{a.tier}</span>
                     </div>
                   </div>
                   {a.error && (
-                    <div title={a.error} style={{ color: "var(--danger,#ef4444)", fontSize: "0.72rem", background: "rgba(239,68,68,0.07)", borderRadius: 4, padding: "3px 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>
+                    <div title={a.error} style={{ color: "var(--danger,var(--red))", fontSize: "0.72rem", background: "rgba(239,68,68,0.07)", borderRadius: 4, padding: "3px 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", wordBreak: "break-word" }}>
                       {a.error}
                     </div>
                   )}

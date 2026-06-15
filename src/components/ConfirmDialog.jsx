@@ -22,7 +22,7 @@ export default function ConfirmDialog({ message, title = "Are you sure?", confir
           <button ref={cancelRef} className="btn" onClick={onCancel} style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }}>
             Cancel
           </button>
-          <button className="btn" onClick={onConfirm} style={{ background: "var(--danger, #ef4444)", color: "#fff", border: "none" }}>
+          <button className="btn" onClick={onConfirm} style={{ background: "var(--danger, var(--red))", color: "#fff", border: "none" }}>
             {confirmLabel}
           </button>
         </div>

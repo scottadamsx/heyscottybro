@@ -231,7 +231,7 @@ export default function BudgetPage() {
             padding: "9px 14px", fontSize: 12, fontWeight: tab === t.id ? 600 : 400,
             color: tab === t.id ? "var(--text-primary,#fff)" : "var(--text-muted,#666)",
             background: "none", border: "none",
-            borderBottom: `2px solid ${tab === t.id ? "var(--accent,#6366f1)" : "transparent"}`,
+            borderBottom: `2px solid ${tab === t.id ? "var(--accent)" : "transparent"}`,
             cursor: "pointer", whiteSpace: "nowrap",
           }}>
             {t.label}

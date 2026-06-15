@@ -87,7 +87,7 @@ export default function DocumentUploader({ onUploaded, onClose }) {
           </div>
         </form>
       )}
-      {error && <p className="no-entries" style={{ color: "var(--danger, #ef4444)" }}>{error}</p>}
+      {error && <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>{error}</p>}
     </div>
   );
 }

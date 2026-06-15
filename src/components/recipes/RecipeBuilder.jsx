@@ -83,7 +83,7 @@ export default function RecipeBuilder({ onClose, onSaved }) {
               <button className="btn" onClick={runAi} disabled={busy || !prompt.trim()}>
                 {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Cooking up a recipe…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> Generate</>}
               </button>
-              {error && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error}</p>}
+              {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
             </>
           )}
 
@@ -124,7 +124,7 @@ export default function RecipeBuilder({ onClose, onSaved }) {
                 ))}
               </div>
 
-              {error && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error}</p>}
+              {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
               <div className="form-row">
                 <button className="btn" onClick={save} disabled={busy}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save recipe"}</button>
                 {source === "ai" && <button className="btn btn-ghost" onClick={() => setDraft(null)}>Back</button>}

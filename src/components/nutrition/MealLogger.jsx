@@ -193,7 +193,7 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
                   </ul>
                 </details>
               )}
-              {error && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error}</p>}
+              {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
               <div className="form-row">
                 <button className="btn" type="submit" disabled={busy}>
                   {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save to log"}
@@ -205,7 +205,7 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
             </form>
           )}
 
-          {error && !estimated && <p className="no-entries" style={{ color: "var(--danger,#ef4444)" }}>{error}</p>}
+          {error && !estimated && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
         </div>
       </div>
     </div>
