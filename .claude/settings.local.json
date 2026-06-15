@@ -33,7 +33,10 @@
       "Bash(echo \"app: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5176/\\)\")",
       "Bash(curl -s http://localhost:5176/api/overseer-run)",
       "Bash(npm view *)",
-      "Bash(claude --version)"
+      "Bash(claude --version)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
       "/Users/heyscottybro/Documents/GitHub/heyscottybro"
