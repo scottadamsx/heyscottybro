@@ -220,3 +220,25 @@
 /* Agent deliverables / linked research docs (Profile tab) */
 .cmd-deliverables { margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border, rgba(255,255,255,0.08)); }
 .cmd-deliverables-title { margin: 0 0 0.25rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; color: var(--text-secondary, #c8cdd6); }
+
+/* ── Mobile hardening ───────────────────────────
+   The grid + lower section already collapse, but on a phone the agent cards
+   are cramped, the chat input's sub-16px font makes iOS Safari zoom-and-jump on
+   focus, and the vh-capped scroll panes fight the page scroll. Fix all three. */
+@media (max-width: 640px) {
+  .cmd-grid { grid-template-columns: 1fr; gap: var(--space-sm); margin-bottom: var(--space-md); }
+  .cmd-card { padding: var(--space-sm); }
+  .cmd-lower { gap: var(--space-md); }
+  .cmd-chat { min-height: 0; }
+  .cmd-thread { max-height: 56vh; }
+  .cmd-msg { max-width: 100%; }
+  .cmd-tabs { flex-wrap: wrap; }
+  .cmd-input-row input,
+  .aule-repo { font-size: 16px; }   /* 16px stops iOS zoom-on-focus */
+  .cmd-input-row input { height: 42px; }
+  /* let these panes grow with the page instead of nesting a short scroll area */
+  .cmd-profile, .cmd-feed-list { max-height: none; }
+  .cmd-viewer-head { padding: var(--space-sm) var(--space-md); }
+  .cmd-viewer-body { padding: var(--space-md); }
+  .aule-actions { width: 100%; }
+}

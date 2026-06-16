@@ -41,7 +41,9 @@
       "Bash(mkdir -p \"$HOME/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/study-plans\" && echo \"ok\")",
       "Bash(grep -rIl *)",
       "Bash(grep -n *)",
-      "Bash(awk '/^ *)"
+      "Bash(awk '/^ *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)"
     ],
     "additionalDirectories": [
       "/Users/heyscottybro/Documents/GitHub/heyscottybro",

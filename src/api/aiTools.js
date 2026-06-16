@@ -113,6 +113,7 @@ export const TOOLS = [
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
+  { name: "consult_archivist", description: "Ask Bilbo, Scott's Archivist, to FIND information across his planner data and Brain (knowledge graph) and report it back. Call this when you need context or records you don't already have AND gathering it would take several queries (e.g. \"what do we know about NEVER86?\", \"pull everything relevant to this week's hikes\", \"has Scott journalled about X?\"). Give Bilbo a clear request — what you need and why — and he searches, synthesises, and returns the answer with sources. He is READ-ONLY: for changes, use the write tools yourself, or consult_banker for money.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full question / what you need to know, with any specifics." } }, required: ["request"] } },
   { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
   {
     name: "log_food",
@@ -241,6 +242,17 @@ async function runTool(name, input) {
         authHeaders,
       });
       return { banker: "Griphook", reply: text };
+    }
+    case "consult_archivist": {
+      // Lazy import to avoid a static cycle (archivist.js → runAgent → aiTools).
+      const { runArchivist } = await import("./archivist.js");
+      const { getAuthHeaders } = await import("../utils/supabase");
+      const authHeaders = await getAuthHeaders();
+      const { text } = await runArchivist({
+        messages: [{ role: "user", content: String(input.request || "") }],
+        authHeaders,
+      });
+      return { archivist: "Bilbo", reply: text };
     }
     case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
     case "log_food": {

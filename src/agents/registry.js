@@ -9,6 +9,7 @@
  */
 import { TIERS, buildSystemPrompt } from "../api/aiTiers";
 import { BANKER, buildBankerPrompt } from "../api/banker";
+import { ARCHIVIST, buildArchivistPrompt } from "../api/archivist";
 import { overseerAgent } from "./overseer";
 
 // Toolbelt helper: keep only the named tools from the shared TOOLS registry.
@@ -55,11 +56,19 @@ export const AGENTS = [
     buildPrompt: buildResearchPrompt,
   },
   {
+    id: ARCHIVIST.id, name: ARCHIVIST.name, title: "Archivist", emoji: ARCHIVIST.emoji, icon: ARCHIVIST.icon,
+    color: "#94a3b8", kind: "api", model: ARCHIVIST.model, maxToolTurns: 12,
+    tagline: "Finds anything across your data + Brain — the other agents' lookup service",
+    thinking: "Bilbo searches the archives…",
+    tools: only("library_catalog", "query", "list_context"),
+    buildPrompt: buildArchivistPrompt,
+  },
+  {
     id: "luthien", name: "Lúthien", title: "Marketing Agent", emoji: "✨", icon: "fa-bullhorn",
     color: "#ec4899", kind: "api", model: "claude-sonnet-4-6", maxToolTurns: 14,
     tagline: "Copy, campaigns & positioning for your products",
     thinking: "Lúthien weaves the words…",
-    tools: only("library_catalog", "query", "web_fetch", "create_item", "link_brain_nodes", "save_context", "list_context"),
+    tools: only("library_catalog", "query", "web_fetch", "create_item", "link_brain_nodes", "save_context", "list_context", "consult_archivist"),
     buildPrompt: buildMarketingPrompt,
   },
   {
