@@ -14,7 +14,6 @@ const STEP = 0.2;
 /**
  * A full-featured, reusable PDF viewer modal: paging, zoom, fit-to-width,
  * download, open-in-new-tab and keyboard navigation. Accepts either a `fileUrl`
-<<<<<<< Updated upstream
  * (signed/remote URL) or a `blob` (e.g. a PDF an agent just generated).
  *
  * Props:
@@ -23,16 +22,6 @@ const STEP = 0.2;
  *   title?    string         shown in the toolbar
  *   filename? string         download name (default "document.pdf")
  *   onClose() void           close handler (overlay click / Esc / ✕)
-=======
- * (signed/remote URL) or a `blob` (an in-memory PDF; its object URL is managed).
- *
- * Props:
- *   fileUrl?  string   remote/signed PDF URL
- *   blob?     Blob     in-memory PDF
- *   title?    string   shown in the toolbar
- *   filename? string   download name (default "document.pdf")
- *   onClose() void     close handler (overlay click / Esc / ✕)
->>>>>>> Stashed changes
  */
 export default function PdfViewer({ fileUrl, blob, title = "Document", filename = "document.pdf", onClose }) {
   // A blob gets its own object URL (revoked on unmount); otherwise use fileUrl.

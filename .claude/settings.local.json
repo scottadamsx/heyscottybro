@@ -29,7 +29,6 @@
       "Read(//Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/**)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 10 \"https://mogoybejtmkoheqvfvuc.supabase.co/rest/v1/\")",
       "Bash(curl -s --max-time 10 \"https://mogoybejtmkoheqvfvuc.supabase.co/rest/v1/\")",
-<<<<<<< Updated upstream
       "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5176/)",
       "Bash(echo \"app: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5176/\\)\")",
       "Bash(curl -s http://localhost:5176/api/overseer-run)",
@@ -37,13 +36,16 @@
       "Bash(claude --version)",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(git stash *)"
-=======
-      "Bash(node -e \"try{console.log\\(require\\('./package.json'\\).dependencies['react-force-graph-3d']||'NOT in package.json'\\)}catch\\(e\\){console.log\\(e.message\\)}\")"
->>>>>>> Stashed changes
+      "Bash(git stash *)",
+      "Bash(node -e \"try{console.log\\(require\\('./package.json'\\).dependencies['react-force-graph-3d']||'NOT in package.json'\\)}catch\\(e\\){console.log\\(e.message\\)}\")",
+      "Bash(mkdir -p \"$HOME/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory/study-plans\" && echo \"ok\")",
+      "Bash(grep -rIl *)",
+      "Bash(grep -n *)",
+      "Bash(awk '/^ *)"
     ],
     "additionalDirectories": [
-      "/Users/heyscottybro/Documents/GitHub/heyscottybro"
+      "/Users/heyscottybro/Documents/GitHub/heyscottybro",
+      "/Users/heyscottybro/Library/CloudStorage/GoogleDrive-scottadamsx@gmail.com/My Drive/claude-memory"
     ]
   }
 }

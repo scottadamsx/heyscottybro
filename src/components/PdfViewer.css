@@ -4,11 +4,7 @@
 .pdfv-overlay {
   position: fixed;
   inset: 0;
-<<<<<<< Updated upstream
   z-index: 12000; /* above the markdown viewer (10000) and doc viewer */
-=======
-  z-index: 12000; /* above the documents modal and other overlays */
->>>>>>> Stashed changes
   background: rgba(8, 10, 16, 0.78);
   backdrop-filter: blur(3px);
   display: flex;

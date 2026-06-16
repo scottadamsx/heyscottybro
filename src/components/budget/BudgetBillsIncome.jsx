@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel } from "../../utils/budgetCalc";
+import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
@@ -87,6 +87,17 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     const used = transactions.some(t => t.category === cat);
     if (used && !await confirm(`"${cat}" is used by transactions. Delete anyway?`, { title: "Delete category", confirmLabel: "Delete" })) return;
     setConfig(c => ({ ...c, categories: c.categories.filter(x => x !== cat) }));
+  };
+
+  // Bills schedule off frequency + startDate (there is no separate "due day"
+  // field — the day-of-month comes from startDate). Surface the next occurrence
+  // so the due date is visible on each bill instead of only its start date.
+  const shortDate = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const nextDueOf = (b) => {
+    if (b.variable) return null; // variable bills are spending envelopes, not dated
+    const today = toDateStr();
+    const end = toDateStr(new Date(new Date().getFullYear(), new Date().getMonth() + 4, 1));
+    return getBillDatesInRange(b, today, end)[0] || null;
   };
 
   const upcomingPaydays = (() => {
@@ -194,7 +205,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <div key={b.id} style={{ ...card, display: "flex", alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 500 }}>{b.name}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{b.variable ? " · variable" : b.autoPay ? " · auto" : ""}</div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{(() => { const nd = nextDueOf(b); return nd ? ` · next ${shortDate(nd)}` : ""; })()}{b.variable ? " · variable" : b.autoPay ? " · auto" : ""}</div>
             </div>
             <span style={{ ...mono, fontSize: 14, marginRight: 12 }}>{formatMoney(b.amount)}</span>
             <div style={{ display: "flex", gap: 4 }}>

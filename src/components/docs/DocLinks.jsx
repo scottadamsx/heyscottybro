@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadDocLinks, attachDoc, detachDoc, setDocRead, getNodeBySlug } from "../../api/docLinksApi";
+import { useNavigate } from "react-router-dom";
+import { loadDocLinks, attachDoc, detachDoc, setDocRead } from "../../api/docLinksApi";
 import { loadBrain } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
-import DocViewerModal from "./DocViewerModal";
 import "./doclinks.css";
 
 const TYPE_ICON = {
@@ -24,13 +24,13 @@ const icon = (t) => TYPE_ICON[t] || "fa-file-lines";
  */
 export default function DocLinks({ entityType, entityId, title = "Linked documents", compact = false, onChange }) {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(!compact);
   const [picking, setPicking] = useState(false);
   const [nodes, setNodes] = useState(null); // brain nodes for the picker (lazy)
   const [query, setQuery] = useState("");
-  const [viewer, setViewer] = useState(null); // { node, link }
   const [busyId, setBusyId] = useState(null);
   const pickRef = useRef(null);
 
@@ -79,10 +79,10 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
     } catch (e) { addToast(e.message || "Could not attach", "error"); }
   }
 
-  async function open_(link) {
-    let node = null;
-    try { node = await getNodeBySlug(link.node_slug); } catch { /* show not-found */ }
-    setViewer({ node, link });
+  function open_(link) {
+    // Open the note as a full-page article (reads far better on a phone than a
+    // modal). ?link lets the reader mark this link read on arrival.
+    navigate(`/admin/read/${encodeURI(link.node_slug)}?link=${link.id}`);
   }
 
   async function toggleRead(link) {
@@ -90,7 +90,6 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
     try {
       const updated = await setDocRead(link.id, !link.read);
       setLinks((ls) => { const next = ls.map((l) => (l.id === link.id ? { ...l, ...updated } : l)); summarize(next); return next; });
-      setViewer((v) => (v && v.link?.id === link.id ? { ...v, link: { ...v.link, ...updated } } : v));
     } catch (e) { addToast(e.message || "Could not update", "error"); }
     finally { setBusyId(null); }
   }
@@ -158,16 +157,6 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
             )}
           </div>
         </div>
-      )}
-
-      {viewer && (
-        <DocViewerModal
-          node={viewer.node}
-          link={viewer.link}
-          busy={busyId === viewer.link?.id}
-          onToggleRead={toggleRead}
-          onClose={() => setViewer(null)}
-        />
       )}
     </div>
   );

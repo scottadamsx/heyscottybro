@@ -24,6 +24,7 @@ export default function ChatBot() {
   const { addToast } = useToast();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
   useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
@@ -63,6 +64,13 @@ export default function ChatBot() {
   const onPaste = (e) => {
     const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.type.startsWith("image/")).map((i) => i.getAsFile()).filter(Boolean);
     if (imgs.length) { e.preventDefault(); addFiles(imgs); }
+  };
+  // Mobile has no drag-and-drop and no easy image paste, so the only way to
+  // attach a screenshot is a real file input. Reset value after so picking the
+  // same file twice still fires onChange.
+  const onPickFiles = (e) => {
+    if (e.target.files?.length) addFiles(e.target.files);
+    e.target.value = "";
   };
 
   const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
@@ -163,6 +171,17 @@ export default function ChatBot() {
             {input.length > MAX_INPUT_CHARS * 0.85 && (
               <span className="chat-char-count">{input.length}/{MAX_INPUT_CHARS}</span>
             )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={onPickFiles}
+            />
+            <button type="button" className="chat-attach" onClick={() => fileInputRef.current?.click()} disabled={loading} aria-label="Attach screenshot" title="Attach screenshot">
+              <i className="fa-solid fa-paperclip" />
+            </button>
             <button type="button" className="chat-send" onClick={doSend} disabled={!canSend} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />
             </button>

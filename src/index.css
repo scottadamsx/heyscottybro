@@ -3682,6 +3682,23 @@ input, textarea, select { font-family: inherit; }
 }
 .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-send:not(:disabled):hover { background: var(--accent-deep); }
+.chat-attach {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.chat-attach:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-attach:not(:disabled):hover { color: var(--accent); border-color: var(--accent); }
 
 /* ── Editable balance hero card ── */
 .bud-hero-balance .bud-hero-label {

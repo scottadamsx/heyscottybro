@@ -33,6 +33,7 @@ const VaultPage          = lazy(() => import("./pages/admin/VaultPage.jsx"));
 const SettingsPage       = lazy(() => import("./pages/admin/SettingsPage.jsx"));
 const DesignPage         = lazy(() => import("./pages/admin/DesignPage.jsx"));
 const BrainPage          = lazy(() => import("./pages/admin/BrainPage.jsx"));
+const BrainReaderPage    = lazy(() => import("./pages/admin/BrainReaderPage.jsx"));
 const CommandCenterPage  = lazy(() => import("./pages/admin/CommandCenterPage.jsx"));
 const GroceryPage        = lazy(() => import("./pages/admin/GroceryPage.jsx"));
 const ResearchPage       = lazy(() => import("./pages/admin/ResearchPage.jsx"));
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="settings"  element={Lazy(<SettingsPage />)} />
           <Route path="design"    element={Lazy(<DesignPage />)} />
           <Route path="brain"     element={Lazy(<BrainPage />)} />
+          <Route path="read/*"    element={Lazy(<BrainReaderPage />)} />
           <Route path="research"  element={Lazy(<ResearchPage />)} />
           <Route path="command"   element={Lazy(<CommandCenterPage />)} />
 

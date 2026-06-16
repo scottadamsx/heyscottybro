@@ -1,27 +1,44 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
-
-const KEY = "accountability";
+import { loadAccountability, saveAccountability } from "../api/accountabilityApi";
 
 function genId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
-function load() {
-  try { const d = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(d?.trackers) && Array.isArray(d?.logs)) return d; } catch { /* ignore */ }
-  return { trackers: [], logs: [] };
-}
 
 export default function AccountabilitySummary() {
-  const [data, setData] = useState(load);
+  // Source of truth is Supabase (accountability_state) — the SAME store the
+  // Hearth/Accountability page reads. This card used to read localStorage only,
+  // so on any device/session where the mirror was empty it showed "No trackers
+  // yet" while the page (Supabase-backed) showed them. Load through the shared
+  // API so the two surfaces can never disagree.
+  const [data, setData] = useState({ trackers: [], logs: [] });
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    loadAccountability().then((d) => { if (alive) { setData(d); setReady(true); } });
+    return () => { alive = false; };
+  }, []);
+
+  // Debounced write-through so a quick "Mark done" tap persists to Supabase
+  // (and the localStorage mirror) without a write per render.
+  const saveTimer = useRef(null);
+  useEffect(() => {
+    if (!ready) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { saveAccountability(data); }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [data, ready]);
+
   // Computed per render (not module-level) so it stays correct past midnight.
   const todayStr = toDateStr(new Date());
   const trackers = data.trackers || [];
   const logs = data.logs || [];
 
-  const save = (d) => { setData(d); localStorage.setItem(KEY, JSON.stringify(d)); };
   const countOn = (tid, date) => logs.filter((l) => l.trackerId === tid && l.date === date).length;
   const streakOf = (tid) => {
     const set = new Set(logs.filter((l) => l.trackerId === tid).map((l) => l.date));
@@ -31,13 +48,15 @@ export default function AccountabilitySummary() {
     return s;
   };
   const logToday = (t) => {
-    const next = { trackers: trackers.map((x) => ({ ...x })), logs: logs.map((x) => ({ ...x })) };
-    if (t.mode === "check") {
-      const todays = next.logs.filter((l) => l.trackerId === t.id && l.date === todayStr);
-      if (todays.length) { next.logs = next.logs.filter((l) => l.id !== todays[0].id); save(next); return; }
-    }
-    next.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
-    save(next);
+    setData((cur) => {
+      const next = { trackers: (cur.trackers || []).map((x) => ({ ...x })), logs: (cur.logs || []).map((x) => ({ ...x })) };
+      if (t.mode === "check") {
+        const todays = next.logs.filter((l) => l.trackerId === t.id && l.date === todayStr);
+        if (todays.length) { next.logs = next.logs.filter((l) => l.id !== todays[0].id); return next; }
+      }
+      next.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
+      return next;
+    });
   };
 
   return (
@@ -47,7 +66,9 @@ export default function AccountabilitySummary() {
         <Link to="/admin/accountability" className="ai-briefing-date" style={{ color: "var(--accent)" }}>View all ›</Link>
       </div>
 
-      {trackers.length === 0 ? (
+      {!ready ? (
+        <p className="no-entries">Loading…</p>
+      ) : trackers.length === 0 ? (
         <p className="no-entries">No trackers yet. <Link to="/admin/accountability" style={{ color: "var(--accent)" }}>Add one</Link> to track gym days, habits or tallies.</p>
       ) : (
         <div className="db-list" style={{ marginTop: "0.4rem" }}>
