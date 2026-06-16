@@ -1,113 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../../utils/markdown";
+import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
 
-const AULE_URL = import.meta.env.VITE_AULE_URL;
-const AULE_TOKEN = import.meta.env.VITE_AULE_TOKEN;
 const repoName = (p) => (p || "").split("/").filter(Boolean).pop();
 
 /**
- * Live bridge to the local Aulë agent-server (`npm run agents`). Connects over
- * WebSocket, lets you pick a repo and chat while real Claude Code (Max plan)
- * writes code; streams his messages, tool calls and results.
+ * View for the local Aulë agent-server (`npm run agents`). The actual WebSocket
+ * connection and conversation live in AgentRuntimeProvider, so they survive
+ * navigation — this component only renders that state and forwards actions.
+ * Real Claude Code (Max plan) writes code; we stream his messages/tools/results.
  */
-export default function AulePanel({ agent, onOpenDoc, onState }) {
-  const [status, setStatus] = useState("connecting"); // connecting | online | offline
-  const [repos, setRepos] = useState([]);
-  const [cwd, setCwd] = useState("");
-  const [thread, setThread] = useState([]); // { role, text|name, input?, cost? }
-  const [busy, setBusy] = useState(false);
-  const [statusLine, setStatusLine] = useState("");
+export default function AulePanel({ agent, onOpenDoc }) {
+  const { aule, auleConnect, auleTurnOn, aulePickRepo, auleSend, auleInterrupt } = useAgentRuntime();
+  const { configured, status, repos, cwd, thread, busy, statusLine, starting } = aule;
+
   const [input, setInput] = useState("");
-  const [starting, setStarting] = useState(false);
-  const wsRef = useRef(null);
   const scrollRef = useRef(null);
-  const cwdRef = useRef("");
 
-  const configured = Boolean(AULE_URL && AULE_TOKEN);
-
-  const push = (m) => setThread((t) => [...t, m]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }); }, [thread, statusLine]);
-
-  // Report live state up to the Command Center so Aulë's card can show whether
-  // he's online, whether he's working, and what he did most recently — even
-  // while another agent's panel is open.
-  useEffect(() => {
-    if (!onState) return;
-    const last = thread[thread.length - 1];
-    let recent = "";
-    if (busy && statusLine) recent = statusLine;
-    else if (last) {
-      if (last.role === "tool") recent = last.name + (last.input?.file_path ? `: ${repoName(last.input.file_path)}` : "");
-      else if (last.role === "assistant") recent = (last.text || "").replace(/\s+/g, " ").trim().slice(0, 90);
-      else if (last.role === "result") recent = last.isError ? "hit an error" : "finished a task";
-      else if (last.role === "user") recent = "you: " + (last.text || "").replace(/\s+/g, " ").trim().slice(0, 70);
-      else if (last.role === "error") recent = "hit an error";
-    }
-    onState({ status, busy, recent });
-  }, [onState, status, busy, statusLine, thread]);
-
-  const connect = useCallback(() => {
-    if (!configured) { setStatus("offline"); return; }
-    setStatus("connecting");
-    let ws;
-    try { ws = new WebSocket(`${AULE_URL}?token=${encodeURIComponent(AULE_TOKEN)}`); }
-    catch { setStatus("offline"); return; }
-    wsRef.current = ws;
-
-    ws.onmessage = (ev) => {
-      let m; try { m = JSON.parse(ev.data); } catch { return; }
-      switch (m.type) {
-        case "ready": {
-          setStatus("online");
-          setRepos(m.repos || []);
-          // Prefer this app's repo if present.
-          const pick = (m.repos || []).find((r) => repoName(r) === "heyscottybro") || (m.repos || [])[0] || "";
-          if (pick) { setCwd(pick); cwdRef.current = pick; ws.send(JSON.stringify({ type: "start", cwd: pick })); }
-          break;
-        }
-        case "started": setStatusLine(`Working in ${repoName(m.cwd)}`); break;
-        case "status": setStatusLine(m.text); break;
-        case "turn_start": setBusy(true); break;
-        case "turn_end": setBusy(false); setStatusLine(""); break;
-        case "assistant": push({ role: "assistant", text: m.text }); break;
-        case "tool": push({ role: "tool", name: m.name, input: m.input }); break;
-        case "result": push({ role: "result", text: m.text, cost: m.cost, isError: m.isError }); break;
-        case "error": push({ role: "error", text: m.text }); setBusy(false); break;
-        default: break;
-      }
-    };
-    ws.onclose = () => setStatus("offline");
-    ws.onerror = () => setStatus("offline");
-  }, [configured]);
-
-  // Dev-only: ask the Vite server to spawn `npm run agents`, then reconnect.
-  const turnOn = useCallback(async () => {
-    setStarting(true);
-    try {
-      const r = await fetch("/api/aule-control", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start" }) });
-      await r.json().catch(() => ({}));
-    } catch { /* not in dev / no endpoint */ }
-    setTimeout(() => { connect(); setStarting(false); }, 2500);
-  }, [connect]);
-
-  useEffect(() => {
-    connect();
-    return () => { try { wsRef.current?.close(); } catch { /* noop */ } };
-  }, [connect]);
-
-  const pickRepo = (p) => {
-    setCwd(p); cwdRef.current = p;
-    setThread([]);
-    wsRef.current?.send(JSON.stringify({ type: "start", cwd: p }));
-  };
 
   const send = (e) => {
     e?.preventDefault();
     const text = input.trim();
     if (!text || busy || status !== "online") return;
-    push({ role: "user", text });
+    auleSend(text);
     setInput("");
-    wsRef.current?.send(JSON.stringify({ type: "input", text }));
   };
 
   if (!configured || status === "offline") {
@@ -120,10 +37,10 @@ export default function AulePanel({ agent, onOpenDoc, onState }) {
           {" "}Then turn him on below — or run <code>npm run agents</code> yourself.
         </p>
         <div className="aule-actions">
-          <button className="btn btn-sm" onClick={turnOn} disabled={starting}>
+          <button className="btn btn-sm" onClick={auleTurnOn} disabled={starting}>
             <i className={`fa-solid ${starting ? "fa-spinner fa-spin" : "fa-power-off"}`} /> {starting ? "Starting Aulë…" : "Turn on Aulë"}
           </button>
-          <button className="btn btn-sm btn-secondary-sm" onClick={connect} disabled={starting}>
+          <button className="btn btn-sm btn-secondary-sm" onClick={auleConnect} disabled={starting}>
             <i className="fa-solid fa-rotate-right" /> Reconnect
           </button>
         </div>
@@ -137,11 +54,11 @@ export default function AulePanel({ agent, onOpenDoc, onState }) {
         <span className={`aule-dot ${status}`} />
         <span className="aule-state">{status === "online" ? "online" : "connecting…"}</span>
         {repos.length > 0 && (
-          <select className="aule-repo" value={cwd} onChange={(e) => pickRepo(e.target.value)} disabled={busy}>
+          <select className="aule-repo" value={cwd} onChange={(e) => aulePickRepo(e.target.value)} disabled={busy}>
             {repos.map((r) => <option key={r} value={r}>{repoName(r)}</option>)}
           </select>
         )}
-        {busy && <button className="btn-mini" onClick={() => wsRef.current?.send(JSON.stringify({ type: "interrupt" }))} title="Interrupt"><i className="fa-solid fa-stop" /> Stop</button>}
+        {busy && <button className="btn-mini" onClick={auleInterrupt} title="Interrupt"><i className="fa-solid fa-stop" /> Stop</button>}
       </div>
 
       <div className="cmd-thread" ref={scrollRef}>

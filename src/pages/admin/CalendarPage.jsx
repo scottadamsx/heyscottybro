@@ -7,6 +7,7 @@ import {
 import { expandReminders, toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
+import DocLinks from "../../components/docs/DocLinks";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -402,6 +403,7 @@ export default function CalendarPage() {
                     <div className="day-item-body">
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
+                      <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
                     </div>
                     <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
                   </div>

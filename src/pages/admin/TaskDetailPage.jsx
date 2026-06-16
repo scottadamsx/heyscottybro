@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
+import DocLinks from "../../components/docs/DocLinks";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
@@ -209,6 +210,11 @@ export default function TaskDetailPage() {
             {task.description
               ? <p className="task-detail-notes">{task.description}</p>
               : <p className="no-entries">No description.</p>}
+          </div>
+
+          <div className="db-card">
+            <h3 className="db-card-title" style={{ marginBottom: "0.5rem" }}><i className="fa-solid fa-paperclip" /> Documents</h3>
+            <DocLinks entityType="reminder" entityId={task.id} title="Linked documents" />
           </div>
 
           <div className="db-card task-detail-danger">

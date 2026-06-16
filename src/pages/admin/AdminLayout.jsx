@@ -93,6 +93,10 @@ export default function AdminLayout() {
                   <i className="fa-solid fa-brain" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Brain</div></span>
                 </NavLink>
+                <NavLink to="/admin/research" className={popClass} onClick={() => setMenuOpen(false)}>
+                  <i className="fa-solid fa-magnifying-glass-chart" />
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Research</div></span>
+                </NavLink>
                 <NavLink to="/admin/command" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-satellite-dish" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Command</div></span>
@@ -161,6 +165,10 @@ export default function AdminLayout() {
           <i className="fa-solid fa-brain" />
           <span className="admin-rail-label">Brain</span>
         </NavLink>
+        <NavLink to="/admin/research" className={railClass} title="Research">
+          <i className="fa-solid fa-magnifying-glass-chart" />
+          <span className="admin-rail-label">Research</span>
+        </NavLink>
         <NavLink to="/admin/command" className={railClass} title="Command Center">
           <i className="fa-solid fa-satellite-dish" />
           <span className="admin-rail-label">Command</span>
@@ -208,6 +216,7 @@ export default function AdminLayout() {
               ...navItems,
               { to: "/admin/design", icon: "fa-swatchbook", label: "Design" },
               { to: "/admin/brain", icon: "fa-brain", label: "Brain" },
+              { to: "/admin/research", icon: "fa-magnifying-glass-chart", label: "Research" },
               { to: "/admin/command", icon: "fa-satellite-dish", label: "Command" },
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (

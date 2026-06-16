@@ -8,6 +8,7 @@ import {
 } from "../../api/plannerApi";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
+import DocLinks from "../../components/docs/DocLinks";
 
 const PROJECT_COLORS = ["#6366f1", "#22d3ee", "#4ade80", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
 
@@ -248,6 +249,12 @@ export default function ProjectsPage() {
             </button>
           </div>
 
+          {/* Reference documents for this project */}
+          <div className="db-card">
+            <h3 className="db-card-title" style={{ marginBottom: "0.5rem" }}><i className="fa-solid fa-paperclip" /> Documents</h3>
+            <DocLinks entityType="project" entityId={selectedProject.id} title="Linked documents" />
+          </div>
+
           {/* Sub-projects (e.g. classes under a school project) */}
           <div className="db-card">
             <div className="db-card-header">
@@ -365,6 +372,7 @@ export default function ProjectsPage() {
                     <div className="db-list-item-subtitle">
                       {i.recurrence} · {i.description || "no description"}
                     </div>
+                    <DocLinks entityType="initiative" entityId={i.id} title="Documents" compact />
                   </div>
                   <button className="btn-sm btn-delete" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected))}>✕</button>
                 </div>

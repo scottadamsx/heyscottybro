@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastProvider } from "./contexts/ToastContext";
+import { AgentRuntimeProvider } from "./contexts/AgentRuntimeContext";
 import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -34,6 +35,7 @@ const DesignPage         = lazy(() => import("./pages/admin/DesignPage.jsx"));
 const BrainPage          = lazy(() => import("./pages/admin/BrainPage.jsx"));
 const CommandCenterPage  = lazy(() => import("./pages/admin/CommandCenterPage.jsx"));
 const GroceryPage        = lazy(() => import("./pages/admin/GroceryPage.jsx"));
+const ResearchPage       = lazy(() => import("./pages/admin/ResearchPage.jsx"));
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -74,7 +76,7 @@ export default function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Protected admin routes */}
-        <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+        <Route path="/admin" element={<ProtectedRoute><AgentRuntimeProvider><AdminLayout /></AgentRuntimeProvider></ProtectedRoute>}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
 
           {/* Primary portals */}
@@ -90,6 +92,7 @@ export default function App() {
           <Route path="settings"  element={Lazy(<SettingsPage />)} />
           <Route path="design"    element={Lazy(<DesignPage />)} />
           <Route path="brain"     element={Lazy(<BrainPage />)} />
+          <Route path="research"  element={Lazy(<ResearchPage />)} />
           <Route path="command"   element={Lazy(<CommandCenterPage />)} />
 
           {/* Legacy redirects — keeps old bookmarks working */}

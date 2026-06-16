@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AGENTS, getAgent } from "../../agents/registry";
-import { runAgent } from "../../agents/runAgent";
-import { runOverseer } from "../../agents/overseer";
 import { resolveTools, agentConnector, agentProtocol, modelLabel } from "../../agents/agentProfile";
-import { getAuthHeaders } from "../../utils/supabase";
-import { loadAgentActions } from "../../api/plannerApi";
 import { loadBrain } from "../../api/brainApi";
-import { loadAgentSessions, saveAgentSession } from "../../api/agentSessionsApi";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { renderMarkdown } from "../../utils/markdown";
 import { useToast } from "../../contexts/ToastContext";
+import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
 import { toDateStr } from "../../utils/plannerUtils";
 import AulePanel from "./AulePanel";
+import DocLinks from "../../components/docs/DocLinks";
 import PdfViewer from "../../components/PdfViewer";
 import { markdownToPdfBlob } from "../../lib/markdownToPdf";
 import "./command.css";
@@ -20,26 +17,25 @@ const todayStr = () => toDateStr(new Date());
 
 export default function CommandCenterPage() {
   const { addToast } = useToast();
-  const [actions, setActions] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [view, setView] = useState("work");     // "work" | "profile"
+  // The agent runtime lives ABOVE the router (AgentRuntimeProvider), so agents
+  // keep running and the Aulë socket stays alive when you leave this page.
+  // This page is just a view onto that state.
+  const {
+    selectedId, setSelectedId, view, setView,
+    threads, busy, statuses, inputs,
+    setInputFor, sendTo, runOverseer, actions, refreshActions,
+    aule,
+  } = useAgentRuntime();
+
   const [nodes, setNodes] = useState([]);        // brain nodes, for per-agent documents
-  // Everything below is keyed BY AGENT ID so each chat is fully independent —
-  // its own running state, status line, draft message and thread. One agent
-  // working never blocks another, and a draft only shows in its own chat.
-  const [threads, setThreads] = useState({}); // id -> { convo:[], display:[] }
-  const [busy, setBusy] = useState({});        // id -> true while running
-  const [statuses, setStatuses] = useState({}); // id -> live status line
-  const [inputs, setInputs] = useState({});     // id -> draft message
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
   const [pdfDoc, setPdfDoc] = useState(null);        // { blob, title, filename } open in the PDF viewer
-  const [auleLive, setAuleLive] = useState({ status: "offline", busy: false, recent: "" }); // live state from AulePanel
   const scrollRef = useRef(null);
 
   const selected = selectedId ? getAgent(selectedId) : null;
-  // The local Aulë agent keeps a live WebSocket + conversation. We mount its
-  // panel ONCE and only hide it when another agent is selected (see below), so
-  // switching agents never tears down the connection or loses his thread.
+  // The local Aulë agent keeps a live WebSocket + conversation in the runtime.
+  // We mount his panel only when he's selected — the connection is no longer
+  // tied to this component, so switching/leaving never tears it down.
   const localAgent = useMemo(() => AGENTS.find((a) => a.kind === "local") || null, []);
   const showAule = !!selected && selected.kind === "local" && view === "work";
   const thread = (selectedId && threads[selectedId]) || { convo: [], display: [] };
@@ -47,12 +43,8 @@ export default function CommandCenterPage() {
   const selBusy = selectedId ? !!busy[selectedId] : false;
   const selStatus = (selectedId && statuses[selectedId]) || "";
 
-  const refreshActions = () => loadAgentActions(60).then(setActions).catch(() => {});
-  useEffect(() => { refreshActions(); }, []);
   // Brain notes power each agent's "Documents" — nodes are attributed by source.
   useEffect(() => { loadBrain().then((b) => setNodes(b.nodes || [])).catch(() => {}); }, []);
-  // Restore saved conversations so they survive a refresh.
-  useEffect(() => { loadAgentSessions().then((s) => { if (s && Object.keys(s).length) setThreads((prev) => ({ ...s, ...prev })); }).catch(() => {}); }, []);
 
   const selectedDocs = useMemo(
     () => (selectedId ? nodes.filter((n) => n.source === selectedId) : []),
@@ -71,15 +63,6 @@ export default function CommandCenterPage() {
     return counts;
   }, [actions]);
 
-  const pushDisplay = (id, msg) =>
-    setThreads((prev) => {
-      const cur = prev[id] || { convo: [], display: [] };
-      return { ...prev, [id]: { ...cur, display: [...cur.display, msg] } };
-    });
-  const setBusyFor = (id, v) => setBusy((b) => ({ ...b, [id]: v }));
-  const setStatusFor = (id, s) => setStatuses((p) => ({ ...p, [id]: s }));
-  const setInputFor = (id, v) => setInputs((p) => ({ ...p, [id]: v }));
-
   // Render any markdown (an agent reply, or a filed doc) into a real PDF and
   // open it in the PDF viewer — this is how agents "show their work" as a doc.
   const openAsPdf = (title, body, subtitle) => {
@@ -96,62 +79,11 @@ export default function CommandCenterPage() {
     }
   };
 
-  const sendTo = async (agent, text) => {
-    if (!text.trim() || busy[agent.id]) return;
-    setBusyFor(agent.id, true);
-    const cur = threads[agent.id] || { convo: [], display: [] };
-    const convo = [...cur.convo, { role: "user", content: text }];
-    setThreads((prev) => ({ ...prev, [agent.id]: { convo, display: [...cur.display, { role: "user", text }] } }));
-    setInputFor(agent.id, "");
-    try {
-      const authHeaders = await getAuthHeaders();
-      const { text: reply, history } = await runAgent({
-        agent, messages: convo, authHeaders,
-        onStatus: (s) => setStatusFor(agent.id, s),
-      });
-      let saved;
-      setThreads((prev) => {
-        const t = prev[agent.id] || { convo: [], display: [] };
-        saved = { convo: history, display: [...t.display, { role: "assistant", text: reply }] };
-        return { ...prev, [agent.id]: saved };
-      });
-      if (saved) saveAgentSession(agent.id, saved);
-      refreshActions();
-    } catch (e) {
-      pushDisplay(agent.id, { role: "error", text: e.message || "Something went wrong." });
-    } finally {
-      setBusyFor(agent.id, false);
-      setStatusFor(agent.id, "");
-    }
-  };
-
-  const runOverseerNow = async () => {
-    const id = "galadriel";
-    if (busy[id]) return;
-    setSelectedId(id);
-    setBusyFor(id, true);
-    pushDisplay(id, { role: "user", text: "Run today's summary and file it into the Brain." });
-    try {
-      const authHeaders = await getAuthHeaders();
-      const { text } = await runOverseer({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
-      pushDisplay(id, { role: "assistant", text });
-      setThreads((prev) => { if (prev[id]) saveAgentSession(id, prev[id]); return prev; });
-      addToast("Galadriel filed today's summary into the Brain.", "success");
-      refreshActions();
-    } catch (e) {
-      pushDisplay(id, { role: "error", text: e.message || "Run failed." });
-      addToast("Overseer run failed.", "error");
-    } finally {
-      setBusyFor(id, false);
-      setStatusFor(id, "");
-    }
-  };
-
   return (
     <div className="module-page cmd-page">
       <div className="module-header">
         <h1><i className="fa-solid fa-satellite-dish" /> Command Center</h1>
-        <button className="btn btn-sm" onClick={runOverseerNow} disabled={!!busy.galadriel}>
+        <button className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel}>
           <i className={`fa-solid ${busy.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} /> Run daily summary
         </button>
       </div>
@@ -166,12 +98,12 @@ export default function CommandCenterPage() {
       <div className="cmd-grid">
         {AGENTS.map((a) => {
           const isLocal = a.kind === "local";
-          // The local agent (Aulë) reports live state from his panel; API agents
-          // use the per-agent busy map. "offline" only applies to Aulë when he
-          // isn't actually connected to the local agent server.
-          const offline = isLocal ? auleLive.status !== "online" : false;
-          const isBusy = isLocal ? auleLive.busy : !!busy[a.id];
-          const recent = isLocal ? auleLive.recent : "";
+          // The local agent (Aulë) reports live state from the runtime; API
+          // agents use the per-agent busy map. "offline" only applies to Aulë
+          // when he isn't actually connected to the local agent server.
+          const offline = isLocal ? aule.status !== "online" : false;
+          const isBusy = isLocal ? aule.busy : !!busy[a.id];
+          const recent = isLocal ? aule.recent : "";
           const foot = isLocal
             ? (isBusy ? "working…" : recent || (offline ? "off" : "online"))
             : (isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—");
@@ -229,10 +161,22 @@ export default function CommandCenterPage() {
                 </button>
               </div>
 
-              {view === "profile" && <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />}
+              {view === "profile" && (
+                <>
+                  <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />
+                  <div className="cmd-deliverables">
+                    <h4 className="cmd-deliverables-title"><i className="fa-solid fa-paperclip" /> Deliverables &amp; research</h4>
+                    <DocLinks entityType="agent" entityId={selected.id} title="Linked documents" />
+                  </div>
+                </>
+              )}
 
-              {/* Aulë's live panel is rendered once, below, so it stays mounted
-                  across agent switches — see the always-mounted host. */}
+              {/* Aulë's live panel reads the persistent WebSocket + conversation
+                  from the runtime, so it can mount/unmount freely without ever
+                  dropping the connection. */}
+              {showAule && localAgent && (
+                <AulePanel agent={localAgent} onOpenDoc={setViewerDoc} />
+              )}
 
               {view === "work" && selected.kind === "api" && (
                 <>
@@ -286,16 +230,6 @@ export default function CommandCenterPage() {
                 </>
               )}
             </>
-          )}
-
-          {/* Aulë host: mounted for the life of this page so his WebSocket and
-              conversation survive switching to another agent and back. Shown
-              only when Aulë is selected in the Status tab; otherwise hidden but
-              still alive. `display:contents` keeps the original flex layout. */}
-          {localAgent && (
-            <div style={{ display: showAule ? "contents" : "none" }}>
-              <AulePanel agent={localAgent} onOpenDoc={setViewerDoc} onState={setAuleLive} />
-            </div>
           )}
         </section>
 

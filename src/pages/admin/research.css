@@ -1,0 +1,30 @@
+/* Research requests */
+.research-archived-toggle { margin-left: auto; display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted); }
+
+.research-new { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+.research-new .research-title-input { font-size: 0.95rem; }
+.research-new textarea { width: 100%; resize: vertical; }
+.research-new-foot { display: flex; gap: 0.5rem; align-items: center; }
+.research-new-foot select { flex: 1; }
+
+.research-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.research-card { display: flex; flex-direction: column; gap: 0.5rem; border-left: 3px solid var(--border, rgba(255,255,255,0.15)); }
+.research-card.open       { border-left-color: #6ea8ff; }
+.research-card.progress   { border-left-color: #f5b14a; }
+.research-card.delivered  { border-left-color: var(--accent, #7CFFB2); }
+.research-card.archived   { border-left-color: rgba(255,255,255,0.18); opacity: 0.75; }
+
+.research-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.research-card-title { flex: 1; min-width: 0; }
+.research-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid currentColor; }
+.research-status.open      { color: #6ea8ff; }
+.research-status.progress  { color: #f5b14a; }
+.research-status.delivered { color: var(--accent, #7CFFB2); }
+.research-status.archived  { color: var(--text-muted); }
+.research-assignee { font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.3rem; }
+.research-unread { font-size: 0.72rem; background: var(--accent, #7CFFB2); color: #0b1411; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 999px; }
+.research-details { margin: 0; font-size: 0.88rem; color: var(--text-muted); white-space: pre-wrap; }
+
+.research-card-foot { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem; }
+.research-status-select { font-size: 0.8rem; }
+.research-card-foot .btn-mini { margin-left: auto; }
