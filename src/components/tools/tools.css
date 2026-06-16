@@ -1,0 +1,86 @@
+/* AI Tools hub + shared tool styling */
+.tools-hub-intro { color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 1rem; }
+
+.tools-hub { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.9rem; }
+.tools-card {
+  display: flex; flex-direction: column; gap: 0.4rem; text-align: left;
+  padding: 1rem; background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--tool, var(--accent)); border-radius: 0.6rem; cursor: pointer;
+  transition: transform .1s, border-color .15s, box-shadow .15s;
+}
+.tools-card:hover { transform: translateY(-2px); border-color: var(--border-primary); box-shadow: var(--shadow-card, 0 4px 14px rgba(0,0,0,.18)); }
+.tools-card-icon { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 1.05rem; }
+.tools-card-name { font-weight: 800; font-size: 1rem; }
+.tools-card-blurb { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; flex: 1; }
+.tools-card-open { font-size: 0.78rem; font-weight: 700; color: var(--tool, var(--accent)); display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.tools-shell-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1rem; }
+.tools-shell-title { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+
+/* shared field look for tool forms */
+.gt input, .gt textarea, .gym input {
+  background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: 0.4rem;
+  color: var(--text-primary); padding: 0.45rem 0.6rem; font-size: 0.9rem; font-family: inherit; width: 100%;
+}
+.gt input:focus, .gt textarea:focus, .gym input:focus { outline: none; border-color: var(--accent); }
+.btn-primary-sm { background: var(--accent); color: #fff; border: none; }
+
+/* ── Grade Tracker ── */
+.gt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 0.9rem; }
+.gt-stat { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.55rem; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.gt-stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.gt-stat-val { font-size: 1.35rem; font-weight: 800; }
+.gt-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+
+.gt-form { background: var(--bg-card); border: 1px solid var(--accent); border-radius: 0.55rem; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.9rem; }
+.gt-form-row { display: flex; gap: 0.5rem; }
+.gt-form-row > * { flex: 1; }
+.gt-form-row label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.7rem; color: var(--text-muted); }
+.gt-form-actions { display: flex; gap: 0.5rem; }
+
+.gt-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.gt-item { display: flex; align-items: center; gap: 0.7rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.5rem; padding: 0.6rem 0.75rem; }
+.gt-item-main { flex: 1; min-width: 0; }
+.gt-item-title { font-weight: 600; font-size: 0.92rem; }
+.gt-course { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: 99px; padding: 1px 7px; margin-right: 0.5rem; }
+.gt-item-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+.gt-item-pct { font-weight: 800; font-size: 1rem; min-width: 3rem; text-align: right; }
+.gt-item-pct.low { color: var(--red); }
+.gt-item-pct.high { color: var(--green); }
+.gt-item-btns { display: flex; gap: 0.25rem; }
+
+.gt-plan { margin-top: 1rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.6rem; padding: 0.9rem; }
+.gt-plan h4 { margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.45rem; }
+.gt-plan-summary { font-size: 0.88rem; line-height: 1.5; color: var(--text-secondary); margin: 0 0 0.6rem; }
+.gt-weak { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; }
+.gt-weak-label { font-size: 0.74rem; color: var(--text-muted); }
+.gt-weak-chip { font-size: 0.74rem; background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: 99px; padding: 2px 9px; }
+.gt-plan-items { margin: 0 0 0.8rem; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.88rem; line-height: 1.45; }
+
+/* ── Gym Tracker ── */
+.gym-form { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.55rem; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.gym-form-row { display: flex; gap: 0.5rem; align-items: flex-end; }
+.gym-grow { flex: 1; }
+.gym-form-row label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.7rem; color: var(--text-muted); flex: 1; }
+.gym-section { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin: 1rem 0 0.5rem; font-weight: 700; }
+.gym-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.6rem; }
+.gym-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.55rem; padding: 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.gym-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.gym-card-name { font-weight: 700; font-size: 0.9rem; }
+.gym-card-count { font-size: 0.68rem; color: var(--text-muted); flex-shrink: 0; }
+.gym-card-pr { display: flex; gap: 0.9rem; font-size: 0.82rem; }
+.gym-card-pr .gym-k { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.gym-spark { display: block; width: 100%; height: 22px; }
+.gym-spark-empty { font-size: 0.7rem; color: var(--text-muted); }
+.gym-log { display: flex; flex-direction: column; gap: 0.3rem; }
+.gym-log-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem; padding: 0.4rem 0.55rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.45rem; }
+.gym-log-date { color: var(--text-muted); font-size: 0.74rem; min-width: 3.4rem; }
+.gym-log-ex { font-weight: 600; flex: 1; min-width: 0; }
+.gym-log-detail { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .gt-stats { grid-template-columns: 1fr 1fr; }
+  .gt-form-row { flex-wrap: wrap; }
+  .gym-form-row { flex-wrap: wrap; }
+  .gt input, .gt textarea, .gym input { font-size: 16px; }  /* stop iOS zoom-on-focus */
+}
