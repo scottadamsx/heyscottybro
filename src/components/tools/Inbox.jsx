@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail } from "../../api/messagesApi";
+import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail, sendReply, markRead } from "../../api/messagesApi";
 import { generateDraft } from "../../api/aiDraft";
 import { useToast } from "../../contexts/ToastContext";
 
@@ -31,6 +31,7 @@ export default function Inbox() {
   const [busy, setBusy] = useState(null);          // id currently drafting
   const [showArchived, setShowArchived] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [sending, setSending] = useState(null);     // id currently sending
 
   const refresh = () => loadMessages().then((r) => { setRows(r); setReady(true); }).catch((e) => { addToast(e.message, "error"); setReady(true); });
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
@@ -55,6 +56,15 @@ export default function Inbox() {
   };
 
   const draftFor = (m) => drafts[m.id] ?? m.draft ?? "";
+
+  // Toggle a message open; opening an unread one marks it read (app + Gmail).
+  const openItem = (m, expanded) => {
+    setOpen(expanded ? null : m.id);
+    if (!expanded && !m.read) {
+      setRows((rs) => rs.map((x) => (x.id === m.id ? { ...x, read: true } : x))); // optimistic
+      markRead(m.id).catch(() => {});
+    }
+  };
 
   const makeDraft = async (m) => {
     setBusy(m.id);
@@ -88,6 +98,20 @@ export default function Inbox() {
   };
 
   const copyDraft = (m) => copy(draftFor(m)).then(() => addToast("Draft copied.", "success")).catch(() => addToast("Copy failed.", "error"));
+
+  const send = async (m) => {
+    const text = draftFor(m);
+    if (!text.trim()) { addToast("Write or generate a draft first.", "error"); return; }
+    if (!window.confirm(`Send this reply to ${m.sender || "the sender"} from your Gmail? This can't be undone.`)) return;
+    setSending(m.id);
+    try {
+      const { to } = await sendReply(m.id, text);   // server sends, marks replied, clears draft
+      setRows((rs) => rs.map((x) => (x.id === m.id ? { ...x, status: "replied", draft: "" } : x)));
+      setDrafts((d) => ({ ...d, [m.id]: "" }));      // empty the draft box
+      addToast(`Reply sent${to ? ` to ${to}` : ""}.`, "success");
+    } catch (e) { addToast(e.message, "error"); }
+    finally { setSending(null); }
+  };
 
   if (!ready) return <p className="no-entries">Loading inbox…</p>;
 
@@ -136,8 +160,9 @@ export default function Inbox() {
           {visible.map((m) => {
             const expanded = open === m.id;
             return (
-              <div className={`inbox-item${expanded ? " open" : ""}`} key={m.id}>
-                <button className="inbox-item-head" onClick={() => setOpen(expanded ? null : m.id)}>
+              <div className={`inbox-item${expanded ? " open" : ""}${m.read ? "" : " unread"}`} key={m.id}>
+                <button className="inbox-item-head" onClick={() => openItem(m, expanded)}>
+                  <span className="inbox-dot" aria-hidden="true" />
                   <i className={`${chOf(m.channel).prefix} ${chOf(m.channel).icon} inbox-ch-icon`} />
                   <div className="inbox-item-main">
                     <div className="inbox-item-title">{m.subject || m.sender || "(message)"}</div>
@@ -163,7 +188,12 @@ export default function Inbox() {
                       onChange={(e) => setDrafts((d) => ({ ...d, [m.id]: e.target.value }))}
                     />
                     <div className="inbox-actions">
-                      <button className="btn btn-sm btn-primary-sm" onClick={() => copyDraft(m)} disabled={!draftFor(m)}><i className="fa-solid fa-copy" /> Copy</button>
+                      {m.channel === "email" && (
+                        <button className="btn btn-sm btn-primary-sm" onClick={() => send(m)} disabled={!draftFor(m) || sending === m.id || m.status === "replied"}>
+                          {sending === m.id ? <><i className="fa-solid fa-spinner fa-spin" /> Sending…</> : m.status === "replied" ? <><i className="fa-solid fa-check" /> Sent</> : <><i className="fa-solid fa-paper-plane" /> Send reply</>}
+                        </button>
+                      )}
+                      <button className="btn btn-sm" onClick={() => copyDraft(m)} disabled={!draftFor(m)}><i className="fa-solid fa-copy" /> Copy</button>
                       <button className="btn btn-sm" onClick={() => saveDraft(m)}>Save draft</button>
                       <button className="btn btn-sm" onClick={() => setStatus(m, "replied")}>✓ Replied</button>
                       <button className="btn btn-sm" onClick={() => setStatus(m, m.status === "archived" ? "needs_reply" : "archived")}>{m.status === "archived" ? "Unarchive" : "Archive"}</button>

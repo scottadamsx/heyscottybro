@@ -56,3 +56,33 @@ export async function syncGmail() {
   if (!res.ok) throw new Error(data.error || `Sync failed (${res.status})`);
   return data;
 }
+
+/**
+ * Mark a message read (DB flag + Gmail UNREAD label removal via api/inbox-read).
+ * Best-effort; returns the server result. Safe to call repeatedly.
+ */
+export async function markRead(id) {
+  const res = await fetch("/api/inbox-read", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+    body: JSON.stringify({ id }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Mark-read failed (${res.status})`);
+  return data;
+}
+
+/**
+ * Send the reply draft for an email message via Gmail (api/inbox-send).
+ * Returns { to, gmailId }. Throws with a readable message on failure.
+ */
+export async function sendReply(id, draft) {
+  const res = await fetch("/api/inbox-send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+    body: JSON.stringify({ id, draft }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Send failed (${res.status})`);
+  return data;
+}

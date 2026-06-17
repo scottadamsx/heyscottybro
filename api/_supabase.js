@@ -19,6 +19,17 @@ export async function sbSelect(table, query = "") {
   return res.json();
 }
 
+/** PATCH rows matching `query` with `fields`. Returns the updated rows. */
+export async function sbUpdate(table, query, fields) {
+  const res = await fetch(`${URL_}/rest/v1/${table}?${query}`, {
+    method: "PATCH",
+    headers: { ...headers(), Prefer: "return=representation" },
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) throw new Error(`${table} update ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
 /** UPSERT rows (merge on `onConflict` columns). Returns the affected rows. */
 export async function sbUpsert(table, rows, onConflict) {
   const q = onConflict ? `?on_conflict=${onConflict}` : "";

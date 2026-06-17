@@ -21,7 +21,9 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const PORT = 5599;
 const REDIRECT = `http://localhost:${PORT}/oauth2callback`;
-const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+// modify = poll the inbox + mark messages read (remove UNREAD label);
+// send = reply on Scott's behalf.
+const SCOPE = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send";
 
 if (!CLIENT_ID || !CLIENT_SECRET) {
   console.error("Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars first.");

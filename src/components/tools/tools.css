@@ -93,6 +93,13 @@
 .inbox-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .inbox-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.55rem; overflow: hidden; }
 .inbox-item.open { border-color: var(--accent); }
+/* Read/unread: unread gets an accent dot, bold title and a left accent bar; read is muted. */
+.inbox-dot { width: 7px; height: 7px; border-radius: 99px; background: var(--accent); flex-shrink: 0; visibility: hidden; }
+.inbox-item.unread .inbox-dot { visibility: visible; }
+.inbox-item.unread { border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+.inbox-item.unread .inbox-item-title { font-weight: 800; color: var(--text-primary); }
+.inbox-item:not(.unread) .inbox-item-title { font-weight: 500; color: var(--text-secondary); }
+.inbox-item:not(.unread) .inbox-ch-icon { opacity: 0.6; }
 .inbox-item-head { width: 100%; display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; background: none; border: none; cursor: pointer; text-align: left; color: inherit; }
 .inbox-ch-icon { color: var(--text-muted); width: 1.1rem; text-align: center; flex-shrink: 0; }
 .inbox-item-main { flex: 1; min-width: 0; }
