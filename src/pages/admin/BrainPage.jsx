@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { loadBrain, syncFromVault } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import { renderMarkdown } from "../../utils/markdown";
+import CopyId, { docId } from "../../components/CopyId";
 import "./brain.css";
 
 // Three.js is heavy (~600 kB) — load the WebGL graph only when this page mounts
@@ -188,6 +189,9 @@ export default function BrainPage() {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0 10px" }}>
                 <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 99, background: (colors[selected.type] || FALLBACK) + "22", color: colors[selected.type] || FALLBACK, textTransform: "uppercase", letterSpacing: "0.04em" }}>{selected.type}</span>
                 {(selected.tags || []).map((t) => <span key={t} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 99, background: "var(--bg-raised)", color: "var(--text-muted)" }}>#{t}</span>)}
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <CopyId id={docId(selected.title, selected.slug)} />
               </div>
               {selected.source && <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10, fontFamily: "monospace", wordBreak: "break-all" }}>{selected.source}</div>}
               <div className="chat-md" style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }} dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body || "*(empty note)*") }} />

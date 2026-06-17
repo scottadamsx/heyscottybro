@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { getNodeBySlug, setDocRead } from "../../api/docLinksApi";
 import { renderMarkdown } from "../../utils/markdown";
+import CopyId, { docId } from "../../components/CopyId";
 import "./reader.css";
 
 /**
@@ -91,7 +92,7 @@ export default function BrainReaderPage() {
           </header>
           <div className="reader-body chat-md" dangerouslySetInnerHTML={{ __html: html }} />
           <footer className="reader-foot">
-            <code className="reader-slug">{node.slug}</code>
+            <CopyId id={docId(node.title, node.slug)} />
           </footer>
         </article>
       )}
