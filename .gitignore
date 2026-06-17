@@ -136,3 +136,6 @@ dist
 .pnp.*
 placeholder.supabase.co
 .vercel
+
+# Claude Code local settings (machine-specific; can capture command args incl. secrets)
+.claude/settings.local.json

@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Dependencies / build (none yet, but future-proof)
+node_modules/
+dist/
+.cache/
+
+# Env
+.env
+.env.local
