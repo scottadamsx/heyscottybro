@@ -78,9 +78,41 @@
 .gym-log-ex { font-weight: 600; flex: 1; min-width: 0; }
 .gym-log-detail { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
+/* ── AI Inbox ── */
+.inbox-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+.inbox-toggle { font-size: 0.78rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+.inbox-note { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 0.9rem; }
+.inbox-form { background: var(--bg-card); border: 1px solid var(--accent); border-radius: 0.55rem; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.9rem; }
+.inbox-form-row { display: flex; gap: 0.5rem; }
+.inbox-form-row > * { flex: 1; }
+.inbox-form select, .inbox-form input, .inbox-form textarea,
+.inbox-draft { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: 0.4rem; color: var(--text-primary); padding: 0.45rem 0.6rem; font-size: 0.9rem; font-family: inherit; width: 100%; }
+.inbox-form textarea:focus, .inbox-draft:focus, .inbox-form input:focus { outline: none; border-color: var(--accent); }
+.inbox-form-actions { display: flex; gap: 0.5rem; }
+
+.inbox-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.inbox-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 0.55rem; overflow: hidden; }
+.inbox-item.open { border-color: var(--accent); }
+.inbox-item-head { width: 100%; display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; background: none; border: none; cursor: pointer; text-align: left; color: inherit; }
+.inbox-ch-icon { color: var(--text-muted); width: 1.1rem; text-align: center; flex-shrink: 0; }
+.inbox-item-main { flex: 1; min-width: 0; }
+.inbox-item-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inbox-item-sub { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.inbox-status { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 99px; flex-shrink: 0; background: var(--bg-raised); color: var(--text-secondary); }
+.inbox-status.s-needs_reply { background: color-mix(in srgb, var(--orange) 16%, transparent); color: var(--orange); }
+.inbox-status.s-drafted { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.inbox-status.s-replied { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.inbox-item-body { padding: 0 0.8rem 0.8rem; display: flex; flex-direction: column; gap: 0.55rem; }
+.inbox-msg { font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap; background: var(--bg-raised); border-radius: 0.45rem; padding: 0.6rem 0.7rem; max-height: 180px; overflow-y: auto; }
+.inbox-draft-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
+.inbox-draft { resize: vertical; line-height: 1.5; }
+.inbox-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+
 @media (max-width: 640px) {
   .gt-stats { grid-template-columns: 1fr 1fr; }
   .gt-form-row { flex-wrap: wrap; }
   .gym-form-row { flex-wrap: wrap; }
-  .gt input, .gt textarea, .gym input { font-size: 16px; }  /* stop iOS zoom-on-focus */
+  .inbox-form-row { flex-wrap: wrap; }
+  .gt input, .gt textarea, .gym input,
+  .inbox-form select, .inbox-form input, .inbox-form textarea, .inbox-draft { font-size: 16px; }  /* stop iOS zoom-on-focus */
 }

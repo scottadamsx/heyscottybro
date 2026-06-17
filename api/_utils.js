@@ -42,6 +42,29 @@ export async function verifySupabaseUser(req) {
   }
 }
 
+/**
+ * Resolve the logged-in Supabase user's id from the request's Bearer token,
+ * or null if the token is missing/invalid. Like verifySupabaseUser but returns
+ * the id so a function can scope writes to the caller.
+ */
+export async function getSupabaseUserId(req) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, {
+      headers: { apikey: key, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 // Only the models this app actually uses may pass through the proxy, so a
 // leaked endpoint can't be used to run expensive models on our key.
 // Frodo (haiku) → Sam (sonnet) → Gandalf (opus) escalation ladder.

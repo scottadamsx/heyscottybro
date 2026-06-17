@@ -1,6 +1,7 @@
 import { useState } from "react";
 import GradeTracker from "./GradeTracker";
 import GymTracker from "./GymTracker";
+import Inbox from "./Inbox";
 import "./tools.css";
 
 /**
@@ -19,6 +20,11 @@ const TOOLS = [
     id: "gym", name: "Gym Tracker", icon: "fa-dumbbell", color: "#f59e0b",
     blurb: "Log sets, watch your PRs and estimated 1-rep-max, and see per-exercise progression at a glance.",
     Component: GymTracker,
+  },
+  {
+    id: "inbox", name: "AI Inbox", icon: "fa-envelope-open-text", color: "#10b981",
+    blurb: "Paste a message and get an editable reply draft in your voice, ready to copy. Email / Slack / Discord auto-sync plugs in here once connected.",
+    Component: Inbox,
   },
 ];
 

@@ -190,9 +190,29 @@
 }
 .cmd-viewer-actions { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
 .cmd-viewer-body {
-  padding: var(--space-lg); overflow-y: auto; line-height: var(--leading-relaxed);
-  font-size: var(--text-sm); color: var(--text-primary);
+  padding: var(--space-lg) clamp(var(--space-lg), 5vw, 2.5rem);
+  overflow-y: auto; line-height: 1.7;
+  font-size: 0.95rem; color: var(--text-primary);
 }
+/* Document-grade typography (overrides the compact chat-md styles) so an
+   agent-presented document reads like an article, not a chat bubble. */
+.cmd-viewer .cmd-viewer-body > *:first-child { margin-top: 0; }
+.cmd-viewer .cmd-viewer-body p { margin: 0 0 0.95rem; }
+.cmd-viewer .cmd-viewer-body h4,
+.cmd-viewer .cmd-viewer-body h5,
+.cmd-viewer .cmd-viewer-body h6 { line-height: 1.3; margin: 1.6rem 0 0.6rem; letter-spacing: -0.005em; }
+.cmd-viewer .cmd-viewer-body h4 { font-size: 1.32rem; }
+.cmd-viewer .cmd-viewer-body h5 { font-size: 1.12rem; }
+.cmd-viewer .cmd-viewer-body h6 { font-size: 0.96rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.cmd-viewer .cmd-viewer-body ul,
+.cmd-viewer .cmd-viewer-body ol { margin: 0 0 0.95rem; padding-left: 1.4rem; }
+.cmd-viewer .cmd-viewer-body li { margin: 0.3rem 0; }
+.cmd-viewer .cmd-viewer-body pre { margin: 0 0 1.1rem; padding: 0.85rem 1rem; }
+.cmd-viewer .cmd-viewer-body .chat-grid-wrap { overflow-x: auto; margin: 0 0 1.1rem; }
+.cmd-viewer .cmd-viewer-body table.chat-grid { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.cmd-viewer .cmd-viewer-body table.chat-grid th,
+.cmd-viewer .cmd-viewer-body table.chat-grid td { border: 1px solid var(--border-subtle); padding: 0.5rem 0.68rem; text-align: left; vertical-align: top; }
+.cmd-viewer .cmd-viewer-body table.chat-grid th { background: var(--bg-raised); font-weight: 600; }
 
 /* ── Aulë coding panel ─────────────────────────── */
 .aule { display: flex; flex-direction: column; min-height: 0; }

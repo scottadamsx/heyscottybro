@@ -28,6 +28,7 @@ import {
 import { loadMembers, deleteMember } from "./hikerApi";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
 import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
+import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"];
@@ -185,6 +186,27 @@ const COLLECTIONS = {
       notes: { type: "string", long: true },
     },
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
+  },
+  recipes: {
+    description: "Saved recipes (Health › Recipes) — ingredients[] and steps[] are string arrays; nutrition is per serving.",
+    searchFields: ["title", "description"],
+    defaultFields: ["id", "title", "servings", "tags", "favorite"],
+    fields: {
+      title: { type: "string", required: true },
+      description: { type: "string", long: true },
+      servings: { type: "number" },
+      prep_minutes: { type: "number" },
+      cook_minutes: { type: "number" },
+      ingredients: { type: "array", long: true },
+      steps: { type: "array", long: true },
+      calories_per_serving: { type: "number" },
+      protein_g: { type: "number" },
+      carbs_g: { type: "number" },
+      fat_g: { type: "number" },
+      tags: { type: "array" },
+      favorite: { type: "boolean", updateOnly: true },
+    },
+    load: loadRecipes, create: createRecipe, update: updateRecipe, remove: deleteRecipe,
   },
   bugs: {
     description: "Bug & feature-request tracker (Tools › Bugs). type 'bug' logs an app issue, type 'feature' logs a feature request. Track status open → resolved. Use export_bugs to download a zip report. Screenshots are added by Scott in the UI.",

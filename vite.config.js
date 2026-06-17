@@ -124,6 +124,30 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Dev-only stand-in for api/inbox-sync.js (AI Inbox Gmail poller). Maps the
+  // VITE_ Supabase vars to the server-side names the handler reads, then runs it.
+  const devInboxSyncPlugin = {
+    name: "dev-api-inbox-sync",
+    configureServer(server) {
+      server.middlewares.use("/api/inbox-sync", (req, res) => {
+        if (!process.env.SUPABASE_URL) process.env.SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL || "";
+        if (!process.env.SUPABASE_ANON_KEY) process.env.SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || "";
+        for (const k of ["SUPABASE_SERVICE_ROLE_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN", "GMAIL_QUERY", "CRON_SECRET", "INBOX_USER_ID", "OVERSEER_USER_ID"]) {
+          if (!process.env[k] && env[k]) process.env[k] = env[k];
+        }
+        const shim = {
+          statusCode: 200,
+          status(c) { this.statusCode = c; return this; },
+          json(o) { res.statusCode = this.statusCode; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(o)); },
+          end() { res.end(); },
+        };
+        import("./api/inbox-sync.js")
+          .then((m) => m.default({ headers: req.headers, url: req.url, method: req.method }, shim))
+          .catch((e) => { res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: e.message })); });
+      });
+    },
+  };
+
   // Dev-only: turn the Aulë coding agent on/off from the Command Center. The
   // browser can't spawn a process, but the Vite dev server (Node, on the Mac)
   // can — so this starts `npm run agents` as a detached child. Not present in
@@ -165,7 +189,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devAuleControlPlugin],
+    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devAuleControlPlugin],
     build: {
       outDir: "dist",
     },

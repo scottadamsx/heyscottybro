@@ -42,3 +42,27 @@ alter table public.workouts enable row level security;
 drop policy if exists "workouts owner" on public.workouts;
 create policy "workouts owner" on public.workouts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── AI Inbox ─────────────────────────────────────────────────────────────────
+-- Flagged messages + AI reply drafts. `channel` is the seam for future
+-- email/Slack/Discord connectors (they just insert rows with channel set);
+-- today's usable path is channel 'manual'.
+create table if not exists public.messages (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  channel     text default 'manual',        -- manual | email | slack | discord
+  sender      text default '',
+  subject     text default '',
+  body        text not null,
+  draft       text default '',
+  status      text default 'needs_reply',   -- needs_reply | drafted | replied | archived
+  flagged     boolean default true,
+  received_at timestamptz default now(),
+  created_at  timestamptz default now()
+);
+create index if not exists messages_user_idx on public.messages(user_id);
+create index if not exists messages_user_status_idx on public.messages(user_id, status);
+alter table public.messages enable row level security;
+drop policy if exists "messages owner" on public.messages;
+create policy "messages owner" on public.messages
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

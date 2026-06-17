@@ -2938,19 +2938,21 @@ input, textarea, select { font-family: inherit; }
    Budget v2 — 9-month plan view
    ═══════════════════════════════════════════ */
 .bud {
-  --bud-gold: #d4a843;
-  --bud-green: #5ea65e;
-  --bud-blue: #6a9fd4;
-  --bud-red: #d46a6a;
-  --bud-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  /* Budget now rides the app palette + mono so it matches the rest of the app
+     (was a separate gold/sage/dusty-red theme). Change here, not per-component. */
+  --bud-gold: var(--orange);
+  --bud-green: var(--green);
+  --bud-blue: var(--accent);
+  --bud-red: var(--red);
+  --bud-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 .bud .bud-period-label { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
 .bud-muted { color: var(--text-muted); }
 
 /* Weekly tracker */
 .bud-week {
-  background: linear-gradient(135deg, rgba(94,166,94,0.08) 0%, rgba(212,168,67,0.06) 100%);
-  border: 1px solid rgba(94,166,94,0.25);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--green) 8%, transparent) 0%, color-mix(in srgb, var(--orange) 6%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   display: flex;
@@ -3097,7 +3099,7 @@ input, textarea, select { font-family: inherit; }
   gap: 0.25rem;
   padding: 1px 8px;
   border-radius: 100px;
-  background: rgba(94,166,94,0.2);
+  background: color-mix(in srgb, var(--green) 20%, transparent);
   color: var(--bud-green);
   font-size: 0.68rem;
   font-weight: 700;
@@ -3155,8 +3157,8 @@ input, textarea, select { font-family: inherit; }
 .bud-status-line {
   grid-column: 1 / -1;
   padding: 0.65rem 1rem;
-  background: rgba(212,168,67,0.06);
-  border: 1px solid rgba(212,168,67,0.2);
+  background: color-mix(in srgb, var(--orange) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orange) 20%, transparent);
   border-radius: var(--radius-sm);
   font-size: 0.86rem;
   color: var(--bud-gold);
@@ -3375,8 +3377,8 @@ input, textarea, select { font-family: inherit; }
   gap: 0.5rem;
   align-items: center;
   padding: 0.55rem 0.75rem;
-  background: rgba(212,168,67,0.08);
-  border: 1px solid rgba(212,168,67,0.25);
+  background: color-mix(in srgb, var(--orange) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--orange) 25%, transparent);
   border-radius: var(--radius-sm);
   font-size: 0.82rem;
   color: var(--bud-gold);
