@@ -11,3 +11,5 @@ alter table public.messages add column if not exists thread_id   text;
 -- distinct, so manual messages (external_id NULL) are unaffected and unlimited.
 create unique index if not exists messages_user_external_uidx
   on public.messages(user_id, external_id);
+
+
