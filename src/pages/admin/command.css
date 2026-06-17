@@ -90,6 +90,21 @@
   border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm);
 }
 .cmd-input-row input:focus { outline: none; border-color: var(--accent); }
+.cmd-input-row.drag-over { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: var(--radius-sm); }
+.cmd-attach { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Staged image thumbnails above the input */
+.cmd-shots { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-sm); }
+.cmd-shot { position: relative; width: 64px; height: 64px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); }
+.cmd-shot img { width: 100%; height: 100%; object-fit: cover; }
+.cmd-shot-x {
+  position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; border: none; cursor: pointer;
+  border-radius: 4px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; line-height: 1; padding: 0;
+}
+
+/* Image thumbnails inside a sent user message */
+.cmd-msg-shots { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.cmd-msg-shots img { max-width: 160px; max-height: 160px; border-radius: var(--radius-sm); display: block; }
 
 /* ── Work / Profile tabs ────────────────────── */
 .cmd-tabs { display: flex; gap: var(--space-2xs); margin-bottom: var(--space-sm); }

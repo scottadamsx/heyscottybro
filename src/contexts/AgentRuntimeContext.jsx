@@ -69,14 +69,25 @@ export function AgentRuntimeProvider({ children }) {
   const setStatusFor = useCallback((id, s) => setStatuses((p) => ({ ...p, [id]: s })), []);
   const setInputFor = useCallback((id, v) => setInputs((p) => ({ ...p, [id]: v })), []);
 
-  const sendTo = useCallback(async (agent, text) => {
-    if (!text.trim() || busyRef.current[agent.id]) return;
+  // attachments: [{ media_type, data }] — base64 images for vision-capable agents.
+  const sendTo = useCallback(async (agent, text, attachments = []) => {
+    const trimmed = (text || "").trim();
+    if ((!trimmed && attachments.length === 0) || busyRef.current[agent.id]) return;
     setBusyFor(agent.id, true);
     const cur = threadsRef.current[agent.id] || { convo: [], display: [] };
-    const convo = [...cur.convo, { role: "user", content: text }];
+    // With image attachments the user turn becomes a content array (vision),
+    // exactly like Frodo's chat (useAIAgent); plain text stays a string.
+    const userContent = attachments.length
+      ? [
+          ...attachments.map((a) => ({ type: "image", source: { type: "base64", media_type: a.media_type, data: a.data } })),
+          { type: "text", text: trimmed || "Here's an image — take a look." },
+        ]
+      : trimmed;
+    const convo = [...cur.convo, { role: "user", content: userContent }];
+    const images = attachments.map((a) => `data:${a.media_type};base64,${a.data}`);
     setThreads((prev) => {
       const t = prev[agent.id] || { convo: [], display: [] };
-      return { ...prev, [agent.id]: { convo, display: [...t.display, { role: "user", text }] } };
+      return { ...prev, [agent.id]: { convo, display: [...t.display, { role: "user", text: trimmed, images }] } };
     });
     setInputFor(agent.id, "");
     try {

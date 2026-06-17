@@ -15,6 +15,13 @@ import "./command.css";
 
 const todayStr = () => toDateStr(new Date());
 
+const readDataUrl = (file) => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result);
+  r.onerror = rej;
+  r.readAsDataURL(file);
+});
+
 export default function CommandCenterPage() {
   const { addToast } = useToast();
   // The agent runtime lives ABOVE the router (AgentRuntimeProvider), so agents
@@ -30,7 +37,13 @@ export default function CommandCenterPage() {
   const [nodes, setNodes] = useState([]);        // brain nodes, for per-agent documents
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
   const [pdfDoc, setPdfDoc] = useState(null);        // { blob, title, filename } open in the PDF viewer
+  const [shots, setShots] = useState([]);            // staged images for the next message: { id, dataUrl, media_type }
+  const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // Staged images belong to the agent you're messaging — clear them on switch.
+  useEffect(() => { setShots([]); }, [selectedId]);
 
   const selected = selectedId ? getAgent(selectedId) : null;
   // The local Aulë agent keeps a live WebSocket + conversation in the runtime.
@@ -77,6 +90,40 @@ export default function CommandCenterPage() {
     } catch {
       addToast("Couldn't build that PDF.", "error");
     }
+  };
+
+  // Attach images so the (vision-capable) agent can SEE them. We read them to
+  // base64 in the browser — no upload needed; they ride along with the message.
+  const addFiles = async (fileList) => {
+    const files = [...fileList].filter((f) => f.type.startsWith("image/"));
+    for (const file of files) {
+      const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+      try {
+        const dataUrl = await readDataUrl(file);
+        setShots((prev) => [...prev, { id, dataUrl, media_type: file.type }]);
+      } catch {
+        addToast("Couldn't read that image.", "error");
+      }
+    }
+  };
+  const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
+  const onPaste = (e) => {
+    const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.type.startsWith("image/")).map((i) => i.getAsFile()).filter(Boolean);
+    if (imgs.length) { e.preventDefault(); addFiles(imgs); }
+  };
+  const onDropFiles = (e) => {
+    if (!e.dataTransfer?.files?.length) return;
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(e.dataTransfer.files);
+  };
+
+  const doSend = () => {
+    if (!selected || selBusy) return;
+    const attachments = shots.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
+    if (!draft.trim() && attachments.length === 0) return;
+    sendTo(selected, draft, attachments);
+    setShots([]);
   };
 
   return (
@@ -207,23 +254,61 @@ export default function CommandCenterPage() {
                             </button>
                             <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
                           </>
-                        ) : <span>{m.text}</span>}
+                        ) : (
+                          <>
+                            {m.images?.length > 0 && (
+                              <div className="cmd-msg-shots">
+                                {m.images.map((src, j) => (
+                                  <a key={j} href={src} target="_blank" rel="noreferrer">
+                                    <img src={src} alt="attachment" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                            {m.text && <span>{m.text}</span>}
+                          </>
+                        )}
                       </div>
                     ))}
                     {selBusy && selStatus && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" /> {selStatus}</div>}
                   </div>
 
+                  {shots.length > 0 && (
+                    <div className="cmd-shots">
+                      {shots.map((s) => (
+                        <div key={s.id} className="cmd-shot">
+                          <img src={s.dataUrl} alt="attachment" />
+                          <button type="button" className="cmd-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <form
-                    className="cmd-input-row"
-                    onSubmit={(e) => { e.preventDefault(); sendTo(selected, draft); }}
+                    className={`cmd-input-row${dragOver ? " drag-over" : ""}`}
+                    onSubmit={(e) => { e.preventDefault(); doSend(); }}
+                    onDragOver={(e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+                    onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
+                    onDrop={onDropFiles}
                   >
                     <input
-                      placeholder={selBusy ? `${selected.name} is working…` : `Message ${selected.name}…`}
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: "none" }}
+                      onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }}
+                    />
+                    <button type="button" className="btn btn-sm cmd-attach" onClick={() => fileInputRef.current?.click()} disabled={selBusy} title="Attach image" aria-label="Attach image">
+                      <i className="fa-solid fa-paperclip" />
+                    </button>
+                    <input
+                      placeholder={selBusy ? `${selected.name} is working…` : dragOver ? "Drop image to attach…" : `Message ${selected.name}…`}
                       value={draft}
                       onChange={(e) => setInputFor(selected.id, e.target.value)}
+                      onPaste={onPaste}
                       disabled={selBusy}
                     />
-                    <button className="btn btn-sm" type="submit" disabled={selBusy || !draft.trim()}>
+                    <button className="btn btn-sm" type="submit" disabled={selBusy || (!draft.trim() && shots.length === 0)}>
                       <i className="fa-solid fa-paper-plane" />
                     </button>
                   </form>
