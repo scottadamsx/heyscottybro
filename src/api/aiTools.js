@@ -20,6 +20,31 @@ import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, sav
 import { todayStr as nutritionToday } from "../utils/nutrition";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 
+// ── Brain write policy ───────────────────────────────────────────────────────
+// The Brain is single-writer by design: Bilbo (the Archivist) is its keeper and
+// editor. The general assistant tiers (Frodo/Sam/Gandalf) and any other caller
+// read the Brain but must hand changes to Bilbo via consult_archivist. The
+// dedicated authoring specialists (Elrond research, Lúthien marketing) keep
+// filing their own findings. Bilbo, in turn, only writes the Brain — he stays
+// read-only on every other collection.
+const BRAIN_WRITE_TOOLS = new Set(["create_item", "update_item", "delete_item"]);
+const BRAIN_WRITERS = new Set(["bilbo", "elrond", "luthien"]);
+
+function brainWriteDenial(name, input, caller) {
+  const targetsBrain = input?.collection === "brain";
+  const isBrainWrite = name === "link_brain_nodes" || (BRAIN_WRITE_TOOLS.has(name) && targetsBrain);
+
+  // Only the Brain's authors may change it; everyone else asks Bilbo.
+  if (isBrainWrite && !BRAIN_WRITERS.has(caller)) {
+    return { error: "The Brain is write-protected — only Bilbo edits it. Use the consult_archivist tool and tell Bilbo exactly what to create, update, delete, or link in the Brain, and he'll do it." };
+  }
+  // Bilbo is a Brain-only editor: read-only everywhere else.
+  if (caller === "bilbo" && BRAIN_WRITE_TOOLS.has(name) && !targetsBrain) {
+    return { error: `Bilbo only writes to the Brain — the "${input?.collection || "that"}" collection is read-only for him.` };
+  }
+  return null;
+}
+
 async function logAction({ tier, tool, input, result }) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -113,7 +138,7 @@ export const TOOLS = [
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
-  { name: "consult_archivist", description: "Ask Bilbo, Scott's Archivist, to FIND information across his planner data and Brain (knowledge graph) and report it back. Call this when you need context or records you don't already have AND gathering it would take several queries (e.g. \"what do we know about NEVER86?\", \"pull everything relevant to this week's hikes\", \"has Scott journalled about X?\"). Give Bilbo a clear request — what you need and why — and he searches, synthesises, and returns the answer with sources. He is READ-ONLY: for changes, use the write tools yourself, or consult_banker for money.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full question / what you need to know, with any specifics." } }, required: ["request"] } },
+  { name: "consult_archivist", description: "Ask Bilbo, Scott's Archivist and keeper of the Brain. Two jobs: (1) FIND information across Scott's planner data and Brain (knowledge graph) and report it back with sources — call this when gathering context would take you several queries (e.g. \"what do we know about NEVER86?\", \"pull everything relevant to this week's hikes\"); and (2) WRITE to the Brain on your behalf — Bilbo is the ONLY agent allowed to create, update, delete, or link Brain notes, so when something should be saved to or changed in the Brain, ask him and he'll do it. For non-Brain data changes use the write tools yourself; for money use consult_banker.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full request — what to find, or exactly what to create/update/delete/link in the Brain, with specifics." } }, required: ["request"] } },
   { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
   {
     name: "log_food",
@@ -316,6 +341,8 @@ async function runTool(name, input) {
 }
 
 export async function executeTool(name, input, tier = "frodo") {
+  const denied = brainWriteDenial(name, input, tier);
+  if (denied) { logAction({ tier, tool: name, input, result: denied }); return denied; }
   let result;
   try {
     result = await runTool(name, input);

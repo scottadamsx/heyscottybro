@@ -58,9 +58,9 @@ export const AGENTS = [
   {
     id: ARCHIVIST.id, name: ARCHIVIST.name, title: "Archivist", emoji: ARCHIVIST.emoji, icon: ARCHIVIST.icon,
     color: "#94a3b8", kind: "api", model: ARCHIVIST.model, maxToolTurns: 12,
-    tagline: "Finds anything across your data + Brain — the other agents' lookup service",
+    tagline: "Finds anything across your data + Brain, and is the Brain's keeper — the only agent that writes it",
     thinking: "Bilbo searches the archives…",
-    tools: only("library_catalog", "query", "list_context"),
+    tools: only("library_catalog", "query", "list_context", "create_item", "update_item", "delete_item", "link_brain_nodes"),
     buildPrompt: buildArchivistPrompt,
   },
   {

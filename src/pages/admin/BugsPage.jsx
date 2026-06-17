@@ -3,7 +3,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 import {
   loadBugs, createBug, updateBug, deleteBug,
-  addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip,
+  addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip, buildFixPrompt,
 } from "../../api/bugsApi";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
@@ -50,6 +50,7 @@ export default function BugsPage() {
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesVal, setNotesVal] = useState("");
   const [shotUrls, setShotUrls] = useState({});         // { path: signedUrl }
+  const [promptShown, setPromptShown] = useState(null); // bug id whose fix-prompt is revealed
   const [dragId, setDragId]     = useState(null);       // bug id being dragged over
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
@@ -127,6 +128,16 @@ export default function BugsPage() {
       addToast("Deleted.", "success");
     } catch {
       addToast("Delete failed.", "error");
+    }
+  };
+
+  const handleCopyPrompt = async (bug) => {
+    try {
+      await navigator.clipboard.writeText(buildFixPrompt(bug));
+      addToast("Claude fix-prompt copied.", "success");
+    } catch {
+      addToast("Couldn't copy — reveal the prompt and copy it by hand.", "error");
+      setPromptShown(bug.id);
     }
   };
 
@@ -377,6 +388,29 @@ export default function BugsPage() {
                     Resolved {new Date(bug.resolved_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 )}
+
+                {/* Claude fix-prompt — generated from the report; hidden until asked for */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                    <p style={{ ...sh, margin: 0 }}><i className="fa-solid fa-wand-magic-sparkles" style={{ marginRight: 4 }} />Claude fix prompt</p>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent)", fontSize: 12, fontWeight: 600 }}
+                        onClick={() => handleCopyPrompt(bug)}>
+                        <i className="fa-solid fa-copy" style={{ marginRight: 4 }} />Copy prompt
+                      </button>
+                      <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 12 }}
+                        onClick={() => setPromptShown(promptShown === bug.id ? null : bug.id)}>
+                        <i className={`fa-solid fa-eye${promptShown === bug.id ? "-slash" : ""}`} style={{ marginRight: 4 }} />
+                        {promptShown === bug.id ? "Hide" : "View"}
+                      </button>
+                    </div>
+                  </div>
+                  {promptShown === bug.id && (
+                    <pre style={{ fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", background: "var(--bg-raised,#111)", border: "0.5px solid var(--border,#333)", borderRadius: 8, padding: "10px 12px", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "var(--font-mono, monospace)", maxHeight: 320, overflowY: "auto" }}>
+                      {buildFixPrompt(bug)}
+                    </pre>
+                  )}
+                </div>
 
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   {bug.status !== "resolved" && (

@@ -56,6 +56,53 @@ export async function deleteBug(id) {
   if (error) throw error;
 }
 
+// ── Claude fix-prompt ────────────────────────────────────────────────────────
+
+/**
+ * Compose a ready-to-paste prompt that tells Claude (Code) to fix a bug or build
+ * a feature, from everything captured on the report. The description already
+ * holds the structured facets (Element / Action / Expected / Actual) that log_bug
+ * stitches in, so we lead with them and wrap the whole thing in clear marching
+ * orders. Returned as a plain string — the Bugs page copies it to the clipboard
+ * and only reveals it on request, so it never clutters the card.
+ */
+export function buildFixPrompt(bug) {
+  const isFeature = (bug.type || "bug") === "feature";
+  const L = [];
+  L.push(
+    isFeature
+      ? "You are working in the heyScottyBro codebase. Implement the following feature request."
+      : "You are working in the heyScottyBro codebase. Investigate and fix the following bug.",
+  );
+  L.push("");
+  L.push(`## ${isFeature ? "Feature" : "Bug"}: ${bug.title}`);
+  L.push("");
+  const meta = [];
+  if (bug.page) meta.push(`- **Page / area:** ${bug.page}`);
+  if (bug.priority) meta.push(`- **Priority:** ${bug.priority}`);
+  if (meta.length) { L.push(...meta, ""); }
+  if (bug.description) { L.push("### Details", "", String(bug.description).trim(), ""); }
+  if (bug.steps) { L.push("### Steps to reproduce", "", String(bug.steps).trim(), ""); }
+  if (bug.notes) { L.push("### Notes / prior context", "", String(bug.notes).trim(), ""); }
+  L.push("### What to do");
+  if (isFeature) {
+    L.push(
+      "1. Locate the page/element named above and the code behind it.",
+      "2. Design the smallest change that delivers the wanted behaviour, matching existing patterns and conventions.",
+      "3. Implement it, wiring up any state/data it needs.",
+      "4. Verify the app builds and the new behaviour works end to end before reporting back.",
+    );
+  } else {
+    L.push(
+      "1. Locate the page/element named above and the code behind it.",
+      "2. Diagnose the root cause of the actual behaviour — don't just patch the symptom.",
+      "3. Apply a minimal, conventional fix.",
+      "4. Verify the app builds and the behaviour now matches the expected result before reporting back.",
+    );
+  }
+  return L.join("\n");
+}
+
 // ── Screenshots ────────────────────────────────────────────────────────────
 
 // Upload a dropped image to a staging folder before any bug exists (used by
