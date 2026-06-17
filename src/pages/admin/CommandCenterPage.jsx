@@ -41,9 +41,20 @@ export default function CommandCenterPage() {
   const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
+  const chatRef = useRef(null);
+  const didMount = useRef(false);
 
   // Staged images belong to the agent you're messaging — clear them on switch.
   useEffect(() => { setShots([]); }, [selectedId]);
+
+  // The agent cards sit above the chat panel, so picking one (especially on a
+  // phone) leaves the chat off-screen. Bring it into view when the selection
+  // changes — but not on first mount/navigation, so a restored selection
+  // doesn't hijack the initial scroll position.
+  useEffect(() => {
+    if (!didMount.current) { didMount.current = true; return; }
+    if (selectedId) chatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [selectedId]);
 
   const selected = selectedId ? getAgent(selectedId) : null;
   // The local Aulë agent keeps a live WebSocket + conversation in the runtime.
@@ -185,7 +196,7 @@ export default function CommandCenterPage() {
 
       <div className="cmd-lower">
         {/* Chat / work panel */}
-        <section className="db-card cmd-chat">
+        <section className="db-card cmd-chat" ref={chatRef}>
           {!selected && <p className="no-entries">Pick an agent above to start working with it — or open its Profile to see its connector, protocol, tools and documents.</p>}
 
           {selected && (
