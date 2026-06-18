@@ -41,6 +41,7 @@ const SCRIPT = [
   { type: "cmd", text: "ls ~/work" },
   { type: "ok", text: "never86/      [LIVE]" },
   { type: "ok", text: "hike-club/    [LIVE]" },
+  { type: "ok", text: "eliquinn/     [LIVE]" },
   { type: "dim", text: "planner/      [private]" },
   { type: "cmd", text: "cat status.txt" },
   { type: "out", text: "available for work — say hello" },
@@ -116,6 +117,8 @@ const MARQUEE = ["Builder", "Founder", "React", "Python", "Supabase", "St. John'
 const PROJECTS = [
   { id: "never86", tag: "Live Product", title: "NEVER86", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", icon: "fa-utensils", img: "/images/never86_website_concept.png", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://never86.ca", cta: "Visit site" },
   { id: "sjhc", tag: "Live Community", title: "St. John's Hike Club", desc: "More than a walking group — a community movement exploring Newfoundland's most stunning trails.", icon: "fa-person-hiking", img: "/images/hikeclub.JPG", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://stjohnshikeclub.com", cta: "Visit site" },
+  { id: "eliquinn", tag: "Client Site", title: "eliquinn.space", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, with an intro film, smooth scroll and a pinned work gallery. Designed and built by me.", icon: "fa-compass-drafting", img: null, bg: "linear-gradient(135deg,#2a2622,#1b1916)", to: null, href: "https://eliquinn.space", cta: "Visit site" },
+  { id: "ourfirsttwomonths", tag: "Personal Site", title: "Our First Two Months", desc: "A little web gift for my girlfriend — a scrollable keepsake celebrating our first two months together.", icon: "fa-heart", img: null, bg: "linear-gradient(135deg,#2a1620,#190e15)", to: null, href: "https://ourfirsttwomonths.vercel.app", cta: "Visit site" },
   { id: "minecraft-trivia", tag: "Game", title: "Minecraft Trivia", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more.", icon: "fa-cube", img: null, bg: "linear-gradient(135deg,#161a22,#11141b)", to: "/games/minecraft-trivia", href: null, cta: "Play now" },
   { id: "monopoly", tag: "Game", title: "Monopoly Banker", desc: "The digital Monopoly bank. No paper money, no arguments — clean, fast, fun.", icon: "fa-sack-dollar", img: null, bg: "linear-gradient(135deg,#1d1a14,#15120d)", to: "/games/monopoly-banker", href: null, cta: "Play now" },
   { id: "tictactoe", tag: "Game", title: "Tic-Tac-Toe", desc: "Classic Tic-Tac-Toe with score tracking. Challenge a friend between deploys.", icon: "fa-hashtag", img: null, bg: "linear-gradient(135deg,#21161a,#180f13)", to: "/games/tictactoe", href: null, cta: "Play now" },
