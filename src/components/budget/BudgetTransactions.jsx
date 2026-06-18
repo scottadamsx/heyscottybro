@@ -97,15 +97,21 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}>×</button>
           </div>
           <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {["expense", "income"].map(t => (
-              <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                style={{ flex: 1, padding: "7px 0", borderRadius: "0.375rem", fontSize: 12, fontWeight: form.type === t ? 600 : 400,
-                  background: form.type === t ? (t === "income" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)") : "var(--bg-raised)",
-                  color: form.type === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--text-muted)",
-                  border: `1px solid ${form.type === t ? (t === "income" ? "var(--green)" : "var(--red)") : "var(--border-subtle)"}`, cursor: "pointer" }}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
+            {["expense", "income", "savings"].map(t => {
+              // Savings is money set aside (a transfer), so it reads as accent/neutral — not expense-red.
+              const tone = t === "income" ? "var(--green)" : t === "savings" ? "var(--accent)" : "var(--red)";
+              const tint = t === "income" ? "rgba(34,197,94,0.15)" : t === "savings" ? "rgba(99,102,241,0.15)" : "rgba(239,68,68,0.15)";
+              const on = form.type === t;
+              return (
+                <button key={t} onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
+                  style={{ flex: 1, padding: "7px 0", borderRadius: "0.375rem", fontSize: 12, fontWeight: on ? 600 : 400,
+                    background: on ? tint : "var(--bg-raised)",
+                    color: on ? tone : "var(--text-muted)",
+                    border: `1px solid ${on ? tone : "var(--border-subtle)"}`, cursor: "pointer" }}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              );
+            })}
           </div>
           <input placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={inp} />
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -211,6 +217,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               <option value="all">All types</option>
               <option value="expense">Expenses</option>
               <option value="income">Income</option>
+              <option value="savings">Savings</option>
             </select>
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ fontSize: 13 }}>
               <option value="all">All categories</option>
@@ -246,12 +253,12 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           {t.notes && <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6 }}>· {t.notes}</span>}
                         </td>
                         <td style={{ padding: "7px 8px" }}><span style={{ fontSize: 11, background: "var(--bg-raised)", borderRadius: 4, padding: "2px 6px" }}>{t.category}</span></td>
-                        <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : "var(--red)", whiteSpace: "nowrap" }}>
+                        <td style={{ padding: "7px 8px", textAlign: "right", ...mono, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : "var(--red)", whiteSpace: "nowrap" }}>
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ padding: "7px 8px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                           {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
-                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : "Expense"}
+                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
                         </td>
                         <td style={{ padding: "7px 8px", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: 4 }}>

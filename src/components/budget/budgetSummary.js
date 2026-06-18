@@ -78,7 +78,9 @@ export function computeBudgetSnapshot(config, transactions, dateStr = toDateStr(
   const billsPaid = fixedBills.filter((b) => b.paid).reduce((s, b) => s + b.amount, 0);
   const billsObligation = fixedBills.reduce((s, b) => s + b.amount, 0);
   const fixedBillTxIds = new Set(fixedBills.map((b) => b.matchedTxId).filter(Boolean));
-  const saved = totals.periodTx.filter((t) => t.type === "expense" && t.category === "Savings").reduce((s, t) => s + t.amount, 0);
+  // Saved = money set aside this period: the new `savings` type, plus legacy
+  // rows logged the old way (an expense in the "Savings" category).
+  const saved = totals.periodTx.filter((t) => t.type === "savings" || (t.type === "expense" && t.category === "Savings")).reduce((s, t) => s + t.amount, 0);
   const spentNonBill = totals.periodTx.filter((t) => t.type === "expense" && !fixedBillTxIds.has(t.id) && t.category !== "Savings").reduce((s, t) => s + t.amount, 0);
 
   return { period, ...totals, weekly, currentWeek, savingsThisPeriod, afterSavings, billsPaid, billsObligation, saved, spentNonBill };

@@ -137,6 +137,18 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
   // Variable bills track ONLY transactions explicitly tagged to them, so the drill matches.
   const billTx = (billId) => periodTx.filter(t => t.type === "expense" && t.fulfills_recurring_id === billId).sort((a, b) => b.date.localeCompare(a.date));
 
+  // Headline-stat drill-down: clicking a summary card opens a modal listing the
+  // exact transactions behind that figure. Sets mirror how budgetSummary derives
+  // each number, so the modal always reconciles with the card.
+  const [statDrill, setStatDrill] = useState(null); // card label, or null
+  const fixedBillTxIds = useMemo(() => new Set(fixedBills.map(b => b.matchedTxId).filter(Boolean)), [fixedBills]);
+  const statTx = useMemo(() => ({
+    Income: periodTx.filter(t => t.type === "income"),
+    "Bills paid": periodTx.filter(t => fixedBillTxIds.has(t.id)),
+    Spent: periodTx.filter(t => t.type === "expense" && !fixedBillTxIds.has(t.id) && t.category !== "Savings"),
+    Saved: periodTx.filter(t => t.type === "savings" || (t.type === "expense" && t.category === "Savings")),
+  }), [periodTx, fixedBillTxIds]);
+
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "16px 0 8px", fontWeight: 500 };
   const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "0.875rem 1.125rem", marginBottom: 8 };
   const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
@@ -181,13 +193,18 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
         {summaryCards.slice(0, 4).map(c => (
-          <div key={c.label} style={{ ...card, marginBottom: 0 }}>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{c.label}</div>
+          <button key={c.label} type="button" onClick={() => setStatDrill(c.label)}
+            title={`View the ${(statTx[c.label] || []).length} transaction(s) behind ${c.label}`}
+            style={{ ...card, marginBottom: 0, textAlign: "left", cursor: "pointer", font: "inherit" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{c.label}</span>
+              <i className="fa-solid fa-chevron-right" style={{ fontSize: 9, color: "var(--text-muted)" }} />
+            </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
               <span style={{ ...mono, fontSize: 20, color: c.color, lineHeight: 1 }}>{formatMoney(c.value)}</span>
               {c.sub && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{c.sub}</span>}
             </div>
-          </div>
+          </button>
         ))}
       </div>
       <div style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -481,12 +498,50 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
               <div style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{t.category} · {t.date}</div>
             </div>
-            <span style={{ ...mono, fontSize: 13, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : "var(--red)", flexShrink: 0 }}>
+            <span style={{ ...mono, fontSize: 13, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : "var(--red)", flexShrink: 0 }}>
               {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
             </span>
           </div>
         ))
       }
+
+      {/* Stat drill-down modal — the transactions behind a clicked summary card */}
+      {statDrill && (() => {
+        const txs = [...(statTx[statDrill] || [])].sort((a, b) => b.date.localeCompare(a.date));
+        const cardMeta = summaryCards.find(c => c.label === statDrill);
+        const total = txs.reduce((s, t) => s + t.amount, 0);
+        return (
+          <div onClick={() => setStatDrill(null)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "10vh 16px", zIndex: 1000 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, width: "min(520px, 100%)", maxHeight: "75vh", display: "flex", flexDirection: "column", boxShadow: "var(--shadow-card)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "14px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>{statDrill} · {periodLabel}</div>
+                  <div style={{ ...mono, fontSize: 19, color: cardMeta?.color, lineHeight: 1.2, marginTop: 2 }}>
+                    {formatMoney(total)} <span style={{ fontSize: 12, color: "var(--text-muted)" }}>· {txs.length} transaction{txs.length === 1 ? "" : "s"}</span>
+                  </div>
+                </div>
+                <button onClick={() => setStatDrill(null)} aria-label="Close"
+                  style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 20, lineHeight: 1 }}>×</button>
+              </div>
+              <div style={{ overflowY: "auto", padding: "6px 16px 16px" }}>
+                {txs.length === 0
+                  ? <p style={{ color: "var(--text-muted)", fontSize: 13, padding: "12px 0" }}>No transactions make up this figure for this pay period.</p>
+                  : txs.map(t => (
+                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "9px 0", borderBottom: "0.5px solid var(--border-subtle)" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description || t.category || "—"}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{t.date}{t.category ? ` · ${t.category}` : ""}{(t.is_bill || t.fulfills_recurring_id) ? " · bill" : ""}</div>
+                      </div>
+                      <span style={{ ...mono, fontSize: 13, color: cardMeta?.color, whiteSpace: "nowrap" }}>{formatMoney(t.amount)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

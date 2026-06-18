@@ -31,7 +31,7 @@ import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 
-export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"];
+export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Savings", "Other"];
 
 const RECUR = ["none", "daily", "weekly", "monthly"];
 const SNIPPET_TYPES = ["code", "password", "wifi", "card", "note", "prompt", "other"];
@@ -124,14 +124,14 @@ const COLLECTIONS = {
     load: loadEventTypes, create: newEventType, update: updateEventType, remove: deleteEventType,
   },
   transactions: {
-    description: "Money in/out. type: expense | income | future (planned spend). Amounts stored signed automatically.",
+    description: "Money in/out. type: expense | income | future (planned spend) | savings (money moved to savings — a transfer OUT of spendable cash, NOT an expense; use category 'Savings'). Amounts stored signed automatically.",
     dateField: "date",
     searchFields: ["description", "notes", "category"],
     defaultFields: ["id", "description", "amount", "type", "category", "date"],
     fields: {
       description: { type: "string", required: true },
       amount: { type: "number", required: true },
-      type: { type: "enum", values: ["expense", "income", "future"], required: true },
+      type: { type: "enum", values: ["expense", "income", "future", "savings"], required: true },
       category: { type: "enum", values: TX_CATEGORIES, required: true },
       date: { type: "date", required: true },
       notes: { type: "string", long: true },

@@ -237,13 +237,16 @@ export async function deleteEvent(id) {
 }
 
 /* ── Budget ──────────────────────────────────── */
-// Amounts are stored signed: expenses and planned ("future") spend negative,
-// income positive. Deriving the sign from type (not the typed value) means
-// edit forms can safely show absolute values without flipping signs on save.
+// Amounts are stored signed: expenses, planned ("future") spend, and savings
+// transfers negative (cash out of spendable), income positive. Deriving the
+// sign from type (not the typed value) means edit forms can safely show
+// absolute values without flipping signs on save. Savings is negative cash flow
+// like an expense, but it's NOT counted as spending (analytics filter on
+// type === "expense"), so a savings deposit no longer inflates expenses.
 function signTx(tx) {
   const n = Number(tx.amount || 0);
   const signed =
-    tx.type === "expense" || tx.type === "future" ? -Math.abs(n)
+    tx.type === "expense" || tx.type === "future" || tx.type === "savings" ? -Math.abs(n)
     : tx.type === "income" ? Math.abs(n)
     : n;
   return { ...tx, amount: signed };

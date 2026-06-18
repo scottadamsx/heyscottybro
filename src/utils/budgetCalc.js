@@ -183,6 +183,9 @@ export function computePeriodTotals(transactions, config, period) {
   const incomeTotal = loggedIncome > 0 ? loggedIncome : scheduledIncome;
 
   const spent = periodTx.filter(t => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+  // Money moved to savings is a transfer OUT of spendable cash — not spending,
+  // but it still leaves the period's available money, so it reduces `remaining`.
+  const savings = periodTx.filter(t => t.type === "savings").reduce((s, t) => s + t.amount, 0);
   let billsTotal = 0;
   (config.recurringBills || []).forEach(bill => {
     if (bill.variable) return; // variable bills are tracked as spending, not a fixed obligation
@@ -196,8 +199,8 @@ export function computePeriodTotals(transactions, config, period) {
       if (!alreadyLogged) billsTotal += bill.amount;
     });
   });
-  const remaining = incomeTotal - spent - billsTotal;
-  return { incomeTotal, scheduledIncome, loggedIncome, spent, billsTotal, remaining, periodTx };
+  const remaining = incomeTotal - spent - billsTotal - savings;
+  return { incomeTotal, scheduledIncome, loggedIncome, spent, savings, billsTotal, remaining, periodTx };
 }
 
 // Savings goals: spread a future purchase across the paychecks before its date.

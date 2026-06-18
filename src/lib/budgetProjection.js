@@ -35,11 +35,12 @@ function isActiveInMonth(source, monthKey) {
 }
 
 // Normalize a transaction's amount to a signed number.
-// DB convention (new): expense negative, income positive. "future" rows are
-// planned spend, so they're negative too. Older rows may be unsigned; we fix them here.
+// DB convention (new): expense negative, income positive. "future" (planned
+// spend) and "savings" (cash moved to savings) rows are negative too. Older
+// rows may be unsigned; we fix them here.
 function signedAmount(tx) {
   let n = Number(tx.amount || 0);
-  if ((tx.type === "expense" || tx.type === "future") && n > 0) n = -n;
+  if ((tx.type === "expense" || tx.type === "future" || tx.type === "savings") && n > 0) n = -n;
   if (tx.type === "income" && n < 0) n = Math.abs(n);
   return n;
 }
