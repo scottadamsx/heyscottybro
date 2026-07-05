@@ -7,6 +7,7 @@ import { toDateStr } from "../../utils/plannerUtils";
 import { Card, StatTile, Badge, Modal, PageHeader } from "../../components/ui";
 import GradeTracker from "../../components/tools/GradeTracker";
 import SchoolImport from "../../components/school/SchoolImport";
+import { loadBrain, deleteNode } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./school.css";
@@ -27,6 +28,7 @@ export default function SchoolPage() {
   const [courses, setCourses] = useState([]);
   const [grades, setGrades] = useState([]);
   const [reminders, setReminders] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(null);           // expanded course id
   const [courseForm, setCourseForm] = useState(null); // null | {…} (modal)
@@ -36,8 +38,13 @@ export default function SchoolPage() {
 
   const refresh = async () => {
     try {
-      const [c, g, r] = await Promise.all([loadCourses(), loadGrades(), loadReminders()]);
+      const [c, g, r, brain] = await Promise.all([loadCourses(), loadGrades(), loadReminders(), loadBrain().catch(() => ({ nodes: [] }))]);
       setCourses(c); setGrades(g); setReminders(r);
+      // Imported school documents live in the Brain with source "school" —
+      // surface them HERE so an announcement is never invisible after import.
+      setAnnouncements((brain.nodes || [])
+        .filter((n) => n.source === "school")
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))));
     } catch (e) { addToast(e.message, "error"); }
     setReady(true);
   };
@@ -204,6 +211,35 @@ export default function SchoolPage() {
           </Card>
         );
       })}
+
+      {/* Announcements & imported documents */}
+      {announcements.length > 0 && (
+        <Card title="Announcements & documents" icon="fa-bullhorn">
+          {announcements.map((n) => {
+            const codeTag = (n.tags || []).find((t) => courses.some((c) => c.code === t));
+            return (
+              <div key={n.slug} className="school-deadline-row">
+                {codeTag && <Badge tone="accent">{codeTag}</Badge>}
+                <Link to={`/admin/read/${String(n.slug).split("/").map(encodeURIComponent).join("/")}`} className="school-deadline-name" title="Read the full document">
+                  {n.title}
+                </Link>
+                <span className="school-deadline-date">{String(n.created_at || "").slice(0, 10)}</span>
+                <button
+                  type="button"
+                  className="school-deadline-done"
+                  title="Delete this document"
+                  onClick={async () => {
+                    if (!await confirm(`Delete "${n.title}"?`, { title: "Delete document", confirmLabel: "Delete" })) return;
+                    try { await deleteNode(n.id); refresh(); } catch (e) { addToast(e.message, "error"); }
+                  }}
+                >
+                  <i className="fa-solid fa-trash" style={{ fontSize: 11 }} />
+                </button>
+              </div>
+            );
+          })}
+        </Card>
+      )}
 
       {/* Deadlines rail */}
       {deadlines.length > 0 && (

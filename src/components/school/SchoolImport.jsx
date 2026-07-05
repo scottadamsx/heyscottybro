@@ -66,10 +66,12 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
   const [paste, setPaste] = useState("");
   const [courseId, setCourseId] = useState("");
   const [out, setOut] = useState(null);
+  const [sourceText, setSourceText] = useState("");
   const [checks, setChecks] = useState({});
 
   const analyze = async (content) => {
     setPhase("busy");
+    setSourceText(content.text || "");
     try {
       const result = await extract({
         system:
@@ -86,6 +88,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
       });
       setOut(result);
       if (result.course_id && courses.some((c) => c.id === result.course_id)) setCourseId(result.course_id);
+      else if (courses.length === 1) setCourseId(courses[0].id);
       // default checks: new deadlines on, already-tracked off, grades on, course updates on
       const c = {};
       (result.deadlines || []).forEach((d, i) => { c[`d${i}`] = !d.already_tracked; });
@@ -141,7 +144,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
         await createNode({
           slug: `school/${course.code.toLowerCase().replace(/\s+/g, "-")}-${stamp}-${(out.title || "doc").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30)}`,
           title: `${course.code}: ${out.title}`,
-          body: `# ${out.title}\n\n${out.summary}\n\n_(imported into School on ${stamp})_`,
+          body: `# ${out.title}\n\n${out.summary}${sourceText ? `\n\n---\n\n## Original document\n\n${sourceText.slice(0, 6000)}` : ""}\n\n_(imported into School on ${stamp})_`,
           type: "note",
           tags: ["school", course.code],
           source: "school",
