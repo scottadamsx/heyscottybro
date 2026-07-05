@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { loadRecipes, deleteRecipe, updateRecipe } from "../../api/recipesApi";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { loadRecipes, updateRecipe } from "../../api/recipesApi";
 import RecipeBuilder from "../../components/recipes/RecipeBuilder";
-import RecipeModal from "../../components/recipes/RecipeModal";
 import { round } from "../../utils/nutrition";
-import { useConfirm } from "../../hooks/useConfirm";
 
 export default function RecipesPage() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const filter = params.get("filter") || "all";
-  const { confirm, dialog } = useConfirm();
 
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showBuilder, setShowBuilder] = useState(false);
-  const [open, setOpen] = useState(null);
   const [search, setSearch] = useState("");
 
   function load() {
@@ -24,14 +21,7 @@ export default function RecipesPage() {
   }
   useEffect(() => { load(); }, []);
 
-  const onSaved = (r) => { setRecipes((prev) => [r, ...prev]); setShowBuilder(false); setOpen(r); };
-
-  const onDeleted = async (r) => {
-    if (!await confirm(`Delete "${r.title}"?`, { title: "Delete recipe", confirmLabel: "Delete" })) return;
-    await deleteRecipe(r.id);
-    setRecipes((prev) => prev.filter((x) => x.id !== r.id));
-    setOpen(null);
-  };
+  const onSaved = (r) => { setRecipes((prev) => [r, ...prev]); setShowBuilder(false); navigate(`/admin/recipe/${r.id}`); };
 
   const toggleFav = async (r, e) => {
     e.stopPropagation();
@@ -66,7 +56,7 @@ export default function RecipesPage() {
 
       <div className="nut-recipe-grid">
         {filtered.map((r) => (
-          <button className="nut-recipe-card" key={r.id} onClick={() => setOpen(r)}>
+          <button className="nut-recipe-card" key={r.id} onClick={() => navigate(`/admin/recipe/${r.id}`)}>
             <div className="nut-recipe-card-head">
               <span className="nut-recipe-title">{r.title}</span>
               <i className={`fa-${r.favorite ? "solid" : "regular"} fa-star nut-fav ${r.favorite ? "on" : ""}`} onClick={(e) => toggleFav(r, e)} />
@@ -83,8 +73,6 @@ export default function RecipesPage() {
       </div>
 
       {showBuilder && <RecipeBuilder onClose={() => setShowBuilder(false)} onSaved={onSaved} />}
-      {open && <RecipeModal recipe={open} onClose={() => setOpen(null)} onDeleted={onDeleted} />}
-      {dialog}
     </div>
   );
 }

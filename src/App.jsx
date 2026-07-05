@@ -26,6 +26,7 @@ const PlannerPage        = lazy(() => import("./pages/admin/PlannerPage.jsx"));
 const TaskDetailPage     = lazy(() => import("./pages/admin/TaskDetailPage.jsx"));
 const SchoolPage         = lazy(() => import("./pages/admin/SchoolPage.jsx"));
 const LifePage           = lazy(() => import("./pages/admin/LifePage.jsx"));
+const RecipePage         = lazy(() => import("./pages/admin/RecipePage.jsx"));
 const MissionPage        = lazy(() => import("./pages/admin/MissionPage.jsx"));
 const BudgetPage         = lazy(() => import("./pages/admin/BudgetPage.jsx"));
 const VaultPage          = lazy(() => import("./pages/admin/VaultPage.jsx"));
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
           <Route path="school"    element={Lazy(<SchoolPage />)} />
           <Route path="life"      element={Lazy(<LifePage />)} />
+          <Route path="recipe/:id" element={Lazy(<RecipePage />)} />
           <Route path="mission"   element={Lazy(<MissionPage />)} />
           <Route path="vault"     element={Lazy(<VaultPage />)} />
 

@@ -1,0 +1,46 @@
+/* ── Full-page recipe (cookbook page + scoped AI chat) ── */
+.recipe-page { max-width: 860px; }
+.recipe-topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.recipe-topbar-actions { display: flex; gap: 8px; align-items: center; }
+.recipe-del:hover { color: var(--red); border-color: var(--red); }
+
+.recipe-head h1 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem);
+  font-weight: 650; letter-spacing: -0.03em; margin: 0 0 0.4rem;
+  text-wrap: balance;
+}
+.recipe-desc { font-size: 0.98rem; line-height: 1.6; color: var(--text-secondary); max-width: 64ch; margin: 0 0 0.8rem; }
+.recipe-head .nut-recipe-meta { margin-bottom: 0.6rem; }
+
+.recipe-cols { margin-top: 0.25rem; }
+.recipe-cols h4 { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); margin: 0 0 0.6rem; }
+
+.recipe-log { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Ask-AI chat */
+.recipe-ask-hints { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.recipe-ask-hints button {
+  font-size: 12px; padding: 5px 11px; border-radius: 99px; cursor: pointer;
+  background: var(--bg-raised); border: 1px solid var(--border-subtle); color: var(--text-secondary);
+}
+.recipe-ask-hints button:hover { color: var(--text-primary); border-color: var(--border-primary); }
+.recipe-ask-thread { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; margin-bottom: 10px; }
+.recipe-ask-msg {
+  font-size: 13.5px; line-height: 1.55; padding: 8px 12px; border-radius: 12px;
+  max-width: 85%; white-space: pre-wrap; word-break: break-word;
+}
+.recipe-ask-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.recipe-ask-msg.assistant { align-self: flex-start; background: var(--bg-raised); color: var(--text-primary); border-bottom-left-radius: 4px; }
+.recipe-ask-typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.recipe-ask-typing span { width: 6px; height: 6px; border-radius: 99px; background: var(--text-muted); animation: recipeDot 1.1s infinite; }
+.recipe-ask-typing span:nth-child(2) { animation-delay: 0.18s; }
+.recipe-ask-typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes recipeDot { 0%, 60%, 100% { opacity: 0.35; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+.recipe-ask-row { display: flex; gap: 8px; }
+.recipe-ask-row input { flex: 1; min-width: 0; }
+
+@media (max-width: 640px) {
+  .recipe-cols { grid-template-columns: 1fr; }
+  .recipe-ask-msg { max-width: 95%; }
+}
+@media (prefers-reduced-motion: reduce) { .recipe-ask-typing span { animation: none; } }
