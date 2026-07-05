@@ -761,3 +761,70 @@
 .admin-shell .gt-stat-val { font-family: var(--font-mono); font-weight: 650; font-variant-numeric: tabular-nums; }
 .admin-shell .gt-stat { background: var(--bg-surface); }
 .admin-shell .gt-item { background: var(--bg-surface); }
+
+/* ═══ Rhythm & controls pass — 2026-07-05 (round 2) ═══ */
+
+/* 1. One top line across the whole shell: the rail wordmark starts exactly
+   where page content starts (rail was 0.85rem, content 1.75rem). */
+.admin-shell .admin-rail { padding-top: 1.75rem; }
+.admin-shell .admin-rail-head { margin-bottom: 1rem; }
+
+/* 2. One control system. Every interactive control shares a height so a
+   select next to a button never reads as an afterthought. */
+.admin-shell {
+  --control-h: 40px;
+  --control-h-sm: 34px;
+}
+.admin-shell .btn,
+.admin-shell .btn-primary,
+.admin-shell button.nav-cta {
+  min-height: var(--control-h);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.admin-shell .btn-sm,
+.admin-shell .btn-secondary-sm,
+.admin-shell .btn-primary-sm {
+  min-height: var(--control-h-sm);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 9px;
+}
+.admin-shell select {
+  min-height: var(--control-h);
+  padding-top: 0; padding-bottom: 0;   /* height is the contract, not padding */
+}
+/* selects that sit in compact rows (next to .btn-sm) can opt down */
+.admin-shell .form-row select,
+.admin-shell .recipe-log select,
+.admin-shell .inbox-form-row select { min-height: var(--control-h); }
+.admin-shell input[type="date"],
+.admin-shell input[type="text"],
+.admin-shell input[type="number"],
+.admin-shell input[type="search"],
+.admin-shell input[type="email"] { min-height: var(--control-h); box-sizing: border-box; }
+
+/* 3. MOBILE: a cursor is 1px, a thumb is ~44. Every control grows to a real
+   touch target — including the small and mini variants. */
+@media (max-width: 640px) {
+  .admin-shell { --control-h: 44px; --control-h-sm: 44px; }
+  .admin-shell .btn,
+  .admin-shell .btn-primary,
+  .admin-shell .btn-sm,
+  .admin-shell .btn-secondary-sm,
+  .admin-shell .btn-primary-sm,
+  .admin-shell select { min-height: 44px; }
+  .admin-shell .btn-mini,
+  .admin-shell .btn-tiny-blue,
+  .admin-shell .icon-x,
+  .admin-shell .export-kit-menu button,
+  .admin-shell .page-tab,
+  .admin-shell .uik-tab {
+    min-height: 44px; min-width: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .admin-shell .school-deadline-done,
+  .admin-shell .chat-attach,
+  .admin-shell .chat-send { min-height: 44px; min-width: 44px; }
+  /* hint chips + brief items: comfortable rows */
+  .admin-shell .recipe-ask-hints button { min-height: 40px; }
+  .admin-shell .brief-item { padding: 9px 8px; }
+}
