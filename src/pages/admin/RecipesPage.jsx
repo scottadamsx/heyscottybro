@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadRecipes, updateRecipe } from "../../api/recipesApi";
 import RecipeBuilder from "../../components/recipes/RecipeBuilder";
+import MealHelper from "../../components/recipes/MealHelper";
 import { round } from "../../utils/nutrition";
 
 export default function RecipesPage() {
@@ -47,6 +48,8 @@ export default function RecipesPage() {
       <p className="no-entries" style={{ marginTop: "-0.4rem" }}>
         <i className="fa-solid fa-wand-magic-sparkles" /> Generate recipes with AI or add your own. Tap any recipe to view it and log it to your day.
       </p>
+
+      <MealHelper recipes={recipes} />
 
       <input className="hiker-search" placeholder="Search recipes…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ maxWidth: 360 }} />
 
