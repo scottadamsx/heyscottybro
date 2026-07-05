@@ -31,6 +31,8 @@ import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
+import { supabase } from "../utils/supabase";
+import { uid as authUid } from "./_base";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Savings", "Other"];
 
@@ -40,6 +42,7 @@ const SNIPPET_TYPES = ["code", "password", "wifi", "card", "note", "prompt", "ot
 /* Field spec shorthand: { type, required?, values? (enum), updateOnly?, long? (excluded from default projection) } */
 const COLLECTIONS = {
   reminders: {
+    table: "reminders",
     description: "Tasks & reminders (recurring supported)",
     dateField: "date",
     searchFields: ["name", "description"],
@@ -60,6 +63,7 @@ const COLLECTIONS = {
     load: loadReminders, create: newReminder, update: updateReminder, remove: deleteReminder,
   },
   events: {
+    table: "events",
     description: "Calendar events (recurring supported; event_type_id auto-creates dependency tasks)",
     dateField: "date",
     searchFields: ["title", "description"],
@@ -77,6 +81,7 @@ const COLLECTIONS = {
     load: loadEvents, create: newEvent, update: updateEvent, remove: deleteEvent,
   },
   projects: {
+    table: "projects",
     description: "Projects & nested sub-projects (delete cascades to tasks — needs confirm)",
     searchFields: ["name", "description"],
     defaultFields: ["id", "name", "color", "parent_id"],
@@ -90,6 +95,7 @@ const COLLECTIONS = {
     load: loadProjects, create: newProject, update: updateProject, remove: deleteProject,
   },
   journal: {
+    table: "journal",
     description: "Journal entries (entry body is long — request the 'entry' field only when needed)",
     dateField: "date",
     searchFields: ["title", "entry"],
@@ -102,6 +108,7 @@ const COLLECTIONS = {
     load: loadJournal, create: newJournalEntry, update: updateJournalEntry, remove: deleteJournalEntry,
   },
   initiatives: {
+    table: "initiatives",
     description: "Recurring commitments attached to projects",
     searchFields: ["name", "description"],
     defaultFields: ["id", "name", "recurrence", "project_id", "active"],
@@ -115,6 +122,7 @@ const COLLECTIONS = {
     load: () => loadInitiatives(), create: newInitiative, update: updateInitiative, remove: deleteInitiative,
   },
   event_types: {
+    table: "event_types",
     description: "Event templates with auto-task dependencies (offset_days relative to event date)",
     searchFields: ["name"],
     defaultFields: ["id", "name", "color", "auto_tasks"],
@@ -126,6 +134,7 @@ const COLLECTIONS = {
     load: loadEventTypes, create: newEventType, update: updateEventType, remove: deleteEventType,
   },
   transactions: {
+    table: "transactions",
     description: "Money in/out. type: expense | income | future (planned spend) | savings (money moved to savings — a transfer OUT of spendable cash, NOT an expense; use category 'Savings'). Amounts stored signed automatically.",
     dateField: "date",
     searchFields: ["description", "notes", "category"],
@@ -177,6 +186,7 @@ const COLLECTIONS = {
     load: () => loadMembers(""), loadSearch: (q) => loadMembers(q), remove: deleteMember,
   },
   snippets: {
+    table: "snippets",
     description: "The Vault — saved passwords, codes, Wi-Fi logins, cards, notes, prompts. 'secret' items are hidden in the UI by default. type tells you what it is; value is the stored secret.",
     searchFields: ["title", "value", "notes"],
     defaultFields: ["id", "title", "type", "secret", "notes"],
@@ -190,6 +200,7 @@ const COLLECTIONS = {
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
   },
   recipes: {
+    table: "recipes",
     description: "Saved recipes (Health › Recipes) — ingredients[] and steps[] are string arrays; nutrition is per serving.",
     searchFields: ["title", "description"],
     defaultFields: ["id", "title", "servings", "tags", "favorite"],
@@ -211,6 +222,7 @@ const COLLECTIONS = {
     load: loadRecipes, create: createRecipe, update: updateRecipe, remove: deleteRecipe,
   },
   bugs: {
+    table: "bugs",
     description: "Bug & feature-request tracker (Tools › Bugs). type 'bug' logs an app issue, type 'feature' logs a feature request. Track status open → resolved. Use export_bugs to download a zip report. Screenshots are added by Scott in the UI.",
     searchFields: ["title", "description", "page"],
     defaultFields: ["id", "title", "type", "page", "priority", "status", "created_at"],
@@ -227,6 +239,7 @@ const COLLECTIONS = {
     load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
   },
   courses: {
+    table: "courses",
     description: "School courses (School space). Deadlines are reminders with course_id set; grades live in the Grade Tracker. Use this to answer 'what courses is Scott taking' and to tag school deadlines.",
     searchFields: ["code", "name", "instructor"],
     defaultFields: ["id", "code", "name", "term", "instructor", "target_grade"],
@@ -240,6 +253,7 @@ const COLLECTIONS = {
     load: () => loadCourses({ includeArchived: true }), create: createCourse, update: updateCourse, remove: deleteCourse,
   },
   brain: {
+    table: "brain_nodes",
     description: "Scott's knowledge graph / second brain (Tools › Brain) — notes synced from his Obsidian + Claude memory vault. Each node is a markdown note; body holds its content. Read to recall context about Scott, his projects, and decisions.",
     searchFields: ["title", "body", "slug"],
     defaultFields: ["id", "slug", "title", "type", "tags"],
@@ -347,8 +361,78 @@ export async function libraryCatalog({ include_counts = false } = {}) {
   return { collections: catalog };
 }
 
+/**
+ * Server-side query path (Phase 5): for collections that map 1:1 to a table,
+ * push where/search/date/order/limit down to PostgREST instead of loading the
+ * whole table into the browser and filtering in JS. Falls back to the legacy
+ * in-JS path on any error (offline/local mode/odd filters).
+ */
+async function queryTable(spec, { fields, where, search, date_from, date_to, limit, offset = 0, order_by, direction, mode = "rows" }) {
+  const userId = await authUid();
+  const lim = Math.min(Number(limit) || DEFAULT_LIMIT, MAX_LIMIT);
+  const wanted = Array.isArray(fields) && fields.length
+    ? ["id", ...fields.filter((f) => f !== "id" && (spec.fields[f] || spec.defaultFields.includes(f)))]
+    : spec.defaultFields;
+
+  const apply = (q) => {
+    q = q.eq("user_id", userId);
+    if (where && typeof where === "object") {
+      for (const [k, v] of Object.entries(where)) {
+        if (k !== "id" && !spec.fields[k] && !spec.defaultFields.includes(k)) throw new Error(`unknown field "${k}"`);
+        q = q.eq(k, v);
+      }
+    }
+    if (search && spec.searchFields?.length) {
+      const safe = String(search).replace(/[%,()]/g, " ").trim();
+      if (safe) q = q.or(spec.searchFields.map((f) => `${f}.ilike.%${safe}%`).join(","));
+    }
+    if (spec.dateField && date_from) q = q.gte(spec.dateField, date_from);
+    if (spec.dateField && date_to) q = q.lte(spec.dateField, date_to);
+    return q;
+  };
+
+  if (mode === "count") {
+    const { count, error } = await apply(supabase.from(spec.table).select("id", { count: "exact", head: true }));
+    if (error) throw error;
+    return { collection: spec.__name, count: count ?? 0 };
+  }
+
+  if (mode === "summary") {
+    const { count, error } = await apply(supabase.from(spec.table).select("id", { count: "exact", head: true }));
+    if (error) throw error;
+    const { data: sample, error: e2 } = await apply(supabase.from(spec.table).select(wanted.join(","))).limit(5);
+    if (e2) throw e2;
+    const out = { collection: spec.__name, count: count ?? 0, sample: (sample || []).map((r) => project(r, wanted)) };
+    if (spec.dateField && count > 0) {
+      const { data: lo } = await apply(supabase.from(spec.table).select(spec.dateField)).order(spec.dateField, { ascending: true }).limit(1);
+      const { data: hi } = await apply(supabase.from(spec.table).select(spec.dateField)).order(spec.dateField, { ascending: false }).limit(1);
+      if (lo?.[0]) out.earliest = lo[0][spec.dateField];
+      if (hi?.[0]) out.latest = hi[0][spec.dateField];
+    }
+    return out;
+  }
+
+  let q = apply(supabase.from(spec.table).select(wanted.join(","), { count: "exact" }));
+  q = q.order(order_by && (spec.fields[order_by] || spec.defaultFields.includes(order_by)) ? order_by : (spec.dateField || "created_at"), { ascending: direction !== "desc" });
+  q = q.range(offset, offset + lim - 1);
+  const { data, count, error } = await q;
+  if (error) throw error;
+  return {
+    collection: spec.__name,
+    total: count ?? (data || []).length,
+    returned: (data || []).length,
+    ...((count ?? 0) > offset + lim ? { next_offset: offset + lim } : {}),
+    items: (data || []).map((r) => project(r, wanted)),
+  };
+}
+
 export async function libraryQuery({ collection, fields, where, search, date_from, date_to, limit, offset = 0, order_by, direction, mode = "rows" }) {
   const spec = getSpec(collection);
+  if (spec.table) {
+    try {
+      return await queryTable({ ...spec, __name: collection }, { fields, where, search, date_from, date_to, limit, offset, order_by, direction, mode });
+    } catch { /* fall back to the legacy in-JS path (offline/local mode) */ }
+  }
 
   // Hikers can filter server-side on search — cheaper than loading the whole club.
   let rows = search && spec.loadSearch ? await spec.loadSearch(search) : await spec.load();

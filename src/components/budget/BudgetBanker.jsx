@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../../utils/markdown";
 import { runBanker, BANKER } from "../../api/banker";
 import { getAuthHeaders } from "../../utils/supabase";
+import "./budget.css";
 
 const STORE_KEY = "banker_chat_session";
 const TTL_MS = 60 * 60 * 1000;
@@ -70,8 +71,6 @@ export default function BudgetBanker({ onChanged }) {
   const grow = (e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; };
   const clear = () => { setDisplay([]); setHistory([]); };
 
-  const bubble = (bg) => ({ background: bg, border: "0.5px solid var(--border-subtle)", borderRadius: 12, padding: "0.6rem 0.85rem", maxWidth: "85%", fontSize: 14, lineHeight: 1.5 });
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)" }}>
       {/* Header */}
@@ -79,10 +78,10 @@ export default function BudgetBanker({ onChanged }) {
         <div style={{ fontSize: 26, lineHeight: 1 }}>{BANKER.emoji}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{BANKER.name} <i className={`fa-solid ${BANKER.icon}`} style={{ fontSize: 12, opacity: 0.6, marginLeft: 2 }} /></div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{BANKER.tagline} · guards your gold</div>
+          <div className="bud-muted-11">{BANKER.tagline} · guards your gold</div>
         </div>
         {display.length > 0 && (
-          <button className="btn-sm" style={{ fontSize: 11, padding: "3px 8px" }} onClick={clear} title="Clear conversation">
+          <button className="btn-sm bud-btn-xs" onClick={clear} title="Clear conversation">
             <i className="fa-solid fa-rotate-left" /> Clear
           </button>
         )}
@@ -91,12 +90,11 @@ export default function BudgetBanker({ onChanged }) {
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 4 }}>
         {display.length === 0 && (
-          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+          <div className="bud-muted-13">
             <p style={{ marginTop: 0 }}>{BANKER.emoji} <strong>{BANKER.name}</strong> keeps your ledger. Tell him what to change — he handles the rest. Try:</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)} disabled={loading}
-                  style={{ textAlign: "left", background: "var(--bg-raised)", border: "0.5px solid var(--border-subtle)", borderRadius: 8, padding: "7px 10px", color: "var(--text-secondary)", cursor: "pointer", fontSize: 13 }}>
+                <button key={s} onClick={() => send(s)} disabled={loading} className="bud-suggestion">
                   {s}
                 </button>
               ))}
@@ -105,14 +103,14 @@ export default function BudgetBanker({ onChanged }) {
         )}
         {display.map((m, i) => (
           m.role === "user"
-            ? <div key={i} style={{ alignSelf: "flex-end", ...bubble("var(--accent)"), color: "#fff" }}>{m.text}</div>
-            : <div key={i} className="chat-md" style={{ alignSelf: "flex-start", ...bubble("var(--bg-card)") }}>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 3 }}>{BANKER.emoji} {BANKER.name}</div>
+            ? <div key={i} className="bud-bubble bud-bubble-user">{m.text}</div>
+            : <div key={i} className="chat-md bud-bubble bud-bubble-bot">
+                <div className="bud-muted-11" style={{ marginBottom: 3 }}>{BANKER.emoji} {BANKER.name}</div>
                 <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
               </div>
         ))}
         {loading && (
-          <div style={{ alignSelf: "flex-start", ...bubble("var(--bg-card)"), color: "var(--text-muted)", fontStyle: "italic", fontSize: 13 }}>
+          <div className="bud-bubble bud-bubble-bot" style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: 13 }}>
             {status || `${BANKER.name} is counting the gold…`}
           </div>
         )}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
+import "./budget.css";
 
 function recalcBalances(rows, startBalance) {
   let bal = startBalance;
@@ -152,29 +153,26 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     setWarning(neg ? `Warning: balance goes negative on ${neg.date} based on your spending habits.` : "");
   };
 
-  const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "14px 0 8px", fontWeight: 500 };
-  const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
-
   return (
     <div>
-      <p style={sh}>Generate projection</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+      <p className="bud-sh bud-sh-tight">Generate projection</p>
+      <div className="bud-grid-3">
         <div>
-          <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 3 }}>Starting balance</label>
+          <label className="bud-label bud-label-sm">Starting balance</label>
           <input type="number" value={startBal} onChange={e => setStartBal(e.target.value)} placeholder="0" style={{ width: "100%" }} />
         </div>
         <div>
-          <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 3 }}>From</label>
+          <label className="bud-label bud-label-sm">From</label>
           <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ width: "100%" }} />
         </div>
         <div>
-          <label style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginBottom: 3 }}>To</label>
+          <label className="bud-label bud-label-sm">To</label>
           <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ width: "100%" }} />
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <button className="btn" onClick={generate} style={{ flex: 1, background: "var(--accent)", color: "#fff", border: "none" }}>From bill config</button>
-        <button className="btn" onClick={loadFromHabits} style={{ flex: 1, background: transactions.length ? "rgba(34,197,94,0.15)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "rgba(34,197,94,0.4)" : "var(--border-subtle)"}` }}
+      <div className="bud-hstack" style={{ marginBottom: 12 }}>
+        <button className="btn bud-flex1" onClick={generate} style={{ background: "var(--accent)", color: "#fff", border: "none" }}>From bill config</button>
+        <button className="btn bud-flex1" onClick={loadFromHabits} style={{ background: transactions.length ? "rgba(34,197,94,0.15)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "rgba(34,197,94,0.4)" : "var(--border-subtle)"}` }}
           title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
           From my habits {transactions.length ? "✓" : ""}
         </button>
@@ -182,13 +180,13 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
 
       {/* Saved simulations */}
       {simulations.length > 0 && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <div className="bud-hstack" style={{ marginBottom: 12 }}>
           <select value={loadSel} onChange={e => setLoadSel(e.target.value)} style={{ flex: 1, fontSize: 13 }}>
             <option value="">Load saved…</option>
             {simulations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.savedAt})</option>)}
           </select>
-          {loadSel && <button className="btn" onClick={() => loadSimulation(loadSel)} style={{ fontSize: 12, padding: "4px 10px" }}>Load</button>}
-          {loadSel && <button className="btn btn-delete" onClick={() => deleteSimulation(loadSel)} style={{ fontSize: 12, padding: "4px 10px" }}>Del</button>}
+          {loadSel && <button className="btn bud-btn-sm" onClick={() => loadSimulation(loadSel)}>Load</button>}
+          {loadSel && <button className="btn btn-delete bud-btn-sm" onClick={() => deleteSimulation(loadSel)}>Del</button>}
         </div>
       )}
 
@@ -196,23 +194,23 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
 
       {rows.length > 0 && (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-            <button className="btn" onClick={addRow} style={{ fontSize: 12, padding: "5px 12px" }}>+ Add row</button>
-            <button className="btn" onClick={exportCsv} style={{ fontSize: 12, padding: "5px 12px" }}><i className="fa-solid fa-download"/> CSV</button>
-            <button className="btn" onClick={() => setShowSaveForm(s => !s)} style={{ fontSize: 12, padding: "5px 12px" }}><i className="fa-solid fa-floppy-disk"/> Save</button>
+          <div className="bud-hstack" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+            <button className="btn bud-btn-md" onClick={addRow}>+ Add row</button>
+            <button className="btn bud-btn-md" onClick={exportCsv}><i className="fa-solid fa-download"/> CSV</button>
+            <button className="btn bud-btn-md" onClick={() => setShowSaveForm(s => !s)}><i className="fa-solid fa-floppy-disk"/> Save</button>
           </div>
           {showSaveForm && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <div className="bud-hstack" style={{ marginBottom: 10 }}>
               <input value={simName} onChange={e => setSimName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveSimulation()} placeholder="Simulation name…" style={{ flex: 1, fontSize: 13 }} autoFocus />
               <button className="btn" onClick={saveSimulation} style={{ fontSize: 12, background: "var(--green)", color: "#000", border: "none", fontWeight: 600 }}>Save</button>
             </div>
           )}
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table className="bud-table bud-table-sim">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <tr>
                   {["Date","Description","Income","Expense","Balance",""].map(h => (
-                    <th key={h} style={{ padding: "6px 6px", textAlign: ["Income","Expense","Balance"].includes(h) ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} className={["Income","Expense","Balance"].includes(h) ? "bud-right" : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -220,24 +218,24 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
                 {rows.map(r => {
                   const negBal = r.balance < 0, lowBal = r.balance < 200;
                   return (
-                    <tr key={r.id} style={{ borderBottom: "0.5px solid var(--border-subtle)", background: negBal ? "rgba(239,68,68,0.08)" : lowBal ? "rgba(245,158,11,0.06)" : "transparent" }}>
-                      <td style={{ padding: "5px 6px" }}>
-                        <input type="date" value={r.date} onChange={e => updateRow(r.id, "date", e.target.value)} style={{ fontSize: 11, padding: "3px 4px", background: "transparent", border: "0.5px solid var(--border-subtle)", borderRadius: 4, color: "inherit", width: 110 }} />
+                    <tr key={r.id} style={{ background: negBal ? "rgba(239,68,68,0.08)" : lowBal ? "rgba(245,158,11,0.06)" : "transparent" }}>
+                      <td>
+                        <input type="date" value={r.date} onChange={e => updateRow(r.id, "date", e.target.value)} className="bud-sim-inp" style={{ width: 110 }} />
                       </td>
-                      <td style={{ padding: "5px 6px" }}>
-                        <input type="text" value={r.description} onChange={e => updateRow(r.id, "description", e.target.value)} style={{ fontSize: 11, padding: "3px 4px", background: "transparent", border: "0.5px solid var(--border-subtle)", borderRadius: 4, color: "inherit", width: "100%", minWidth: 100 }} />
+                      <td>
+                        <input type="text" value={r.description} onChange={e => updateRow(r.id, "description", e.target.value)} className="bud-sim-inp" style={{ width: "100%", minWidth: 100 }} />
                       </td>
-                      <td style={{ padding: "5px 6px", textAlign: "right" }}>
-                        <input type="number" step="0.01" value={r.income || ""} onChange={e => updateRow(r.id, "income", e.target.value)} placeholder="0" style={{ fontSize: 11, padding: "3px 4px", background: "transparent", border: "0.5px solid var(--border-subtle)", borderRadius: 4, color: "var(--green)", width: 70, textAlign: "right" }} />
+                      <td className="bud-right">
+                        <input type="number" step="0.01" value={r.income || ""} onChange={e => updateRow(r.id, "income", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num" style={{ color: "var(--green)" }} />
                       </td>
-                      <td style={{ padding: "5px 6px", textAlign: "right" }}>
-                        <input type="number" step="0.01" value={r.expense || ""} onChange={e => updateRow(r.id, "expense", e.target.value)} placeholder="0" style={{ fontSize: 11, padding: "3px 4px", background: "transparent", border: "0.5px solid var(--border-subtle)", borderRadius: 4, color: "var(--red)", width: 70, textAlign: "right" }} />
+                      <td className="bud-right">
+                        <input type="number" step="0.01" value={r.expense || ""} onChange={e => updateRow(r.id, "expense", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num" style={{ color: "var(--red)" }} />
                       </td>
-                      <td style={{ padding: "5px 6px", textAlign: "right", ...mono, fontSize: 12, color: negBal ? "var(--red)" : lowBal ? "var(--orange)" : "var(--green)", whiteSpace: "nowrap" }}>
+                      <td className="bud-right bud-mono" style={{ fontSize: 12, color: negBal ? "var(--red)" : lowBal ? "var(--orange)" : "var(--green)", whiteSpace: "nowrap" }}>
                         {formatMoney(r.balance)}
                       </td>
-                      <td style={{ padding: "5px 6px" }}>
-                        <button onClick={() => deleteRow(r.id)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer", fontSize: 14, padding: 0 }}>×</button>
+                      <td>
+                        <button onClick={() => deleteRow(r.id)} className="bud-x" style={{ color: "var(--red)", fontSize: 14, padding: 0 }}>×</button>
                       </td>
                     </tr>
                   );

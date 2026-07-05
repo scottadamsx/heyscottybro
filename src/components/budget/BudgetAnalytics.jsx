@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { getPeriodHistory, getCategoryTrends, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 import { formatMoney } from "../../utils/budgetCalc";
+import "./budget.css";
 
 // ── Income vs Spending line chart ─────────────────────────
 function OverviewChart({ periodHistory }) {
@@ -20,30 +21,30 @@ function OverviewChart({ periodHistory }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: W, height: "auto", display: "block" }}>
       {yTicks.map(v => (
-        <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} style={{ stroke: "var(--border-subtle)" }} strokeWidth="1" />
+        <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} className="bud-stroke-grid" strokeWidth="1" />
       ))}
       <polygon points={spnArea} fill="rgba(239,68,68,0.09)" />
-      <polyline points={spnPts} fill="none" style={{ stroke: "var(--red)" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-      <polyline points={incPts} fill="none" style={{ stroke: "var(--green)" }} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={spnPts} fill="none" className="bud-stroke-red" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={incPts} fill="none" className="bud-stroke-green" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {active.map((p, i) => (
         <g key={i}>
           <line x1={toX(i)} y1={toY(p.income)} x2={toX(i)} y2={toY(p.spending)} stroke={p.net >= 0 ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"} strokeWidth="2" />
-          <circle cx={toX(i)} cy={toY(p.income)} r="4" style={{ fill: "var(--green)" }} />
-          <circle cx={toX(i)} cy={toY(p.spending)} r="4" style={{ fill: "var(--red)" }} />
+          <circle cx={toX(i)} cy={toY(p.income)} r="4" className="bud-fill-green" />
+          <circle cx={toX(i)} cy={toY(p.spending)} r="4" className="bud-fill-red" />
         </g>
       ))}
       {yTicks.map(v => (
-        <text key={v} x={P.l - 5} y={toY(v) + 3} textAnchor="end" style={{ fill: "var(--text-muted)" }} fontSize="9" fontFamily="monospace">
+        <text key={v} x={P.l - 5} y={toY(v) + 3} textAnchor="end" className="bud-fill-muted" fontSize="9" fontFamily="monospace">
           {v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${Math.round(v)}`}
         </text>
       ))}
       {active.map((p, i) => (
-        <text key={i} x={toX(i)} y={H - 5} textAnchor="middle" style={{ fill: "var(--text-muted)" }} fontSize="9">{p.label}</text>
+        <text key={i} x={toX(i)} y={H - 5} textAnchor="middle" className="bud-fill-muted" fontSize="9">{p.label}</text>
       ))}
-      <circle cx={P.l + 8} cy={P.t - 7} r="3" style={{ fill: "var(--green)" }} />
-      <text x={P.l + 14} y={P.t - 3} style={{ fill: "var(--text-secondary)" }} fontSize="9">Income</text>
-      <circle cx={P.l + 68} cy={P.t - 7} r="3" style={{ fill: "var(--red)" }} />
-      <text x={P.l + 74} y={P.t - 3} style={{ fill: "var(--text-secondary)" }} fontSize="9">Spending</text>
+      <circle cx={P.l + 8} cy={P.t - 7} r="3" className="bud-fill-green" />
+      <text x={P.l + 14} y={P.t - 3} className="bud-fill-secondary" fontSize="9">Income</text>
+      <circle cx={P.l + 68} cy={P.t - 7} r="3" className="bud-fill-red" />
+      <text x={P.l + 74} y={P.t - 3} className="bud-fill-secondary" fontSize="9">Spending</text>
     </svg>
   );
 }
@@ -51,7 +52,7 @@ function OverviewChart({ periodHistory }) {
 // ── Tiny sparkline per category ───────────────────────────
 function Sparkline({ values, trend }) {
   const hasData = values.some(v => v > 0);
-  if (!hasData || values.length < 2) return <span style={{ color: "var(--text-muted)", fontSize: 10 }}>—</span>;
+  if (!hasData || values.length < 2) return <span className="bud-muted-10">—</span>;
   const W = 64, H = 22;
   const max = Math.max(...values, 1);
   const n = values.length;
@@ -69,9 +70,9 @@ function Sparkline({ values, trend }) {
 
 function TrendBadge({ trend, pctChange }) {
   const abs = Math.abs(pctChange).toFixed(0);
-  if (trend === "up") return <span style={{ color: "var(--red)", fontSize: 11, fontWeight: 700 }}>↑ {abs}%</span>;
-  if (trend === "down") return <span style={{ color: "var(--green)", fontSize: 11, fontWeight: 700 }}>↓ {abs}%</span>;
-  return <span style={{ color: "var(--text-muted)", fontSize: 11 }}>→</span>;
+  if (trend === "up") return <span className="bud-trend-up">↑ {abs}%</span>;
+  if (trend === "down") return <span className="bud-trend-down">↓ {abs}%</span>;
+  return <span className="bud-trend-flat">→</span>;
 }
 
 // ── Auto-generated insights ───────────────────────────────
@@ -115,11 +116,11 @@ function generateInsights(periodHistory, trends, projection, lastIncome) {
   return insights;
 }
 
-const INSIGHT_STYLES = {
-  success: { bg: "rgba(34,197,94,0.08)", border: "rgba(34,197,94,0.22)", icon: "✓", c: "var(--green)" },
-  warning: { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.22)", icon: "!", c: "var(--orange)" },
-  danger:  { bg: "rgba(239,68,68,0.08)",  border: "rgba(239,68,68,0.22)",  icon: "↑", c: "var(--red)" },
-  info:    { bg: "rgba(99,102,241,0.08)", border: "rgba(99,102,241,0.22)", icon: "i", c: "var(--accent)" },
+const INSIGHT_META = {
+  success: { cls: "bud-insight-success", icon: "✓" },
+  warning: { cls: "bud-insight-warning", icon: "!" },
+  danger:  { cls: "bud-insight-danger",  icon: "↑" },
+  info:    { cls: "bud-insight-info",    icon: "i" },
 };
 
 // ── Main component ────────────────────────────────────────
@@ -129,10 +130,6 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
   const lastIncome    = useMemo(() => getLastIncome(transactions), [transactions]);
   const projection    = useMemo(() => projectNextPeriod(periodHistory, lastIncome), [periodHistory, lastIncome]);
   const insights      = useMemo(() => generateInsights(periodHistory, trends, projection, lastIncome), [periodHistory, trends, projection, lastIncome]);
-
-  const sh = { fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)", margin: "20px 0 10px", fontWeight: 700 };
-  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "1rem", marginBottom: 12 };
-  const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 600 };
 
   if (!transactions.length) {
     return (
@@ -151,8 +148,8 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
   return (
     <div>
       {/* ── Overview chart ── */}
-      <p style={sh}>Income vs Spending — Last {Math.max(activePeriods.length, 1)} Pay Period{activePeriods.length !== 1 ? "s" : ""}</p>
-      <div style={{ ...card, padding: "0.75rem 0.5rem 0.5rem" }}>
+      <p className="bud-sh bud-sh-an">Income vs Spending — Last {Math.max(activePeriods.length, 1)} Pay Period{activePeriods.length !== 1 ? "s" : ""}</p>
+      <div className="bud-panel bud-panel-an" style={{ padding: "0.75rem 0.5rem 0.5rem" }}>
         {activePeriods.length >= 2
           ? <OverviewChart periodHistory={periodHistory} />
           : <div style={{ textAlign: "center", padding: "1.5rem", color: "var(--text-muted)", fontSize: 13 }}>Log transactions in at least 2 pay periods to see the chart.</div>
@@ -173,23 +170,23 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
       </div>
 
       {/* ── Next period projection ── */}
-      <p style={sh}>Next Period Projection</p>
-      <div style={card}>
+      <p className="bud-sh bud-sh-an">Next Period Projection</p>
+      <div className="bud-panel bud-panel-an">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+            <div className="bud-muted-11" style={{ marginBottom: 4 }}>
               Assumed income
               {lastIncome > 0 && <span style={{ color: "var(--green)", marginLeft: 4 }}>← last paycheck</span>}
             </div>
-            <div style={{ ...mono, fontSize: 20, color: "var(--green)" }}>{formatMoney(assumed)}</div>
+            <div className="bud-mono bud-mono-b" style={{ fontSize: 20, color: "var(--green)" }}>{formatMoney(assumed)}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Projected spend</div>
-            <div style={{ ...mono, fontSize: 20, color: "var(--red)" }}>{formatMoney(projection.spending)}</div>
+            <div className="bud-muted-11" style={{ marginBottom: 4 }}>Projected spend</div>
+            <div className="bud-mono bud-mono-b" style={{ fontSize: 20, color: "var(--red)" }}>{formatMoney(projection.spending)}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>Projected net</div>
-            <div style={{ ...mono, fontSize: 20, color: projNet >= 0 ? "var(--green)" : "var(--red)" }}>
+            <div className="bud-muted-11" style={{ marginBottom: 4 }}>Projected net</div>
+            <div className="bud-mono bud-mono-b" style={{ fontSize: 20, color: projNet >= 0 ? "var(--green)" : "var(--red)" }}>
               {projNet >= 0 ? "+" : ""}{formatMoney(projNet)}
             </div>
           </div>
@@ -201,17 +198,17 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
           const trend = trends.find(t => t.category === cat);
           return (
             <div key={cat} style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+              <div className="bud-row" style={{ marginBottom: 3 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{cat}</span>
                   {trend && <TrendBadge trend={trend.trend} pctChange={trend.pctChange} />}
                 </div>
-                <span style={{ ...mono, fontSize: 12, color: "var(--text-secondary)" }}>{formatMoney(amt)}</span>
+                <span className="bud-mono bud-mono-b" style={{ fontSize: 12, color: "var(--text-secondary)" }}>{formatMoney(amt)}</span>
               </div>
-              <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: trend?.trend === "up" ? "var(--red)" : "var(--accent)", borderRadius: 999, transition: "width .3s" }} />
+              <div className="bud-bar-an">
+                <div className="bud-bar-fill-an" style={{ width: `${Math.min(100, pct)}%`, background: trend?.trend === "up" ? "var(--red)" : "var(--accent)" }} />
               </div>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, textAlign: "right" }}>{pct.toFixed(0)}% of projected spending</div>
+              <div className="bud-muted-10" style={{ marginTop: 2, textAlign: "right" }}>{pct.toFixed(0)}% of projected spending</div>
             </div>
           );
         })}
@@ -220,14 +217,14 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
       {/* ── Insights ── */}
       {insights.length > 0 && (
         <>
-          <p style={sh}>Insights</p>
+          <p className="bud-sh bud-sh-an">Insights</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 16 }}>
             {insights.map((ins, i) => {
-              const s = INSIGHT_STYLES[ins.type] || INSIGHT_STYLES.info;
+              const s = INSIGHT_META[ins.type] || INSIGHT_META.info;
               return (
-                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: s.bg, border: `1px solid ${s.border}`, borderRadius: "0.375rem", padding: "0.625rem 0.875rem" }}>
-                  <span style={{ color: s.c, fontSize: 14, fontWeight: 800, flexShrink: 0, marginTop: 0 }}>{s.icon}</span>
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.45 }}>{ins.msg}</span>
+                <div key={i} className={`bud-insight ${s.cls}`}>
+                  <span className="bud-insight-icon">{s.icon}</span>
+                  <span className="bud-insight-msg">{ins.msg}</span>
                 </div>
               );
             })}
@@ -238,41 +235,41 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
       {/* ── Category trend table ── */}
       {trends.length > 0 && (
         <>
-          <p style={sh}>Spending Trends by Category</p>
+          <p className="bud-sh bud-sh-an">Spending Trends by Category</p>
           <div style={{ overflowX: "auto", marginBottom: 8 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <table className="bud-table bud-table-an">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                <tr>
                   {["Category", "Last 6 periods", "Last period", "Avg/period", "Trend", "Projected"].map(h => (
-                    <th key={h} style={{ padding: "7px 8px", textAlign: ["Last period", "Avg/period", "Projected"].includes(h) ? "right" : "left", color: "var(--text-muted)", fontWeight: 500, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} className={["Last period", "Avg/period", "Projected"].includes(h) ? "bud-right" : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {trends.sort((a, b) => b.avg - a.avg).map(t => (
-                  <tr key={t.category} style={{ borderBottom: "0.5px solid var(--border-subtle)" }}>
-                    <td style={{ padding: "8px 8px", fontWeight: 500 }}>{t.category}</td>
-                    <td style={{ padding: "8px 8px" }}><Sparkline values={t.values} trend={t.trend} /></td>
-                    <td style={{ padding: "8px 8px", textAlign: "right", ...mono }}>{formatMoney(t.last)}</td>
-                    <td style={{ padding: "8px 8px", textAlign: "right", ...mono, color: "var(--text-muted)" }}>{formatMoney(t.avg)}</td>
-                    <td style={{ padding: "8px 8px" }}><TrendBadge trend={t.trend} pctChange={t.pctChange} /></td>
-                    <td style={{ padding: "8px 8px", textAlign: "right", ...mono, color: "var(--accent)" }}>{formatMoney(t.projected)}</td>
+                  <tr key={t.category}>
+                    <td style={{ fontWeight: 500 }}>{t.category}</td>
+                    <td><Sparkline values={t.values} trend={t.trend} /></td>
+                    <td className="bud-right bud-mono bud-mono-b">{formatMoney(t.last)}</td>
+                    <td className="bud-right bud-mono bud-mono-b" style={{ color: "var(--text-muted)" }}>{formatMoney(t.avg)}</td>
+                    <td><TrendBadge trend={t.trend} pctChange={t.pctChange} /></td>
+                    <td className="bud-right bud-mono bud-mono-b" style={{ color: "var(--accent)" }}>{formatMoney(t.projected)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                  <td style={{ padding: "8px 8px", fontWeight: 600, fontSize: 11 }}>Total</td>
+                <tr>
+                  <td style={{ fontWeight: 600, fontSize: 11 }}>Total</td>
                   <td />
-                  <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600 }}>{formatMoney(trends.reduce((s, t) => s + t.last, 0))}</td>
-                  <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600, color: "var(--text-muted)" }}>{formatMoney(trends.reduce((s, t) => s + t.avg, 0))}</td>
+                  <td className="bud-right bud-mono bud-mono-b">{formatMoney(trends.reduce((s, t) => s + t.last, 0))}</td>
+                  <td className="bud-right bud-mono bud-mono-b" style={{ color: "var(--text-muted)" }}>{formatMoney(trends.reduce((s, t) => s + t.avg, 0))}</td>
                   <td />
-                  <td style={{ padding: "8px 8px", textAlign: "right", ...mono, fontWeight: 600, color: "var(--accent)" }}>{formatMoney(trends.reduce((s, t) => s + t.projected, 0))}</td>
+                  <td className="bud-right bud-mono bud-mono-b" style={{ color: "var(--accent)" }}>{formatMoney(trends.reduce((s, t) => s + t.projected, 0))}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 16 }}>
+          <div className="bud-muted-11" style={{ marginBottom: 16 }}>
             Projections based on your 3-period average. Trends compare your most recent period to the one before it.
           </div>
         </>

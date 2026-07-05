@@ -1,0 +1,158 @@
+/* ═══ Shared budget-component styles ═══
+   Migrated from repeated inline style={{}} objects in the Budget* components.
+   All classes are prefixed .bud- ; NOTE: .bud-card already exists in index.css
+   (RecurringCard), so the card pattern here is .bud-panel. Values are faithful
+   translations of the original inline styles — do not "clean up" numbers. */
+
+/* ── Section heading (was: const sh = {…}) ── */
+.bud-sh { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 16px 0 8px; font-weight: 500; }
+.bud-sh-tight { margin: 14px 0 8px; }
+.bud-sh-an { font-size: 10px; letter-spacing: 0.1em; margin: 20px 0 10px; font-weight: 700; }
+
+/* ── Card (was: const card = {…}) ── */
+.bud-panel { background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.5rem; }
+.bud-panel-db { padding: 0.875rem 1.125rem; margin-bottom: 8px; }   /* Dashboard */
+.bud-panel-bi { padding: 0.875rem; margin-bottom: 8px; }            /* Bills & Income */
+.bud-panel-an { padding: 1rem; margin-bottom: 12px; }               /* Analytics */
+/* Dashboard summary-stat card rendered as a <button> */
+.bud-statbtn { margin-bottom: 0; text-align: left; cursor: pointer; font: inherit; }
+
+/* ── Mono numerals (was: const mono = {…}) ── */
+.bud-mono { font-family: var(--font-mono, monospace); font-weight: 500; }
+.bud-mono-b { font-weight: 600; } /* Analytics uses 600 */
+
+/* ── Inputs (was: const inp = {…}) ── */
+.bud-inp { width: 100%; margin-bottom: 8px; }
+
+/* ── Text utilities ── */
+.bud-muted-10 { font-size: 10px; color: var(--text-muted); }
+.bud-muted-11 { font-size: 11px; color: var(--text-muted); }
+.bud-muted-12 { font-size: 12px; color: var(--text-muted); }
+.bud-muted-13 { font-size: 13px; color: var(--text-muted); }
+.bud-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bud-caps-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.bud-form-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+.bud-tile-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.bud-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+.bud-label-sm { font-size: 11px; margin-bottom: 3px; }
+
+/* ── Layout helpers ── */
+.bud-row { display: flex; justify-content: space-between; align-items: center; }
+.bud-row-b { display: flex; justify-content: space-between; align-items: baseline; }
+.bud-hstack { display: flex; gap: 8px; }
+.bud-actions { display: flex; gap: 4px; }
+.bud-flex1 { flex: 1; }
+.bud-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bud-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+
+/* ── Pills / badges ── */
+.bud-pill { font-size: 11px; background: var(--bg-raised); border-radius: 4px; padding: 2px 6px; }
+.bud-pill-10 { font-size: 10px; }
+.bud-tag { font-size: 10px; color: var(--text-muted); border: 0.5px solid var(--border-subtle); border-radius: 4px; padding: 0 4px; }
+.bud-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-raised); border: 0.5px solid var(--border-subtle); border-radius: 99px; padding: 4px 10px; font-size: 12px; }
+
+/* ── Progress bars ── */
+.bud-bar { height: 6px; background: var(--bg-raised); border-radius: 4px; overflow: hidden; }
+.bud-bar-fill { height: 100%; border-radius: 4px; }              /* width/background stay inline (dynamic) */
+.bud-bar-an { height: 5px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
+.bud-bar-fill-an { height: 100%; border-radius: 999px; transition: width .3s; } /* width/background inline */
+
+/* ── Button size overrides (compound selectors so they beat .btn/.btn-sm
+      regardless of stylesheet order) ── */
+.bud-btn-xs, .btn.bud-btn-xs, .btn-sm.bud-btn-xs { font-size: 11px; padding: 3px 8px; }
+.bud-btn-xs2, .btn.bud-btn-xs2, .btn-sm.bud-btn-xs2 { font-size: 11px; padding: 3px 7px; }
+.bud-btn-sm, .btn.bud-btn-sm, .btn-sm.bud-btn-sm { font-size: 12px; padding: 4px 10px; }
+.bud-btn-sm2, .btn.bud-btn-sm2, .btn-sm.bud-btn-sm2 { font-size: 12px; padding: 4px 12px; }
+.bud-btn-md, .btn.bud-btn-md, .btn-sm.bud-btn-md { font-size: 12px; padding: 5px 12px; }
+
+/* Plain "×" / ghost buttons */
+.bud-x { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+/* Dashboard pay-period navigator ‹ › */
+.bud-navbtn { background: none; border: 0.5px solid var(--border-subtle); border-radius: 6px; padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 14px; }
+
+/* ── Tables ── */
+.bud-table { width: 100%; border-collapse: collapse; }
+.bud-table thead tr { border-bottom: 1px solid var(--border-subtle); }
+.bud-table tbody tr { border-bottom: 0.5px solid var(--border-subtle); }
+.bud-table tfoot tr { border-top: 1px solid var(--border-subtle); }
+.bud-table th { color: var(--text-muted); font-weight: 500; text-transform: uppercase; text-align: left; }
+
+.bud-table-an { font-size: 12px; }                                /* Analytics trends */
+.bud-table-an th { padding: 7px 8px; font-size: 10px; letter-spacing: 0.06em; white-space: nowrap; }
+.bud-table-an td { padding: 8px 8px; }
+
+.bud-table-ledger { font-size: 12px; }                            /* Transactions ledger */
+.bud-table-ledger th { padding: 6px 8px; font-size: 10px; letter-spacing: 0.05em; white-space: nowrap; }
+.bud-table-ledger td { padding: 7px 8px; }
+
+.bud-table-tx { font-size: 13px; }                                /* Transactions list */
+.bud-table-tx th { padding: 6px 8px; font-size: 11px; letter-spacing: 0.05em; white-space: nowrap; }
+.bud-table-tx td { padding: 7px 8px; }
+
+.bud-table-rec { font-size: 13px; }                               /* Reconcile */
+.bud-table-rec th { padding: 6px 8px; font-size: 11px; }
+.bud-table-rec td { padding: 7px 8px; }
+
+.bud-table-sim { font-size: 12px; }                               /* Simulator */
+.bud-table-sim th { padding: 6px 6px; font-size: 10px; letter-spacing: 0.05em; white-space: nowrap; }
+.bud-table-sim td { padding: 5px 6px; }
+
+.bud-table .bud-right { text-align: right; }
+
+/* ── SVG chart helpers ── */
+.bud-fill-green { fill: var(--green); }
+.bud-fill-red { fill: var(--red); }
+.bud-fill-muted { fill: var(--text-muted); }
+.bud-fill-secondary { fill: var(--text-secondary); }
+.bud-stroke-green { stroke: var(--green); }
+.bud-stroke-red { stroke: var(--red); }
+.bud-stroke-grid { stroke: var(--border-subtle); }
+
+/* ── Analytics insights ── */
+.bud-insight { display: flex; gap: 10px; align-items: flex-start; border: 1px solid transparent; border-radius: 0.375rem; padding: 0.625rem 0.875rem; }
+.bud-insight-icon { font-size: 14px; font-weight: 800; flex-shrink: 0; margin-top: 0; }
+.bud-insight-msg { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.bud-insight-success { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.22); }
+.bud-insight-success .bud-insight-icon { color: var(--green); }
+.bud-insight-warning { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.22); }
+.bud-insight-warning .bud-insight-icon { color: var(--orange); }
+.bud-insight-danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.22); }
+.bud-insight-danger .bud-insight-icon { color: var(--red); }
+.bud-insight-info { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.22); }
+.bud-insight-info .bud-insight-icon { color: var(--accent); }
+
+/* ── Analytics trend badges ── */
+.bud-trend-up { color: var(--red); font-size: 11px; font-weight: 700; }
+.bud-trend-down { color: var(--green); font-size: 11px; font-weight: 700; }
+.bud-trend-flat { color: var(--text-muted); font-size: 11px; }
+
+/* ── Reconcile summary stat row (was: const statCard = {…}) ── */
+.bud-statrow { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 12px; background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.375rem; margin-bottom: 6px; }
+
+/* ── Dashboard expanded-row transaction drill ── */
+.bud-drill { margin-top: 8px; border-top: 0.5px dashed var(--border-subtle); padding-top: 8px; }
+
+/* ── Transactions view-mode segmented control ── */
+.bud-seg { display: flex; background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.375rem; padding: 3px; gap: 3px; }
+.bud-seg-btn { padding: 5px 12px; border-radius: 0.25rem; border: none; font-size: 12px; cursor: pointer; background: transparent; color: var(--text-muted); font-weight: 400; }
+.bud-seg-btn-on { background: var(--bg-raised); color: var(--text-primary); font-weight: 600; }
+
+/* ── Transactions expense/income/savings type toggle (colors stay inline) ── */
+.bud-typebtn { flex: 1; padding: 7px 0; border-radius: 0.375rem; font-size: 12px; cursor: pointer; }
+
+/* ── Simulator editable table inputs ── */
+.bud-sim-inp { font-size: 11px; padding: 3px 4px; background: transparent; border: 0.5px solid var(--border-subtle); border-radius: 4px; color: inherit; }
+.bud-sim-num { width: 70px; text-align: right; }
+
+/* ── Misc repeated fragments ── */
+.bud-chev { font-size: 10px; color: var(--text-muted); margin-right: 8px; }        /* row expand chevron */
+.bud-over-note { font-size: 11px; color: var(--red); margin-top: 3px; }            /* "$X over budget" */
+.bud-sec-13 { font-size: 13px; color: var(--text-secondary); }                     /* secondary 13px label */
+.bud-title-14 { font-size: 14px; font-weight: 500; }                               /* row title */
+.bud-amt-14 { font-size: 14px; margin-right: 12px; }                               /* row amount (with .bud-mono) */
+
+/* ── Banker chat ── */
+.bud-bubble { border: 0.5px solid var(--border-subtle); border-radius: 12px; padding: 0.6rem 0.85rem; max-width: 85%; font-size: 14px; line-height: 1.5; }
+.bud-bubble-user { align-self: flex-end; background: var(--accent); color: #fff; }
+.bud-bubble-bot { align-self: flex-start; background: var(--bg-card); }
+.bud-suggestion { text-align: left; background: var(--bg-raised); border: 0.5px solid var(--border-subtle); border-radius: 8px; padding: 7px 10px; color: var(--text-secondary); cursor: pointer; font-size: 13px; }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./budget.css";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, variable: false, notes: "" };
@@ -109,42 +110,37 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     return dates;
   })();
 
-  const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "16px 0 8px", fontWeight: 500 };
-  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-subtle)", borderRadius: "0.5rem", padding: "0.875rem", marginBottom: 8 };
-  const inp = { width: "100%", marginBottom: 8 };
-  const mono = { fontFamily: "var(--font-mono,monospace)", fontWeight: 500 };
-
   return (
     <div>
       {/* Pay schedule */}
-      <p style={sh}>Pay schedule</p>
-      <div style={card}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <p className="bud-sh">Pay schedule</p>
+      <div className="bud-panel bud-panel-bi">
+        <div className="bud-row">
           <div>
-            <div style={{ fontSize: 14, fontWeight: 500 }}>{config.paySchedule?.type || "biweekly"}</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Next paydays: {upcomingPaydays.join(", ")}</div>
+            <div className="bud-title-14">{config.paySchedule?.type || "biweekly"}</div>
+            <div className="bud-muted-12" style={{ marginTop: 2 }}>Next paydays: {upcomingPaydays.join(", ")}</div>
           </div>
-          <button className="btn" onClick={() => setShowSchedEdit(s => !s)} style={{ fontSize: 12, padding: "4px 10px" }}>{flash === "sched" ? "✓ Saved!" : "Edit"}</button>
+          <button className="btn bud-btn-sm" onClick={() => setShowSchedEdit(s => !s)}>{flash === "sched" ? "✓ Saved!" : "Edit"}</button>
         </div>
         {showSchedEdit && (
           <div style={{ marginTop: 12 }}>
-            <select value={schedForm.type} onChange={e => setSchedForm(f => ({ ...f, type: e.target.value }))} style={inp}>
+            <select value={schedForm.type} onChange={e => setSchedForm(f => ({ ...f, type: e.target.value }))} className="bud-inp">
               {["weekly","biweekly","semimonthly","monthly","custom"].map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input type="date" value={schedForm.anchorDate} onChange={e => setSchedForm(f => ({ ...f, anchorDate: e.target.value }))} placeholder="Anchor/next payday" style={inp} />
-            {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" style={inp} />}
+            <input type="date" value={schedForm.anchorDate} onChange={e => setSchedForm(f => ({ ...f, anchorDate: e.target.value }))} placeholder="Anchor/next payday" className="bud-inp" />
+            {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" className="bud-inp" />}
             <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none" }}>Save schedule</button>
           </div>
         )}
       </div>
 
       {/* Income sources */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <p style={sh}>Income sources</p>
-        <button className="btn" onClick={openNewInc} style={{ fontSize: 11, padding: "3px 8px" }}>+ Add</button>
+      <div className="bud-row-b">
+        <p className="bud-sh">Income sources</p>
+        <button className="btn bud-btn-xs" onClick={openNewInc}>+ Add</button>
       </div>
       {(config.income || []).length === 0
-        ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No income sources added yet.</p>
+        ? <p className="bud-muted-13">No income sources added yet.</p>
         : (config.income || []).map(inc => {
           const from = inc.startDate || inc.nextDate;
           const to = inc.endDate;
@@ -154,82 +150,82 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           const isFuture = from && from > todayStr;
           const statusColor = isPast ? "var(--text-muted)" : isFuture ? "var(--orange)" : "var(--green)";
           return (
-          <div key={inc.id} style={{ ...card, display: "flex", alignItems: "center", opacity: isPast ? 0.55 : 1 }}>
+          <div key={inc.id} className="bud-panel bud-panel-bi" style={{ display: "flex", alignItems: "center", opacity: isPast ? 0.55 : 1 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 500 }}>{inc.name}</span>
+                <span className="bud-title-14">{inc.name}</span>
                 <span style={{ fontSize: 10, color: statusColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{isPast ? "ended" : isFuture ? "upcoming" : "active"}</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+              <div className="bud-muted-11" style={{ marginTop: 2 }}>
                 {inc.frequency} · {from ? `from ${from}` : "no start"}{to ? ` → ${to}` : " → ongoing"}
               </div>
             </div>
-            <span style={{ ...mono, fontSize: 14, marginRight: 12 }}>{formatMoney(inc.amount)}</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button className="btn-sm" onClick={() => openEditInc(inc)} style={{ fontSize: 11, padding: "3px 8px" }}>Edit</button>
-              <button className="btn-sm btn-delete" onClick={() => deleteInc(inc.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Del</button>
+            <span className="bud-mono bud-amt-14">{formatMoney(inc.amount)}</span>
+            <div className="bud-actions">
+              <button className="btn-sm bud-btn-xs" onClick={() => openEditInc(inc)}>Edit</button>
+              <button className="btn-sm btn-delete bud-btn-xs" onClick={() => deleteInc(inc.id)}>Del</button>
             </div>
           </div>
           );
         })
       }
       {showIncForm && (
-        <div ref={incFormRef} style={{ ...card, borderColor: "var(--accent)" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{incEditId ? "Edit income" : "Add income source"}</div>
-          <input placeholder="Name (e.g. TxtSquad)" value={incForm.name} onChange={e => setIncForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <div ref={incFormRef} className="bud-panel bud-panel-bi" style={{ borderColor: "var(--accent)" }}>
+          <div className="bud-form-title">{incEditId ? "Edit income" : "Add income source"}</div>
+          <input placeholder="Name (e.g. TxtSquad)" value={incForm.name} onChange={e => setIncForm(f => ({ ...f, name: e.target.value }))} className="bud-inp" />
+          <div className="bud-hstack" style={{ marginBottom: 8 }}>
             <input type="number" placeholder="Amount" value={incForm.amount} onChange={e => setIncForm(f => ({ ...f, amount: e.target.value }))} style={{ flex: 1 }} />
             <select value={incForm.frequency} onChange={e => setIncForm(f => ({ ...f, frequency: e.target.value }))} style={{ flex: 1, fontSize: 13 }}>
               {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Start date (first payday)</label>
-          <input type="date" value={incForm.startDate} onChange={e => setIncForm(f => ({ ...f, startDate: e.target.value }))} style={inp} />
-          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
-          <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} style={inp} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={saveInc} style={{ flex: 1, background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
-            <button className="btn" onClick={() => setShowIncForm(false)} style={{ flex: 1 }}>Cancel</button>
+          <label className="bud-label">Start date (first payday)</label>
+          <input type="date" value={incForm.startDate} onChange={e => setIncForm(f => ({ ...f, startDate: e.target.value }))} className="bud-inp" />
+          <label className="bud-label">End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
+          <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} className="bud-inp" />
+          <div className="bud-hstack">
+            <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
+            <button className="btn bud-flex1" onClick={() => setShowIncForm(false)}>Cancel</button>
           </div>
         </div>
       )}
 
       {/* Recurring bills */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <p style={sh}>Recurring bills</p>
-        <button className="btn" onClick={openNewBill} style={{ fontSize: 11, padding: "3px 8px" }}>+ Add</button>
+      <div className="bud-row-b">
+        <p className="bud-sh">Recurring bills</p>
+        <button className="btn bud-btn-xs" onClick={openNewBill}>+ Add</button>
       </div>
       {(config.recurringBills || []).length === 0
-        ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No bills added yet.</p>
+        ? <p className="bud-muted-13">No bills added yet.</p>
         : (config.recurringBills || []).map(b => (
-          <div key={b.id} style={{ ...card, display: "flex", alignItems: "center" }}>
+          <div key={b.id} className="bud-panel bud-panel-bi" style={{ display: "flex", alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 500 }}>{b.name}</div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{(() => { const nd = nextDueOf(b); return nd ? ` · next ${shortDate(nd)}` : ""; })()}{b.variable ? " · variable" : b.autoPay ? " · auto" : ""}</div>
+              <div className="bud-title-14">{b.name}</div>
+              <div className="bud-muted-11" style={{ marginTop: 2 }}>{b.category} · {b.frequency} · from {b.startDate}{(() => { const nd = nextDueOf(b); return nd ? ` · next ${shortDate(nd)}` : ""; })()}{b.variable ? " · variable" : b.autoPay ? " · auto" : ""}</div>
             </div>
-            <span style={{ ...mono, fontSize: 14, marginRight: 12 }}>{formatMoney(b.amount)}</span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button className="btn-sm" onClick={() => openEditBill(b)} style={{ fontSize: 11, padding: "3px 8px" }}>Edit</button>
-              <button className="btn-sm btn-delete" onClick={() => deleteBill(b.id)} style={{ fontSize: 11, padding: "3px 8px" }}>Del</button>
+            <span className="bud-mono bud-amt-14">{formatMoney(b.amount)}</span>
+            <div className="bud-actions">
+              <button className="btn-sm bud-btn-xs" onClick={() => openEditBill(b)}>Edit</button>
+              <button className="btn-sm btn-delete bud-btn-xs" onClick={() => deleteBill(b.id)}>Del</button>
             </div>
           </div>
         ))
       }
       {showBillForm && (
-        <div ref={billFormRef} style={{ ...card, borderColor: "var(--orange)" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{billEditId ? "Edit bill" : "Add recurring bill"}</div>
-          <input placeholder="Name (e.g. Rent, Netflix)" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} style={inp} />
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <div ref={billFormRef} className="bud-panel bud-panel-bi" style={{ borderColor: "var(--orange)" }}>
+          <div className="bud-form-title">{billEditId ? "Edit bill" : "Add recurring bill"}</div>
+          <input placeholder="Name (e.g. Rent, Netflix)" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} className="bud-inp" />
+          <div className="bud-hstack" style={{ marginBottom: 8 }}>
             <input type="number" placeholder="Amount" value={billForm.amount} onChange={e => setBillForm(f => ({ ...f, amount: e.target.value }))} style={{ flex: 1 }} />
             <select value={billForm.frequency} onChange={e => setBillForm(f => ({ ...f, frequency: e.target.value }))} style={{ flex: 1, fontSize: 13 }}>
               {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
           </div>
-          <select value={billForm.category} onChange={e => setBillForm(f => ({ ...f, category: e.target.value }))} style={inp}>
+          <select value={billForm.category} onChange={e => setBillForm(f => ({ ...f, category: e.target.value }))} className="bud-inp">
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Start date (first billing date)</label>
-          <input type="date" value={billForm.startDate} onChange={e => setBillForm(f => ({ ...f, startDate: e.target.value }))} style={inp} />
+          <label className="bud-label">Start date (first billing date)</label>
+          <input type="date" value={billForm.startDate} onChange={e => setBillForm(f => ({ ...f, startDate: e.target.value }))} className="bud-inp" />
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>
             <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} style={{ marginTop: 3 }} />
             <span>Variable / quantifiable <span style={{ color: "var(--text-muted)" }}>— track spending against this amount (e.g. Groceries, Gas, Maria). Shows a progress bar instead of paid/unpaid.</span></span>
@@ -240,45 +236,45 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
               Auto-pay (won't prompt to pay manually)
             </label>
           )}
-          <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} style={inp} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={saveBill} style={{ flex: 1, background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
-            <button className="btn" onClick={() => setShowBillForm(false)} style={{ flex: 1 }}>Cancel</button>
+          <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} className="bud-inp" />
+          <div className="bud-hstack">
+            <button className="btn bud-flex1" onClick={saveBill} style={{ background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
+            <button className="btn bud-flex1" onClick={() => setShowBillForm(false)}>Cancel</button>
           </div>
         </div>
       )}
 
       {/* Categories */}
-      <p style={sh}>Categories</p>
+      <p className="bud-sh">Categories</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
         {categories.map(c => (
-          <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--bg-raised)", border: "0.5px solid var(--border-subtle)", borderRadius: 99, padding: "4px 10px", fontSize: 12 }}>
+          <span key={c} className="bud-chip">
             {c}
-            <button onClick={() => removeCat(c)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1, marginLeft: 2 }}>×</button>
+            <button onClick={() => removeCat(c)} className="bud-x" style={{ fontSize: 13, padding: 0, lineHeight: 1, marginLeft: 2 }}>×</button>
           </span>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="bud-hstack">
         <input value={newCat} onChange={e => setNewCat(e.target.value)} onKeyDown={e => e.key === "Enter" && addCat()} placeholder="New category…" style={{ flex: 1, fontSize: 13 }} />
-        <button className="btn" onClick={addCat} style={{ fontSize: 12, padding: "4px 12px" }}>Add</button>
+        <button className="btn bud-btn-sm2" onClick={addCat}>Add</button>
       </div>
 
       {/* Starting balance */}
-      <p style={sh}>Starting balance</p>
-      <div style={card}>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>The balance you're starting from. Used in the ledger running total and simulator.</div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <p className="bud-sh">Starting balance</p>
+      <div className="bud-panel bud-panel-bi">
+        <div className="bud-muted-12" style={{ marginBottom: 8 }}>The balance you're starting from. Used in the ledger running total and simulator.</div>
+        <div className="bud-hstack">
           <input type="number" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0.00" style={{ flex: 1, fontFamily: "var(--font-mono,monospace)" }} />
-          <button className="btn" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ fontSize: 12, padding: "4px 12px", background: flash === "bal" ? "var(--green)" : undefined, color: flash === "bal" ? "#000" : undefined }}>
+          <button className="btn bud-btn-sm2" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ background: flash === "bal" ? "var(--green)" : undefined, color: flash === "bal" ? "#000" : undefined }}>
             {flash === "bal" ? "✓ Saved!" : "Set balance"}
           </button>
         </div>
       </div>
 
       {/* Fresh start */}
-      <p style={sh}>Reset</p>
-      <div style={{ ...card, border: "0.5px solid rgba(239,68,68,0.3)" }}>
-        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
+      <p className="bud-sh">Reset</p>
+      <div className="bud-panel bud-panel-bi" style={{ border: "0.5px solid rgba(239,68,68,0.3)" }}>
+        <div className="bud-muted-12" style={{ marginBottom: 10 }}>
           Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
         </div>
         <button className="btn"

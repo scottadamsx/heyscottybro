@@ -13,31 +13,9 @@
  * here — the Command Center talks to the local agent-server instead.
  */
 import { TOOLS, executeTool } from "../api/aiTools";
+import { callClaude, ERROR_STREAK_LIMIT } from "./loop";
 
-const RETRY_STATUSES = new Set([429, 500, 503, 529]);
-const ERROR_STREAK_LIMIT = 3;
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-export async function callClaude(payload, headers) {
-  for (let attempt = 0; ; attempt++) {
-    let res;
-    try {
-      res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
-        body: JSON.stringify(payload),
-      });
-    } catch (err) {
-      if (attempt >= 2) throw err;
-      await sleep(800 * 2 ** attempt);
-      continue;
-    }
-    if (RETRY_STATUSES.has(res.status) && attempt < 2) { await sleep(1200 * 2 ** attempt); continue; }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
-    return data;
-  }
-}
+export { callClaude } from "./loop";
 
 /**
  * Run an agent over a conversation until it replies without calling a tool.
