@@ -515,3 +515,218 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-shell .db-list-item:hover { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   POLISH LAYER — 2026-07-05 ("Google / Apple / Anthropic" pass)
+   Calm depth, centered measure, a real type ramp, honest states,
+   and a first-class mobile experience. Scoped to .admin-shell and
+   appended last so it wins the cascade without !important wars.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Tokens, retuned: a touch more surface separation ── */
+.admin-shell {
+  --bg-base:    #0C0F13;
+  --bg-surface: #10141A;
+  --bg-card:    #151A21;
+  --bg-raised:  #1C222B;
+  --bg-hover:   #232A35;
+  --border-subtle:  rgba(255,255,255,0.08);
+  --border-primary: rgba(255,255,255,0.14);
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 30px -18px rgba(0,0,0,0.65);
+}
+
+/* ── The measure: center content in the space beside the rail ── */
+.admin-shell .admin-main { max-width: none; }
+.admin-shell .admin-main > * ,
+.admin-shell .admin-main .module-page,
+.admin-shell .admin-main .combined-page {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Type ramp with actual presence ── */
+.admin-shell .combined-page-title,
+.admin-shell .module-header h1 {
+  font-size: clamp(1.4rem, 1.15rem + 0.8vw, 1.8rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+.admin-shell .combined-page-title i,
+.admin-shell .module-header h1 i {
+  color: var(--accent);
+  font-size: 0.78em;
+  margin-right: 0.55rem;
+  opacity: 0.9;
+}
+.admin-shell .combined-page-header { padding-top: 1.6rem; row-gap: 0.75rem; }
+
+/* Section headings breathe as a system */
+.admin-shell .db-card-title,
+.admin-shell .uik-card-head h3 {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+}
+
+/* ── Cards: one consistent, quiet elevation ── */
+.admin-shell .db-card,
+.admin-shell .uik-card,
+.admin-shell .uik-stat {
+  background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Tabs: quiet until chosen ── */
+.admin-shell .page-tab { padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 999px; }
+.admin-shell .page-tab.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 6px 18px -10px rgba(91,141,239,0.8);
+}
+
+/* ── Calendar: from gray waffle to an actual calendar ── */
+.admin-shell .calendar-grid-react { gap: 6px; }
+.admin-shell .calendar-day-name { font-size: 0.68rem; letter-spacing: 0.1em; color: var(--text-muted); padding-bottom: 0.5rem; }
+.admin-shell .calendar-cell {
+  min-height: 92px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 0.45rem 0.5rem;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.admin-shell .calendar-cell:hover {
+  background: var(--bg-raised);
+  border-color: var(--border-primary);
+}
+.admin-shell .calendar-cell.empty { background: transparent; border-color: transparent; }
+/* the day number is a label, not body copy */
+.admin-shell .calendar-cell > span:first-child,
+.admin-shell .calendar-cell .day-number,
+.admin-shell .calendar-cell .cal-day-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* today: quiet ring + accent date, no shouting */
+.admin-shell .calendar-cell.today,
+.admin-shell .calendar-cell[data-today="true"],
+.admin-shell .calendar-cell.is-today {
+  border-color: var(--border-accent);
+  background: rgba(91,141,239,0.06);
+}
+.admin-shell .calendar-cell.today > span:first-child,
+.admin-shell .calendar-cell.is-today > span:first-child,
+.admin-shell .calendar-cell.today .day-number { color: var(--accent-light); font-weight: 700; }
+/* weekend columns sit back slightly */
+.admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n+1):not(.empty),
+.admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n):not(.empty) {
+  background: color-mix(in srgb, var(--bg-surface) 88%, black);
+}
+.admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n+1):hover,
+.admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n):hover { background: var(--bg-raised); }
+/* event / task chips: readable pills with a left tick */
+.admin-shell .calendar-count {
+  font-size: 0.68rem;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  margin-top: 3px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.admin-shell .calendar-count.event-count { background: rgba(91,141,239,0.16); color: var(--accent-light); }
+.admin-shell .calendar-count.task-count  { background: rgba(255,255,255,0.07); color: var(--text-secondary); }
+.admin-shell .calendar-count.done-count  { background: rgba(61,214,140,0.12); color: var(--green); }
+.admin-shell .calendar-item { font-size: 0.68rem; padding: 2px 6px; border-radius: 6px; margin-top: 3px; }
+
+/* month label above the grid */
+.admin-shell .cal-month-label,
+.admin-shell .calendar-month-title {
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* ── Filter pills / segmented controls: consistent shape ── */
+.admin-shell select {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  color: var(--text-secondary);
+}
+
+/* ── Buttons: one voice ── */
+.admin-shell .btn,
+.admin-shell .btn-primary,
+.admin-shell .btn-sm {
+  border-radius: 9px;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+.admin-shell .btn-primary,
+.admin-shell .nav-cta {
+  background: var(--grad-accent);
+  box-shadow: 0 8px 20px -12px rgba(91,141,239,0.9);
+}
+
+/* ── Rail: give the seven spaces room and a real active state ── */
+.admin-shell .admin-rail-link { margin: 1px 8px; padding: 0.55rem 0.8rem; }
+.admin-shell .admin-rail-link.active {
+  background: rgba(91,141,239,0.14);
+  box-shadow: inset 0 0 0 1px rgba(91,141,239,0.25);
+  border-radius: 10px;
+}
+.admin-shell .admin-rail-link.active i { color: var(--accent-light); }
+.admin-shell .admin-rail-head { margin-bottom: 0.75rem; }
+.admin-shell .admin-rail-spacer { border-top: 1px solid var(--line); margin: 0.75rem 12px; }
+
+/* ── School / Brief / kit surfaces inherit card voice (already token-driven) ── */
+.admin-shell .school-course-code { box-shadow: 0 6px 16px -10px rgba(0,0,0,0.8); }
+
+/* ═══ MOBILE — first-class, not shrunk desktop ═══ */
+@media (max-width: 860px) {
+  .admin-shell .admin-main > *,
+  .admin-shell .admin-main .module-page,
+  .admin-shell .admin-main .combined-page { max-width: 100%; }
+  .admin-shell .combined-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 1rem 0 0;
+  }
+  .admin-shell .combined-page-title { font-size: 1.3rem; }
+  .admin-shell .page-tabs { width: 100%; padding-bottom: 2px; }
+  .admin-shell .combined-embed > .module-page,
+  .admin-shell .planner-panel > .module-page { padding: 0.9rem 0; }
+}
+
+@media (max-width: 640px) {
+  /* Calendar: a tappable month, not a spreadsheet */
+  .admin-shell .calendar-grid-react { gap: 3px; }
+  .admin-shell .calendar-cell { min-height: 52px; border-radius: 8px; padding: 0.3rem 0.35rem; }
+  .admin-shell .calendar-count { font-size: 0; padding: 0; width: 7px; height: 7px; border-radius: 99px; display: inline-block; margin: 3px 2px 0 0; }
+  .admin-shell .calendar-item { display: none; }
+
+  /* Stat rows collapse to 2-up */
+  .admin-shell .school-stats { grid-template-columns: 1fr 1fr; }
+  .admin-shell .brief-grid { grid-template-columns: 1fr; gap: 10px; }
+  .admin-shell .uik-tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; padding-bottom: 2px; }
+  .admin-shell .uik-tabs::-webkit-scrollbar { display: none; }
+  .admin-shell .uik-tab { flex-shrink: 0; }
+  .admin-shell .uik-head-actions { flex-wrap: wrap; }
+
+  /* School cards stack their meta */
+  .admin-shell .school-course-head { flex-wrap: wrap; }
+  .admin-shell .school-course-side { width: 100%; justify-content: flex-start; }
+
+  /* Export menu hugs the small screen */
+  .admin-shell .export-kit-menu { right: auto; left: 0; }
+}

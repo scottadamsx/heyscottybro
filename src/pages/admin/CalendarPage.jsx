@@ -351,11 +351,10 @@ export default function CalendarPage() {
               <button
                 key={date}
                 type="button"
-                className="calendar-cell"
-                style={isToday ? { borderColor: "var(--accent)" } : {}}
+                className={`calendar-cell${isToday ? " today" : ""}`}
                 onClick={() => openDay(date)}
               >
-                <span className="day-number" style={isToday ? { color: "var(--accent)" } : {}}>{day}</span>
+                <span className="day-number">{day}</span>
                 {(() => {
                   const items = itemsByDate[date] || [];
                   const evCount = items.filter((x) => x.kind === "event" || x.kind === "future").length;
