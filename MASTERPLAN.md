@@ -64,20 +64,20 @@
 - `doc-share` + `send-share-email` have no Vite dev stand-ins (untestable locally); `aule-control` + real brain-vault sync are dev-only (silently 404/stub in prod).
 - `verifySupabaseUser` fails **open** when env vars are missing.
 
-### 1.3 Report card — baseline grade (2026-07-05): **C−**
+### 1.3 Report card — baseline 2026-07-05: **C−** → after Phases 0–5 (same day): **B+ / A−**
 
-| Dimension | Grade | One-line justification |
-|---|---|---|
-| Product value | B+ | Real agent staff, bug-driven dev, budget engine, 519-node brain — used daily |
-| Information architecture | D | 13 destinations, Tools junk drawer, Brain mounted twice, School invisible, dead demo in public nav |
-| Data layer | D− | 32/59 tables empty; transactions ×3; blob FKs; categories ×4; uid() ×10 |
-| AI system | C+ | Great registry/toolbelt design; loop written 2–3×, 3 session stores, Galadriel policy hole |
-| Frontend / design system | C− | 5.2k-line index.css; budget 100% inline styles; official ui/ kit is dead code |
-| Export / print / mobile | D+ | Zero print; 4 copied download helpers; PDF engine used once; PWA without service worker |
-| Code hygiene | D | Dead pages/components/redirects; ~20 droppable tables |
-| Dev/prod parity & ops | C− | 8 dev stand-ins (good) with holes both directions; auth check fails open |
+| Dimension | Before | After | What changed / what still blocks A+ |
+|---|---|---|---|
+| Product value | B+ | **A−** | School space live (courses+deadlines+projections), Brief reinvented data-first, everything exportable. A+ = proven in daily use. |
+| Information architecture | D | **A** | 13 → 7 spaces; Tools dissolved; Brain single-mounted; Context→Brain Memory; Design→Settings; palette rewritten; 20 redirects keep old links. |
+| Data layer | D− | **B+** | 22 dead tables dropped; bills/income are rows with REAL FKs (0 rewrites needed); whole-blob clobber gone; categoryBudgets silent-drop bug fixed; one uid(). Still: bill fields live in per-row jsonb (typed columns would be A), TX_CATEGORIES defined in 2 places. |
+| AI system | C+ | **B+** | ONE loop core (agents/loop.js) consumed by both loops; server-side collection queries; Galadriel policy hole closed; agent_id column honest. Still: 3 session stores; Elrond/Lúthien remain config-only; cron prompt still duplicated. |
+| Frontend / design system | C− | **B** | Real ui/ kit (Card/StatTile/Badge/Modal/PageHeader/ExportKit) adopted by School+Brief; budget inline styles 437→267 on tokens. Still: index.css monolith (print layer extracted only). |
+| Export / print / mobile | D+ | **A−** | ONE exporter lib; Print/PDF/CSV/Copy/Email-me on Today, Money, Plan, School, Brain reader; service worker → installable offline-tolerant PWA; 7am brief email. Still: Web Push; a few pages lack ExportKit. |
+| Code hygiene | D | **A−** | Every identified dead file gone; 22 tables dropped; 4 download helpers → 1; uid ×10 → 1. Redirects intentionally kept 90 days. |
+| Dev/prod parity & ops | C− | **B−** | Auth fails closed; send-to-me added. Still: doc-share/send-email lack dev stand-ins; operation-cleanup security tasks open (out of this plan's scope). |
 
-**Trajectory:** Phase 0–1 → C+ · Phase 2–3 → B · Phase 4 → B+ · Phase 5 → A−. Re-grade after every phase against §Definition of "pristine".
+**Overall: C− → B+.** The remaining gap to A/A+ is (a) Scott living in it for a couple of weeks + the deploy, (b) session-store unification, (c) index.css split, (d) the ops/security list in operation-cleanup.md.
 
 ---
 
