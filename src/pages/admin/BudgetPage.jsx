@@ -1,5 +1,6 @@
 import { ExportKit } from "../../components/ui";
 import GroceryPage from "./GroceryPage";
+import StatementImport from "../../components/budget/StatementImport";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toDateStr, genId } from "../../utils/budgetCalc";
 import {
@@ -278,6 +279,14 @@ export default function BudgetPage() {
             <BudgetBanker onChanged={reload} />
           )}
           {tab === "receipts" && <GroceryPage />}
+          {tab === "transactions" && (
+            <StatementImport
+              transactions={transactions}
+              setTransactions={setTransactions}
+              categories={config.categories || []}
+              onSetBalance={(b) => setStartingBalance(b)}
+            />
+          )}
           {tab === "transactions" && (
             <BudgetTransactions
               config={config}

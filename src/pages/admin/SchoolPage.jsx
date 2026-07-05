@@ -6,6 +6,7 @@ import { loadReminders, newReminder, completeReminder } from "../../api/plannerA
 import { toDateStr } from "../../utils/plannerUtils";
 import { Card, StatTile, Badge, Modal, PageHeader } from "../../components/ui";
 import GradeTracker from "../../components/tools/GradeTracker";
+import SchoolImport from "../../components/school/SchoolImport";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./school.css";
@@ -30,6 +31,7 @@ export default function SchoolPage() {
   const [open, setOpen] = useState(null);           // expanded course id
   const [courseForm, setCourseForm] = useState(null); // null | {…} (modal)
   const [deadlineFor, setDeadlineFor] = useState(null); // course object (modal)
+  const [showImport, setShowImport] = useState(false);
   const [dl, setDl] = useState({ name: "", date: toDateStr(new Date()) });
 
   const refresh = async () => {
@@ -127,9 +129,14 @@ export default function SchoolPage() {
         title={`School${term ? ` · ${term}` : ""}`}
         exporter={exporter}
         actions={
-          <button className="btn btn-sm" onClick={() => setCourseForm({ ...EMPTY_COURSE })}>
-            <i className="fa-solid fa-plus" /> Add course
-          </button>
+          <>
+            <button className="btn btn-sm btn-secondary-sm" onClick={() => setShowImport(true)}>
+              <i className="fa-solid fa-file-import" /> Import document
+            </button>
+            <button className="btn btn-sm" onClick={() => setCourseForm({ ...EMPTY_COURSE })}>
+              <i className="fa-solid fa-plus" /> Add course
+            </button>
+          </>
         }
       />
 
@@ -212,6 +219,16 @@ export default function SchoolPage() {
             </div>
           ))}
         </Card>
+      )}
+
+      {showImport && (
+        <SchoolImport
+          courses={courses}
+          grades={grades}
+          deadlines={deadlines}
+          onClose={() => setShowImport(false)}
+          onApplied={refresh}
+        />
       )}
 
       {/* Course add/edit modal */}

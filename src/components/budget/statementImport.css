@@ -1,0 +1,42 @@
+/* ── Statement Import (shared look with Meal Helper's collapsible bar) ── */
+.si { background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md, 12px); margin-bottom: 14px; overflow: hidden; }
+.si.open { border-color: var(--border-primary); }
+.si-toggle { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 14px 16px; background: none; border: none; cursor: pointer; color: inherit; font: inherit; }
+.si-toggle:hover { background: var(--bg-raised); }
+.si-toggle-title { font-size: 14.5px; font-weight: 650; color: var(--text-primary); white-space: nowrap; }
+.si-toggle-title i { color: var(--accent); margin-right: 7px; }
+.si-toggle-sub { flex: 1; font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.si-chev { color: var(--text-muted); font-size: 11px; }
+.si-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+.si-drop { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--border-primary); border-radius: 10px; padding: 18px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+.si-drop:hover { border-color: var(--border-accent); color: var(--text-secondary); }
+.si-or { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); text-align: center; }
+.si-body textarea { width: 100%; box-sizing: border-box; resize: vertical; font-size: 13px; font-family: var(--font-mono, monospace); }
+.si-body > .btn { align-self: flex-start; }
+.si-busy, .si-note { font-size: 13px; color: var(--text-secondary); margin: 0; }
+.si-note i { color: var(--green); margin-right: 6px; }
+
+.si-group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 4px 0 7px; }
+.si-group-title i { color: var(--accent); margin-right: 5px; }
+.si-group.muted .si-group-title i { color: var(--green); }
+
+.si-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; margin-bottom: 6px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 10px; cursor: pointer; }
+.si-row:hover { border-color: var(--border-primary); }
+.si-row.warned { border-color: color-mix(in srgb, var(--orange) 40%, transparent); }
+.si-row input[type="checkbox"] { margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; }
+.si-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.si-row-title { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.si-cat { font-size: 11px; color: var(--text-muted); font-style: normal; margin-left: 6px; }
+.si-diff { font-size: 12.5px; color: var(--text-secondary); font-family: var(--font-mono, monospace); font-variant-numeric: tabular-nums; }
+.si-diff strong { color: var(--text-primary); }
+.si-reason { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
+.si-warn { font-size: 11.5px; color: var(--orange); }
+.si-conf { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
+.si-conf.high { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+.si-conf.medium { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
+.si-conf.low { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
+.si-balance { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.si-actions { display: flex; gap: 8px; margin-top: 4px; }
+.si-done p { font-size: 13.5px; color: var(--text-secondary); margin: 0 0 10px; }
+.si-done i { color: var(--green); margin-right: 6px; }
