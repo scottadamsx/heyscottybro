@@ -1,3 +1,4 @@
+import { ExportKit } from "../../components/ui";
 import GroceryPage from "./GroceryPage";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toDateStr, genId } from "../../utils/budgetCalc";
@@ -15,7 +16,7 @@ import BudgetAnalytics from "../../components/budget/BudgetAnalytics";
 import BudgetBanker from "../../components/budget/BudgetBanker";
 // Config/transaction normalisers live in budgetSummary so the home Dashboard
 // widget and this page read the data in exactly the same shape.
-import { DEFAULT_CONFIG, apiToPage, uiShape } from "../../components/budget/budgetSummary";
+import { DEFAULT_CONFIG, apiToPage, uiShape, computeBudgetSnapshot } from "../../components/budget/budgetSummary";
 
 // Transactions now live in the standalone `transactions` table (shared with
 // Frodo), NOT the config blob — so we persist an empty array here to keep the
@@ -227,9 +228,27 @@ export default function BudgetPage() {
     <div className="combined-page">
       <div className="combined-page-header">
         <h1 className="combined-page-title">
-          <i className="fa-solid fa-wallet" /> Finance
+          <i className="fa-solid fa-wallet" /> Money
         </h1>
-        <PageTabs tabs={TABS} active={tab} onChange={switchTab} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <PageTabs tabs={TABS} active={tab} onChange={switchTab} />
+          <ExportKit exporter={{
+            title: "Money report",
+            filename: "money-report",
+            toMarkdown: () => {
+              const snap = computeBudgetSnapshot(apiToPage(config || {}), (transactions || []).map(uiShape));
+              const fm = (v) => `$${Number(v || 0).toFixed(2)}`;
+              const L = [`# Money report — ${new Date().toDateString()}`, ""];
+              L.push(`- **Income this period:** ${fm(snap.incomeTotal)}`);
+              L.push(`- **Spent:** ${fm(snap.spent)} · **Bills obligation:** ${fm(snap.billsObligation)} (paid ${fm(snap.billsPaid)})`);
+              L.push(`- **Saved:** ${fm(snap.saved)} · **Remaining:** ${fm(snap.remaining)}`, "");
+              L.push("## Transactions (this period)", "", "| Date | Description | Type | Category | Amount |", "|---|---|---|---|---|");
+              (snap.periodTx || []).forEach((t) => L.push(`| ${t.date} | ${t.description} | ${t.type} | ${t.category || ""} | ${fm(t.amount)} |`));
+              return L.join("\n");
+            },
+            toRows: () => (transactions || []).map(uiShape).map((t) => ({ date: t.date, description: t.description, type: t.type, category: t.category, amount: t.amount })),
+          }} />
+        </div>
       </div>
 
       <div className="combined-embed">

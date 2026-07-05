@@ -1,3 +1,6 @@
+import { ExportKit } from "../../components/ui";
+import { loadReminders, loadEvents } from "../../api/plannerApi";
+import { expandReminders, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import { useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import CalendarPage from "./CalendarPage";
@@ -21,9 +24,33 @@ export default function PlannerPage() {
     <div className="combined-page">
       <div className="combined-page-header">
         <h1 className="combined-page-title">
-          <i className="fa-solid fa-calendar-check" /> Planner
+          <i className="fa-solid fa-calendar-check" /> Plan
         </h1>
-        <PageTabs tabs={TABS} active={tab} onChange={setTab} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <PageTabs tabs={TABS} active={tab} onChange={setTab} />
+          <ExportKit exporter={{
+            title: "This week",
+            filename: "week-agenda",
+            toMarkdown: async () => {
+              const [reminders, events] = await Promise.all([loadReminders(), loadEvents()]);
+              const wr = getWeekRange(new Date());
+              const items = expandReminders(reminders.filter((r) => !r.completed), wr.startStr, wr.endStr);
+              const L = [`# Week of ${wr.startStr}`, ""];
+              for (let i = 0; i < 7; i++) {
+                const d = new Date(wr.startStr + "T00:00:00"); d.setDate(d.getDate() + i);
+                const ds = toDateStr(d);
+                const day = items.filter((r) => r.date === ds);
+                const evs = events.filter((e) => e.date === ds);
+                L.push(`## ${d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}`);
+                if (!day.length && !evs.length) L.push("_free_");
+                evs.forEach((e) => L.push(`- 📅 ${e.title}`));
+                day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${r.time}` : ""}`));
+                L.push("");
+              }
+              return L.join("\n");
+            },
+          }} />
+        </div>
       </div>
 
       {tab === "overview" && (

@@ -4,6 +4,12 @@ import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects,
 import { expandReminders, remindersForDay, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
+import { loadCourses } from "../../api/coursesApi";
+import { loadGrades, gradeStats } from "../../api/gradesApi";
+import { loadBugs } from "../../api/bugsApi";
+import { loadMessages } from "../../api/messagesApi";
+import { buildBrief } from "../../lib/brief";
+import { ExportKit } from "../../components/ui";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
@@ -19,6 +25,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ reminders: [], journal: [], config: { categories: [], recurringBills: [], incomeSources: [] }, events: [], projects: [], initiatives: [], transactions: [] });
   const [agentActions, setAgentActions] = useState([]);
+  const [school, setSchool] = useState({ courses: [], grades: [] });
+  const [pulse, setPulse] = useState({ openBugs: null, unreadInbox: null });
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -37,10 +45,19 @@ export default function DashboardPage() {
       loadProjects().catch(() => []),
       loadInitiatives().catch(() => []),
       loadTransactions().catch(() => []),
-      loadAgentActions(10).catch(() => []),
-    ]).then(([reminders, journal, config, events, projects, initiatives, transactions, actions]) => {
+      loadAgentActions(50).catch(() => []),
+      loadCourses().catch(() => []),
+      loadGrades().catch(() => []),
+      loadBugs().catch(() => []),
+      loadMessages().catch(() => []),
+    ]).then(([reminders, journal, config, events, projects, initiatives, transactions, actions, courses, grades, bugs, messages]) => {
       setData({ reminders, journal, config, events, projects, initiatives, transactions });
       setAgentActions(actions);
+      setSchool({ courses, grades });
+      setPulse({
+        openBugs: bugs.filter((b) => ["open", "in_progress"].includes(b.status)).length,
+        unreadInbox: messages.filter((m) => !m.read && m.status !== "archived").length,
+      });
       setLoading(false);
     });
   }, []);
@@ -87,6 +104,24 @@ export default function DashboardPage() {
   const currentWeek = budget.currentWeek;
   const upcomingBills = getUpcomingBills(budgetConfig, budgetTx, todayStr, 6);
 
+  // ── The Morning Brief: data-first, links everywhere, exportable ──
+  const courseStats = Object.fromEntries(school.courses.map((c) => [c.id,
+    gradeStats(school.grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code)))]));
+  const schoolDeadlines = data.reminders
+    .filter((r) => r.course_id && !r.completed && r.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const brief = buildBrief({
+    reminders: data.reminders, events: data.events,
+    budget, upcomingBills,
+    courses: school.courses, courseStats, deadlines: schoolDeadlines,
+    agentActions, openBugs: pulse.openBugs, unreadInbox: pulse.unreadInbox,
+  });
+  const briefExporter = {
+    title: `Morning Brief — ${brief.date}`,
+    filename: "morning-brief",
+    toMarkdown: () => brief.toMarkdown(aiText),
+  };
+
   // ── Reminders: today + upcoming + this-week grouped by day ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
   // Today is its own list (every same-day occurrence, deduped) so the count
@@ -108,40 +143,41 @@ export default function DashboardPage() {
 
   return (
     <Stagger className="db-grid">
-      {/* ── AI Briefing Card ── */}
+      {/* ── The Morning Brief — data-first; optional 2-line AI read on top ── */}
       <Item className="db-card col-12 ai-briefing-card">
         <div className="ai-briefing-header">
           <div>
             <div className="ai-briefing-date">{todayFormatted}</div>
-            <h2 className="ai-briefing-title">Your Daily Briefing</h2>
+            <h2 className="ai-briefing-title">Morning Brief</h2>
           </div>
-          <button
-            className="btn btn-sm ai-refresh-btn"
-            onClick={fetchBriefing}
-            disabled={aiLoading}
-          >
-            {aiLoading
-              ? <><i className="fa-solid fa-spinner fa-spin" /> Thinking…</>
-              : aiLoaded
-                ? <><i className="fa-solid fa-rotate-right" /> Refresh</>
-                : <><i className="fa-solid fa-wand-magic-sparkles" /> Generate Briefing</>}
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="btn btn-sm ai-refresh-btn" onClick={fetchBriefing} disabled={aiLoading} title="A two-line AI read on top of the numbers">
+              {aiLoading
+                ? <><i className="fa-solid fa-spinner fa-spin" /> Reading…</>
+                : <><i className="fa-solid fa-wand-magic-sparkles" /> {aiText ? "Refresh AI take" : "AI take"}</>}
+            </button>
+            <ExportKit exporter={briefExporter} />
+          </div>
         </div>
-        {!aiLoaded && !aiLoading && !aiError && (
-          <p className="ai-briefing-placeholder">
-            Hit <strong>Generate Briefing</strong> to get a personalised AI summary of your day.
-          </p>
-        )}
-        {aiLoading && (
-          <div className="ai-briefing-loading">
-            <div className="ai-loading-dots"><span /><span /><span /></div>
-            <span>Claude is reading your schedule…</span>
-          </div>
-        )}
+
         {aiError && <p className="error-message">{aiError}</p>}
-        {aiText && !aiLoading && (
-          <p className="ai-briefing-text">{aiText}</p>
-        )}
+        {aiText && !aiLoading && <p className="brief-ai-take"><i className="fa-solid fa-quote-left" /> {aiText}</p>}
+
+        <div className="brief-grid">
+          {brief.sections.map((sec) => (
+            <div key={sec.key} className="brief-section">
+              <div className="brief-section-title"><i className={`fa-solid ${sec.icon}`} /> {sec.title}</div>
+              {sec.items.length === 0
+                ? <p className="brief-empty">{sec.empty}</p>
+                : sec.items.slice(0, 6).map((it, i) => (
+                  it.to
+                    ? <button key={i} type="button" className={`brief-item tone-${it.tone || "default"}`} onClick={() => navigate(it.to)}>{it.text}</button>
+                    : <div key={i} className={`brief-item tone-${it.tone || "default"}`}>{it.text}</div>
+                ))}
+              {sec.items.length > 6 && <p className="brief-empty">+{sec.items.length - 6} more</p>}
+            </div>
+          ))}
+        </div>
       </Item>
 
       {/* ── Tasks & Reminders (compact + expand) ── */}

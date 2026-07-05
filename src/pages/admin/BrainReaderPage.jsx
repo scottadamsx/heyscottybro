@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { getNodeBySlug, setDocRead } from "../../api/docLinksApi";
 import { renderMarkdown } from "../../utils/markdown";
 import CopyId, { docId } from "../../components/CopyId";
+import { ExportKit } from "../../components/ui";
 import "./reader.css";
 
 /**
@@ -62,9 +63,18 @@ export default function BrainReaderPage() {
         <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => navigate(-1)}>
           <i className="fa-solid fa-arrow-left" /> Back
         </button>
-        <a className="btn btn-sm btn-secondary-sm" href="/admin/mission?tab=brain" title="Open the Brain graph">
-          <i className="fa-solid fa-diagram-project" /> Brain
-        </a>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {node && (
+            <ExportKit exporter={{
+              title: node.title || node.slug,
+              filename: docId(node.title, node.slug).toLowerCase(),
+              toMarkdown: () => node.body || "",
+            }} />
+          )}
+          <a className="btn btn-sm btn-secondary-sm" href="/admin/mission?tab=brain" title="Open the Brain graph">
+            <i className="fa-solid fa-diagram-project" /> Brain
+          </a>
+        </div>
       </div>
 
       {node === undefined && (

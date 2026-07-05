@@ -74,7 +74,30 @@ export default async function handler(req, res) {
       source: "galadriel",
     }], "user_id,slug");
 
-    return res.status(200).json({ ok: true, slug, summary: body });
+    // Morning-brief email: if Resend + BRIEF_EMAIL are configured, the summary
+    // lands in Scott's inbox — the command center that comes to you.
+    let emailed = false;
+    const resendKey = process.env.RESEND_API_KEY;
+    const briefTo = process.env.BRIEF_EMAIL;
+    if (resendKey && briefTo) {
+      try {
+        const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        const html = `<div style="font-family:Georgia,serif;font-size:15px;line-height:1.6;color:#111;max-width:640px;white-space:pre-wrap;">${esc(body)}</div>`;
+        const er = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: process.env.FROM_EMAIL || "noreply@heyscottybro.com",
+            to: [briefTo],
+            subject: `Morning Brief — ${today}`,
+            html,
+          }),
+        });
+        emailed = er.ok;
+      } catch { /* email is best-effort; the brain node is the record */ }
+    }
+
+    return res.status(200).json({ ok: true, slug, emailed, summary: body });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
