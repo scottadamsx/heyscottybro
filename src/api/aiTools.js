@@ -28,7 +28,7 @@ import { supabase, getAuthHeaders } from "../utils/supabase";
 // filing their own findings. Bilbo, in turn, only writes the Brain — he stays
 // read-only on every other collection.
 const BRAIN_WRITE_TOOLS = new Set(["create_item", "update_item", "delete_item"]);
-const BRAIN_WRITERS = new Set(["bilbo", "elrond", "luthien"]);
+const BRAIN_WRITERS = new Set(["bilbo", "elrond", "luthien", "galadriel"]);
 
 function brainWriteDenial(name, input, caller) {
   const targetsBrain = input?.collection === "brain";
@@ -45,7 +45,7 @@ function brainWriteDenial(name, input, caller) {
   return null;
 }
 
-async function logAction({ tier, tool, input, result }) {
+async function logAction({ agentId, tool, input, result }) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
@@ -55,7 +55,7 @@ async function logAction({ tier, tool, input, result }) {
     const collection = input?.collection || null;
     await supabase.from("agent_actions").insert({
       user_id: userId,
-      tier,
+      agent_id: agentId,
       tool,
       collection,
       item_id: itemId ? String(itemId) : null,
@@ -340,9 +340,9 @@ async function runTool(name, input) {
   }
 }
 
-export async function executeTool(name, input, tier = "frodo") {
-  const denied = brainWriteDenial(name, input, tier);
-  if (denied) { logAction({ tier, tool: name, input, result: denied }); return denied; }
+export async function executeTool(name, input, agentId = "frodo") {
+  const denied = brainWriteDenial(name, input, agentId);
+  if (denied) { logAction({ agentId, tool: name, input, result: denied }); return denied; }
   let result;
   try {
     result = await runTool(name, input);
@@ -351,6 +351,6 @@ export async function executeTool(name, input, tier = "frodo") {
   }
   // Skip logging for read-only / high-frequency tools to avoid noise
   const skipLog = ["library_catalog", "query", "list_context", "list_nutrition_profiles", "list_food"].includes(name);
-  if (!skipLog) logAction({ tier, tool: name, input, result });
+  if (!skipLog) logAction({ agentId, tool: name, input, result });
   return result;
 }

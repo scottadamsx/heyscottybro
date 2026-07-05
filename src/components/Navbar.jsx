@@ -24,7 +24,7 @@ const MENUS = [
         ],
       },
     ],
-    aside: { heading: "Explore", links: [{ label: "All projects", to: "/#work" }, { label: "Overview", to: "/overview" }] },
+    aside: { heading: "Explore", links: [{ label: "All projects", to: "/#work" }] },
   },
   {
     id: "games",
@@ -112,9 +112,6 @@ export default function Navbar() {
                 </button>
               </li>
             ))}
-            <li onMouseEnter={() => setOpenMenu(null)}>
-              <NavLink to="/overview">Overview</NavLink>
-            </li>
           </ul>
 
           <div className="nav-right">
@@ -173,7 +170,6 @@ export default function Navbar() {
           </div>
         ))}
         <div className="nav-mobile-group">
-          <NavLink to="/overview" onClick={closeAll}>Overview</NavLink>
           <NavLink to="/admin/login" onClick={closeAll}><i className="fa-solid fa-lock" /> Admin</NavLink>
         </div>
       </div>

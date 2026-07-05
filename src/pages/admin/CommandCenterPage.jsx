@@ -82,7 +82,7 @@ export default function CommandCenterPage() {
     const counts = {};
     for (const a of actions) {
       if (String(a.created_at).slice(0, 10) !== t) continue;
-      counts[a.tier] = (counts[a.tier] || 0) + 1;
+      counts[a.agent_id] = (counts[a.agent_id] || 0) + 1;
     }
     return counts;
   }, [actions]);
@@ -338,14 +338,14 @@ export default function CommandCenterPage() {
           {actions.length === 0 && <p className="no-entries">No agent activity yet.</p>}
           <div className="cmd-feed-list">
             {actions.map((a) => {
-              const agent = getAgent(a.tier);
+              const agent = getAgent(a.agent_id);
               const isErr = a.status === "error";
               return (
                 <div key={a.id} className="cmd-feed-item">
                   <span className="cmd-feed-dot" style={{ background: agent?.color || "var(--text-muted)" }} />
                   <div className="cmd-feed-body">
                     <div className="cmd-feed-title" style={isErr ? { color: "var(--red)" } : undefined}>{describeAction(a)}</div>
-                    <div className="cmd-feed-meta">{agent?.name || a.tier} · {actionTime(a.created_at)}</div>
+                    <div className="cmd-feed-meta">{agent?.name || a.agent_id} · {actionTime(a.created_at)}</div>
                   </div>
                 </div>
               );

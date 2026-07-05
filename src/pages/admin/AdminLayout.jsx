@@ -3,7 +3,6 @@ import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
 import ChatBot from "../../components/ChatBot";
-import AdminSubSidebar from "../../components/AdminSubSidebar";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
@@ -26,9 +25,6 @@ export default function AdminLayout() {
   const [railCollapsed, setRailCollapsed] = useState(
     () => localStorage.getItem("adminRailCollapsed") === "1"
   );
-  const [subCollapsed, setSubCollapsed] = useState(
-    () => localStorage.getItem("adminSubCollapsed") === "1"
-  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -44,14 +40,12 @@ export default function AdminLayout() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const hidden = railCollapsed && subCollapsed;
+  const hidden = railCollapsed;
 
   const toggleRail = () => setRailCollapsed((v) => { const n = !v; localStorage.setItem("adminRailCollapsed", n ? "1" : "0"); return n; });
-  const toggleSub  = () => setSubCollapsed((v)  => { const n = !v; localStorage.setItem("adminSubCollapsed",  n ? "1" : "0"); return n; });
   const showAll    = () => {
-    setRailCollapsed(false); setSubCollapsed(false);
+    setRailCollapsed(false);
     localStorage.setItem("adminRailCollapsed", "0");
-    localStorage.setItem("adminSubCollapsed", "0");
   };
 
   const handleLogout = async () => { await logout(); navigate("/admin/login", { replace: true }); };
@@ -59,9 +53,8 @@ export default function AdminLayout() {
   const railClass  = ({ isActive }) => (isActive ? "admin-rail-link active" : "admin-rail-link");
   const popClass   = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
 
-  const shellClass = hidden
-    ? "admin-shell menu-hidden"
-    : ["admin-shell", railCollapsed ? "rail-icons" : "", subCollapsed ? "sub-hidden" : ""].filter(Boolean).join(" ");
+  // The contextual sub-sidebar was removed (Phase 0) — sub-hidden is permanent.
+  const shellClass = hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden";
 
   return (
     <div className={shellClass}>
@@ -124,8 +117,6 @@ export default function AdminLayout() {
         </>
       )}
 
-      <aside className="admin-subbar"><AdminSubSidebar /></aside>
-
       {/* Main nav rail */}
       <aside className="admin-rail">
         <div className="admin-rail-head">
@@ -133,13 +124,9 @@ export default function AdminLayout() {
           <span className="admin-rail-word">hey<span>Scotty</span>Bro</span>
         </div>
 
-        <button className="admin-rail-link" onClick={toggleRail} title={railCollapsed ? "Expand menu" : "Collapse menu"}>
-          <i className={`fa-solid ${railCollapsed ? "fa-angles-left" : "fa-angles-right"}`} />
+        <button className="admin-rail-link" onClick={toggleRail} title="Collapse menu">
+          <i className="fa-solid fa-angles-right" />
           <span className="admin-rail-label">Collapse menu</span>
-        </button>
-        <button className="admin-rail-link" onClick={toggleSub} title={subCollapsed ? "Show panel" : "Hide panel"}>
-          <i className="fa-solid fa-table-columns" />
-          <span className="admin-rail-label">{subCollapsed ? "Show panel" : "Hide panel"}</span>
         </button>
 
         {/* Dashboard — always pinned */}

@@ -28,7 +28,7 @@ function digestActivity(actions) {
     dayMap[d.toISOString().slice(0, 10)] = 0;
   }
   actions.forEach((a) => {
-    byTier[a.tier || "frodo"] = (byTier[a.tier || "frodo"] || 0) + 1;
+    byTier[a.agent_id || "frodo"] = (byTier[a.agent_id || "frodo"] || 0) + 1;
     byTool[a.tool || "?"] = (byTool[a.tool || "?"] || 0) + 1;
     if (a.status === "error" || a.error) errors++;
     const day = (a.created_at || "").slice(0, 10);
@@ -200,7 +200,7 @@ export default function UsagePage() {
             <div style={card}>
               <p style={sh}>Recent actions</p>
               {a.recent.map((r) => {
-                const t = TIER[r.tier] || { label: r.tier, color: "var(--text-muted)" };
+                const t = TIER[r.agent_id] || { label: r.agent_id, color: "var(--text-muted)" };
                 return (
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, padding: "5px 0", borderBottom: "0.5px solid var(--border)" }}>
                     <span style={{ color: t.color, fontWeight: 600, minWidth: 56 }}>{t.label}</span>

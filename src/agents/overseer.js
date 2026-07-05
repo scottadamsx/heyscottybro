@@ -85,7 +85,7 @@ export async function gatherDay() {
   lines.push(`Journal today: ${journalToday.map((j) => `${j.title || "entry"}${j.mood ? ` (${j.mood})` : ""}: ${(j.entry || "").slice(0, 200)}`).join(" / ") || "—"}`);
   lines.push(`Active projects (${projects.length}): ${projects.map((p) => p.name).join(", ") || "—"}`);
   lines.push(`Recurring initiatives: ${initiatives.filter((i) => i.active !== false).map((i) => `${i.name} (${i.recurrence})`).join(", ") || "—"}`);
-  lines.push(`Agent actions today (${actionsToday.length}): ${actionsToday.map((a) => `${a.tier}:${a.tool}`).slice(0, 20).join(", ") || "—"}`);
+  lines.push(`Agent actions today (${actionsToday.length}): ${actionsToday.map((a) => `${a.agent_id}:${a.tool}`).slice(0, 20).join(", ") || "—"}`);
   return { today, text: lines.join("\n") };
 }
 

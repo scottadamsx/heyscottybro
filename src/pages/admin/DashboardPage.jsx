@@ -345,7 +345,7 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
                       <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", whiteSpace: "nowrap" }} title={new Date(a.created_at).toLocaleString()}>{actionTime(a.created_at)}</span>
-                      <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: isErr ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: isErr ? "var(--danger,var(--red))" : "var(--accent)" }}>{a.tier}</span>
+                      <span style={{ fontSize: "0.68rem", padding: "1px 6px", borderRadius: "100px", background: isErr ? "rgba(239,68,68,0.15)" : "rgba(74,222,128,0.12)", color: isErr ? "var(--danger,var(--red))" : "var(--accent)" }}>{a.agent_id}</span>
                     </div>
                   </div>
                   {a.error && (

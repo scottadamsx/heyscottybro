@@ -18,7 +18,6 @@ import GuideToolkit from "./pages/guide/GuideToolkit.jsx";
 import GuideHelp from "./pages/guide/GuideHelp.jsx";
 import GameEmbed from "./pages/GameEmbed.jsx";
 import TicTacToePage from "./pages/TicTacToePage.jsx";
-import OverviewDashboard from "./pages/OverviewDashboard.jsx";
 
 // Combined portal pages (lazy — each bundles only what their tab needs)
 const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
@@ -70,7 +69,6 @@ export default function App() {
         <Route path="/games/minecraft-trivia" element={<GameEmbed src="/games/minecraft-trivia/index.html" title="Minecraft Trivia" />} />
         <Route path="/games/monopoly-banker"  element={<GameEmbed src="/games/monopoly-banker/index.html" title="Monopoly Banker" />} />
         <Route path="/games/tictactoe" element={<><Navbar /><TicTacToePage /><Footer /></>} />
-        <Route path="/overview" element={<OverviewDashboard />} />
         <Route path="/doc/:token" element={Lazy(<SharedDocPage />)} />
 
         {/* Admin login */}
