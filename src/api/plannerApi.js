@@ -357,18 +357,30 @@ export async function loadBudgetConfig() {
   return op(
     async () => {
       const userId = await uid();
-      const { data, error } = await supabase.from("budget_config").select("*").eq("user_id", userId).single();
-      if (error && error.code !== "PGRST116") throw error;
-      if (!data) return { ...DEFAULT_CONFIG };
+      // Bills & income are real rows now (Phase 5) — the blob keeps only
+      // settings-shaped data. Same return shape as always, so nothing
+      // downstream (budgetCalc, budgetSummary, the Budget page) changes.
+      const [cfgRes, billsRes, incomeRes] = await Promise.all([
+        supabase.from("budget_config").select("*").eq("user_id", userId).single(),
+        supabase.from("recurring_bills").select("id, data").eq("user_id", userId).order("created_at"),
+        supabase.from("income_sources").select("id, data").eq("user_id", userId).order("created_at"),
+      ]);
+      if (cfgRes.error && cfgRes.error.code !== "PGRST116") throw cfgRes.error;
+      if (billsRes.error) throw billsRes.error;
+      if (incomeRes.error) throw incomeRes.error;
+      const data = cfgRes.data;
+      const rowToObj = (r) => ({ ...(r.data || {}), id: r.id });
       return {
-        categories: data.categories ?? DEFAULT_CONFIG.categories,
-        incomeSources: data.income_sources ?? data.income ?? [],
-        recurringBills: data.recurring_bills ?? [],
-        taxRate: data.tax_rate != null ? Number(data.tax_rate) : 0.18,
-        startingBalance: data.starting_balance != null ? Number(data.starting_balance) : 0,
-        paySchedule: data.pay_schedule ?? DEFAULT_CONFIG.paySchedule,
-        simulations: data.simulations ?? [],
-        transactions: data.transactions ?? [],
+        categories: data?.categories ?? DEFAULT_CONFIG.categories,
+        incomeSources: (incomeRes.data || []).map(rowToObj),
+        recurringBills: (billsRes.data || []).map(rowToObj),
+        categoryBudgets: data?.category_budgets ?? {},
+        savingsGoals: data?.savings_goals ?? [],
+        taxRate: data?.tax_rate != null ? Number(data.tax_rate) : 0.18,
+        startingBalance: data?.starting_balance != null ? Number(data.starting_balance) : 0,
+        paySchedule: data?.pay_schedule ?? DEFAULT_CONFIG.paySchedule,
+        simulations: data?.simulations ?? [],
+        transactions: [],
       };
     },
     () => local.singleton("budget_config") || { ...DEFAULT_CONFIG },
@@ -379,28 +391,51 @@ export async function saveBudgetConfig(config) {
   return op(
     async () => {
       const userId = await uid();
+      // 1) Settings live in the (single-row) config — bills/income/transactions
+      //    are NOT here anymore, so sections can't clobber each other.
       const { error } = await supabase.from("budget_config").upsert({
         user_id: userId,
         categories: config.categories,
-        income_sources: config.incomeSources,
-        recurring_bills: config.recurringBills,
+        category_budgets: config.categoryBudgets ?? {},
+        savings_goals: config.savingsGoals ?? [],
         tax_rate: config.taxRate ?? 0.18,
         starting_balance: config.startingBalance ?? 0,
         pay_schedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
         simulations: config.simulations ?? [],
-        transactions: config.transactions ?? [],
       }, { onConflict: "user_id" });
       if (error) throw error;
+      // 2) When the caller passes bill/income arrays (the Budget page saves its
+      //    whole config state), reconcile them to rows: upsert all, delete gone.
+      const reconcile = async (table, list) => {
+        if (!Array.isArray(list)) return;
+        const rows = list.map((o) => ({
+          id: o.id || genId(table === "recurring_bills" ? "rb" : "inc"),
+          user_id: userId,
+          data: { ...o },
+        }));
+        if (rows.length) {
+          const { error: upErr } = await supabase.from(table).upsert(rows, { onConflict: "id" });
+          if (upErr) throw upErr;
+        }
+        const keep = rows.map((r) => `"${r.id}"`).join(",");
+        const del = supabase.from(table).delete().eq("user_id", userId);
+        const { error: delErr } = rows.length ? await del.not("id", "in", `(${keep})`) : await del;
+        if (delErr) throw delErr;
+      };
+      await reconcile("recurring_bills", config.recurringBills);
+      await reconcile("income_sources", config.incomeSources);
     },
     () => local.setSingleton("budget_config", {
       categories: config.categories,
       incomeSources: config.incomeSources,
       recurringBills: config.recurringBills,
+      categoryBudgets: config.categoryBudgets ?? {},
+      savingsGoals: config.savingsGoals ?? [],
       taxRate: config.taxRate ?? 0.18,
       startingBalance: config.startingBalance ?? 0,
       paySchedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
       simulations: config.simulations ?? [],
-      transactions: config.transactions ?? [],
+      transactions: [],
     }),
   );
 }
@@ -411,38 +446,54 @@ function genId(prefix = "id") {
 }
 
 export async function addIncomeSource(source) {
-  const cfg = await loadBudgetConfig();
   const row = { id: genId("inc"), frequency: "monthly", ...source };
-  cfg.incomeSources = [...(cfg.incomeSources || []), row];
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => { const userId = await uid(); const { error } = await supabase.from("income_sources").insert({ id: row.id, user_id: userId, data: row }); if (error) throw error; },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = [...(cfg.incomeSources || []), row]; local.setSingleton("budget_config", cfg); },
+  );
   return row;
 }
 export async function updateIncomeSource(id, updates) {
-  const cfg = await loadBudgetConfig();
-  cfg.incomeSources = (cfg.incomeSources || []).map((s) => s.id === id ? { ...s, ...updates } : s);
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => {
+      const { data, error } = await supabase.from("income_sources").select("data").eq("id", id).single();
+      if (error) throw error;
+      const { error: e2 } = await supabase.from("income_sources").update({ data: { ...data.data, ...updates, id } }).eq("id", id);
+      if (e2) throw e2;
+    },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = (cfg.incomeSources || []).map((s2) => s2.id === id ? { ...s2, ...updates } : s2); local.setSingleton("budget_config", cfg); },
+  );
 }
 export async function deleteIncomeSource(id) {
-  const cfg = await loadBudgetConfig();
-  cfg.incomeSources = (cfg.incomeSources || []).filter((s) => s.id !== id);
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => { const { error } = await supabase.from("income_sources").delete().eq("id", id); if (error) throw error; },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = (cfg.incomeSources || []).filter((s2) => s2.id !== id); local.setSingleton("budget_config", cfg); },
+  );
 }
 export async function addRecurringBill(bill) {
-  const cfg = await loadBudgetConfig();
   const row = { id: genId("rb"), frequency: "monthly", autoPay: false, ...bill };
-  cfg.recurringBills = [...(cfg.recurringBills || []), row];
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => { const userId = await uid(); const { error } = await supabase.from("recurring_bills").insert({ id: row.id, user_id: userId, data: row }); if (error) throw error; },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = [...(cfg.recurringBills || []), row]; local.setSingleton("budget_config", cfg); },
+  );
   return row;
 }
 export async function updateRecurringBill(id, updates) {
-  const cfg = await loadBudgetConfig();
-  cfg.recurringBills = (cfg.recurringBills || []).map((b) => b.id === id ? { ...b, ...updates } : b);
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => {
+      const { data, error } = await supabase.from("recurring_bills").select("data").eq("id", id).single();
+      if (error) throw error;
+      const { error: e2 } = await supabase.from("recurring_bills").update({ data: { ...data.data, ...updates, id } }).eq("id", id);
+      if (e2) throw e2;
+    },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = (cfg.recurringBills || []).map((b) => b.id === id ? { ...b, ...updates } : b); local.setSingleton("budget_config", cfg); },
+  );
 }
 export async function deleteRecurringBill(id) {
-  const cfg = await loadBudgetConfig();
-  cfg.recurringBills = (cfg.recurringBills || []).filter((b) => b.id !== id);
-  await saveBudgetConfig(cfg);
+  await op(
+    async () => { const { error } = await supabase.from("recurring_bills").delete().eq("id", id); if (error) throw error; },
+    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = (cfg.recurringBills || []).filter((b) => b.id !== id); local.setSingleton("budget_config", cfg); },
+  );
 }
 export async function addIncome(income) { return addIncomeSource(income); }
 
