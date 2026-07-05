@@ -108,7 +108,7 @@ export default function MealHelper({ recipes }) {
   return (
     <div className={`mh${open ? " open" : ""}`}>
       <button type="button" className="mh-toggle" onClick={() => setOpen((o) => !o)}>
-        <span className="mh-toggle-title"><i className="fa-solid fa-hat-chef fa-utensils" /> Scotty's Meal Helper</span>
+        <span className="mh-toggle-title"><i className="fa-solid fa-utensils" /> Scotty's Meal Helper</span>
         <span className="mh-toggle-sub">Dump what's in the kitchen → find out what's for supper</span>
         <i className={`fa-solid fa-chevron-${open ? "up" : "down"} mh-chev`} />
       </button>

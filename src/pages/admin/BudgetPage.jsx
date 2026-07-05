@@ -229,7 +229,9 @@ export default function BudgetPage() {
     <div className="combined-page">
       <div className="combined-page-header">
         <h1 className="combined-page-title">
-          <i className="fa-solid fa-wallet" /> Money
+          <i className="fa-solid fa-wallet" /> Money{" "}
+          {/* Claude's visible-change marker — delete this span whenever */}
+          <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)", letterSpacing: 1 }}>puffin</span>
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <PageTabs tabs={TABS} active={tab} onChange={switchTab} />

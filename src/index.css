@@ -5205,3 +5205,19 @@ input, textarea, select { font-family: inherit; }
   /* Combined header stacks on mobile */
   .combined-page-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 }
+
+/* ── Toast stack: renders at the app root, OUTSIDE .admin-shell, so it used to
+   inherit the light public-site tokens — light error toasts on a dark admin.
+   Toasts are dark-on-dark everywhere by design (a dark toast reads fine on the
+   light public site too); redefining the tokens here fixes every var() inside. */
+.toast-stack {
+  color-scheme: dark;
+  --bg-raised: #1C222B;
+  --border-primary: rgba(255,255,255,0.16);
+  --text-primary: #F2F4F8;
+  --accent: #5B8DEF;
+  --red: #F0635A;
+  --green: #3DD68C;
+  --orange: #E5B454;
+  --shadow-card: 0 12px 34px -14px rgba(0,0,0,0.7);
+}

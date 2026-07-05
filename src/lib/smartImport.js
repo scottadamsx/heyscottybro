@@ -67,8 +67,17 @@ export async function extract({ system, prompt, tool, content, maxTokens = 3000 
       messages: [{ role: "user", content: userContent }],
     }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || `AI error ${res.status}`);
+  // The proxy returns {error: "string"} for its own failures (auth, model
+  // allowlist) and passes Anthropic's {error: {message}} through — handle both,
+  // and don't explode on non-JSON bodies (e.g. a Vercel HTML error page).
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = typeof data.error === "string" ? data.error : data.error?.message;
+    throw new Error(msg || `AI error ${res.status}`);
+  }
+  if (data.stop_reason === "max_tokens") {
+    throw new Error("That document was too long to parse in one go — try a shorter section.");
+  }
   const block = (data.content || []).find((b) => b.type === "tool_use");
   if (!block) throw new Error("Couldn't read that document — try again or paste the text.");
   return block.input;

@@ -59,7 +59,7 @@ export function ToastProvider({ children }) {
 function ToastContainer({ toasts, dismiss }) {
   if (toasts.length === 0) return null;
   return (
-    <div style={{
+    <div className="toast-stack" style={{
       position: "fixed", top: "1rem", right: "1rem", zIndex: 9999,
       display: "flex", flexDirection: "column", gap: "0.5rem",
       maxWidth: "360px", width: "calc(100vw - 2rem)",

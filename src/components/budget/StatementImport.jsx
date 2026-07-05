@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { fileToContent, extract } from "../../lib/smartImport";
-import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
+import { formatMoney, genId } from "../../utils/budgetCalc";
 import { useToast } from "../../contexts/ToastContext";
 import "./statementImport.css";
 
@@ -72,6 +72,7 @@ export default function StatementImport({ transactions, setTransactions, categor
   const [phase, setPhase] = useState("idle"); // idle | busy | review | done
   const [paste, setPaste] = useState("");
   const [rows, setRows] = useState([]);       // verified proposals
+  const [period, setPeriod] = useState(null); // {from, to} statement window, if the model found one
   const [balance, setBalance] = useState(null);
   const [applyBalance, setApplyBalance] = useState(false);
   const [summary, setSummary] = useState(null);
@@ -81,11 +82,16 @@ export default function StatementImport({ transactions, setTransactions, categor
   const analyze = async (content) => {
     setPhase("busy");
     try {
-      // Only hand the model transactions near the statement window (privacy + focus).
-      const existing = transactions.map((t) => ({
-        id: String(t.id), date: t.date, description: t.description,
-        amount: Number(t.amount), type: t.type, category: t.category,
-      }));
+      // Statements cover recent months, so cap what we hand the model at the
+      // most recent 400 transactions — keeps the prompt bounded (and focused)
+      // even after years of ledger history.
+      const existing = [...transactions]
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+        .slice(0, 400)
+        .map((t) => ({
+          id: String(t.id), date: t.date, description: t.description,
+          amount: Number(t.amount), type: t.type, category: t.category,
+        }));
       const out = await extract({
         system:
           "You reconcile a bank statement against a personal ledger. Be precise with every number — this is real banking. " +
@@ -120,6 +126,7 @@ export default function StatementImport({ transactions, setTransactions, categor
       });
 
       setRows(shaped);
+      setPeriod(out.period ?? null);
       setBalance(out.ending_balance ?? null);
       setApplyBalance(false);
       setPhase("review");
@@ -141,6 +148,18 @@ export default function StatementImport({ transactions, setTransactions, categor
   const apply = () => {
     const updates = rows.filter((r) => r.kind === "update" && r.checked);
     const news = rows.filter((r) => r.kind === "new" && r.checked);
+    const created = news.map((n) => ({
+      id: genId(),
+      description: n.description,
+      amount: n.amount,
+      type: n.direction === "credit" ? "income" : "expense",
+      category: categories.includes(n.category_guess) ? n.category_guess : (categories[0] || "Other"),
+      date: n.date,
+      notes: n.raw_description && n.raw_description !== n.description ? `Statement: ${n.raw_description}` : "",
+      reconciled: true,
+      is_bill: false,
+      fulfills_recurring_id: null,
+    }));
     setTransactions((prev) => {
       let next = prev;
       for (const u of updates) {
@@ -148,27 +167,34 @@ export default function StatementImport({ transactions, setTransactions, categor
           ? { ...t, amount: u.amount, date: u.date, description: t.description || u.description, reconciled: true }
           : t);
       }
-      const created = news.map((n) => ({
-        id: genId(),
-        description: n.description,
-        amount: n.amount,
-        type: n.direction === "credit" ? "income" : "expense",
-        category: categories.includes(n.category_guess) ? n.category_guess : (categories[0] || "Other"),
-        date: n.date,
-        notes: n.raw_description && n.raw_description !== n.description ? `Statement: ${n.raw_description}` : "",
-        reconciled: true,
-        is_bill: false,
-        fulfills_recurring_id: null,
-      }));
       return [...created, ...next];
     });
-    if (applyBalance && balance != null && onSetBalance) onSetBalance(balance);
+    if (applyBalance && balance != null && onSetBalance) {
+      // The statement gives us a CLOSING balance, but startingBalance is what the
+      // ledger's running balance starts FROM (getLedgerRows adds every transaction
+      // on top). Setting startingBalance = closing balance would double-count the
+      // whole ledger. Instead, anchor: pick the startingBalance that makes the
+      // running balance equal the statement's close at the end of the statement
+      // period — transactions dated after the period still stack on top correctly.
+      const updById = Object.fromEntries(updates.map((u) => [String(u.tx.id), u]));
+      const after = [
+        ...created,
+        ...transactions.map((t) => {
+          const u = updById[String(t.id)];
+          return u ? { ...t, amount: u.amount, date: u.date } : t;
+        }),
+      ];
+      const cutoff = period?.to;
+      const considered = cutoff ? after.filter((t) => t.date && t.date <= cutoff) : after;
+      const net = considered.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+      onSetBalance(Math.round((balance - net) * 100) / 100);
+    }
     setSummary({ updated: updates.length, created: news.length, balance: applyBalance ? balance : null });
     setPhase("done");
     addToast(`Applied: ${updates.length} updated, ${news.length} added.`, "success");
   };
 
-  const reset = () => { setPhase("idle"); setRows([]); setPaste(""); setSummary(null); };
+  const reset = () => { setPhase("idle"); setRows([]); setPaste(""); setPeriod(null); setBalance(null); setSummary(null); };
 
   const checkedCount = rows.filter((r) => r.checked).length;
   const conf = (c) => <span className={`si-conf ${c}`}>{c}</span>;
@@ -250,8 +276,8 @@ export default function StatementImport({ transactions, setTransactions, categor
                 <label className="si-row si-balance">
                   <input type="checkbox" checked={applyBalance} onChange={() => setApplyBalance((v) => !v)} />
                   <span className="si-row-main">
-                    <span className="si-row-title">Set current balance from statement</span>
-                    <span className="si-diff"><strong>{formatMoney(balance)}</strong> (statement closing balance)</span>
+                    <span className="si-row-title">Anchor ledger to statement balance</span>
+                    <span className="si-diff">adjusts starting balance so your running balance hits <strong>{formatMoney(balance)}</strong> at the statement close</span>
                   </span>
                 </label>
               )}
@@ -267,7 +293,7 @@ export default function StatementImport({ transactions, setTransactions, categor
 
           {phase === "done" && summary && (
             <div className="si-done">
-              <p><i className="fa-solid fa-circle-check" /> Done: <strong>{summary.updated}</strong> transaction{summary.updated === 1 ? "" : "s"} updated to exact statement figures, <strong>{summary.created}</strong> added{summary.balance != null ? <>, balance set to <strong>{formatMoney(summary.balance)}</strong></> : ""}.</p>
+              <p><i className="fa-solid fa-circle-check" /> Done: <strong>{summary.updated}</strong> transaction{summary.updated === 1 ? "" : "s"} updated to exact statement figures, <strong>{summary.created}</strong> added{summary.balance != null ? <>, ledger anchored to <strong>{formatMoney(summary.balance)}</strong> at statement close</> : ""}.</p>
               <button className="btn btn-sm btn-secondary-sm" onClick={reset}>Import another</button>
             </div>
           )}
