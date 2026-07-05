@@ -4,14 +4,11 @@
  * keeps working offline. Same load/save + auto-fallback shape as weedApi.
  */
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
 const LOCAL_KEY = "accountability";
 const EMPTY = { trackers: [], logs: [] };
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
-}
 
 function normalize(d) {
   return {

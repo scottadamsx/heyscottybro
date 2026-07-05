@@ -1,12 +1,9 @@
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
+import { downloadBlob, slugify } from "../lib/exporter";
 
 const BUCKET = "bug-screenshots";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function loadBugs() {
   const userId = await uid();
@@ -150,18 +147,6 @@ export async function screenshotUrl(path, expiresIn = 3600) {
 }
 
 // ── Export: zip of a Markdown report + all screenshots ──────────────────────
-
-function slugify(s) {
-  return (s || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "item";
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
 
 function bugMarkdown(b, shotFiles) {
   const lines = [];

@@ -1,9 +1,6 @@
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
-}
 
 export async function loadDateIdeas() {
   const userId = await uid();

@@ -1,11 +1,7 @@
 // src/api/gradesApi.js — assessments for the Grade Tracker tool.
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function loadGrades() {
   const userId = await uid();

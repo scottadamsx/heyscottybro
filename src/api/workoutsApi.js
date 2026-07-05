@@ -1,11 +1,7 @@
 // src/api/workoutsApi.js — workout logs for the Gym Tracker tool.
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function loadWorkouts() {
   const userId = await uid();

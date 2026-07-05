@@ -1,13 +1,9 @@
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 import { newTransaction } from "./plannerApi";
 
 const BUCKET = "receipts";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 // ── Stores ──────────────────────────────────────────────────────────────────
 export async function loadStores() {

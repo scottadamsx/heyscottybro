@@ -3,16 +3,11 @@
 // single admin account. Direct Supabase calls (no localStorage fallback — meal
 // photos and shared data can't live in localStorage meaningfully).
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 import { todayStr } from "../utils/nutrition";
 
 const BUCKET = "nutrition";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const id = session?.user?.id;
-  if (!id) throw new Error("Not authenticated");
-  return id;
-}
 
 /* ── Profiles ─────────────────────────────────────────────── */
 export async function loadProfiles() {

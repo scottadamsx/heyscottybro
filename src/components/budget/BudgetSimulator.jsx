@@ -1,3 +1,4 @@
+import { downloadText } from "../../lib/exporter";
 import { useState } from "react";
 import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -109,7 +110,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
   const exportCsv = () => {
     let csv = "Date,Description,Income,Expense,Balance\n";
     rows.forEach(r => { csv += `${r.date},"${r.description}",${r.income || 0},${r.expense || 0},${r.balance.toFixed(2)}\n`; });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "budget_projection.csv"; a.click();
+    downloadText(csv, "budget_projection.csv", "text/csv");
   };
 
   // Build projection from actual spending habits instead of config bills

@@ -8,6 +8,7 @@ import "./index.css";
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
 import "./styles/admin-executive.css"; // minimal executive skin for /admin (loads last)
 import "./styles/features.css"; // documents · nutrition · recipes (loads after admin theme)
+import "./styles/print.css"; // print layer — @media print only
 
 const REQUIRED_ENV = ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY"];
 const missing = REQUIRED_ENV.filter((k) => !import.meta.env[k]);

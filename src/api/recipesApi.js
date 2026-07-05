@@ -1,12 +1,7 @@
 // src/api/recipesApi.js
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const id = session?.user?.id;
-  if (!id) throw new Error("Not authenticated");
-  return id;
-}
 
 export async function loadRecipes() {
   const userId = await uid();

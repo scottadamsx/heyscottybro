@@ -3,12 +3,8 @@
 // ingester just inserts rows with channel set; the UI + AI drafting are
 // channel-agnostic. Today's usable path is channel "manual" (paste a message).
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export async function loadMessages() {
   const userId = await uid();

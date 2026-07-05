@@ -28,7 +28,7 @@ export function escapeHtml(s) {
 export async function verifySupabaseUser(req) {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) return true; // auth check not configured — allow
+  if (!url || !key) return false; // auth not configured — fail CLOSED (Phase 1)
 
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token) return false;
@@ -60,6 +60,28 @@ export async function getSupabaseUserId(req) {
     if (!res.ok) return null;
     const user = await res.json();
     return user?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the logged-in user's { id, email } from the Bearer token, or null.
+ * Used by send-to-me so exports can only ever be mailed to the account owner.
+ */
+export async function getSupabaseUser(req) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/auth/v1/user`, {
+      headers: { apikey: key, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id ? { id: user.id, email: user.email || null } : null;
   } catch {
     return null;
   }

@@ -3,15 +3,10 @@
 // Public share resolution is fully server-side via /api/doc-share (service role),
 // so anonymous viewers never touch the tables directly.
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { uid } from "./_base";
 
 const BUCKET = "documents";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const id = session?.user?.id;
-  if (!id) throw new Error("Not authenticated");
-  return id;
-}
 
 /** List all documents for the current user, newest first. */
 export async function loadDocuments() {

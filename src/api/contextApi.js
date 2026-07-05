@@ -4,15 +4,12 @@
 // No localStorage fallback: if the DB is unreachable the error is surfaced,
 // never silently masked with stale local data.
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { uid } from "./_base";
 
 // Legacy localStorage key — read ONCE by syncLocalToCloud() to migrate the
 // old browser-only facts up to the cloud. Never written to anymore.
 const LEGACY_KEY = "context_store_v1";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
-}
 
 /** Load context from Supabase. Throws the real error on failure (no fallback). */
 export async function loadContext() {

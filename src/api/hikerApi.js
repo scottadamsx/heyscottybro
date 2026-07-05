@@ -1,10 +1,8 @@
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
+import { downloadCSV } from "../lib/exporter";
 import { toDateStr } from "../utils/plannerUtils";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
-}
 
 // ── Members ──────────────────────────────────
 export async function loadMembers(search = "") {
@@ -302,14 +300,8 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
 }
 
 export function exportCSV(members) {
-  const rows = [["First Name", "Last Name", "Email", "Phone", "Attendance"]];
-  members.forEach(m => rows.push([m.first, m.last, m.email || "", m.phone || "", m.attendance]));
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "sjhc_members.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  const rows = members.map((m) => ({
+    "First Name": m.first, "Last Name": m.last, Email: m.email || "", Phone: m.phone || "", Attendance: m.attendance,
+  }));
+  downloadCSV(rows, "sjhc_members.csv");
 }

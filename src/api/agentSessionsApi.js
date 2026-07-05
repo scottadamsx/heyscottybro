@@ -5,11 +5,8 @@
  * table isn't there yet, the Command Center just behaves as before (in-memory).
  */
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id || null;
-}
 
 /** Returns a map: { [agentId]: { display, convo } }. */
 export async function loadAgentSessions() {

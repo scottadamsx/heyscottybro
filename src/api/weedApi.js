@@ -6,12 +6,9 @@
  * page logic unchanged.
  */
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 import { STORAGE_KEY, freshState } from "../utils/weedCalc";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
-}
 
 function readLocal() {
   try {

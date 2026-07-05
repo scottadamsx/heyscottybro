@@ -2,16 +2,10 @@
 // Vault is security-sensitive — no localStorage fallback. If Supabase is
 // unreachable we surface an error rather than silently writing secrets to disk.
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
 export const VALID_TYPES = ["code", "password", "wifi", "card", "note", "other"];
 
-/** @returns {Promise<string>} current user's UUID */
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const id = session?.user?.id;
-  if (!id) throw new Error("Not authenticated");
-  return id;
-}
 
 /** Fetch all snippets for the current user, newest first. */
 export async function getSnippets() {

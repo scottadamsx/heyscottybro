@@ -1,10 +1,6 @@
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 /** Load the whole brain: nodes + links for the current user. */
 export async function loadBrain() {

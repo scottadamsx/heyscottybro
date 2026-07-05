@@ -4,12 +4,8 @@
 // node_slug is resolved against brain_nodes at read time (no FK), so a vault
 // re-sync that recreates nodes never drops a user's links.
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 /** Host item types that can carry linked documents. */
 export const ENTITY_TYPES = ["reminder", "event", "project", "initiative", "agent", "research"];

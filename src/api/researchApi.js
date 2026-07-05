@@ -3,12 +3,8 @@
 // attaching deliverable docs (Brain nodes) via doc_links. Each request also
 // carries its delivered-doc count + unread count for the list view.
 import { supabase } from "../utils/supabase";
+import { uid } from "./_base";
 
-async function uid() {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
-}
 
 export const RESEARCH_STATUSES = ["open", "in_progress", "delivered", "archived"];
 

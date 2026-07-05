@@ -1,3 +1,4 @@
+import { downloadMarkdown } from "../../lib/exporter";
 import { useMemo, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
 import { THEMES, DEFAULT_THEME_ID, getTheme, themeStyle } from "./designThemes";
@@ -513,13 +514,7 @@ export default function DesignPage() {
   };
 
   const downloadGuide = () => {
-    const blob = new Blob([guide], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `heyscottybro-design-${theme.id}-${new Date().toISOString().slice(0, 10)}.md`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    downloadMarkdown(guide, `heyscottybro-design-${theme.id}-${new Date().toISOString().slice(0, 10)}.md`);
   };
 
   const TABS = [
