@@ -7,13 +7,13 @@ import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 
+// The Seven Spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
 const NAV_ITEMS = [
-  { to: "/admin/planner",  icon: "fa-calendar-check", label: "Planner" },
-  { to: "/admin/finance",  icon: "fa-wallet",          label: "Money" },
-  { to: "/admin/grocery",  icon: "fa-receipt",         label: "Groceries" },
-  { to: "/admin/health",   icon: "fa-heart-pulse",     label: "Health" },
-  { to: "/admin/tools",    icon: "fa-wrench",           label: "Tools" },
-  { to: "/admin/dates",    icon: "fa-heart",            label: "Date Night" },
+  { to: "/admin/planner",  icon: "fa-calendar-check",  label: "Plan" },
+  { to: "/admin/finance",  icon: "fa-wallet",           label: "Money" },
+  { to: "/admin/school",   icon: "fa-graduation-cap",   label: "School" },
+  { to: "/admin/life",     icon: "fa-heart-pulse",      label: "Life" },
+  { to: "/admin/mission",  icon: "fa-satellite-dish",   label: "Mission Control" },
   { to: "/admin/vault",    icon: "fa-vault",            label: "Vault" },
 ];
 
@@ -68,9 +68,9 @@ export default function AdminLayout() {
             <>
               <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="admin-rail-pop">
-                <NavLink to="/admin/dashboard" className={popClass} onClick={() => setMenuOpen(false)}>
+                <NavLink to="/admin/today" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-house" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Dashboard</div></span>
+                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Today</div></span>
                 </NavLink>
                 {navItems.map((item) => (
                   <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
@@ -78,22 +78,6 @@ export default function AdminLayout() {
                     <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
                   </NavLink>
                 ))}
-                <NavLink to="/admin/design" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-swatchbook" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Design</div></span>
-                </NavLink>
-                <NavLink to="/admin/brain" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-brain" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Brain</div></span>
-                </NavLink>
-                <NavLink to="/admin/research" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-magnifying-glass-chart" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Research</div></span>
-                </NavLink>
-                <NavLink to="/admin/command" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-satellite-dish" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Command</div></span>
-                </NavLink>
                 <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-gear" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
@@ -120,7 +104,7 @@ export default function AdminLayout() {
       {/* Main nav rail */}
       <aside className="admin-rail">
         <div className="admin-rail-head">
-          <NavLink to="/admin/dashboard" className="admin-rail-mark" title="heyScottyBro"><span>S</span></NavLink>
+          <NavLink to="/admin/today" className="admin-rail-mark" title="heyScottyBro"><span>S</span></NavLink>
           <span className="admin-rail-word">hey<span>Scotty</span>Bro</span>
         </div>
 
@@ -130,9 +114,9 @@ export default function AdminLayout() {
         </button>
 
         {/* Dashboard — always pinned */}
-        <NavLink to="/admin/dashboard" className={railClass} title="Dashboard">
+        <NavLink to="/admin/today" className={railClass} title="Today">
           <i className="fa-solid fa-house" />
-          <span className="admin-rail-label">Dashboard</span>
+          <span className="admin-rail-label">Today</span>
         </NavLink>
 
         {navItems.map((item) => (
@@ -143,23 +127,6 @@ export default function AdminLayout() {
         ))}
 
         <div className="admin-rail-spacer" />
-
-        <NavLink to="/admin/design" className={railClass} title="Design">
-          <i className="fa-solid fa-swatchbook" />
-          <span className="admin-rail-label">Design</span>
-        </NavLink>
-        <NavLink to="/admin/brain" className={railClass} title="Brain">
-          <i className="fa-solid fa-brain" />
-          <span className="admin-rail-label">Brain</span>
-        </NavLink>
-        <NavLink to="/admin/research" className={railClass} title="Research">
-          <i className="fa-solid fa-magnifying-glass-chart" />
-          <span className="admin-rail-label">Research</span>
-        </NavLink>
-        <NavLink to="/admin/command" className={railClass} title="Command Center">
-          <i className="fa-solid fa-satellite-dish" />
-          <span className="admin-rail-label">Command</span>
-        </NavLink>
         <NavLink to="/admin/settings" className={railClass} title="Settings">
           <i className="fa-solid fa-gear" />
           <span className="admin-rail-label">Settings</span>
@@ -175,7 +142,7 @@ export default function AdminLayout() {
       </aside>
 
       <header className="admin-topbar">
-        <NavLink to="/admin/dashboard" className="admin-logo">hey<span>Scotty</span>Bro</NavLink>
+        <NavLink to="/admin/today" className="admin-logo">hey<span>Scotty</span>Bro</NavLink>
       </header>
 
       <main className="admin-main">
@@ -199,12 +166,8 @@ export default function AdminLayout() {
           <div className="admin-mobile-sheet admin-rolodex">
             <div className="admin-sub-label">Menu</div>
             {[
-              { to: "/admin/dashboard", icon: "fa-house", label: "Dashboard" },
+              { to: "/admin/today", icon: "fa-house", label: "Today" },
               ...navItems,
-              { to: "/admin/design", icon: "fa-swatchbook", label: "Design" },
-              { to: "/admin/brain", icon: "fa-brain", label: "Brain" },
-              { to: "/admin/research", icon: "fa-magnifying-glass-chart", label: "Research" },
-              { to: "/admin/command", icon: "fa-satellite-dish", label: "Command" },
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (
               <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>

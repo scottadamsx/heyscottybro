@@ -5,6 +5,7 @@ import { renderMarkdown } from "../../utils/markdown";
 import CopyId, { docId } from "../../components/CopyId";
 import { AGENTS } from "../../agents/registry";
 import { resolveTools, modelLabel } from "../../agents/agentProfile";
+import ContextPage from "./ContextPage";
 import "./brain.css";
 
 // Three.js is heavy (~600 kB) — load the WebGL graph only when this page mounts
@@ -147,12 +148,17 @@ export default function BrainPage() {
         <button type="button" className={`brain-tab${tab === "folders" ? " active" : ""}`} onClick={() => setTab("folders")}>
           <i className="fa-solid fa-folder-tree" /> Folders
         </button>
+        <button type="button" className={`brain-tab${tab === "memory" ? " active" : ""}`} onClick={() => setTab("memory")}>
+          <i className="fa-solid fa-lightbulb" /> Memory
+        </button>
         <button type="button" className={`brain-tab${tab === "tools" ? " active" : ""}`} onClick={() => setTab("tools")}>
           <i className="fa-solid fa-toolbox" /> Agent Tools
         </button>
       </div>
 
       {tab === "tools" && <AgentTools query={toolQuery} setQuery={setToolQuery} />}
+
+      {tab === "memory" && <ContextPage />}
 
       {tab === "folders" && (
         data.nodes.length === 0

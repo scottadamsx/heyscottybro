@@ -1,3 +1,4 @@
+import GroceryPage from "./GroceryPage";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toDateStr, genId } from "../../utils/budgetCalc";
 import {
@@ -46,19 +47,20 @@ function txChanged(a, b) {
 // `key` (not `id`) + `icon` so these feed the shared PageTabs component the
 // other portal pages use, keeping the Finance header consistent with them.
 const TABS = [
-  { key: "dashboard",    label: "Dashboard",      icon: "fa-gauge" },
-  { key: "banker",       label: "🧌 Banker" },
+  { key: "dashboard",    label: "Overview",       icon: "fa-gauge" },
   { key: "transactions", label: "Transactions",   icon: "fa-list-ul" },
-  { key: "ledger",       label: "Ledger",         icon: "fa-book" },
-  { key: "analytics",    label: "Analytics",      icon: "fa-chart-pie" },
-  { key: "reconcile",    label: "Reconcile",      icon: "fa-scale-balanced" },
   { key: "bills",        label: "Bills & Income", icon: "fa-file-invoice-dollar" },
-  { key: "simulator",    label: "Simulator",      icon: "fa-flask" },
+  { key: "receipts",     label: "Receipts",       icon: "fa-receipt" },
+  { key: "banker",       label: "🧌 Banker" },
+  { key: "tools",        label: "Tools",          icon: "fa-flask" },
 ];
 
 export default function BudgetPage() {
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState(() => sessionStorage.getItem("budgetTab") || "dashboard");
+  const [tab, setTab] = useState(() => {
+    const saved = sessionStorage.getItem("budgetTab");
+    return TABS.some((t) => t.key === saved) ? saved : "dashboard";
+  });
   const [periodOffset, setPeriodOffset] = useState(0);
 
   const [config, setConfig] = useState(DEFAULT_CONFIG);
@@ -246,9 +248,17 @@ export default function BudgetPage() {
               onSaveGoals={handleSaveGoals}
             />
           )}
+          {tab === "dashboard" && (
+            <BudgetAnalytics
+              config={config}
+              transactions={transactions}
+              startingBalance={startingBalance}
+            />
+          )}
           {tab === "banker" && (
             <BudgetBanker onChanged={reload} />
           )}
+          {tab === "receipts" && <GroceryPage />}
           {tab === "transactions" && (
             <BudgetTransactions
               config={config}
@@ -257,23 +267,7 @@ export default function BudgetPage() {
               startingBalance={startingBalance}
             />
           )}
-          {tab === "ledger" && (
-            <BudgetTransactions
-              config={config}
-              transactions={transactions}
-              setTransactions={setTransactions}
-              startingBalance={startingBalance}
-              defaultView="ledger"
-            />
-          )}
-          {tab === "analytics" && (
-            <BudgetAnalytics
-              config={config}
-              transactions={transactions}
-              startingBalance={startingBalance}
-            />
-          )}
-          {tab === "reconcile" && (
+          {tab === "tools" && (
             <BudgetReconcile
               config={config}
               transactions={transactions}
@@ -292,7 +286,7 @@ export default function BudgetPage() {
               onFreshStart={handleFreshStart}
             />
           )}
-          {tab === "simulator" && (
+          {tab === "tools" && (
             <BudgetSimulator
               config={config}
               simulations={simulations}

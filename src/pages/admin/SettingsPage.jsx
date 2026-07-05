@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { HIDE_SMOKE_TRACKER, useSetting, setSetting } from "../../utils/settings";
 
 function Toggle({ checked, onChange, label }) {
@@ -40,6 +41,23 @@ export default function SettingsPage() {
             onChange={(v) => setSetting(HIDE_SMOKE_TRACKER, v)}
             label="Hide Smoke Tracker"
           />
+        </div>
+      </div>
+
+      <div className="db-card">
+        <div className="settings-row">
+          <div className="settings-row-body">
+            <div className="settings-row-title">
+              <i className="fa-solid fa-swatchbook" /> Appearance
+            </div>
+            <div className="settings-row-meta">
+              The design system — themes, tokens, and the component gallery. Moved out of the
+              main nav; it's a workshop, not a daily destination.
+            </div>
+          </div>
+          <Link className="btn btn-sm btn-secondary-sm" to="/admin/design">
+            Open Design <i className="fa-solid fa-arrow-right" />
+          </Link>
         </div>
       </div>
     </div>

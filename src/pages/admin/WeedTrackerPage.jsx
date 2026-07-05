@@ -38,7 +38,7 @@ export default function WeedTrackerPage() {
   const { activeProfile } = state;
 
   // Hidden via Settings → keep the page unreachable even by direct URL.
-  if (hideSmoke) return <Navigate to="/admin/dashboard" replace />;
+  if (hideSmoke) return <Navigate to="/admin/today" replace />;
 
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 

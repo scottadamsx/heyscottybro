@@ -10,7 +10,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     getSession().then((session) => {
-      if (session) navigate("/admin/dashboard", { replace: true });
+      if (session) navigate("/admin/today", { replace: true });
     });
   }, [navigate]);
 
@@ -20,7 +20,7 @@ export default function AdminLogin() {
     setError("");
     try {
       await login("scottadamsx@gmail.com", password);
-      navigate("/admin/dashboard", { replace: true });
+      navigate("/admin/today", { replace: true });
     } catch (err) {
       setError(err?.message || "Login failed.");
     } finally {

@@ -150,7 +150,7 @@ export default function CommandCenterPage() {
         Your agents — each with its own role, model and toolbelt. API agents run on your
         Anthropic key; the Coding agent runs real Claude Code on your Max plan via the local
         agent server. Tap an agent to put it to work; everything they do lands in the feed below
-        and in your <a href="/admin/brain">Brain</a>.
+        and in your <a href="/admin/mission?tab=brain">Brain</a>.
       </p>
 
       <div className="cmd-grid">
@@ -367,7 +367,7 @@ export default function CommandCenterPage() {
                 <button className="btn-mini" title="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
                   <i className="fa-solid fa-copy" />
                 </button>
-                {viewerDoc.slug && <a className="btn-mini" href="/admin/brain" title="Open in Brain"><i className="fa-solid fa-diagram-project" /></a>}
+                {viewerDoc.slug && <a className="btn-mini" href="/admin/mission?tab=brain" title="Open in Brain"><i className="fa-solid fa-diagram-project" /></a>}
                 <button className="btn-mini" onClick={() => setViewerDoc(null)} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
               </div>
             </div>

@@ -62,7 +62,7 @@ export default function BrainReaderPage() {
         <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => navigate(-1)}>
           <i className="fa-solid fa-arrow-left" /> Back
         </button>
-        <a className="btn btn-sm btn-secondary-sm" href="/admin/brain" title="Open the Brain graph">
+        <a className="btn btn-sm btn-secondary-sm" href="/admin/mission?tab=brain" title="Open the Brain graph">
           <i className="fa-solid fa-diagram-project" /> Brain
         </a>
       </div>

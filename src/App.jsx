@@ -24,18 +24,14 @@ const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
 const DashboardPage      = lazy(() => import("./pages/admin/DashboardPage.jsx"));
 const PlannerPage        = lazy(() => import("./pages/admin/PlannerPage.jsx"));
 const TaskDetailPage     = lazy(() => import("./pages/admin/TaskDetailPage.jsx"));
+const SchoolPage         = lazy(() => import("./pages/admin/SchoolPage.jsx"));
+const LifePage           = lazy(() => import("./pages/admin/LifePage.jsx"));
+const MissionPage        = lazy(() => import("./pages/admin/MissionPage.jsx"));
 const BudgetPage         = lazy(() => import("./pages/admin/BudgetPage.jsx"));
-const HealthPage         = lazy(() => import("./pages/admin/HealthPage.jsx"));
-const ToolsPage          = lazy(() => import("./pages/admin/ToolsPage.jsx"));
-const DatePlannerPage    = lazy(() => import("./pages/admin/DatePlannerPage.jsx"));
 const VaultPage          = lazy(() => import("./pages/admin/VaultPage.jsx"));
 const SettingsPage       = lazy(() => import("./pages/admin/SettingsPage.jsx"));
 const DesignPage         = lazy(() => import("./pages/admin/DesignPage.jsx"));
-const BrainPage          = lazy(() => import("./pages/admin/BrainPage.jsx"));
 const BrainReaderPage    = lazy(() => import("./pages/admin/BrainReaderPage.jsx"));
-const CommandCenterPage  = lazy(() => import("./pages/admin/CommandCenterPage.jsx"));
-const GroceryPage        = lazy(() => import("./pages/admin/GroceryPage.jsx"));
-const ResearchPage       = lazy(() => import("./pages/admin/ResearchPage.jsx"));
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -76,37 +72,43 @@ export default function App() {
 
         {/* Protected admin routes */}
         <Route path="/admin" element={<ProtectedRoute><AgentRuntimeProvider><AdminLayout /></AgentRuntimeProvider></ProtectedRoute>}>
-          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route index element={<Navigate to="/admin/today" replace />} />
 
-          {/* Primary portals */}
-          <Route path="dashboard" element={Lazy(<DashboardPage />)} />
+          {/* The Seven Spaces */}
+          <Route path="today"     element={Lazy(<DashboardPage />)} />
           <Route path="planner"   element={Lazy(<PlannerPage />)} />
           <Route path="tasks/:id" element={Lazy(<TaskDetailPage />)} />
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
-          <Route path="grocery"   element={Lazy(<GroceryPage />)} />
-          <Route path="health"    element={Lazy(<HealthPage />)} />
-          <Route path="tools"     element={Lazy(<ToolsPage />)} />
-          <Route path="dates"     element={Lazy(<DatePlannerPage />)} />
+          <Route path="school"    element={Lazy(<SchoolPage />)} />
+          <Route path="life"      element={Lazy(<LifePage />)} />
+          <Route path="mission"   element={Lazy(<MissionPage />)} />
           <Route path="vault"     element={Lazy(<VaultPage />)} />
+
+          {/* Non-nav pages */}
           <Route path="settings"  element={Lazy(<SettingsPage />)} />
           <Route path="design"    element={Lazy(<DesignPage />)} />
-          <Route path="brain"     element={Lazy(<BrainPage />)} />
           <Route path="read/*"    element={Lazy(<BrainReaderPage />)} />
-          <Route path="research"  element={Lazy(<ResearchPage />)} />
-          <Route path="command"   element={Lazy(<CommandCenterPage />)} />
 
           {/* Legacy redirects — keeps old bookmarks working */}
+          <Route path="dashboard"      element={<Navigate to="/admin/today" replace />} />
+          <Route path="health"         element={<Navigate to="/admin/life" replace />} />
+          <Route path="tools"          element={<Navigate to="/admin/mission" replace />} />
+          <Route path="command"        element={<Navigate to="/admin/mission" replace />} />
+          <Route path="brain"          element={<Navigate to="/admin/mission?tab=brain" replace />} />
+          <Route path="research"       element={<Navigate to="/admin/mission?tab=research" replace />} />
+          <Route path="grocery"        element={<Navigate to="/admin/finance?tab=receipts" replace />} />
+          <Route path="dates"          element={<Navigate to="/admin/life?tab=dates" replace />} />
           <Route path="reminders"      element={<Navigate to="/admin/planner" replace />} />
           <Route path="calendar"       element={<Navigate to="/admin/planner" replace />} />
           <Route path="journal"        element={<Navigate to="/admin/planner?tab=journal" replace />} />
           <Route path="projects"       element={<Navigate to="/admin/planner?tab=projects" replace />} />
-          <Route path="nutrition"      element={<Navigate to="/admin/health" replace />} />
-          <Route path="recipes"        element={<Navigate to="/admin/health?tab=recipes" replace />} />
-          <Route path="accountability" element={<Navigate to="/admin/health?tab=accountability" replace />} />
-          <Route path="smoke"          element={<Navigate to="/admin/health?tab=smoke" replace />} />
-          <Route path="hikers"         element={<Navigate to="/admin/tools" replace />} />
+          <Route path="nutrition"      element={<Navigate to="/admin/life" replace />} />
+          <Route path="recipes"        element={<Navigate to="/admin/life?tab=recipes" replace />} />
+          <Route path="accountability" element={<Navigate to="/admin/life?tab=habits" replace />} />
+          <Route path="smoke"          element={<Navigate to="/admin/life?tab=smoke" replace />} />
+          <Route path="hikers"         element={<Navigate to="/admin/vault?tab=databases" replace />} />
           <Route path="snippets"       element={<Navigate to="/admin/vault" replace />} />
-          <Route path="context"        element={<Navigate to="/admin/vault?tab=context" replace />} />
+          <Route path="context"        element={<Navigate to="/admin/mission?tab=brain" replace />} />
           <Route path="documents"      element={<Navigate to="/admin/vault?tab=documents" replace />} />
           <Route path="budget"         element={<Navigate to="/admin/finance" replace />} />
         </Route>
