@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { loadWorkouts, createWorkout, deleteWorkout, exerciseSummary } from "../../api/workoutsApi";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
+import "./tools.css";
 
 const EMPTY = () => ({ date: toDateStr(new Date()), exercise: "", weight: "", reps: "", sets: "1", notes: "" });
 

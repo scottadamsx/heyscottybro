@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail, sendReply, markRead } from "../../api/messagesApi";
 import { generateDraft } from "../../api/aiDraft";
 import { useToast } from "../../contexts/ToastContext";
+import "./tools.css";
 
 const CHANNELS = ["manual", "email", "slack", "discord"];
 const CHANNEL = {

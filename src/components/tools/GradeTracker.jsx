@@ -5,6 +5,7 @@ import { newReminder } from "../../api/plannerApi";
 import { toDateStr } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./tools.css";
 
 const EMPTY = { course: "", name: "", earned: "", max: "100", weight: "", feedback: "" };
 const pct = (e, m) => (e != null && e !== "" && Number(m) > 0 ? Math.round((Number(e) / Number(m)) * 100) : null);

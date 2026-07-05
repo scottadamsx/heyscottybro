@@ -756,3 +756,8 @@
   /* Export menu hugs the small screen */
   .admin-shell .export-kit-menu { right: auto; left: 0; }
 }
+
+/* GradeTracker inherits the data voice (it lives inside School now) */
+.admin-shell .gt-stat-val { font-family: var(--font-mono); font-weight: 650; font-variant-numeric: tabular-nums; }
+.admin-shell .gt-stat { background: var(--bg-surface); }
+.admin-shell .gt-item { background: var(--bg-surface); }
