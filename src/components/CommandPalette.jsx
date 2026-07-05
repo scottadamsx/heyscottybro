@@ -23,6 +23,7 @@ const COMMANDS = [
   { label: "Habits",          to: "/admin/life?tab=habits",          icon: "fa-fire",             section: "Life" },
   { label: "Dates",           to: "/admin/life?tab=dates",           icon: "fa-heart",            section: "Life" },
   { label: "Smoke Tracker",   to: "/admin/life?tab=smoke",           icon: "fa-leaf",             section: "Life", smokeOnly: true },
+  { label: "Arcade",          to: "/admin/life?tab=arcade",          icon: "fa-gamepad",          section: "Life" },
   { label: "Mission Control", to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Agents",          to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Brain",           to: "/admin/mission?tab=brain",        icon: "fa-brain",            section: "Mission" },
