@@ -10,7 +10,12 @@ const EMPTY = { course: "", name: "", earned: "", max: "100", weight: "", feedba
 const pct = (e, m) => (e != null && e !== "" && Number(m) > 0 ? Math.round((Number(e) / Number(m)) * 100) : null);
 const fmtPct = (v) => (v == null ? "—" : `${v.toFixed(1)}%`);
 
-export default function GradeTracker() {
+/**
+ * Grade tracker. Standalone it shows every assessment; inside the School space
+ * pass { courseId, courseCode } to scope it to one course (rows filtered, new
+ * assessments auto-tagged to the course).
+ */
+export default function GradeTracker({ courseId = null, courseCode = "" } = {}) {
   const { addToast } = useToast();
   const { confirm, dialog } = useConfirm();
   const [rows, setRows] = useState([]);
@@ -22,7 +27,8 @@ export default function GradeTracker() {
   const [planning, setPlanning] = useState(false);
   const [adding, setAdding] = useState(false);
 
-  const refresh = () => loadGrades().then((r) => { setRows(r); setReady(true); }).catch((e) => { addToast(e.message, "error"); setReady(true); });
+  const scope = (r) => (courseId ? r.filter((g) => g.course_id === courseId || (courseCode && g.course === courseCode)) : r);
+  const refresh = () => loadGrades().then((r) => { setRows(scope(r)); setReady(true); }).catch((e) => { addToast(e.message, "error"); setReady(true); });
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
   const stats = useMemo(() => gradeStats(rows), [rows]);
@@ -37,7 +43,8 @@ export default function GradeTracker() {
   const save = async () => {
     if (!form.name.trim()) { addToast("Give the assessment a name.", "error"); return; }
     const payload = {
-      course: form.course.trim(),
+      ...(courseId ? { course_id: courseId } : {}),
+      course: form.course.trim() || courseCode,
       name: form.name.trim(),
       earned: form.earned === "" ? null : Number(form.earned),
       max: Number(form.max) || 100,

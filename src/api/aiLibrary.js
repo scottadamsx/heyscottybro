@@ -30,6 +30,7 @@ import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snip
 import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
+import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
 
 export const TX_CATEGORIES = ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Savings", "Other"];
 
@@ -52,6 +53,7 @@ const COLLECTIONS = {
       recur_until: { type: "date" },
       recur_times: { type: "number" },
       project_id: { type: "string" },
+      course_id: { type: "string", description: "Link to a courses row — makes this a school deadline (shows in School + Plan)" },
       show_on_calendar: { type: "boolean" },
       completed: { type: "boolean", updateOnly: true },
     },
@@ -223,6 +225,19 @@ const COLLECTIONS = {
       notes: { type: "string", long: true, updateOnly: true },
     },
     load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
+  },
+  courses: {
+    description: "School courses (School space). Deadlines are reminders with course_id set; grades live in the Grade Tracker. Use this to answer 'what courses is Scott taking' and to tag school deadlines.",
+    searchFields: ["code", "name", "instructor"],
+    defaultFields: ["id", "code", "name", "term", "instructor", "target_grade"],
+    fields: {
+      code: { type: "string", required: true },
+      name: { type: "string", required: true },
+      term: { type: "string" },
+      instructor: { type: "string" },
+      target_grade: { type: "number" },
+    },
+    load: () => loadCourses({ includeArchived: true }), create: createCourse, update: updateCourse, remove: deleteCourse,
   },
   brain: {
     description: "Scott's knowledge graph / second brain (Tools › Brain) — notes synced from his Obsidian + Claude memory vault. Each node is a markdown note; body holds its content. Read to recall context about Scott, his projects, and decisions.",

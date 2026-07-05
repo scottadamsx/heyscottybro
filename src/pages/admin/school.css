@@ -1,0 +1,34 @@
+/* ── School space ── */
+.school-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+
+.school-course { padding: 0; overflow: hidden; }
+.school-course-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 14px 16px; background: none; border: none; cursor: pointer; color: inherit; font: inherit;
+}
+.school-course-head:hover { background: var(--bg-raised); }
+.school-course-code {
+  flex-shrink: 0; color: #fff; font-weight: 700; font-size: 12px;
+  border-radius: 8px; padding: 6px 10px; letter-spacing: 0.03em; white-space: nowrap;
+}
+.school-course-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.school-course-name { font-size: 15px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.school-course-meta { font-size: 12px; color: var(--text-muted); }
+.school-course-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; color: var(--text-muted); }
+.school-course-body { border-top: 1px solid var(--border-subtle); padding: 14px 16px; }
+.school-course-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+.school-deadlines-inline { margin-bottom: 14px; }
+.school-deadline-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border-subtle); font-size: 13px; }
+.school-deadline-row:last-child { border-bottom: none; }
+.school-deadline-done { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 0; }
+.school-deadline-done:hover { color: var(--green); }
+.school-deadline-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+a.school-deadline-name:hover { color: var(--accent); }
+.school-deadline-date { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.school-deadline-date.soon { color: var(--orange); }
+.school-deadline-date.overdue { color: var(--red); font-weight: 600; }
+
+.school-form { display: flex; flex-direction: column; gap: 10px; }
+.school-form input { width: 100%; box-sizing: border-box; }
+.school-form-hint { font-size: 12px; color: var(--text-muted); margin: 0; }
