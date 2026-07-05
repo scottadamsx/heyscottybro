@@ -220,7 +220,14 @@ export default function SchoolPage() {
             return (
               <div key={n.slug} className="school-deadline-row">
                 {codeTag && <Badge tone="accent">{codeTag}</Badge>}
-                <Link to={`/admin/read/${String(n.slug).split("/").map(encodeURIComponent).join("/")}`} className="school-deadline-name" title="Read the full document">
+                <Link
+                  to={(n.tags || []).some((t) => t.startsWith("doc:"))
+                    ? `/admin/school/doc/${String(n.slug).split("/").map(encodeURIComponent).join("/")}`
+                    : `/admin/read/${String(n.slug).split("/").map(encodeURIComponent).join("/")}`}
+                  className="school-deadline-name"
+                  title="Open the document"
+                >
+                  {(n.tags || []).some((t) => t.startsWith("doc:")) && <i className="fa-solid fa-file-pdf" style={{ marginRight: 6, color: "var(--accent)" }} />}
                   {n.title}
                 </Link>
                 <span className="school-deadline-date">{String(n.created_at || "").slice(0, 10)}</span>

@@ -1,0 +1,31 @@
+/* ── School document split view ── */
+.schooldoc-page { max-width: 1280px; }
+.schooldoc-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.schooldoc-bar-actions { display: flex; gap: 8px; align-items: center; }
+
+.schooldoc-split { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; align-items: start; }
+.schooldoc-split.single { grid-template-columns: minmax(0, 1fr); max-width: 820px; }
+
+.schooldoc-pane-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.schooldoc-pane-title i { color: var(--accent); margin-right: 6px; }
+
+.schooldoc-doc, .schooldoc-note {
+  background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 16px;
+}
+.schooldoc-frame { width: 100%; height: 76vh; border: 1px solid var(--border-subtle); border-radius: 8px; background: #fff; }
+.schooldoc-img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border-subtle); }
+
+.schooldoc-title { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.5rem); font-weight: 650; letter-spacing: -0.02em; margin: 0 0 8px; text-wrap: balance; }
+.schooldoc-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.schooldoc-body { font-size: 13.5px; line-height: 1.65; color: var(--text-secondary); }
+.schooldoc-body h1 { display: none; } /* title already shown */
+.schooldoc-foot { font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-top: 14px; }
+.schooldoc-foot a { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .schooldoc-split { grid-template-columns: 1fr; }
+  .schooldoc-frame { height: 60vh; }
+}

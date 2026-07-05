@@ -135,3 +135,11 @@ export async function emailShareLink({ to, documentName, shareUrl }) {
   if (!res.ok) throw new Error(data.error || `Email failed (${res.status})`);
   return data;
 }
+
+/** One document row by id (used by the School split view). */
+export async function getDocument(id) {
+  const userId = await uid();
+  const { data, error } = await supabase.from("documents").select("*").eq("user_id", userId).eq("id", id).single();
+  if (error) throw error;
+  return data;
+}

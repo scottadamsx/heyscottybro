@@ -4,6 +4,7 @@ import { newReminder } from "../../api/plannerApi";
 import { createGrade, updateGrade } from "../../api/gradesApi";
 import { updateCourse } from "../../api/coursesApi";
 import { createNode } from "../../api/brainApi";
+import { uploadDocument } from "../../api/documentsApi";
 import { toDateStr } from "../../utils/plannerUtils";
 import { Modal } from "../ui";
 import { useToast } from "../../contexts/ToastContext";
@@ -67,6 +68,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
   const [courseId, setCourseId] = useState("");
   const [out, setOut] = useState(null);
   const [sourceText, setSourceText] = useState("");
+  const [sourceFile, setSourceFile] = useState(null);
   const [checks, setChecks] = useState({});
 
   const analyze = async (content) => {
@@ -105,6 +107,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
 
   const onFile = async (f) => {
     if (!f) return;
+    setSourceFile(f);
     try { await analyze(await fileToContent(f)); }
     catch (e) { addToast(e.message, "error"); setPhase("idle"); }
   };
@@ -141,12 +144,21 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
       }
       if (checks.brain) {
         const stamp = toDateStr(new Date());
+        // Save the ACTUAL document into the vault so the School split view can
+        // show it side-by-side with this note. The note carries a doc:<id> tag.
+        let docTag = null;
+        if (sourceFile) {
+          try {
+            const docRow = await uploadDocument(sourceFile, { name: `${course.code} — ${out.title}`, tags: ["school", course.code] });
+            docTag = `doc:${docRow.id}`;
+          } catch { /* the note still saves without the file */ }
+        }
         await createNode({
           slug: `school/${course.code.toLowerCase().replace(/\s+/g, "-")}-${stamp}-${(out.title || "doc").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30)}`,
           title: `${course.code}: ${out.title}`,
-          body: `# ${out.title}\n\n${out.summary}${sourceText ? `\n\n---\n\n## Original document\n\n${sourceText.slice(0, 6000)}` : ""}\n\n_(imported into School on ${stamp})_`,
+          body: `# ${out.title}\n\n${out.summary}${!docTag && sourceText ? `\n\n---\n\n## Original document\n\n${sourceText.slice(0, 6000)}` : ""}\n\n_(imported into School on ${stamp})_`,
           type: "note",
-          tags: ["school", course.code],
+          tags: ["school", course.code, ...(docTag ? [docTag] : [])],
           source: "school",
         }).catch(() => {}); // brain filing is best-effort, never blocks the real updates
       }
