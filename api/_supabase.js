@@ -3,7 +3,7 @@
  * WITHOUT a user session (e.g. the daily Overseer cron). Uses the same
  * SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY env vars as api/_utils.js.
  */
-const URL_ = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+const URL_ = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 export function sbConfigured() {

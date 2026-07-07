@@ -17,17 +17,32 @@ export function escapeHtml(s) {
 }
 
 /**
+ * Resolve the Supabase project URL + a key usable as the `apikey` header.
+ * Serverless functions prefer the bare SUPABASE_* names, but fall back to the
+ * VITE_-prefixed vars the SPA build already sets on Vercel — so auth works even
+ * if only the frontend vars were configured. The service-role key is preferred
+ * (bypasses RLS); the publishable/anon key is fine for validating a user token.
+ */
+export function supabaseEnv() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY;
+  return { url, key };
+}
+
+/**
  * Verify the caller is a logged-in Supabase user (the SPA sends its session
- * token as `Authorization: Bearer <jwt>`). Uses the same SUPABASE_URL /
- * SUPABASE_SERVICE_ROLE_KEY env vars that /api/doc-share already requires.
- * If those env vars aren't set, verification is skipped so the endpoint keeps
- * working on projects that haven't configured them yet.
+ * token as `Authorization: Bearer <jwt>`). Validates the token against the
+ * project's /auth/v1/user endpoint. If no Supabase env vars are set at all,
+ * verification fails CLOSED so unconfigured deployments can't be called.
  *
  * @returns {Promise<boolean>} true if the request is allowed
  */
 export async function verifySupabaseUser(req) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const { url, key } = supabaseEnv();
   if (!url || !key) return false; // auth not configured — fail CLOSED (Phase 1)
 
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
@@ -48,8 +63,7 @@ export async function verifySupabaseUser(req) {
  * the id so a function can scope writes to the caller.
  */
 export async function getSupabaseUserId(req) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const { url, key } = supabaseEnv();
   if (!url || !key) return null;
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token) return null;
@@ -70,8 +84,7 @@ export async function getSupabaseUserId(req) {
  * Used by send-to-me so exports can only ever be mailed to the account owner.
  */
 export async function getSupabaseUser(req) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const { url, key } = supabaseEnv();
   if (!url || !key) return null;
   const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token) return null;
