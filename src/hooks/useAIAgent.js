@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TOOLS, executeTool } from "../api/aiTools";
 import { callClaude, trimHistory as trimHistoryCore, withCacheMarkers, ERROR_STREAK_LIMIT } from "../agents/loop";
 import { TIERS, buildSystemPrompt, escalationToolFor } from "../api/aiTiers";
 import { getAuthHeaders } from "../utils/supabase";
+import { loadAgentSessions, saveAgentSession, clearAgentSession } from "../api/agentSessionsApi";
 
-const CHAT_STORE_KEY = "frodo_chat_session";
-const CHAT_TTL_MS = 60 * 60 * 1000;
+// Legacy store. Frodo used to keep his whole memory here behind a ONE HOUR TTL,
+// which is why he'd forget a conversation from earlier the same day and ask
+// Scott to repeat himself. History now lives in Supabase `agent_sessions` (the
+// same store the Command Center agents use), so it survives refreshes, new
+// tabs, days, and devices. This key is read once to migrate, then removed.
+const LEGACY_CHAT_KEY = "frodo_chat_session";
+const AGENT_ID = "frodo";
 
 export const MAX_INPUT_CHARS = 4000;
 const HISTORY_CHAR_BUDGET = 100000;
+// What we PERSIST is smaller than what we send: a long-lived row shouldn't grow
+// without bound, and old turns stop earning their keep.
+const PERSIST_CHAR_BUDGET = 60000;
 
 /* Catch-nets around each tier (see aiTiers.js for the explicit pass_to_* tools):
  * - transient API failures retry with backoff before counting as a real error
@@ -20,38 +29,82 @@ const HISTORY_CHAR_BUDGET = 100000;
 
 const trimHistory = (msgs) => trimHistoryCore(msgs, HISTORY_CHAR_BUDGET);
 
+/**
+ * Strip base64 image payloads before storing. A single screenshot is ~1–3 MB of
+ * base64; persisting a few would blow past Postgres row limits and make every
+ * load slow. The model already described the image in its reply, so the stored
+ * turn keeps a placeholder that reads correctly in future context.
+ */
+function stripImages(msgs) {
+  return msgs.map((m) => {
+    if (!Array.isArray(m.content)) return m;
+    return {
+      ...m,
+      content: m.content.map((b) =>
+        b.type === "image" ? { type: "text", text: "[screenshot Scott attached earlier]" } : b),
+    };
+  });
+}
 
-
-function loadSavedChat() {
+function readLegacyChat() {
   try {
-    const raw = localStorage.getItem(CHAT_STORE_KEY);
-    if (!raw) return { displayMsgs: [], apiHistory: [] };
+    const raw = localStorage.getItem(LEGACY_CHAT_KEY);
+    if (!raw) return null;
     const saved = JSON.parse(raw);
-    if (!saved.savedAt || Date.now() - saved.savedAt > CHAT_TTL_MS) {
-      localStorage.removeItem(CHAT_STORE_KEY);
-      return { displayMsgs: [], apiHistory: [] };
-    }
+    if (!saved?.displayMsgs?.length && !saved?.apiHistory?.length) return null;
     return { displayMsgs: saved.displayMsgs || [], apiHistory: saved.apiHistory || [] };
   } catch {
-    return { displayMsgs: [], apiHistory: [] };
+    return null;
   }
 }
 
 export default function useAIAgent() {
-  const [displayMsgs, setDisplayMsgs] = useState(() => loadSavedChat().displayMsgs);
-  const [apiHistory, setApiHistory] = useState(() => loadSavedChat().apiHistory);
+  const [displayMsgs, setDisplayMsgs] = useState([]);
+  const [apiHistory, setApiHistory] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
+  // Until the stored session has been read back, don't write over it — an empty
+  // first render would otherwise wipe the very history we're restoring.
+  const hydrated = useRef(false);
 
   useEffect(() => {
-    try {
-      if (displayMsgs.length === 0 && apiHistory.length === 0) {
-        localStorage.removeItem(CHAT_STORE_KEY);
-      } else {
-        localStorage.setItem(CHAT_STORE_KEY, JSON.stringify({ savedAt: Date.now(), displayMsgs, apiHistory }));
+    let cancelled = false;
+    (async () => {
+      let restored = null;
+      try {
+        const sessions = await loadAgentSessions();
+        const mine = sessions[AGENT_ID];
+        if (mine && (mine.display?.length || mine.convo?.length)) {
+          restored = { displayMsgs: mine.display || [], apiHistory: mine.convo || [] };
+        }
+      } catch { /* offline / not migrated — fall through to the legacy store */ }
+
+      // One-time migration off the old localStorage store.
+      if (!restored) restored = readLegacyChat();
+      try { localStorage.removeItem(LEGACY_CHAT_KEY); } catch { /* noop */ }
+
+      if (cancelled) return;
+      if (restored) {
+        setDisplayMsgs(restored.displayMsgs);
+        setApiHistory(restored.apiHistory);
       }
-    } catch { /* storage full — non-fatal */ }
+      hydrated.current = true;
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Persist after every settled change. Debounced so a burst of tool turns
+  // writes once, and image-stripped/trimmed so the row stays small.
+  useEffect(() => {
+    if (!hydrated.current) return undefined;
+    const t = setTimeout(() => {
+      saveAgentSession(AGENT_ID, {
+        display: displayMsgs.slice(-200),
+        convo: trimHistoryCore(stripImages(apiHistory), PERSIST_CHAR_BUDGET),
+      }).catch(() => { /* non-fatal: the chat still works in memory */ });
+    }, 600);
+    return () => clearTimeout(t);
   }, [displayMsgs, apiHistory]);
 
   const sendMessage = async (attachments = []) => {
@@ -61,14 +114,14 @@ export default function useAIAgent() {
     setLoading(true);
 
     const shown = text || (attachments.length ? `📎 ${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
-    let display = [...displayMsgs, { role: "user", text: shown }];
+    let display = [...displayMsgs, { role: "user", text: shown, shots: attachments.length || undefined }];
     setDisplayMsgs(display);
 
     // With image attachments, the user turn becomes a content array (vision).
     const userContent = attachments.length
       ? [
           ...attachments.map((a) => ({ type: "image", source: { type: "base64", media_type: a.media_type, data: a.data } })),
-          { type: "text", text: text || "Here's a screenshot — log it." },
+          { type: "text", text: text || "Here's a screenshot — look at it and tell me what you see, then log it if it's a bug or a feature request." },
         ]
       : text;
 
@@ -189,7 +242,11 @@ export default function useAIAgent() {
     }
   };
 
-  const clearHistory = () => { setDisplayMsgs([]); setApiHistory([]); };
+  const clearHistory = () => {
+    setDisplayMsgs([]);
+    setApiHistory([]);
+    clearAgentSession(AGENT_ID).catch(() => { /* noop */ });
+  };
 
   return { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory };
 }

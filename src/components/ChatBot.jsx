@@ -4,16 +4,11 @@ import useAIAgent, { MAX_INPUT_CHARS } from "../hooks/useAIAgent";
 import { TIERS } from "../api/aiTiers";
 import { stageScreenshot } from "../api/bugsApi";
 import { setPendingScreenshots } from "../api/pendingScreenshots";
+import { readDataUrl, normaliseImage } from "../utils/image";
 import { useToast } from "../contexts/ToastContext";
 
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 
-const readDataUrl = (file) => new Promise((res, rej) => {
-  const r = new FileReader();
-  r.onload = () => res(r.result);
-  r.onerror = rej;
-  r.readAsDataURL(file);
-});
 
 export default function ChatBot() {
   const [open, setOpen] = useState(false);
@@ -38,19 +33,31 @@ export default function ChatBot() {
   const handleInput = (e) => { setInput(e.target.value); autoGrow(); };
 
   // Stage dropped/pasted images to storage so Frodo's log_bug can claim them.
+  // A failed upload no longer discards the image: Frodo can still SEE it (the
+  // bytes are already in the browser), he just can't permanently attach it to a
+  // bug report. Silently dropping the shot is what made him say "I can't see
+  // any image" after Scott had clearly attached one.
   const addFiles = async (fileList) => {
-    const files = [...fileList].filter((f) => f.type.startsWith("image/"));
-    for (const file of files) {
+    const files = [...fileList].filter((f) => f.type.startsWith("image/") || /\.(hei[cf])$/i.test(f.name || ""));
+    for (const original of files) {
       const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
       let dataUrl;
-      try { dataUrl = await readDataUrl(file); } catch { continue; }
-      setShots((prev) => [...prev, { id, dataUrl, media_type: file.type, path: null, uploading: true }]);
+      try { dataUrl = await readDataUrl(original); } catch { addToast("Couldn't read that image.", "error"); continue; }
+
+      // Re-encode to a bucket-legal, vision-friendly JPEG before doing anything
+      // else; fall back to the raw file if the browser can't decode it.
+      const norm = await normaliseImage(original, dataUrl);
+      const file = norm?.file || original;
+      const shownUrl = norm?.dataUrl || dataUrl;
+      const mediaType = norm?.media_type || original.type || "image/png";
+
+      setShots((prev) => [...prev, { id, dataUrl: shownUrl, media_type: mediaType, path: null, uploading: true, failed: false }]);
       try {
         const path = await stageScreenshot(file);
         setShots((prev) => prev.map((s) => (s.id === id ? { ...s, path, uploading: false } : s)));
-      } catch {
-        setShots((prev) => prev.filter((s) => s.id !== id));
-        addToast("Screenshot upload failed.", "error");
+      } catch (err) {
+        setShots((prev) => prev.map((s) => (s.id === id ? { ...s, uploading: false, failed: true } : s)));
+        addToast(`${err.message || "Screenshot upload failed."} Frodo can still see it, but it won't attach to a bug report.`, "error");
       }
     }
   };
@@ -77,12 +84,16 @@ export default function ChatBot() {
 
   const doSend = () => {
     if (loading) return;
-    const ready = shots.filter((s) => s.path && !s.uploading);
-    setPendingScreenshots(ready.map((s) => s.path));
-    const attachments = ready.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
+    const attached = shots.filter((s) => !s.uploading);
+    // Only successfully-staged shots can be claimed by log_bug…
+    setPendingScreenshots(attached.filter((s) => s.path).map((s) => s.path));
+    // …but EVERY attached image goes to the model, uploaded or not. Previously
+    // an upload failure removed the shot entirely, so Frodo was told an
+    // attachment existed while receiving no image data at all.
+    const attachments = attached.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    sendMessage(attachments);
     setShots([]);
+    sendMessage(attachments);
   };
 
   const onKey = (e) => {
@@ -90,7 +101,7 @@ export default function ChatBot() {
   };
 
   const uploading = shots.some((s) => s.uploading);
-  const canSend = !loading && !uploading && (input.trim() || shots.some((s) => s.path));
+  const canSend = !loading && !uploading && (input.trim() || shots.length > 0);
 
   return (
     <>
@@ -155,9 +166,10 @@ export default function ChatBot() {
           {shots.length > 0 && (
             <div className="chat-shots">
               {shots.map((s) => (
-                <div key={s.id} className="chat-shot">
+                <div key={s.id} className={`chat-shot${s.failed ? " failed" : ""}`} title={s.failed ? "Upload failed — Frodo can still see this, but it won't attach to a bug report." : undefined}>
                   <img src={s.dataUrl} alt="screenshot" />
                   {s.uploading && <span className="chat-shot-spin"><i className="fa-solid fa-spinner fa-spin" /></span>}
+                  {s.failed && <span className="chat-shot-warn"><i className="fa-solid fa-triangle-exclamation" /></span>}
                   <button type="button" className="chat-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
                 </div>
               ))}

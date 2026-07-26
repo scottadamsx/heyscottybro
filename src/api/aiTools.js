@@ -19,6 +19,7 @@ import { clearAllMembers } from "./hikerApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { lazyImport } from "../lib/lazyImport";
 
 // ── Brain write policy ───────────────────────────────────────────────────────
 // The Brain is single-writer by design: Bilbo (the Archivist) is its keeper and
@@ -43,6 +44,48 @@ function brainWriteDenial(name, input, caller) {
     return { error: `Bilbo only writes to the Brain — the "${input?.collection || "that"}" collection is read-only for him.` };
   }
   return null;
+}
+
+// ── Duplicate-report detection (log_bug) ─────────────────────────────────────
+// Frodo files reports from conversation, where the same problem often comes up
+// twice within a few messages ("log that" … then a follow-up). Rather than
+// trusting him to re-read his own history, log_bug checks for an open report
+// that already covers the ground and updates it. Deliberately cheap and
+// conservative: word-overlap on the title, plus a page match — near-misses
+// create a new report, which is the safer failure.
+const PRIORITY_RANK = { low: 0, medium: 1, high: 2, critical: 3 };
+const STOP_WORDS = new Set(["the", "a", "an", "on", "in", "to", "of", "and", "or", "is", "are", "not", "for", "with", "when", "it", "its", "my", "page", "doesnt", "dont", "cant"]);
+
+const titleWords = (s) =>
+  new Set(String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w)));
+
+/** Jaccard overlap of the two titles' significant words. */
+function titleSimilarity(a, b) {
+  const A = titleWords(a); const B = titleWords(b);
+  if (!A.size || !B.size) return 0;
+  let shared = 0;
+  A.forEach((w) => { if (B.has(w)) shared++; });
+  return shared / new Set([...A, ...B]).size;
+}
+
+const normPage = (p) => String(p || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+function isSameReport(existing, incoming) {
+  const sim = titleSimilarity(existing.title, incoming.title);
+  if (sim >= 0.7) return true;                       // near-identical title
+  const pageA = normPage(existing.page); const pageB = normPage(incoming.page);
+  const samePage = pageA && pageB && (pageA === pageB || pageA.includes(pageB) || pageB.includes(pageA));
+  return sim >= 0.45 && samePage;                    // same area, same gist
+}
+
+/** Append only the lines the existing report doesn't already have. */
+function mergeDescription(existing, incoming) {
+  const have = new Set(String(existing || "").split("\n").map((l) => l.trim()));
+  const additions = String(incoming || "").split("\n").map((l) => l.trim())
+    .filter((l) => l && !have.has(l));
+  if (!additions.length) return existing;
+  return `${existing || ""}\n\nAlso reported:\n${additions.join("\n")}`.trim();
 }
 
 async function logAction({ agentId, tool, input, result }) {
@@ -188,7 +231,8 @@ export const TOOLS = [
     description:
       "Create a bug report or feature request AND attach any screenshots Scott just dropped into the chat. ALWAYS use this (not create_item) when Scott shares a screenshot or describes something broken / something he wants added.\n\n" +
       "A report is only useful if a developer can fix it WITHOUT coming back to ask questions, so EVERY entry must capture all five facets: the exact page, the specific element, the action Scott took, what he expected, and what actually happened. Never log something vague like \"button doesn't work\" — write it the way you'd want it written for you: \"clicking the 'Save' button on Settings doesn't persist the selected colour theme to localStorage.\"\n\n" +
-      "Read any attached screenshot to fill these in accurately — name what you can see. If Scott didn't say one of the facets, infer the most likely value from the screenshot and the conversation rather than leaving it vague. For a feature request, reframe the last two: 'expected' = the behaviour Scott wants, 'actual' = how it works today.",
+      "Read any attached screenshot to fill these in accurately — name what you can see. If Scott didn't say one of the facets, infer the most likely value from the screenshot and the conversation rather than leaving it vague. For a feature request, reframe the last two: 'expected' = the behaviour Scott wants, 'actual' = how it works today.\n\n" +
+      "DUPLICATES: before logging, check whether you already filed this earlier in the conversation. The tool also checks for an open report covering the same ground and updates that one instead of creating a second — when the result says updated_existing, tell Scott you updated the existing report rather than claiming you filed a new one.",
     input_schema: {
       type: "object",
       properties: {
@@ -259,8 +303,8 @@ async function runTool(name, input) {
     }
     case "consult_banker": {
       // Lazy import to avoid a static cycle (banker.js imports this module).
-      const { runBanker } = await import("./banker.js");
-      const { getAuthHeaders } = await import("../utils/supabase");
+      // lazyImport survives a stale-deploy chunk miss — see lib/lazyImport.js.
+      const { runBanker } = await lazyImport(() => import("./banker.js"), "the banker (Griphook)");
       const authHeaders = await getAuthHeaders();
       const { text } = await runBanker({
         messages: [{ role: "user", content: String(input.request || "") }],
@@ -270,8 +314,8 @@ async function runTool(name, input) {
     }
     case "consult_archivist": {
       // Lazy import to avoid a static cycle (archivist.js → runAgent → aiTools).
-      const { runArchivist } = await import("./archivist.js");
-      const { getAuthHeaders } = await import("../utils/supabase");
+      // lazyImport survives a stale-deploy chunk miss — see lib/lazyImport.js.
+      const { runArchivist } = await lazyImport(() => import("./archivist.js"), "the archivist (Bilbo)");
       const authHeaders = await getAuthHeaders();
       const { text } = await runArchivist({
         messages: [{ role: "user", content: String(input.request || "") }],
@@ -294,10 +338,10 @@ async function runTool(name, input) {
       return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
     }
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
-    case "export_bugs": { const { exportBugsZip } = await import("./bugsApi"); const r = await exportBugsZip(); return { success: true, ...r }; }
+    case "export_bugs": { const { exportBugsZip } = await lazyImport(() => import("./bugsApi"), "the bug exporter"); const r = await exportBugsZip(); return { success: true, ...r }; }
     case "log_bug": {
-      const { createBug, updateBug } = await import("./bugsApi");
-      const { takePendingScreenshots } = await import("./pendingScreenshots");
+      const { createBug, updateBug, loadBugs } = await lazyImport(() => import("./bugsApi"), "the bug tracker");
+      const { takePendingScreenshots } = await lazyImport(() => import("./pendingScreenshots"), "the screenshot staging area");
       // Stitch the five required facets into one fix-ready description. Plain
       // labelled lines render cleanly both in the Bugs page (pre-wrap text) and
       // in the exported Markdown report.
@@ -311,12 +355,46 @@ async function runTool(name, input) {
       ].filter(([, v]) => v && String(v).trim())
        .map(([k, v]) => `${k}: ${String(v).trim()}`)
        .join("\n");
+      const type = input.type || "bug";
+      const shots = takePendingScreenshots();
+
+      // Don't file the same report twice. Frodo was creating a fresh row for a
+      // report he had already logged moments earlier in the same conversation
+      // (he never checked). Rather than relying on him to remember, the tool
+      // itself looks for a still-open entry of the same type covering the same
+      // ground and updates that one instead.
+      let existing = null;
+      try {
+        const open = (await loadBugs()).filter(
+          (b) => (b.type || "bug") === type && ["open", "in_progress"].includes(b.status),
+        );
+        existing = open.find((b) => isSameReport(b, { title: input.title, page: input.page, description }));
+      } catch { /* if the lookup fails, fall through and just create it */ }
+
+      if (existing) {
+        // Merge: keep the original, add anything genuinely new, attach shots.
+        const patch = {};
+        const merged = mergeDescription(existing.description, description);
+        if (merged !== existing.description) patch.description = merged;
+        if (input.steps && !existing.steps) patch.steps = input.steps;
+        if (input.priority && PRIORITY_RANK[input.priority] > PRIORITY_RANK[existing.priority || "medium"]) {
+          patch.priority = input.priority;
+        }
+        if (shots.length) patch.screenshots = [...(existing.screenshots || []), ...shots];
+        const updated = Object.keys(patch).length ? await updateBug(existing.id, patch) : existing;
+        return {
+          success: true, duplicate_of: existing.id, updated_existing: true,
+          id: updated.id, title: updated.title, type,
+          screenshots: (updated.screenshots || []).length,
+          note: `An open ${type === "feature" ? "feature request" : "bug"} already covered this ("${existing.title}"), so it was updated instead of filing a second one. Tell Scott that's what you did.`,
+        };
+      }
+
       const bug = await createBug({
-        title: input.title, type: input.type || "bug",
+        title: input.title, type,
         description, steps: input.steps,
         page: input.page, priority: input.priority || "medium",
       });
-      const shots = takePendingScreenshots();
       if (shots.length) await updateBug(bug.id, { screenshots: shots });
       return { success: true, id: bug.id, title: bug.title, type: bug.type, screenshots: shots.length };
     }

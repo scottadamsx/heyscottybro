@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
-import { expandReminders, remindersForDay, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import { loadCourses } from "../../api/coursesApi";
@@ -133,6 +133,10 @@ export default function DashboardPage() {
   const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30))
     .sort((a, b) => a.date.localeCompare(b.date));
   const nextFew = upcomingAll.slice(0, 4);
+  // Undated tasks ("buy shampoo") have no calendar slot, so every date-driven
+  // list above skips them — they get their own group instead of vanishing while
+  // the "Active Tasks" stat still counts them.
+  const anytimeItems = undatedReminders(activeReminders);
   const wr = getWeekRange(today);
   const weekItems = expandReminders(activeReminders, wr.startStr, wr.endStr);
   const weekByDay = [];
@@ -241,7 +245,35 @@ export default function DashboardPage() {
           </>
         )}
 
-        {todayItems.length === 0 && nextFew.length === 0 && (
+        {/* Anytime — active tasks with no due date */}
+        {anytimeItems.length > 0 && (
+          <>
+            <div className="db-subhead">
+              <span>Anytime</span>
+              <span className="db-count">{anytimeItems.length}</span>
+            </div>
+            <div className="db-list">
+              {anytimeItems.map((r) => (
+                <div
+                  className="db-list-item db-list-item--clickable"
+                  key={r.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openTask(r.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+                >
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{r.name}</div>
+                    <div className="db-list-item-subtitle">No due date</div>
+                  </div>
+                  <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {todayItems.length === 0 && nextFew.length === 0 && anytimeItems.length === 0 && (
           <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear 🎉</p>
         )}
         {upcomingAll.length > 4 && (

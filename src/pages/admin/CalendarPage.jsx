@@ -7,6 +7,7 @@ import {
 import { expandReminders, toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import DocLinks from "../../components/docs/DocLinks";
 
 function monthLabel(year, month) {
@@ -28,6 +29,10 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [addMode, setAddMode] = useState("event"); // "event" | "task"
+
+  // The day view is a full-screen sheet on phones — freeze the page under it so
+  // the app header can't scroll into view over top of it.
+  useBodyScrollLock(!!selectedDate);
 
   // Filters — stored in URL so the sidebar can read them
   const filterProject = params.get("fp") || "";

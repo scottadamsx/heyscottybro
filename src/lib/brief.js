@@ -10,7 +10,7 @@
  *
  * buildBrief(inputs) -> { date, sections: [{key,title,icon,items:[{text,to?,tone?}]}], toMarkdown() }
  */
-import { toDateStr, formatMoney, remindersForDay, expandReminders } from "../utils/plannerUtils";
+import { toDateStr, formatMoney, remindersForDay, expandReminders, undatedReminders } from "../utils/plannerUtils";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -32,10 +32,14 @@ export function buildBrief({
     const d = Math.ceil((new Date(`${r.date}T12:00:00`) - new Date()) / 86400000);
     return d >= 0 && d <= 3;
   });
+  // Undated tasks are real work with no calendar slot. They used to fall out of
+  // every date-driven view, so they land here at the bottom of Priorities.
+  const anytime = undatedReminders(active);
   const priorities = [
     ...overdue.map((r) => ({ text: `OVERDUE (${r.date}): ${r.name}`, to: `/admin/tasks/${r.id}`, tone: "bad" })),
     ...dueToday.map((r) => ({ text: `Today: ${r.name}${r.time ? ` · ${r.time}` : ""}`, to: `/admin/tasks/${r.id}` })),
     ...soonDeadlines.map((r) => ({ text: `Deadline ${dayLabel(r.date)}: ${r.name}`, to: "/admin/school", tone: "warn" })),
+    ...anytime.map((r) => ({ text: `Anytime: ${r.name}`, to: `/admin/tasks/${r.id}`, tone: "muted" })),
   ];
 
   // ── Agenda: today's + tomorrow's events ──
