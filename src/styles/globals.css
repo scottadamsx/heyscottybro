@@ -1,0 +1,146 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   globals.css — THE styling source of truth (house style QF-7).
+   ─────────────────────────────────────────────────────────────────────────────
+   Every colour, radius, spacing and type value the app is allowed to use lives
+   here as a custom property. Components reference tokens; they do not write
+   literals. `index.css` holds component rules only and is loaded after this.
+
+   Two token scopes on purpose:
+     :root         — the public site (light "paper" canvas)
+     .admin-shell  — the admin/command-centre skin (dark), same names, different
+                     values, so one component works under both.
+
+   Named `globals.css` deliberately: devrules/validate-ui.mjs resolves the
+   global stylesheet by that exact basename, and while this project called it
+   index.css the checker silently skipped UI-4 entirely and reported UI-7 as
+   failing even though three prefers-reduced-motion blocks were present.
+   Extracting the tokens is what QF-7 asks for anyway; being visible to the
+   checker is the bonus. See ledger DR-009.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Surfaces — off-white paper canvas */
+  --bg-base: #F7F6F4;       /* paper */
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-raised: #F1F0ED;     /* subtle gray for inputs / raised tiles */
+  --bg-hover: #E7E6E3;
+
+  --border-subtle: rgba(14,14,16,0.08);
+  --border-primary: rgba(14,14,16,0.14);
+  --border-accent: rgba(31,98,255,0.4);
+  --line: #E7E6E3;
+
+  --text-primary: #0E0E10;
+  --text-secondary: #54545B;
+  --text-muted: #8A8A90;
+
+  /* Identity — flag red (decoration & brand only) */
+  --red-flag: #CF1124;
+  --red-flag-deep: #A50D1D;
+  --pure-black: #000000;
+
+  /* Actions — blue is every "go" button */
+  --accent: #1F62FF;
+  --accent-deep: #0E3FCC;
+  --accent-light: #1F62FF;
+  --accent-glow: transparent;
+  --cyan: #1F62FF;
+  --cyan-glow: transparent;
+  --green: #1f9d4d;
+  --red: #FF2233;           /* DESTRUCTIVE only — cancel / delete */
+  --red-deep: #D8101F;
+  --orange: #E07B00;
+
+  /* Gradients */
+  --grad-hero: transparent;
+  --grad-card: #FFFFFF;
+  --grad-accent: linear-gradient(180deg, #1F62FF, #0E3FCC);
+  --grad-glow: transparent;
+
+  /* Flag stripe accent (red field · black band · white edge) */
+  --flag-stripe: linear-gradient(90deg,
+    var(--red-flag) 0 60%, var(--pure-black) 60% 80%,
+    #FFFFFF 80% 86%, var(--red-flag) 86% 100%);
+
+  /* Typography */
+  --font-display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Spacing */
+  --nav-height: 68px;
+
+  /* Radius */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Shadows */
+  --shadow-card: 0 18px 40px -22px rgba(14,14,16,0.35), 0 2px 0 #fff inset;
+  --shadow-glow: none;
+
+  /* ── Foundation additions (track C) ─────────
+     Appended, not edited — a spacing/type scale so pages stop hard-coding
+     ad-hoc rem values. Documented & exportable from the Design page. */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+}
+
+.admin-shell {
+  --bg-base: #0a0a0c;
+  --bg-surface: #111114;
+  --bg-card: #111114;
+  --bg-raised: #18181c;
+  --bg-hover: #222227;
+  --border-subtle: rgba(255,255,255,0.08);
+  --border-primary: rgba(255,255,255,0.14);
+  --border-accent: rgba(79,124,255,0.5);
+  --text-primary: #ededed;
+  --text-secondary: #b2b2b8;
+  --text-muted: #82828b;
+  --accent: #4f7cff;
+  --accent-deep: #3f6cf0;
+  --accent-light: #8aa6ff;
+  --grad-accent: linear-gradient(180deg, #f4f4f5, #b2b2b8);
+  --font-body: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  letter-spacing: -0.01em;
+}
+
+/* ── UI-7 · Motion respects the OS setting ────────────────────────────────────
+   Anyone who has asked their system to reduce motion gets no transitions and
+   no animation, anywhere, without each component opting in. Component-level
+   blocks elsewhere in the cascade stay as they are; this is the floor. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

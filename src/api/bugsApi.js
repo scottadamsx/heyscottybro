@@ -1,6 +1,7 @@
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
 import { downloadBlob, slugify } from "../lib/exporter";
+import { lazyImport } from "../lib/lazyImport";
 
 const BUCKET = "bug-screenshots";
 
@@ -102,24 +103,44 @@ export function buildFixPrompt(bug) {
 
 // ── Screenshots ────────────────────────────────────────────────────────────
 
+/**
+ * A storage-safe object key segment.
+ *
+ * Supabase Storage validates object keys and rejects anything outside a narrow
+ * character set. A camera roll photo can arrive as "IMG 0042 (1).HEIC" or with
+ * no name at all (clipboard paste), so deriving the extension straight off
+ * `file.name` could produce a key with spaces/parentheses — which Safari
+ * surfaced as the useless "the string did not match the expected pattern".
+ * Anything that isn't a plain short alphanumeric extension becomes "png".
+ */
+function safeExt(file) {
+  const raw = (file?.name || "").split(".").pop() || "";
+  const ext = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (ext && ext.length <= 5) return ext;
+  const fromType = (file?.type || "").split("/")[1]?.replace(/[^a-z0-9]/g, "");
+  return fromType && fromType.length <= 5 ? fromType : "png";
+}
+
+const randId = () => (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10));
+
 // Upload a dropped image to a staging folder before any bug exists (used by
 // Frodo's chat). Returns the storage path; log_bug later claims it.
 export async function stageScreenshot(file) {
   const userId = await uid();
-  const ext = (file.name?.split(".").pop() || "png").toLowerCase();
-  const rand = crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
-  const path = `${userId}/_staging/${Date.now()}-${rand}.${ext}`;
+  const path = `${userId}/_staging/${Date.now()}-${randId()}.${safeExt(file)}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type || "image/png", upsert: false,
   });
-  if (error) throw error;
+  // Storage errors arrive with an opaque `message`; name the bucket so a
+  // missing-bucket or RLS problem is diagnosable from the toast alone.
+  if (error) throw new Error(`Couldn't save the screenshot to "${BUCKET}": ${error.message || error}`);
   return path;
 }
 
 export async function addScreenshot(bug, file) {
   const userId = await uid();
-  const ext = (file.name?.split(".").pop() || "png").toLowerCase();
-  const rand = crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
+  const ext = safeExt(file);
+  const rand = randId();
   const path = `${userId}/${bug.id}/${Date.now()}-${rand}.${ext}`;
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: file.type || "image/png", upsert: false,
@@ -173,7 +194,7 @@ function bugMarkdown(b, shotFiles) {
  * Returns a summary so callers (and Frodo) can confirm what was exported.
  */
 export async function exportBugsZip() {
-  const { default: JSZip } = await import("jszip");
+  const { default: JSZip } = await lazyImport(() => import("jszip"), "the zip builder");
   const bugs = await loadBugs();
   const zip = new JSZip();
   const shotsDir = zip.folder("screenshots");

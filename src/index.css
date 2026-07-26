@@ -4,90 +4,9 @@
    Red/black/white identity · blue actions · hard-red danger
    ═══════════════════════════════════════════ */
 
-:root {
-  /* Surfaces — off-white paper canvas */
-  --bg-base: #F7F6F4;       /* paper */
-  --bg-surface: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --bg-raised: #F1F0ED;     /* subtle gray for inputs / raised tiles */
-  --bg-hover: #E7E6E3;
-
-  --border-subtle: rgba(14,14,16,0.08);
-  --border-primary: rgba(14,14,16,0.14);
-  --border-accent: rgba(31,98,255,0.4);
-  --line: #E7E6E3;
-
-  --text-primary: #0E0E10;
-  --text-secondary: #54545B;
-  --text-muted: #8A8A90;
-
-  /* Identity — flag red (decoration & brand only) */
-  --red-flag: #CF1124;
-  --red-flag-deep: #A50D1D;
-  --pure-black: #000000;
-
-  /* Actions — blue is every "go" button */
-  --accent: #1F62FF;
-  --accent-deep: #0E3FCC;
-  --accent-light: #1F62FF;
-  --accent-glow: transparent;
-  --cyan: #1F62FF;
-  --cyan-glow: transparent;
-  --green: #1f9d4d;
-  --red: #FF2233;           /* DESTRUCTIVE only — cancel / delete */
-  --red-deep: #D8101F;
-  --orange: #E07B00;
-
-  /* Gradients */
-  --grad-hero: transparent;
-  --grad-card: #FFFFFF;
-  --grad-accent: linear-gradient(180deg, #1F62FF, #0E3FCC);
-  --grad-glow: transparent;
-
-  /* Flag stripe accent (red field · black band · white edge) */
-  --flag-stripe: linear-gradient(90deg,
-    var(--red-flag) 0 60%, var(--pure-black) 60% 80%,
-    #FFFFFF 80% 86%, var(--red-flag) 86% 100%);
-
-  /* Typography */
-  --font-display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  /* Spacing */
-  --nav-height: 68px;
-
-  /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-
-  /* Shadows */
-  --shadow-card: 0 18px 40px -22px rgba(14,14,16,0.35), 0 2px 0 #fff inset;
-  --shadow-glow: none;
-
-  /* ── Foundation additions (track C) ─────────
-     Appended, not edited — a spacing/type scale so pages stop hard-coding
-     ad-hoc rem values. Documented & exportable from the Design page. */
-  --space-2xs: 0.25rem;
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 2rem;
-
-  --leading-tight: 1.25;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.7;
-}
+/* Design tokens live in styles/globals.css (QF-7 — one styling source of
+   truth). It is imported before this file in main.jsx. Component rules
+   below reference tokens only; do not reintroduce literals here. */
 
 /* ── Reset ────────────────────────────────── */
 *, *::before, *::after {
@@ -1779,14 +1698,41 @@ input, textarea, select { font-family: inherit; }
 .day-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
 .day-modal-body { padding: 1rem 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; min-height: 0; }
 
+/* Phone: the day view is a full-screen sheet, not a floating card. Head and
+   the add-bar are pinned; only the body scrolls. Safe-area insets keep the
+   close button clear of the notch and the add button clear of the home bar.
+   NOTE: a second, later `.day-modal` rule further down this file used to
+   re-clamp max-height to 75vh and put overflow on the flex container, which
+   broke this sheet on mobile — it has been removed. Don't re-add one. */
 @media (max-width: 768px) {
-  .event-overlay:has(.day-modal) { padding: 0; }
+  .event-overlay:has(.day-modal) { padding: 0; align-items: stretch; }
   .day-modal {
     max-width: none; width: 100%;
     height: 100vh; height: 100dvh; max-height: none;
     border-radius: 0;
     border: none;
+    overflow: hidden;
   }
+  .day-modal-head {
+    flex-shrink: 0;
+    padding-top: calc(0.9rem + env(safe-area-inset-top));
+    background: var(--bg-surface);
+  }
+  .day-modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .day-add {
+    flex-shrink: 0;
+    padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+  }
+  /* 16px keeps iOS Safari from zooming (and scroll-jumping) on focus. */
+  .day-add-form input,
+  .day-add-form select,
+  .day-add-form textarea { font-size: 16px; }
 }
 
 .day-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
@@ -3711,6 +3657,10 @@ input, textarea, select { font-family: inherit; }
 .chat-shot { position: relative; width: 56px; height: 56px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-subtle); }
 .chat-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .chat-shot-spin { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.45); color: #fff; font-size: 0.8rem; }
+/* Upload failed: Frodo can still SEE the image, it just can't be attached to a
+   bug report — so the thumbnail stays, flagged, instead of silently vanishing. */
+.chat-shot.failed { border-color: var(--orange, #f59e0b); }
+.chat-shot-warn { position: absolute; left: 2px; bottom: 2px; width: 17px; height: 17px; border-radius: 5px; background: rgba(0,0,0,0.65); color: var(--orange, #f59e0b); font-size: 9px; display: grid; place-items: center; }
 .chat-shot-x { position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; border: none; border-radius: 5px; cursor: pointer; background: rgba(0,0,0,0.6); color: #fff; font-size: 9px; line-height: 1; display: grid; place-items: center; }
 .chat-input {
   flex: 1;
@@ -3932,32 +3882,6 @@ input, textarea, select { font-family: inherit; }
    COMMAND CENTER — crisp dark dashboard theme (admin only)
    Matches the Overview look. Scoped to .admin-shell.
    ═══════════════════════════════════════════ */
-.admin-shell {
-  --bg-base: #0a0a0c;
-  --bg-surface: #111114;
-  --bg-card: #111114;
-  --bg-raised: #18181c;
-  --bg-hover: #222227;
-  --border-subtle: rgba(255,255,255,0.08);
-  --border-primary: rgba(255,255,255,0.14);
-  --border-accent: rgba(79,124,255,0.5);
-  --text-primary: #ededed;
-  --text-secondary: #b2b2b8;
-  --text-muted: #82828b;
-  --accent: #4f7cff;
-  --accent-deep: #3f6cf0;
-  --accent-light: #8aa6ff;
-  --grad-accent: linear-gradient(180deg, #f4f4f5, #b2b2b8);
-  --font-body: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  letter-spacing: -0.01em;
-}
 .admin-shell .admin-main { color: var(--text-primary); }
 
 /* Elegant serif headings (Claude-style editorial touch) */
@@ -4995,14 +4919,15 @@ input, textarea, select { font-family: inherit; }
 
   /* ── Calendar ── */
   .calendar-cell { min-height: 60px; }
-  .day-modal {
-    max-height: 75vh;
-    overflow-y: auto;
-  }
+  /* (The day sheet's mobile rules live with the .day-modal block above — a
+     duplicate `max-height: 75vh; overflow-y: auto` here used to override them
+     and break the full-screen sheet on phones.) */
 
-  /* ── Date planner ── */
-  .done-item { flex-wrap: wrap; }
-  .reveal-card { width: 100% !important; max-width: 100% !important; }
+  /* ── Date planner ──
+     These two were the ONLY Dates rules that survived Phase 2; the rest of the
+     page's stylesheet was orphaned. It now lives in pages/admin/dates.css,
+     which carries its own phone block — so these !important overrides are gone
+     rather than fighting it. */
 
   /* ── Project detail header ── */
   .project-detail-header {

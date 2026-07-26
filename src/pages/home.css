@@ -534,6 +534,12 @@
 .lp-card-link { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.86rem; color: var(--green); margin-top: 0.3rem; }
 .lp-card-link i { transition: transform .25s var(--t-ease); }
 .lp-card:hover .lp-card-link i { transform: translateX(5px); }
+/* Private / not-yet-public projects: explained on the page, but no live link. */
+.lp-card-static { cursor: default; }
+.lp-card-static:hover { transform: none; border-color: var(--t-line); box-shadow: none; }
+.lp-card-static:hover .lp-card-media.ph i { opacity: .85; }
+.lp-card-soon { color: var(--t-fg-soft); opacity: 0.82; }
+.lp-card-soon i { font-size: 0.78em; opacity: 0.8; }
 
 /* ── About ── */
 .lp-about { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(2rem, 6vw, 4.5rem); align-items: start; }

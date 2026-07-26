@@ -5,6 +5,7 @@ import {
   loadBugs, createBug, updateBug, deleteBug,
   addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip, buildFixPrompt,
 } from "../../api/bugsApi";
+import { toUploadableImage } from "../../utils/image";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
 const STATUSES   = ["open", "in_progress", "resolved", "closed"];
@@ -158,19 +159,22 @@ export default function BugsPage() {
     }
   };
 
-  // Upload one or more image files as screenshots on a bug.
+  // Upload one or more image files as screenshots on a bug. Each is re-encoded
+  // to a bucket-legal JPEG first — a raw camera-roll HEIC (or anything over the
+  // bucket's size cap) was rejected by Storage with an opaque "the string did
+  // not match the expected pattern" in Safari.
   const uploadFiles = async (bug, fileList) => {
-    const files = [...fileList].filter(f => f.type.startsWith("image/"));
+    const files = [...fileList].filter(f => f.type.startsWith("image/") || /\.(hei[cf])$/i.test(f.name || ""));
     if (!files.length) return;
     setUploading(true);
     let current = bug;
     try {
-      for (const file of files) current = await addScreenshot(current, file);
+      for (const file of files) current = await addScreenshot(current, await toUploadableImage(file));
       setBugs(prev => prev.map(b => b.id === current.id ? current : b));
       await ensureUrls(current.screenshots);
       addToast(`Added ${files.length} screenshot${files.length === 1 ? "" : "s"}.`, "success");
-    } catch {
-      addToast("Screenshot upload failed.", "error");
+    } catch (err) {
+      addToast(err.message || "Screenshot upload failed.", "error");
     } finally {
       setUploading(false);
     }

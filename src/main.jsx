@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import "./styles/globals.css"; // design tokens FIRST — QF-7, one styling source of truth
 import "./index.css";
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
 import "./styles/admin-executive.css"; // minimal executive skin for /admin (loads last)

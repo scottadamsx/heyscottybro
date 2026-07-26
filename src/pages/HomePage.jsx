@@ -117,6 +117,11 @@ const MARQUEE = ["Builder", "Founder", "React", "Python", "Supabase", "St. John'
 const PROJECTS = [
   { id: "never86", tag: "Live Product", title: "NEVER86", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", icon: "fa-utensils", img: "/images/never86_website_concept.png", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://never86.ca", cta: "Visit site" },
   { id: "sjhc", tag: "Live Community", title: "St. John's Hike Club", desc: "More than a walking group — a community movement exploring Newfoundland's most stunning trails.", icon: "fa-person-hiking", img: "/images/hikeclub.JPG", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://stjohnshikeclub.com", cta: "Visit site" },
+  // Kiwi projects. Repos are PRIVATE right now, so no live button (per the rule: explain them,
+  // but only add a redirect once the repo is public). To turn a button ON later: set public:true
+  // and href to the live URL (Kiwi Games → its GitHub Pages / repo, Kiwi IDE → its site/repo).
+  { id: "kiwi-ide", tag: "Flagship · In Beta", title: "Kiwi IDE", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with AI agents. Agent, live preview and an ambient code stream, plus “earn while you wait”: games, articles and surveys that fill the time while the agent works. In private beta.", icon: "fa-kiwi-bird", img: null, bg: "linear-gradient(135deg,#1a2a18,#111d10)", to: null, href: null, public: false, cta: "Private beta" },
+  { id: "kiwi-games", tag: "Game Collection", title: "Kiwi Games", desc: "50 tiny browser games in one place — Snake, 2048, Minesweeper, solitaire, word games and more. Pulled straight out of Kiwi IDE so friends and family can just download and play. No sign-up, no install, works offline.", icon: "fa-gamepad", img: null, bg: "linear-gradient(135deg,#20221a,#161810)", to: null, href: null, public: false, playHref: "https://scottadamsx.github.io/kiwiGames/", cta: "Coming soon" },
   { id: "eliquinn", tag: "Client Site", title: "eliquinn.space", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, with an intro film, smooth scroll and a pinned work gallery. Designed and built by me.", icon: "fa-compass-drafting", img: null, bg: "linear-gradient(135deg,#2a2622,#1b1916)", to: null, href: "https://eliquinn.space", cta: "Visit site" },
   { id: "ourfirsttwomonths", tag: "Personal Site", title: "Our First Two Months", desc: "A little web gift for my girlfriend — a scrollable keepsake celebrating our first two months together.", icon: "fa-heart", img: null, bg: "linear-gradient(135deg,#2a1620,#190e15)", to: null, href: "https://ourfirsttwomonths.vercel.app", cta: "Visit site" },
   { id: "minecraft-trivia", tag: "Game", title: "Minecraft Trivia", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more.", icon: "fa-cube", img: null, bg: "linear-gradient(135deg,#161a22,#11141b)", to: "/games/minecraft-trivia", href: null, cta: "Play now" },
@@ -128,6 +133,7 @@ const PROJECTS = [
 const SKILLS = ["python", "react", "javascript", "typescript", "postgresql", "supabase", "flask", "css/html", "git", "godot"];
 
 function WorkCard({ p }) {
+  const linked = !!(p.href || p.to);
   const inner = (
     <>
       <div className={`lp-card-media ${p.img ? "" : "ph"}`} style={p.img ? undefined : { background: p.bg }}>
@@ -137,7 +143,9 @@ function WorkCard({ p }) {
         <span className="lp-tag">{p.tag}</span>
         <h3 className="lp-card-title">{p.title}</h3>
         <p className="lp-card-desc">{p.desc}</p>
-        <span className="lp-card-link">{p.cta} <i className="fa-solid fa-arrow-right" /></span>
+        {linked
+          ? <span className="lp-card-link">{p.cta} <i className="fa-solid fa-arrow-right" /></span>
+          : <span className="lp-card-link lp-card-soon"><i className="fa-solid fa-lock" /> {p.cta}</span>}
       </div>
     </>
   );
@@ -147,9 +155,15 @@ function WorkCard({ p }) {
     viewport: { once: true, amount: 0.2 },
     transition: { duration: 0.5, ease: ease.out },
   };
-  return p.href
-    ? <motion.a className="lp-card" href={p.href} target="_blank" rel="noreferrer" {...cardMotion}>{inner}</motion.a>
-    : <motion.div {...cardMotion}><Link className="lp-card" to={p.to}>{inner}</Link></motion.div>;
+  // Public repos / live sites get a real link; private ones (no href/to) render as a
+  // non-clickable card with a locked status — no dead links, no redirect until it's public.
+  if (p.href) {
+    return <motion.a className="lp-card" href={p.href} target="_blank" rel="noreferrer" {...cardMotion}>{inner}</motion.a>;
+  }
+  if (p.to) {
+    return <motion.div {...cardMotion}><Link className="lp-card" to={p.to}>{inner}</Link></motion.div>;
+  }
+  return <motion.div className="lp-card lp-card-static" {...cardMotion}>{inner}</motion.div>;
 }
 
 /* Hero text column — staggered */

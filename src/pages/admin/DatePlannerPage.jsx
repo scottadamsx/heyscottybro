@@ -7,6 +7,7 @@ import {
   loadDateCompleted, addDateCompleted, updateDateMemory, deleteDateCompleted,
   syncLocalDatePlanner,
 } from "../../api/datePlannerApi";
+import "./dates.css";
 
 const EMOJIS = ["💖", "🍷", "🍿", "🎬", "🥾", "🏖️", "🎨", "🍣", "🎢", "🌃", "🎳", "🕯️", "☕", "🍜", "⛸️", "🎤"];
 

@@ -684,9 +684,12 @@ export async function loadAgentActions(limit = 20) {
   const { data: { session } } = await supabase.auth.getSession();
   const userId = session?.user?.id;
   if (!userId) return [];
+  // Column is `agent_id` (Phase 0 renamed it from `tier`). Selecting the old
+  // name made PostgREST error, and the `if (error) return []` below turned that
+  // into a permanently empty "Frodo's recent actions" card.
   const { data, error } = await supabase
     .from("agent_actions")
-    .select("id, tier, tool, collection, item_id, args, status, error, created_at")
+    .select("id, agent_id, tool, collection, item_id, args, status, error, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);

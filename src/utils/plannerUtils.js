@@ -131,3 +131,15 @@ export function remindersForDay(reminders, dayStr) {
   const seen = new Set();
   return items.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
 }
+
+/**
+ * Tasks with NO due date ("buy shampoo", "return the fan").
+ *
+ * expandReminders is date-driven — it drops anything without a `date`, which is
+ * correct for a calendar but made undated tasks invisible on Today, the Brief
+ * and the Dashboard while "Active Tasks" still counted them. Every surface that
+ * shows a day's work now shows these too, under an "Anytime" heading.
+ */
+export function undatedReminders(reminders) {
+  return (reminders || []).filter((r) => !r.completed && !r.date);
+}
