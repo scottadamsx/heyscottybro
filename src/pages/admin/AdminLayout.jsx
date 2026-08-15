@@ -8,8 +8,11 @@ import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 
 // The Seven Spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
+// Reminders sits beside Plan: the dedicated Tasks & Reminders surface, restored
+// as its own page after the Phase-2 overhaul had folded it into the redirect.
 const NAV_ITEMS = [
-  { to: "/admin/planner",  icon: "fa-calendar-check",  label: "Plan" },
+  { to: "/admin/planner",   icon: "fa-calendar-check",  label: "Plan" },
+  { to: "/admin/reminders", icon: "fa-bell",            label: "Reminders" },
   { to: "/admin/finance",  icon: "fa-wallet",           label: "Money" },
   { to: "/admin/school",   icon: "fa-graduation-cap",   label: "School" },
   { to: "/admin/life",     icon: "fa-heart-pulse",      label: "Life" },

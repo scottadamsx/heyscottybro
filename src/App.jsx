@@ -23,6 +23,7 @@ import TicTacToePage from "./pages/TicTacToePage.jsx";
 const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
 const DashboardPage      = lazy(() => import("./pages/admin/DashboardPage.jsx"));
 const PlannerPage        = lazy(() => import("./pages/admin/PlannerPage.jsx"));
+const RemindersPage      = lazy(() => import("./pages/admin/RemindersPage.jsx"));
 const TaskDetailPage     = lazy(() => import("./pages/admin/TaskDetailPage.jsx"));
 const SchoolPage         = lazy(() => import("./pages/admin/SchoolPage.jsx"));
 const LifePage           = lazy(() => import("./pages/admin/LifePage.jsx"));
@@ -80,6 +81,7 @@ export default function App() {
           {/* The Seven Spaces */}
           <Route path="today"     element={Lazy(<DashboardPage />)} />
           <Route path="planner"   element={Lazy(<PlannerPage />)} />
+          <Route path="reminders" element={Lazy(<RemindersPage />)} />
           <Route path="tasks/:id" element={Lazy(<TaskDetailPage />)} />
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
           <Route path="school"    element={Lazy(<SchoolPage />)} />
@@ -104,7 +106,6 @@ export default function App() {
           <Route path="research"       element={<Navigate to="/admin/mission?tab=research" replace />} />
           <Route path="grocery"        element={<Navigate to="/admin/finance?tab=receipts" replace />} />
           <Route path="dates"          element={<Navigate to="/admin/life?tab=dates" replace />} />
-          <Route path="reminders"      element={<Navigate to="/admin/planner" replace />} />
           <Route path="calendar"       element={<Navigate to="/admin/planner" replace />} />
           <Route path="journal"        element={<Navigate to="/admin/planner?tab=journal" replace />} />
           <Route path="projects"       element={<Navigate to="/admin/planner?tab=projects" replace />} />
