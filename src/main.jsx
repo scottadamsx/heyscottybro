@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
+import { reloadOnceForStaleChunk } from "./utils/lazyWithReload.js";
 import "./styles/globals.css"; // design tokens FIRST — QF-7, one styling source of truth
 import "./index.css";
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
@@ -30,6 +31,10 @@ createRoot(document.getElementById("root")).render(
     </ErrorBoundary>
   </StrictMode>
 );
+
+// Vite fires this when a modulepreload for a dynamic import fails — the same
+// stale-chunk-after-deploy case the lazy wrapper handles. Reload once to recover.
+window.addEventListener("vite:preloadError", () => { reloadOnceForStaleChunk(); });
 
 // PWA: register the service worker (prod only — dev HMR and SW caching fight).
 if ("serviceWorker" in navigator && import.meta.env.PROD) {

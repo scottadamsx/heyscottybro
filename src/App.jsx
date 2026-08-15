@@ -1,4 +1,8 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+// Stale-chunk-resilient lazy: reloads once when a deploy invalidated the chunk
+// hash of an already-open tab, instead of white-screening. Aliased to `lazy` so
+// every lazy(() => import(...)) below goes through it unchanged.
+import { lazyWithReload as lazy } from "./utils/lazyWithReload.js";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastProvider } from "./contexts/ToastContext";
 import { AgentRuntimeProvider } from "./contexts/AgentRuntimeContext";
