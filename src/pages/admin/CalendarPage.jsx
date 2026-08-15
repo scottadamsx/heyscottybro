@@ -3,8 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import {
   loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
+  loadJournal,
 } from "../../api/plannerApi";
-import { expandReminders, toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
+import { loadWorkouts } from "../../api/workoutsApi";
+import { loadDateCompleted } from "../../api/datePlannerApi";
+import { loadAccountability } from "../../api/accountabilityApi";
+import { expandReminders, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
@@ -25,6 +29,11 @@ export default function CalendarPage() {
   const [transactions, setTransactions] = useState([]);
   const [projects, setProjects] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
+  // Everything-that-happened-that-day sources for the robust day view.
+  const [journal, setJournal] = useState([]);
+  const [workouts, setWorkouts] = useState([]);
+  const [datesDone, setDatesDone] = useState([]);
+  const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
   const [selectedDate, setSelectedDate] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -65,18 +74,26 @@ export default function CalendarPage() {
   const [taskRecur, setTaskRecur] = useState("none");
 
   const load = async () => {
-    const [r, e, t, p, et] = await Promise.all([
+    const [r, e, t, p, et, j, w, dc, acc] = await Promise.all([
       loadReminders().catch(() => []),
       loadEvents().catch(() => []),
       loadTransactions().catch(() => []),
       loadProjects().catch(() => []),
       loadEventTypes().catch(() => []),
+      loadJournal().catch(() => []),
+      loadWorkouts().catch(() => []),
+      loadDateCompleted().catch(() => []),
+      loadAccountability().catch(() => ({ trackers: [], logs: [] })),
     ]);
     setReminders(r);
     setEvents(e);
     setTransactions(t);
     setProjects(p);
     setEventTypes(et);
+    setJournal(j);
+    setWorkouts(w);
+    setDatesDone(dc);
+    setHabits(acc?.trackers ? acc : { trackers: [], logs: [] });
   };
 
   useEffect(() => { load(); }, []);
@@ -87,6 +104,8 @@ export default function CalendarPage() {
       onDataChange("reminders", load),
       onDataChange("events", load),
       onDataChange("transactions", load),
+      onDataChange("journal", load),
+      onDataChange("workouts", load),
     ];
     return () => unsubs.forEach((u) => u());
   }, []);
@@ -200,6 +219,22 @@ export default function CalendarPage() {
   const dayDone = selectedDate && filterKind !== "events" && showCompleted
     ? reminders.filter((r) => r.completed && r.date === selectedDate && byProject(r))
     : [];
+
+  // The rest of the day — journal, money, habits, workouts, dates. Each section
+  // only renders when it has something, so the sheet stays focused. Money spent
+  // excludes "future" (planned) rows; grocery receipts already post here as
+  // transactions, so this is the single source of day spend.
+  const dayJournal = selectedDate ? journal.filter((j) => j.date === selectedDate) : [];
+  const dayTx = selectedDate ? transactions.filter((t) => t.date === selectedDate && t.type !== "future") : [];
+  const daySpent = dayTx.reduce((a, t) => (Number(t.amount) < 0 ? a + Math.abs(Number(t.amount)) : a), 0);
+  const dayIncome = dayTx.reduce((a, t) => (Number(t.amount) > 0 ? a + Number(t.amount) : a), 0);
+  const dayHabits = selectedDate
+    ? (habits.trackers || [])
+        .map((tr) => ({ tracker: tr, count: (habits.logs || []).filter((l) => l.trackerId === tr.id && l.date === selectedDate).length }))
+        .filter((h) => h.count > 0)
+    : [];
+  const dayWorkouts = selectedDate ? workouts.filter((w) => w.date === selectedDate) : [];
+  const dayDates = selectedDate ? datesDone.filter((d) => d.done_on === selectedDate) : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
@@ -449,6 +484,116 @@ export default function CalendarPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Journal */}
+              {dayJournal.length > 0 && (
+                <div className="day-section">
+                  <div className="day-section-head">
+                    <span><i className="fa-solid fa-book" /> Journal</span>
+                    <span className="day-count">{dayJournal.length}</span>
+                  </div>
+                  {dayJournal.map((j) => (
+                    <div className="day-item" key={j.id}>
+                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
+                      <div className="day-item-body">
+                        {j.title && <div className="day-item-title">{j.title}</div>}
+                        {j.entry && <div className="day-item-sub" style={{ whiteSpace: "pre-wrap" }}>{j.entry}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Money spent */}
+              {dayTx.length > 0 && (
+                <div className="day-section">
+                  <div className="day-section-head">
+                    <span><i className="fa-solid fa-wallet" /> Money</span>
+                    <span className="day-count">
+                      {daySpent > 0 ? `${formatMoney(daySpent)} spent` : ""}
+                      {daySpent > 0 && dayIncome > 0 ? " · " : ""}
+                      {dayIncome > 0 ? `${formatMoney(dayIncome)} in` : ""}
+                    </span>
+                  </div>
+                  {dayTx.map((t) => {
+                    const neg = Number(t.amount) < 0;
+                    return (
+                      <div className="day-item" key={t.id}>
+                        <span className="day-item-dot" style={{ background: neg ? "var(--red)" : "var(--green)" }} />
+                        <div className="day-item-body">
+                          <div className="day-item-title">{t.description || "(no description)"}</div>
+                          {t.category && <div className="day-item-sub">{t.category}</div>}
+                        </div>
+                        <span style={{ color: neg ? "var(--red)" : "var(--green)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                          {neg ? "−" : "+"}{formatMoney(t.amount)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Habits logged */}
+              {dayHabits.length > 0 && (
+                <div className="day-section">
+                  <div className="day-section-head">
+                    <span><i className="fa-solid fa-fire" /> Habits</span>
+                    <span className="day-count">{dayHabits.length}</span>
+                  </div>
+                  {dayHabits.map(({ tracker, count }) => (
+                    <div className="day-item" key={tracker.id}>
+                      <span className="day-item-dot" style={{ background: tracker.color || "var(--accent)" }} />
+                      <div className="day-item-body">
+                        <div className="day-item-title">{tracker.emoji} {tracker.name}</div>
+                      </div>
+                      {count > 1
+                        ? <span className="day-count">{count}×</span>
+                        : <span className="day-check done"><i className="fa-solid fa-circle-check" /></span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Workouts */}
+              {dayWorkouts.length > 0 && (
+                <div className="day-section">
+                  <div className="day-section-head">
+                    <span><i className="fa-solid fa-dumbbell" /> Workouts</span>
+                    <span className="day-count">{dayWorkouts.length}</span>
+                  </div>
+                  {dayWorkouts.map((w) => (
+                    <div className="day-item" key={w.id}>
+                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
+                      <div className="day-item-body">
+                        <div className="day-item-title">{w.exercise}</div>
+                        <div className="day-item-sub">
+                          {[Number(w.weight) ? `${w.weight} lb` : null, Number(w.reps) ? `${w.reps} reps` : null, Number(w.sets) ? `${w.sets} sets` : null].filter(Boolean).join(" · ")}
+                          {w.notes ? ` — ${w.notes}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Dates */}
+              {dayDates.length > 0 && (
+                <div className="day-section">
+                  <div className="day-section-head">
+                    <span><i className="fa-solid fa-heart" /> Dates</span>
+                    <span className="day-count">{dayDates.length}</span>
+                  </div>
+                  {dayDates.map((d) => (
+                    <div className="day-item" key={d.id}>
+                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
+                      <div className="day-item-body">
+                        <div className="day-item-title">{d.emoji} {d.title}</div>
+                        {(d.memory || d.note) && <div className="day-item-sub">{d.memory || d.note}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Add */}
