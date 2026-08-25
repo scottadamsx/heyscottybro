@@ -3,7 +3,7 @@ import { runAgent } from "../agents/runAgent";
 import { runOverseer as runOverseerAgent } from "../agents/overseer";
 import { getAuthHeaders } from "../utils/supabase";
 import { loadAgentActions } from "../api/plannerApi";
-import { loadAgentSessions, saveAgentSession } from "../api/agentSessionsApi";
+import { loadAgentSessions, saveAgentSession, ccSessionKey } from "../api/agentSessionsApi";
 import { useToast } from "./ToastContext";
 
 /**
@@ -53,12 +53,49 @@ export function AgentRuntimeProvider({ children }) {
     []
   );
   useEffect(() => { refreshActions(); }, [refreshActions]);
-  // Restore saved conversations so they survive a refresh.
+  // Restore saved conversations so they survive a refresh. Command Center
+  // rows live under `${id}:cc` so they don't collide with the ChatBot's Frodo.
+  // Stored history wins unless the live thread already has messages (a run
+  // that started before the load resolved).
   useEffect(() => {
     loadAgentSessions()
-      .then((s) => { if (s && Object.keys(s).length) setThreads((prev) => ({ ...s, ...prev })); })
-      .catch(() => {});
-  }, []);
+      .then((s) => {
+        const restored = {};
+        for (const [key, val] of Object.entries(s || {})) {
+          if (key.endsWith(":cc")) restored[key.slice(0, -3)] = val;
+        }
+        if (!Object.keys(restored).length) return;
+        setThreads((prev) => {
+          const next = { ...prev };
+          for (const [id, val] of Object.entries(restored)) {
+            if (!prev[id]?.display?.length && !prev[id]?.convo?.length) next[id] = val;
+          }
+          return next;
+        });
+      })
+      .catch((e) => {
+        console.error("[AgentRuntime] session load failed:", e);
+        addToast(`Couldn't load agent chat history: ${e.message}`, "error");
+      });
+  }, [addToast]);
+
+  // What goes to Supabase: no base64. A screenshot is 1–3 MB of base64 and a
+  // handful would blow the row up; the model already saw it, so the stored
+  // turn keeps a placeholder. React state keeps the real thing for this session.
+  const persistThread = useCallback((id, thread) => {
+    const convo = (thread.convo || []).map((m) => (Array.isArray(m.content)
+      ? { ...m, content: m.content.map((b) => (b.type === "image" ? { type: "text", text: "[screenshot attached earlier]" } : b)) }
+      : m));
+    const display = (thread.display || []).map((m) => {
+      if (!m.images?.length) return m;
+      const { images, ...rest } = m;
+      return { ...rest, shots: images.length };
+    });
+    saveAgentSession(ccSessionKey(id), { convo, display }).catch((e) => {
+      console.error(`[AgentRuntime] session save failed for ${id}:`, e);
+      addToast(e.message || `Chat history isn't saving for ${id}.`, "error");
+    });
+  }, [addToast]);
 
   const pushDisplay = useCallback((id, msg) =>
     setThreads((prev) => {
@@ -102,7 +139,7 @@ export function AgentRuntimeProvider({ children }) {
         saved = { convo: history, display: [...t.display, { role: "assistant", text: reply }] };
         return { ...prev, [agent.id]: saved };
       });
-      if (saved) saveAgentSession(agent.id, saved);
+      if (saved) persistThread(agent.id, saved);
       refreshActions();
     } catch (e) {
       pushDisplay(agent.id, { role: "error", text: e.message || "Something went wrong." });
@@ -110,7 +147,7 @@ export function AgentRuntimeProvider({ children }) {
       setBusyFor(agent.id, false);
       setStatusFor(agent.id, "");
     }
-  }, [setBusyFor, setInputFor, setStatusFor, pushDisplay, refreshActions]);
+  }, [setBusyFor, setInputFor, setStatusFor, pushDisplay, refreshActions, persistThread]);
 
   const runOverseer = useCallback(async () => {
     const id = "galadriel";
@@ -122,7 +159,7 @@ export function AgentRuntimeProvider({ children }) {
       const authHeaders = await getAuthHeaders();
       const { text } = await runOverseerAgent({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
       pushDisplay(id, { role: "assistant", text });
-      setThreads((prev) => { if (prev[id]) saveAgentSession(id, prev[id]); return prev; });
+      setThreads((prev) => { if (prev[id]) persistThread(id, prev[id]); return prev; });
       addToast("Galadriel filed today's summary into the Brain.", "success");
       refreshActions();
     } catch (e) {
@@ -132,7 +169,7 @@ export function AgentRuntimeProvider({ children }) {
       setBusyFor(id, false);
       setStatusFor(id, "");
     }
-  }, [addToast, pushDisplay, setBusyFor, setStatusFor, refreshActions]);
+  }, [addToast, pushDisplay, setBusyFor, setStatusFor, refreshActions, persistThread]);
 
   // ---- Local agent (Aulë): the live Claude Code WebSocket lives HERE now ----
   const auleConfigured = Boolean(AULE_URL && AULE_TOKEN);

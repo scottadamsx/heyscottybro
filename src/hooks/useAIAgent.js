@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { TOOLS, executeTool } from "../api/aiTools";
 import { callClaude, trimHistory as trimHistoryCore, withCacheMarkers, ERROR_STREAK_LIMIT } from "../agents/loop";
 import { TIERS, buildSystemPrompt, escalationToolFor } from "../api/aiTiers";
@@ -46,6 +46,19 @@ function stripImages(msgs) {
   });
 }
 
+/**
+ * Display rows keep the thumbnails (data URLs) for the live session only. For
+ * the stored row they collapse to a `shots` count so a few photos don't turn
+ * a 20 KB row into 5 MB; after a reload the bubble shows "📎 N screenshot(s)".
+ */
+function stripDisplayImages(rows) {
+  return rows.map((m) => {
+    if (!m.images?.length) return m;
+    const { images, ...rest } = m;
+    return { ...rest, shots: images.length };
+  });
+}
+
 function readLegacyChat() {
   try {
     const raw = localStorage.getItem(LEGACY_CHAT_KEY);
@@ -64,25 +77,36 @@ export default function useAIAgent() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  // Until the stored session has been read back, don't write over it — an empty
-  // first render would otherwise wipe the very history we're restoring.
+  // `hydrating` gates sendMessage: sending before the load resolves would build
+  // a turn on an empty history and then the save effect would overwrite the
+  // stored one (the "Frodo forgot everything" race). `saveError` is surfaced
+  // by ChatBot as an inline notice — persistence failures are never silent.
+  const [hydrating, setHydrating] = useState(true);
+  const [saveError, setSaveError] = useState("");
   const hydrated = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       let restored = null;
+      let loadedOk = false;
       try {
         const sessions = await loadAgentSessions();
+        loadedOk = true;
         const mine = sessions[AGENT_ID];
         if (mine && (mine.display?.length || mine.convo?.length)) {
           restored = { displayMsgs: mine.display || [], apiHistory: mine.convo || [] };
         }
-      } catch { /* offline / not migrated — fall through to the legacy store */ }
+      } catch (err) {
+        console.error("[useAIAgent] history load failed:", err);
+        if (!cancelled) setSaveError(err.message || "history load failed");
+      }
 
-      // One-time migration off the old localStorage store.
+      // One-time migration off the old localStorage store. Only remove the
+      // legacy key once Supabase actually answered — if the load failed we'd
+      // otherwise destroy the last copy of the history.
       if (!restored) restored = readLegacyChat();
-      try { localStorage.removeItem(LEGACY_CHAT_KEY); } catch { /* noop */ }
+      if (loadedOk) { try { localStorage.removeItem(LEGACY_CHAT_KEY); } catch { /* noop */ } }
 
       if (cancelled) return;
       if (restored) {
@@ -90,6 +114,7 @@ export default function useAIAgent() {
         setApiHistory(restored.apiHistory);
       }
       hydrated.current = true;
+      setHydrating(false);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -100,21 +125,30 @@ export default function useAIAgent() {
     if (!hydrated.current) return undefined;
     const t = setTimeout(() => {
       saveAgentSession(AGENT_ID, {
-        display: displayMsgs.slice(-200),
+        display: stripDisplayImages(displayMsgs.slice(-200)),
         convo: trimHistoryCore(stripImages(apiHistory), PERSIST_CHAR_BUDGET),
-      }).catch(() => { /* non-fatal: the chat still works in memory */ });
+      })
+        .then(() => setSaveError(""))
+        .catch((err) => {
+          // The chat keeps working in memory, but Scott must know it won't survive a refresh.
+          console.error("[useAIAgent] history save failed:", err);
+          setSaveError(err.message || "history save failed");
+        });
     }, 600);
     return () => clearTimeout(t);
   }, [displayMsgs, apiHistory]);
 
   const sendMessage = async (attachments = []) => {
     const text = input.trim();
-    if ((!text && attachments.length === 0) || loading) return;
+    if ((!text && attachments.length === 0) || loading || hydrating) return;
     setInput("");
     setLoading(true);
 
     const shown = text || (attachments.length ? `📎 ${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
-    let display = [...displayMsgs, { role: "user", text: shown, shots: attachments.length || undefined }];
+    // Thumbnails ride on the display row for this session so the photo is
+    // visible in the bubble; they're collapsed to a count when persisted.
+    const images = attachments.map((a) => `data:${a.media_type};base64,${a.data}`);
+    let display = [...displayMsgs, { role: "user", text: shown, images: images.length ? images : undefined, shots: attachments.length || undefined }];
     setDisplayMsgs(display);
 
     // With image attachments, the user turn becomes a content array (vision).
@@ -242,11 +276,14 @@ export default function useAIAgent() {
     }
   };
 
-  const clearHistory = () => {
+  const clearHistory = useCallback(() => {
     setDisplayMsgs([]);
     setApiHistory([]);
-    clearAgentSession(AGENT_ID).catch(() => { /* noop */ });
-  };
+    clearAgentSession(AGENT_ID).catch((err) => {
+      console.error("[useAIAgent] clear failed:", err);
+      setSaveError(err.message || "clear failed");
+    });
+  }, []);
 
-  return { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory };
+  return { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory, hydrating, saveError };
 }

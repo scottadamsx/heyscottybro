@@ -15,7 +15,7 @@ export default function ChatBot() {
   const [expanded, setExpanded] = useState(false);
   const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
   const [dragOver, setDragOver] = useState(false);
-  const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory } = useAIAgent();
+  const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory, hydrating, saveError } = useAIAgent();
   const { addToast } = useToast();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
@@ -83,7 +83,7 @@ export default function ChatBot() {
   const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
 
   const doSend = () => {
-    if (loading) return;
+    if (loading || hydrating) return;
     const attached = shots.filter((s) => !s.uploading);
     // Only successfully-staged shots can be claimed by log_bug…
     setPendingScreenshots(attached.filter((s) => s.path).map((s) => s.path));
@@ -101,7 +101,7 @@ export default function ChatBot() {
   };
 
   const uploading = shots.some((s) => s.uploading);
-  const canSend = !loading && !uploading && (input.trim() || shots.length > 0);
+  const canSend = !loading && !hydrating && !uploading && (input.trim() || shots.length > 0);
 
   return (
     <>
@@ -151,8 +151,24 @@ export default function ChatBot() {
                   </div>
                 );
               }
-              return <div key={i} className="chat-msg user">{m.text}</div>;
+              // Live session: thumbnails of what was attached. After a reload
+              // only the `shots` count survives, so the "📎 N screenshot(s)"
+              // text carries the meaning instead.
+              return (
+                <div key={i} className="chat-msg user">
+                  {m.images?.length > 0 && (
+                    <div className="chat-shots">
+                      {m.images.map((src, j) => (
+                        <div key={j} className="chat-shot"><img src={src} alt={`attached screenshot ${j + 1}`} /></div>
+                      ))}
+                    </div>
+                  )}
+                  {m.text}
+                </div>
+              );
             })}
+            {hydrating && <div className="chat-note" role="status"><i className="fa-solid fa-spinner fa-spin" /> loading history…</div>}
+            {saveError && <div className="chat-note" role="alert"><i className="fa-solid fa-triangle-exclamation" /> Chat history isn't saving: {saveError}</div>}
             {loading && (
               <div className="chat-msg assistant chat-typing">
                 <span /><span /><span />
