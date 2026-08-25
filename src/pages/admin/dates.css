@@ -16,8 +16,26 @@
 .dates-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
+
+/* One column of stacked cards inside the 12-col .db-grid (index.css). */
+.dates-col { display: flex; flex-direction: column; gap: var(--space-md); }
+
+/* ── Header toolbar ──────────────────────────────────────────────────────── */
+
+/* Embedded in Life the h1 is hidden (index.css), so the toolbar owns the row:
+   count badge left, Sync on the right. */
+.dates-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.dates-count { font-size: 0.75rem; padding: 0.15rem 0.6rem; }
+.dates-sync-msg { color: var(--accent); }
+.dates-page .error-message { margin: 0; }
 
 /* ── The pack opener ─────────────────────────────────────────────────────── */
 
@@ -29,9 +47,12 @@
 
 .pack-stage {
   display: flex;
-  justify-content: center;
-  padding: var(--space-md) 0 var(--space-xs);
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0 var(--space-2xs);
 }
+.date-pack-open { height: 40px; padding: 0 var(--space-lg); }
 
 .date-pack {
   position: relative;
@@ -43,15 +64,12 @@
   border-radius: var(--radius-lg);
   background: var(--bg-raised);
   color: var(--text-primary);
-  cursor: pointer;
   overflow: hidden;
   display: grid;
   place-items: center;
-  transition: transform 0.18s cubic-bezier(.2,.8,.2,1), border-color 0.18s;
+  transition: border-color 0.18s;
 }
-.date-pack:hover { transform: translateY(-2px); border-color: var(--border-accent); }
-.date-pack:active { transform: translateY(0); }
-.date-pack:disabled { cursor: default; }
+.date-pack.opening { border-color: var(--border-accent); }
 
 /* A slow sheen so the pack reads as openable rather than as a static panel. */
 .date-pack-shine {
@@ -80,7 +98,6 @@
 .date-pack-label  { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
 .date-pack-sub    { font-size: 0.8rem; color: var(--text-muted); }
 
-.date-pack.opening { cursor: progress; }
 .pack-flash {
   font-size: 1.1rem;
   font-weight: 700;
@@ -161,7 +178,7 @@
 .add-idea-row {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 8px;
   flex-wrap: wrap;
   margin-bottom: var(--space-md);
 }
@@ -170,71 +187,44 @@
   height: 40px;                       /* UI-2: declared, not derived from padding */
   padding: 0 var(--space-sm);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   background: var(--bg-raised);
   color: var(--text-primary);
   font: inherit;
   font-size: 0.9rem;
   min-width: 0;
 }
-.add-idea-row input:focus,
-.add-idea-row select:focus {
+.add-idea-row input:focus-visible,
+.add-idea-row select:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--border-accent);   /* UI-6: focus stays visible */
 }
-.add-idea-row .field-grow { flex: 1 1 200px; }
+.add-idea-row .field-grow { flex: 1 1 160px; }
+.add-idea-row .field-note { flex: 1 1 120px; }
 .add-idea-row .btn { height: 40px; flex-shrink: 0; }
 
-/* ── Bucket list ─────────────────────────────────────────────────────────── */
+/* ── List rows (bucket list + been there) ───────────────────────────────── */
 
-.idea-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--space-sm);
-}
+/* .db-list-item from index.css gives the raised row; these add the
+   emoji · body · actions column rhythm shared by both lists. */
+.dates-row { gap: var(--space-xs); }
+.dates-row-emoji { font-size: 1.3rem; line-height: 1; flex-shrink: 0; width: 1.6em; text-align: center; }
+.dates-row-body { flex: 1; }
+.dates-row-body .db-list-item-title,
+.dates-row-body .db-list-item-subtitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dates-row-body--fixed { flex: 0 1 40%; }
 
-.idea-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  transition: border-color 0.15s, transform 0.15s;
-}
-.idea-card:hover { border-color: var(--border-primary); transform: translateY(-1px); }
-
-.idea-emoji { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
-.idea-body  { flex: 1; min-width: 0; }
-.idea-title { font-size: 0.92rem; font-weight: 600; }
-.idea-note  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-
-.idea-actions { display: flex; gap: var(--space-2xs); flex-shrink: 0; }
-
-/* ── Been there ──────────────────────────────────────────────────────────── */
-
-.done-list { display: flex; flex-direction: column; gap: var(--space-xs); }
-
-.done-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  background: var(--bg-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-.done-emoji { font-size: 1.35rem; line-height: 1.2; flex-shrink: 0; }
-.done-body  { flex: 1; min-width: 0; }
-.done-title { font-size: 0.92rem; font-weight: 600; }
-.done-date  { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; }
+.dates-row-actions { display: flex; align-items: center; gap: var(--space-2xs); flex-shrink: 0; }
+.dates-row-actions .btn-mini { height: 28px; }
+.dates-row-actions .btn-mini:focus-visible,
+.dates-row .icon-x:focus-visible,
+.date-pack-open:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
 
 .done-memory {
-  width: 100%;
-  height: 34px;
-  margin-top: var(--space-xs);
+  flex: 1 1 120px;
+  min-width: 0;
+  height: 32px;
   padding: 0 var(--space-xs);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
@@ -244,23 +234,38 @@
   font-size: 0.82rem;
 }
 .done-memory::placeholder { color: var(--text-muted); }
-.done-memory:focus {
+.done-memory:focus-visible {
   outline: none;
   border-color: var(--accent);
   background: var(--bg-surface);
 }
 
+/* ── Mark-done modal ─────────────────────────────────────────────────────── */
+
+.dates-modal-subject { font-size: 1.1rem; }
+.dates-modal-label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: calc(-1 * var(--space-xs)); }
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .date-pack-shine { animation: none; opacity: 0; }
+  .reveal-card { animation: none; }
+  .confetti span { animation: none; display: none; }
+  .date-pack { transition: none; }
+}
+
 /* ── Phone ───────────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
-  .idea-grid { grid-template-columns: 1fr; }
   .date-pack { max-width: none; min-height: 148px; }
   /* 16px stops iOS Safari zooming (and scroll-jumping) on focus. */
   .add-idea-row input,
   .add-idea-row select,
   .done-memory { font-size: 16px; }
-  .add-idea-row { gap: var(--space-2xs); }
-  .add-idea-row .field-grow { flex-basis: 100%; }
-  .reveal-actions .btn,
-  .reveal-actions .btn-tiny-blue { flex: 1 1 auto; }
+  .add-idea-row .field-grow,
+  .add-idea-row .field-note { flex-basis: 100%; }
+  .dates-row { flex-wrap: wrap; }
+  .dates-row-body--fixed { flex: 1 1 60%; }
+  .done-memory { flex-basis: 100%; order: 3; }
+  .reveal-actions .btn { flex: 1 1 auto; }
 }

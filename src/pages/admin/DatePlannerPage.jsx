@@ -157,7 +157,7 @@ export default function DatePlannerPage() {
       left: Math.random() * 100,
       delay: Math.random() * 0.5,
       dur: 1.6 + Math.random() * 1.4,
-      bg: ["#CF1124", "#1F62FF", "#ffffff", "#ff7a8a", "#ffd23f"][i % 5],
+      bg: ["var(--bud-red)", "var(--accent)", "var(--text-primary)", "var(--accent-light)", "var(--bg-hover)"][i % 5],
       rot: Math.random() * 360,
     })),
     [reveal]
@@ -172,46 +172,124 @@ export default function DatePlannerPage() {
     <div className="module-page dates-page">
       <div className="module-header">
         <h1>💕 Date Night</h1>
-        <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-          {ideas.length} on the list · {completed.length} done
-        </span>
-        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={runSync} disabled={syncing}>
-          {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" /> Sync local data</>}
-        </button>
+        <div className="dates-toolbar">
+          <span className="db-count dates-count">{ideas.length} on the list · {completed.length} done</span>
+          <button className="btn btn-sm btn-secondary-sm" onClick={runSync} disabled={syncing}>
+            {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" /> Sync local data</>}
+          </button>
+        </div>
       </div>
 
-      {error && <p className="error-message" style={{ marginBottom: "0.75rem" }}>{error}</p>}
-      {syncMsg && <p className="no-entries" style={{ marginBottom: "0.75rem", color: "var(--accent)" }}>{syncMsg}</p>}
+      {error && <p className="error-message">{error}</p>}
+      {syncMsg && <p className="no-entries dates-sync-msg">{syncMsg}</p>}
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
 
-      {/* ── Pick-a-date pack opener ── */}
-      <div className="db-card dates-pick" id="dates-pick">
-        <h3 className="db-card-title">Pick our date</h3>
-        {ideas.length === 0 ? (
-          <p className="no-entries">Add a few ideas below, then open a pack to pick one ✨</p>
-        ) : (
-          <div className="pack-stage">
-            <button
-              type="button"
-              className={`date-pack ${opening ? "opening" : ""}`}
-              onClick={spin}
-              disabled={opening}
-            >
-              <span className="date-pack-shine" />
-              <span className="date-pack-inner">
-                {opening ? (
-                  <span className="pack-flash">{flash}</span>
-                ) : (
-                  <>
-                    <span className="date-pack-spark">✨</span>
-                    <span className="date-pack-label">Open a date pack</span>
-                    <span className="date-pack-sub">tap to reveal a surprise</span>
-                  </>
-                )}
-              </span>
-            </button>
+      <div className="db-grid">
+        <div className="col-6 dates-col">
+          {/* ── Pick-a-date pack opener ── */}
+          <div className="db-card dates-pick" id="dates-pick">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Pick our date</h3>
+              {ideas.length > 0 && <span className="db-count">{ideas.length} in the pack</span>}
+            </div>
+            {ideas.length === 0 ? (
+              <p className="no-entries">Add a few ideas below, then open a pack to pick one ✨</p>
+            ) : (
+              <div className="pack-stage">
+                <div className={`date-pack ${opening ? "opening" : ""}`} aria-live="polite">
+                  <span className="date-pack-shine" />
+                  <span className="date-pack-inner">
+                    {opening ? (
+                      <span className="pack-flash">{flash}</span>
+                    ) : (
+                      <>
+                        <span className="date-pack-spark">✨</span>
+                        <span className="date-pack-label">A surprise date is waiting</span>
+                        <span className="date-pack-sub">{ideas.length} idea{ideas.length !== 1 ? "s" : ""} shuffled inside</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+                <button type="button" className="btn date-pack-open" onClick={spin} disabled={opening}>
+                  <i className={`fa-solid ${opening ? "fa-spinner fa-spin" : "fa-gift"}`} /> {opening ? "Opening…" : "Open a pack"}
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* ── Bucket list ── */}
+          <div className="db-card" id="dates-bucket">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Date bucket list</h3>
+              <span className="db-count">{ideas.length}</span>
+            </div>
+
+            <form className="add-idea-row" onSubmit={addIdea}>
+              <select className="emoji-select" value={emoji} onChange={(e) => setEmoji(e.target.value)} aria-label="Emoji">
+                {EMOJIS.map((em) => <option key={em} value={em}>{em}</option>)}
+              </select>
+              <input className="field-grow" placeholder="A date idea…" value={title} onChange={(e) => setTitle(e.target.value)} required aria-label="Date idea" />
+              <input className="field-note" placeholder="note (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Note" />
+              <button className="btn btn-sm" type="submit"><i className="fa-solid fa-plus" /> Add</button>
+            </form>
+
+            {ideas.length === 0 ? (
+              <p className="no-entries">No ideas yet — add your first date above.</p>
+            ) : (
+              <>
+                <div className="section-label-sm">Ideas</div>
+                <div className="db-list">
+                  {ideas.map((i) => (
+                    <div className="db-list-item dates-row" key={i.id}>
+                      <span className="dates-row-emoji" aria-hidden="true">{i.emoji || "💖"}</span>
+                      <div className="db-list-item-content dates-row-body">
+                        <div className="db-list-item-title">{i.title}</div>
+                        {i.note && <div className="db-list-item-subtitle">{i.note}</div>}
+                      </div>
+                      <div className="dates-row-actions">
+                        <button className="btn-mini accent" onClick={() => openMarkDone(i)} title="We did this"><i className="fa-solid fa-check" /> Done</button>
+                        <button className="icon-x sm" onClick={() => deleteIdea(i.id)} aria-label={`Remove ${i.title}`}><i className="fa-solid fa-xmark" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Completed ── */}
+        <div className="col-6 dates-col">
+          <div className="db-card" id="dates-done">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Been there 💞</h3>
+              <span className="db-count">{completed.length}</span>
+            </div>
+            {completed.length === 0 ? (
+              <p className="no-entries">No dates logged yet. Go make some memories 🥰</p>
+            ) : (
+              <div className="db-list">
+                {completed.map((c) => (
+                  <div className="db-list-item dates-row" key={c.id}>
+                    <span className="dates-row-emoji" aria-hidden="true">{c.emoji || "💖"}</span>
+                    <div className="db-list-item-content dates-row-body dates-row-body--fixed">
+                      <div className="db-list-item-title">{c.title}</div>
+                      {c.done_on && <div className="db-list-item-subtitle">{fmtDoneDate(c.done_on)}</div>}
+                    </div>
+                    <input
+                      className="done-memory"
+                      placeholder="add a memory…"
+                      value={c.memory || ""}
+                      onChange={(e) => setMemory(c.id, e.target.value)}
+                      aria-label={`Memory for ${c.title}`}
+                    />
+                    <button className="icon-x sm" onClick={() => deleteDone(c.id)} aria-label={`Delete ${c.title}`}><i className="fa-solid fa-xmark" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── Reveal overlay ── */}
@@ -222,7 +300,7 @@ export default function DatePlannerPage() {
               <span key={c.id} style={{ left: `${c.left}%`, background: c.bg, animationDelay: `${c.delay}s`, animationDuration: `${c.dur}s`, "--rot": `${c.rot}deg` }} />
             ))}
           </div>
-          <div className="reveal-card">
+          <div className="reveal-card" role="dialog" aria-modal="true" aria-label="Tonight's date">
             <div className="reveal-tag">Tonight&apos;s date</div>
             <div className="reveal-emoji">{reveal.emoji || "💖"}</div>
             <div className="reveal-title">{reveal.title}</div>
@@ -231,7 +309,7 @@ export default function DatePlannerPage() {
               <button className="btn" onClick={() => openMarkDone(reveal)}>
                 <i className="fa-solid fa-heart" /> We did it!
               </button>
-              <button className="btn-tiny-blue" style={{ height: 38, padding: "0 1rem" }} onClick={spin}>
+              <button className="btn btn-sm btn-secondary-sm" onClick={spin}>
                 <i className="fa-solid fa-rotate" /> Spin again
               </button>
               <button className="icon-x" onClick={() => setReveal(null)} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
@@ -243,83 +321,18 @@ export default function DatePlannerPage() {
       {/* ── Mark done date picker modal ── */}
       {markingDone && (
         <div className="event-overlay" onClick={(e) => { if (e.target.className === "event-overlay") setMarkingDone(null); }}>
-          <div className="event-card">
+          <div className="event-card" role="dialog" aria-modal="true" aria-label="When did you do this?">
             <h3>When did you do this? 💞</h3>
-            <div style={{ fontSize: "1.1rem", marginBottom: "0.75rem" }}>{markingDone.emoji} {markingDone.title}</div>
-            <label style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.25rem", display: "block" }}>Date</label>
-            <input type="date" value={doneDate} onChange={(e) => setDoneDate(e.target.value)} />
-            <div className="budget-widget-actions" style={{ marginTop: "0.75rem" }}>
+            <div className="dates-modal-subject">{markingDone.emoji} {markingDone.title}</div>
+            <label className="dates-modal-label" htmlFor="dates-done-on">Date</label>
+            <input id="dates-done-on" type="date" value={doneDate} onChange={(e) => setDoneDate(e.target.value)} />
+            <div className="budget-widget-actions">
               <button className="btn" onClick={confirmMarkDone}>✓ Save memory</button>
-              <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setMarkingDone(null)}>Cancel</button>
+              <button className="btn btn-secondary-sm" onClick={() => setMarkingDone(null)}>Cancel</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* ── Bucket list ── */}
-      <div className="db-card" id="dates-bucket">
-        <div className="db-card-header">
-          <h3 className="db-card-title">Date bucket list</h3>
-        </div>
-
-        <form className="add-idea-row" onSubmit={addIdea}>
-          <select className="emoji-select" value={emoji} onChange={(e) => setEmoji(e.target.value)} aria-label="Emoji">
-            {EMOJIS.map((em) => <option key={em} value={em}>{em}</option>)}
-          </select>
-          <input className="field-grow" placeholder="A date idea…" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          <input placeholder="note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <button className="btn" type="submit"><i className="fa-solid fa-plus" /> Add</button>
-        </form>
-
-        {ideas.length === 0 ? (
-          <p className="no-entries">No ideas yet — add your first date above.</p>
-        ) : (
-          <div className="idea-grid">
-            {ideas.map((i) => (
-              <div className="idea-card" key={i.id}>
-                <div className="idea-emoji">{i.emoji || "💖"}</div>
-                <div className="idea-body">
-                  <div className="idea-title">{i.title}</div>
-                  {i.note && <div className="idea-note">{i.note}</div>}
-                </div>
-                <div className="idea-actions">
-                  <button className="btn-sm btn-complete" onClick={() => openMarkDone(i)} title="We did this">✓</button>
-                  <button className="btn-sm btn-delete" onClick={() => deleteIdea(i.id)} title="Remove">✕</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Completed ── */}
-      <div className="db-card" id="dates-done">
-        <div className="db-card-header">
-          <h3 className="db-card-title">Been there 💞 ({completed.length})</h3>
-        </div>
-        {completed.length === 0 ? (
-          <p className="no-entries">No dates logged yet. Go make some memories 🥰</p>
-        ) : (
-          <div className="done-list">
-            {completed.map((c) => (
-              <div className="done-item" key={c.id}>
-                <span className="done-emoji">{c.emoji || "💖"}</span>
-                <div className="done-body">
-                  <div className="done-title">{c.title}</div>
-                  {c.done_on && <div className="done-date">{fmtDoneDate(c.done_on)}</div>}
-                  <input
-                    className="done-memory"
-                    placeholder="add a memory…"
-                    value={c.memory || ""}
-                    onChange={(e) => setMemory(c.id, e.target.value)}
-                  />
-                </div>
-                <button className="btn-sm btn-delete" onClick={() => deleteDone(c.id)} title="Delete">✕</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
