@@ -59,7 +59,7 @@ export default function App() {
     <ToastProvider>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<><Navbar /><HomePage /><Footer /></>} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/never86" element={<><Navbar /><Never86Page /><Footer /></>} />
         <Route path="/sjhc" element={<><Navbar /><SJHCPage /><Footer /></>} />
         <Route path="/games" element={<><Navbar /><GamesPage /><Footer /></>} />

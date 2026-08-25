@@ -1,0 +1,174 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   xp-desktop.css — the public landing page as a Windows XP desktop.
+   Scoped to .xpd and ALWAYS Luna regardless of the admin theme (the site is
+   the product; the theme picker is for Scott's tools). Palette lives in local
+   --xp-* tokens; the literals below are the Luna spec (theme-fixed).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.xpd {
+  --xp-blue: #0A5FE5; --xp-blue-deep: #0842C9; --xp-blue-dark: #0A3FB8; --xp-frame: #0831D9;
+  --xp-face: #ECE9D8; --xp-face-dark: #ACA899; --xp-white: #FFFFFF; --xp-ink: #000000; --xp-ink-soft: #444444;
+  --xp-sel: #316AC5; --xp-input-line: #7F9DB9; --xp-green: #3B9F3C; --xp-green-deep: #2E8A2B; --xp-gold: #F8D77A;
+  --xp-menu: #D6DFF7; --xp-menu-right: #C9D7F4;
+  --xp-title: linear-gradient(180deg, #0A5FE5 0%, #0842C9 6%, #0A5FE5 12%, #1B67F0 45%, #0A50DE 88%, #0A3FB8 100%);
+  --xp-title-inactive: linear-gradient(180deg, #7A96DF 0%, #6E8AD4 100%);
+  --xp-btn: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%);
+  --xp-bliss: linear-gradient(180deg, #5A7EDC 0%, #3A6BD2 16%, #7CB0E6 36%, #8FC1EA 52%, #6FA24A 74%, #4E8A2F 100%);
+  --xp-font: Tahoma, "Trebuchet MS", Verdana, "Segoe UI", sans-serif;
+
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  font-family: var(--xp-font); font-size: 13px; color: var(--xp-ink);
+  background: var(--xp-bliss);
+  -webkit-font-smoothing: auto;
+  overflow: hidden;
+}
+.xpd *, .xpd *::before, .xpd *::after { box-sizing: border-box; }
+.xpd a { color: var(--xp-sel); }
+
+/* ── Desktop ── */
+.xpd-desktop {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 212px 1fr; gap: 12px;
+  padding: 14px 14px 8px;
+  overflow: auto;
+}
+.xpd-icons { display: grid; grid-template-columns: repeat(2, 100px); grid-auto-rows: max-content; gap: 6px 4px; align-content: start; }
+.xpd-icon {
+  width: 100px; padding: 6px 4px; border: 1px solid transparent; background: transparent;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--xp-white); font: inherit; font-size: 11px; text-shadow: 1px 1px 2px rgba(0,0,0,0.85);
+  cursor: default; border-radius: 2px;
+}
+.xpd-icon:hover, .xpd-icon:focus-visible { background: rgba(49,106,197,0.45); border-color: rgba(255,255,255,0.45); outline: none; }
+.xpd-icon-img {
+  width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; font-size: 22px;
+  background: linear-gradient(160deg, #FFFFFF 0%, #DCE6FB 45%, #A9C2F2 100%); color: var(--xp-blue-deep);
+  border: 1px solid #5C7FCB; box-shadow: 0 2px 3px rgba(0,0,0,0.35);
+}
+.xpd-icon-label { line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+
+/* ── Windows ── */
+.xpd-windows {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); grid-auto-rows: min-content;
+  gap: 14px; align-content: start;
+}
+.xpd-win {
+  background: var(--xp-face);
+  border: 1px solid var(--xp-frame); border-radius: 8px 8px 0 0;
+  box-shadow: 2px 2px 3px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.35);
+  overflow: hidden; display: flex; flex-direction: column;
+  animation: xpd-open 0.16s ease-out both;
+}
+.xpd-win.featured { grid-column: span 1; }
+@keyframes xpd-open { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+.xpd-title {
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 10px;
+  background: var(--xp-title-inactive); color: var(--xp-white);
+  font-weight: 700; font-size: 13px; text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  user-select: none;
+}
+.xpd-win.active .xpd-title { background: var(--xp-title); }
+.xpd-title > span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xpd-title-btns { display: flex; gap: 2px; }
+.xpd-title-btns button {
+  width: 21px; height: 21px; border-radius: 3px; border: 1px solid var(--xp-white);
+  background: linear-gradient(180deg, #4E8AFB, #2160D6 60%, #1B52C2); color: var(--xp-white);
+  font-size: 10px; display: grid; place-items: center; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+.xpd-title-btns button.close { background: linear-gradient(180deg, #E8846C, #D1462B 60%, #B83A20); }
+.xpd-title-btns button:hover { filter: brightness(1.12); }
+.xpd-title-btns button:focus-visible { outline: 2px solid var(--xp-gold); outline-offset: 1px; }
+.xpd-body { background: var(--xp-white); margin: 0 3px 3px; padding: 12px 14px 14px; border: 1px solid var(--xp-face-dark); }
+.xpd-body p { margin: 0 0 8px; line-height: 1.5; color: var(--xp-ink); }
+.xpd-shot { display: block; width: 100%; height: 160px; object-fit: cover; border: 1px solid var(--xp-input-line); margin-bottom: 10px; }
+.xpd-kicker { font-size: 11px; color: var(--xp-sel); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+.xpd-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 12px; padding: 0; }
+.xpd-facts div { background: #FFFFE1; border: 1px solid var(--xp-face-dark); padding: 6px 8px; }
+.xpd-facts dt { font-size: 10px; color: var(--xp-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+.xpd-facts dd { margin: 2px 0 0; font-weight: 700; font-size: 12px; }
+.xpd-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.xpd-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px;
+  background: var(--xp-btn); color: var(--xp-ink); border: 1px solid #003C74; border-radius: 3px;
+  box-shadow: inset 1px 1px 0 var(--xp-white), inset -1px -1px 0 var(--xp-face-dark);
+  font: inherit; font-size: 12px; text-decoration: none; cursor: pointer;
+}
+.xpd-btn.primary { box-shadow: inset 0 0 0 1px #3B81E6, inset 1px 1px 0 var(--xp-white); font-weight: 700; }
+.xpd-btn:hover { box-shadow: inset 0 0 0 2px var(--xp-gold), inset 1px 1px 0 var(--xp-white); }
+.xpd-btn:focus-visible { outline: 2px dotted var(--xp-ink); outline-offset: -4px; }
+.xpd-btn[aria-disabled="true"] { color: var(--xp-face-dark); cursor: default; }
+.xpd-empty { color: var(--xp-white); text-shadow: 1px 1px 2px rgba(0,0,0,0.8); padding: 40px 0; grid-column: 1 / -1; }
+
+/* ── Taskbar ── */
+.xpd-taskbar {
+  height: 34px; flex-shrink: 0; display: flex; align-items: stretch; gap: 6px;
+  background: linear-gradient(180deg, #245EDC 0%, #3F8CF3 8%, #245EDC 40%, #1E52C6 90%, #1941A5 100%);
+  border-top: 1px solid #0A3FB8; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+  padding-right: 4px; position: relative; z-index: 5;
+}
+.xpd-start-wrap { position: relative; display: flex; }
+.xpd-start {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 16px 0 8px; border: none; border-radius: 0 12px 12px 0;
+  background: linear-gradient(180deg, #5BB35B 0%, #3C9F3C 35%, #2E8A2B 100%); color: var(--xp-white);
+  font: inherit; font-style: italic; font-weight: 700; font-size: 17px; text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 2px 0 3px rgba(0,0,0,0.3); cursor: pointer;
+}
+.xpd-start:hover, .xpd-start.open { filter: brightness(1.1); }
+.xpd-start:focus-visible { outline: 2px solid var(--xp-gold); outline-offset: -3px; }
+.xpd-orb { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFFFF, #6FC46F 40%, #2E8A2B); display: grid; place-items: center; font-size: 12px; color: var(--xp-white); }
+.xpd-tasks { flex: 1; display: flex; gap: 4px; padding: 4px 0; overflow-x: auto; min-width: 0; }
+.xpd-task {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; max-width: 180px; min-width: 0;
+  border: 1px solid #1941A5; border-radius: 3px; background: linear-gradient(180deg, #3C81F3, #2A6BE0); color: var(--xp-white);
+  font: inherit; font-size: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer;
+}
+.xpd-task span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xpd-task.active { background: linear-gradient(180deg, #1B4FBF, #2A66D8); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.45); font-weight: 700; }
+.xpd-task:focus-visible { outline: 2px solid var(--xp-gold); outline-offset: -2px; }
+.xpd-tray {
+  display: flex; align-items: center; gap: 10px; padding: 0 12px; margin: 3px 0;
+  background: linear-gradient(180deg, #0F8AE8, #0C6BC7 40%, #0A5CB0); border-left: 1px solid #0A3FB8; color: var(--xp-white); font-size: 12px;
+  box-shadow: inset 1px 0 0 rgba(255,255,255,0.25);
+}
+.xpd-clock { font-variant-numeric: tabular-nums; }
+
+/* ── Start menu ── */
+.xpd-startmenu {
+  position: absolute; left: 0; bottom: 100%; width: 400px; max-width: calc(100vw - 8px);
+  background: var(--xp-white); border: 1px solid var(--xp-frame); border-radius: 6px 6px 0 0;
+  box-shadow: 3px -3px 8px rgba(0,0,0,0.4); overflow: hidden; z-index: 10;
+  animation: xpd-open 0.12s ease-out both;
+}
+.xpd-sm-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--xp-title); color: var(--xp-white); font-weight: 700; font-size: 14px; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); }
+.xpd-sm-head img { width: 40px; height: 40px; border-radius: 4px; border: 2px solid var(--xp-white); object-fit: cover; }
+.xpd-sm-cols { display: grid; grid-template-columns: 1fr 1fr; }
+.xpd-sm-col { padding: 6px; display: flex; flex-direction: column; max-height: 60vh; overflow-y: auto; }
+.xpd-sm-col.right { background: var(--xp-menu); border-left: 1px solid var(--xp-face-dark); }
+.xpd-sm-label { font-size: 10px; font-weight: 700; color: var(--xp-ink-soft); text-transform: uppercase; padding: 8px 8px 4px; }
+.xpd-sm-col button, .xpd-sm-col a {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: none; background: transparent;
+  color: var(--xp-ink); font: inherit; font-size: 12px; text-align: left; text-decoration: none; cursor: pointer; border-radius: 2px;
+}
+.xpd-sm-col button i, .xpd-sm-col a i { width: 16px; text-align: center; color: var(--xp-sel); }
+.xpd-sm-col button:hover, .xpd-sm-col a:hover, .xpd-sm-col button:focus-visible, .xpd-sm-col a:focus-visible { background: var(--xp-sel); color: var(--xp-white); outline: none; }
+.xpd-sm-col button:hover i, .xpd-sm-col a:hover i { color: var(--xp-white); }
+.xpd-sm-col a.admin { margin-top: auto; border-top: 1px solid var(--xp-face-dark); padding-top: 8px; }
+.xpd-sm-foot { padding: 6px 10px; background: var(--xp-blue-deep); color: var(--xp-white); font-size: 11px; }
+
+/* ── Phone: icons become a row, windows stack ── */
+@media (max-width: 720px) {
+  .xpd { font-size: 14px; }
+  .xpd-desktop { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
+  .xpd-icons { display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap: 2px; padding-bottom: 4px; min-height: 84px; }
+  .xpd-icon { flex: 0 0 76px; width: 76px; font-size: 10px; }
+  .xpd-icon-img { width: 38px; height: 38px; font-size: 18px; }
+  .xpd-windows { grid-template-columns: 1fr; gap: 10px; }
+  .xpd-facts { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .xpd-start { font-size: 15px; padding: 0 12px 0 6px; }
+  .xpd-task span { display: none; }
+  .xpd-task { padding: 0 8px; }
+  .xpd-sm-cols { grid-template-columns: 1fr; }
+  .xpd-sm-col.right { border-left: none; border-top: 1px solid var(--xp-face-dark); flex-direction: row; flex-wrap: wrap; }
+  .xpd-sm-col.right a.admin { margin-top: 0; border-top: none; padding-top: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .xpd-win, .xpd-startmenu { animation: none; } }

@@ -1,283 +1,213 @@
-import { useEffect, useState } from "react";
+/**
+ * heyscottybro.com — the public landing page as a Windows XP desktop.
+ *
+ * Three windows open on boot (Hike Club, Lift Club, myBackyard); every other
+ * project is a desktop icon that opens its own window. The taskbar carries a
+ * Start menu with the site's navigation. Styles: ./xp-desktop.css (always XP,
+ * independent of the admin theme picker).
+ */
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
-import { ease } from "../lib/motion";
+import "./xp-desktop.css";
 
-/* Thin top scroll-progress bar */
-function ScrollProgress() {
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      setW(max > 0 ? (h.scrollTop / max) * 100 : 0);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return <div className="scroll-progress" style={{ width: `${w}%` }} />;
-}
-
-/* Scroll-reveal wrapper (framer-motion; respects reduced-motion via MotionConfig) */
-function Reveal({ children, className = "", delay = 0 }) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.6, ease: ease.out, delay }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ── Terminal-window hero with typewriter (decorative; reduced-motion safe) ── */
-const SCRIPT = [
-  { type: "cmd", text: "whoami" },
-  { type: "out", text: "software developer · founder · student" },
-  { type: "cmd", text: "ls ~/work" },
-  { type: "ok", text: "never86/      [LIVE]" },
-  { type: "ok", text: "hike-club/    [LIVE]" },
-  { type: "ok", text: "eliquinn/     [LIVE]" },
-  { type: "dim", text: "planner/      [private]" },
-  { type: "cmd", text: "cat status.txt" },
-  { type: "out", text: "available for work — say hello" },
+/* ── Featured (open on boot) ─────────────────────────────── */
+const FEATURED = [
+  {
+    id: "sjhc",
+    title: "St. John's Hike Club",
+    icon: "fa-person-hiking",
+    href: "https://stjohnshikeclub.com",
+    img: "/images/hikeclub.JPG",
+    kicker: "Community · Non-profit · Founded by Scott",
+    body: [
+      "More than a walking group — a community movement exploring Newfoundland's most stunning trails, together.",
+      "4,400+ followers on Instagram, 80+ people showing up per hike, and an 18-hike free season in 2026 with sponsors like Quidi Vidi and The Oat Company behind it.",
+    ],
+    facts: [["Members", "4,400+"], ["Per hike", "80+"], ["2026 season", "18 free hikes"]],
+    cta: "Visit stjohnshikeclub.com",
+  },
+  {
+    id: "lift",
+    title: "St. John's Lift Club",
+    icon: "fa-dumbbell",
+    href: "https://stjohnsliftclub.com",
+    img: null,
+    kicker: "Fitness club · Launching September 2026",
+    body: [
+      "The Hike Club playbook applied to the gym: bi-weekly group lifts, trainer-led sessions and a crew of local creators — built for beginners who want a reason to show up.",
+      "$9.99/month membership. First meet Saturday, September 19, 2026.",
+    ],
+    facts: [["Membership", "$9.99 / mo"], ["First meet", "Sep 19, 2026"], ["Team", "5 execs + creators"]],
+    cta: "Visit stjohnsliftclub.com",
+  },
+  {
+    id: "mybackyard",
+    title: "myBackyard — what it is",
+    icon: "fa-tree",
+    href: "https://mybackyard.space",
+    img: null,
+    kicker: "Locals-only social platform · Live in St. John's",
+    body: [
+      "myBackyard is a social network for one place at a time. One account for everything local: a feed for your city, events with RSVPs and paid tickets, club and business pages, friends and group chats, and a places directory.",
+      "Built and owned by me. Clubs build community → members join myBackyard → local businesses follow. St. John's first, then Mount Pearl, then the rest of Newfoundland.",
+    ],
+    facts: [["Status", "Live"], ["Seed audience", "4,400 hikers"], ["Stack", "Next.js + Supabase"]],
+    cta: "Open mybackyard.space",
+  },
 ];
 
-function renderLine(line, idx, typedLen) {
-  const text = typedLen == null ? line.text : line.text.slice(0, typedLen);
-  if (line.type === "cmd") {
-    return (
-      <div className="term-line" key={idx}>
-        <span className="term-prompt">scotty@nl</span>
-        <span className="term-dim">:</span>
-        <span className="term-path">~</span>
-        <span className="term-prompt">$ </span>
-        <span>{text}</span>
-      </div>
-    );
-  }
-  const cls = line.type === "ok" ? "term-ok" : line.type === "dim" ? "term-dim" : "term-out";
-  const pre = line.type === "out" ? "› " : "  ";
-  return <div className={`term-line ${cls}`} key={idx}>{pre}{text}</div>;
-}
-
-function TerminalHero() {
-  const reduce = useReducedMotion();
-  const [li, setLi] = useState(0);
-  const [ci, setCi] = useState(0);
-  const done = li >= SCRIPT.length;
-
-  useEffect(() => {
-    if (reduce || done) return;
-    const line = SCRIPT[li];
-    if (ci < line.text.length) {
-      const t = setTimeout(() => setCi((c) => c + 1), 20 + Math.random() * 32);
-      return () => clearTimeout(t);
-    }
-    const pause = line.type === "cmd" ? 280 : 150;
-    const t = setTimeout(() => { setLi((l) => l + 1); setCi(0); }, pause);
-    return () => clearTimeout(t);
-  }, [li, ci, reduce, done]);
-
-  let lines;
-  if (reduce || done) {
-    lines = SCRIPT.map((l, i) => renderLine(l, i, null));
-  } else {
-    lines = [];
-    for (let i = 0; i < li; i++) lines.push(renderLine(SCRIPT[i], i, null));
-    lines.push(renderLine(SCRIPT[li], li, ci));
-  }
-
-  return (
-    <motion.div
-      className="term"
-      aria-hidden="true"
-      initial={{ opacity: 0, y: 18, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.7, ease: ease.out, delay: 0.15 }}
-    >
-      <div className="term-bar">
-        <span className="term-dot r" /><span className="term-dot y" /><span className="term-dot g" />
-        <span className="term-title">scotty@nl: ~</span>
-      </div>
-      <div className="term-body">
-        {lines}
-        <span className="term-cursor" />
-      </div>
-    </motion.div>
-  );
-}
-
-const MARQUEE = ["Builder", "Founder", "React", "Python", "Supabase", "St. John's · NL", "scotty.3xe", "Restaurant tech", "Hike club", "Always shipping"];
-
-const PROJECTS = [
-  { id: "never86", tag: "Live Product", title: "NEVER86", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", icon: "fa-utensils", img: "/images/never86_website_concept.png", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://never86.ca", cta: "Visit site" },
-  { id: "sjhc", tag: "Live Community", title: "St. John's Hike Club", desc: "More than a walking group — a community movement exploring Newfoundland's most stunning trails.", icon: "fa-person-hiking", img: "/images/hikeclub.JPG", bg: "linear-gradient(135deg,#1a2a22,#13201a)", to: null, href: "https://stjohnshikeclub.com", cta: "Visit site" },
-  // Kiwi projects. Repos are PRIVATE right now, so no live button (per the rule: explain them,
-  // but only add a redirect once the repo is public). To turn a button ON later: set public:true
-  // and href to the live URL (Kiwi Games → its GitHub Pages / repo, Kiwi IDE → its site/repo).
-  { id: "kiwi-ide", tag: "Flagship · In Beta", title: "Kiwi IDE", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with AI agents. Agent, live preview and an ambient code stream, plus “earn while you wait”: games, articles and surveys that fill the time while the agent works. In private beta.", icon: "fa-kiwi-bird", img: null, bg: "linear-gradient(135deg,#1a2a18,#111d10)", to: null, href: null, public: false, cta: "Private beta" },
-  { id: "kiwi-games", tag: "Game Collection", title: "Kiwi Games", desc: "50 tiny browser games in one place — Snake, 2048, Minesweeper, solitaire, word games and more. Pulled straight out of Kiwi IDE so friends and family can just download and play. No sign-up, no install, works offline.", icon: "fa-gamepad", img: null, bg: "linear-gradient(135deg,#20221a,#161810)", to: null, href: null, public: false, playHref: "https://scottadamsx.github.io/kiwiGames/", cta: "Coming soon" },
-  { id: "eliquinn", tag: "Client Site", title: "eliquinn.space", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, with an intro film, smooth scroll and a pinned work gallery. Designed and built by me.", icon: "fa-compass-drafting", img: null, bg: "linear-gradient(135deg,#2a2622,#1b1916)", to: null, href: "https://eliquinn.space", cta: "Visit site" },
-  { id: "ourfirsttwomonths", tag: "Personal Site", title: "Our First Two Months", desc: "A little web gift for my girlfriend — a scrollable keepsake celebrating our first two months together.", icon: "fa-heart", img: null, bg: "linear-gradient(135deg,#2a1620,#190e15)", to: null, href: "https://ourfirsttwomonths.vercel.app", cta: "Visit site" },
-  { id: "minecraft-trivia", tag: "Game", title: "Minecraft Trivia", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more.", icon: "fa-cube", img: null, bg: "linear-gradient(135deg,#161a22,#11141b)", to: "/games/minecraft-trivia", href: null, cta: "Play now" },
-  { id: "monopoly", tag: "Game", title: "Monopoly Banker", desc: "The digital Monopoly bank. No paper money, no arguments — clean, fast, fun.", icon: "fa-sack-dollar", img: null, bg: "linear-gradient(135deg,#1d1a14,#15120d)", to: "/games/monopoly-banker", href: null, cta: "Play now" },
-  { id: "tictactoe", tag: "Game", title: "Tic-Tac-Toe", desc: "Classic Tic-Tac-Toe with score tracking. Challenge a friend between deploys.", icon: "fa-hashtag", img: null, bg: "linear-gradient(135deg,#21161a,#180f13)", to: "/games/tictactoe", href: null, cta: "Play now" },
-  { id: "planner", tag: "Admin Tool", title: "Personal Planner", desc: "My all-in-one personal command centre — reminders, calendar, journal, budget. Password protected.", icon: "fa-list-check", img: null, bg: "linear-gradient(135deg,#181822,#101019)", to: "/admin/login", href: null, cta: "Open planner" },
+/* ── Everything else — desktop icons ─────────────────────── */
+const ICONS = [
+  { id: "never86", title: "NEVER86", icon: "fa-utensils", href: "https://never86.ca", tag: "Live product", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", img: "/images/never86_website_concept.png" },
+  { id: "clubhouse", title: "Clubhouse", icon: "fa-store", href: "https://clubhouse-management.vercel.app", tag: "SaaS · Live", desc: "The CRM behind myBackyard — clubs and local businesses manage their members, their myBackyard page and their sales in one place." },
+  { id: "kiwi-ide", title: "Kiwi IDE", icon: "fa-kiwi-bird", href: null, tag: "Flagship · Private beta", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with agents. Agent, live preview, ambient code stream, and “earn while you wait”." },
+  { id: "kiwi-games", title: "Kiwi Games", icon: "fa-gamepad", href: "https://scottadamsx.github.io/kiwiGames/", tag: "50 browser games", desc: "Snake, 2048, Minesweeper, solitaire, word games and more. No sign-up, no install, works offline." },
+  { id: "planner", title: "heyScottyBro", icon: "fa-list-check", to: "/admin/login", tag: "Personal command centre", desc: "The app behind this site — reminders, calendar, money, school, and a fellowship of AI agents. Password protected." },
+  { id: "eliquinn", title: "eliquinn.space", icon: "fa-compass-drafting", href: "https://eliquinn.space", tag: "Client site", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, intro film, pinned work gallery." },
+  { id: "twomonths", title: "Our First Two Months", icon: "fa-heart", href: "https://ourfirsttwomonths.vercel.app", tag: "Personal", desc: "A little web gift for my girlfriend — a scrollable keepsake." },
+  { id: "minecraft", title: "Minecraft Trivia", icon: "fa-cube", to: "/games/minecraft-trivia", tag: "Game", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more." },
+  { id: "monopoly", title: "Monopoly Banker", icon: "fa-sack-dollar", to: "/games/monopoly-banker", tag: "Game", desc: "The digital Monopoly bank. No paper money, no arguments." },
+  { id: "tictactoe", title: "Tic-Tac-Toe", icon: "fa-hashtag", to: "/games/tictactoe", tag: "Game", desc: "Classic Tic-Tac-Toe with score tracking." },
+  { id: "music", title: "scotty.3xe", icon: "fa-music", href: "https://open.spotify.com/artist/2cLUqlaPtqUPBAMn5gdRbe", tag: "Music", desc: "The artistic side — sharp lyricism, concept-driven storytelling and sonic experimentation.", extra: [["Apple Music", "https://music.apple.com/us/artist/scotty-3xe/1822133331"]] },
+  { id: "about", title: "About Scott", icon: "fa-user", tag: "about.txt", desc: "Developer, student and founder in St. John's, Newfoundland. I build things because I love it — a restaurant platform, a hiking community, a social network, and the tools I use every day. I care about execution and the details people feel but never notice.", extra: [["GitHub", "https://github.com/scotty3xe"], ["LinkedIn", "https://linkedin.com/in/scottadams"]] },
+  { id: "contact", title: "Contact", icon: "fa-envelope", href: "mailto:scottadamsx@gmail.com", tag: "mail scott", desc: "A project, a collab, or just a conversation — my inbox is open. scottadamsx@gmail.com" },
 ];
 
-const SKILLS = ["python", "react", "javascript", "typescript", "postgresql", "supabase", "flask", "css/html", "git", "godot"];
+const ALL = [...FEATURED, ...ICONS];
+const byId = (id) => ALL.find((w) => w.id === id);
 
-function WorkCard({ p }) {
-  const linked = !!(p.href || p.to);
-  const inner = (
-    <>
-      <div className={`lp-card-media ${p.img ? "" : "ph"}`} style={p.img ? undefined : { background: p.bg }}>
-        {p.img ? <img src={p.img} alt={p.title} loading="lazy" /> : <i className={`fa-solid ${p.icon}`} aria-hidden="true" />}
-      </div>
-      <div className="lp-card-body">
-        <span className="lp-tag">{p.tag}</span>
-        <h3 className="lp-card-title">{p.title}</h3>
-        <p className="lp-card-desc">{p.desc}</p>
-        {linked
-          ? <span className="lp-card-link">{p.cta} <i className="fa-solid fa-arrow-right" /></span>
-          : <span className="lp-card-link lp-card-soon"><i className="fa-solid fa-lock" /> {p.cta}</span>}
-      </div>
-    </>
-  );
-  const cardMotion = {
-    initial: { opacity: 0, y: 24 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, amount: 0.2 },
-    transition: { duration: 0.5, ease: ease.out },
-  };
-  // Public repos / live sites get a real link; private ones (no href/to) render as a
-  // non-clickable card with a locked status — no dead links, no redirect until it's public.
-  if (p.href) {
-    return <motion.a className="lp-card" href={p.href} target="_blank" rel="noreferrer" {...cardMotion}>{inner}</motion.a>;
-  }
-  if (p.to) {
-    return <motion.div {...cardMotion}><Link className="lp-card" to={p.to}>{inner}</Link></motion.div>;
-  }
-  return <motion.div className="lp-card lp-card-static" {...cardMotion}>{inner}</motion.div>;
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t); }, []);
+  return <span className="xpd-clock">{now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>;
 }
 
-/* Hero text column — staggered */
-const heroContainer = { animate: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } };
-const heroItem = {
-  initial: { opacity: 0, y: 22 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.7, ease: ease.out } },
-};
+function LinkOut({ href, to, className, children }) {
+  if (to) return <Link className={className} to={to}>{children}</Link>;
+  if (href) return <a className={className} href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer">{children}</a>;
+  return null;
+}
+
+function XpWindow({ w, active, onFocus, onClose, onMin }) {
+  const featured = !!w.body;
+  return (
+    <section className={`xpd-win${active ? " active" : ""}${featured ? " featured" : ""}`} onMouseDown={onFocus} aria-label={w.title}>
+      <header className="xpd-title">
+        <i className={`fa-solid ${w.icon}`} />
+        <span>{w.title}</span>
+        <div className="xpd-title-btns">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onMin(); }} aria-label="Minimize"><i className="fa-solid fa-window-minimize" /></button>
+          <button type="button" className="close" onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+        </div>
+      </header>
+      <div className="xpd-body">
+        {w.img && <img className="xpd-shot" src={w.img} alt="" loading="lazy" />}
+        {w.kicker && <div className="xpd-kicker">{w.kicker}</div>}
+        {w.tag && !w.kicker && <div className="xpd-kicker">{w.tag}</div>}
+        {w.body ? w.body.map((p, i) => <p key={i}>{p}</p>) : <p>{w.desc}</p>}
+        {w.facts && (
+          <dl className="xpd-facts">
+            {w.facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+          </dl>
+        )}
+        <div className="xpd-actions">
+          {(w.href || w.to) && <LinkOut href={w.href} to={w.to} className="xpd-btn primary">{w.cta || (w.to ? "Open" : "Visit site")} <i className="fa-solid fa-arrow-up-right-from-square" /></LinkOut>}
+          {!w.href && !w.to && <span className="xpd-btn" aria-disabled="true">Private beta</span>}
+          {w.extra?.map(([label, href]) => <a key={label} className="xpd-btn" href={href} target="_blank" rel="noreferrer">{label}</a>)}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
+  const [open, setOpen] = useState(FEATURED.map((f) => f.id)); // z-order: last = top
+  const [minimized, setMinimized] = useState([]);
+  const [startOpen, setStartOpen] = useState(false);
+  const startRef = useRef(null);
+
+  useEffect(() => {
+    document.title = "heyScottyBro — Scott Adams";
+    const onDoc = (e) => { if (startRef.current && !startRef.current.contains(e.target)) setStartOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const focus = (id) => { setOpen((o) => [...o.filter((x) => x !== id), id]); setMinimized((m) => m.filter((x) => x !== id)); };
+  const close = (id) => { setOpen((o) => o.filter((x) => x !== id)); setMinimized((m) => m.filter((x) => x !== id)); };
+  const minimize = (id) => setMinimized((m) => (m.includes(id) ? m : [...m, id]));
+  const launch = (id) => focus(id);
+  const top = open[open.length - 1];
+  const visible = open.filter((id) => !minimized.includes(id));
+
   return (
-    <div className="lp">
-      <ScrollProgress />
+    <div className="xpd">
+      <main className="xpd-desktop">
+        {/* Icons: the "side" column of every other project */}
+        <nav className="xpd-icons" aria-label="Projects">
+          {ICONS.map((p) => (
+            <button type="button" className="xpd-icon" key={p.id} onDoubleClick={() => launch(p.id)} onClick={() => launch(p.id)} title={p.tag}>
+              <span className="xpd-icon-img"><i className={`fa-solid ${p.icon}`} /></span>
+              <span className="xpd-icon-label">{p.title}</span>
+            </button>
+          ))}
+        </nav>
 
-      {/* ── Hero ── */}
-      <header className="lp-hero">
-        <motion.div variants={heroContainer} initial="initial" animate="animate">
-          <motion.span className="lp-eyebrow" variants={heroItem}>available for work · St. John's, NL</motion.span>
-          <motion.h1 className="lp-hero-title" variants={heroItem}>
-            I build software<br />people <em>love</em> to use.
-          </motion.h1>
-          <motion.p className="lp-hero-sub" variants={heroItem}>
-            Scott Adams — junior software developer, student &amp; founder. From restaurant
-            platforms to hiking communities to tools I use every day.
-          </motion.p>
-          <motion.div className="lp-cta" variants={heroItem}>
-            <a href="#work" className="pill pill-dark">./see-my-work <i className="fa-solid fa-arrow-down" /></a>
-            <a href="mailto:scottadamsx@gmail.com" className="pill pill-ghost">say hello</a>
-          </motion.div>
-          <motion.div className="lp-stats" variants={heroItem}>
-            <div className="lp-stat"><b>2+</b><span>live products</span></div>
-            <div className="lp-stat"><b>6+</b><span>projects shipped</span></div>
-            <div className="lp-stat"><b>∞</b><span>ideas brewing</span></div>
-          </motion.div>
-        </motion.div>
-
-        <TerminalHero />
-      </header>
-
-      {/* ── Marquee ── */}
-      <div className="lp-marquee" aria-hidden="true">
-        <div className="lp-marquee-track">
-          {[...MARQUEE, ...MARQUEE].map((m, i) => <span className="lp-marquee-item" key={i}>{m}</span>)}
+        {/* Windows */}
+        <div className="xpd-windows">
+          {visible.length === 0 && (
+            <div className="xpd-empty">Nothing open. Double-click an icon, or hit <b>start</b>.</div>
+          )}
+          {visible.map((id) => {
+            const w = byId(id);
+            return w && <XpWindow key={id} w={w} active={id === top} onFocus={() => focus(id)} onClose={() => close(id)} onMin={() => minimize(id)} />;
+          })}
         </div>
-      </div>
+      </main>
 
-      {/* ── Work ── */}
-      <section className="lp-section" id="work">
-        <Reveal>
-          <span className="lp-kicker">ls ~/work</span>
-          <h2 className="lp-h2">Things I&apos;ve built</h2>
-          <p className="lp-section-sub">From live products to playful experiments — a look at what I&apos;ve been making.</p>
-        </Reveal>
-        <div className="lp-work-grid">
-          {PROJECTS.map((p) => <WorkCard key={p.id} p={p} />)}
+      {/* Taskbar */}
+      <footer className="xpd-taskbar">
+        <div className="xpd-start-wrap" ref={startRef}>
+          <button type="button" className={`xpd-start${startOpen ? " open" : ""}`} onClick={() => setStartOpen((s) => !s)} aria-expanded={startOpen} aria-haspopup="menu">
+            <span className="xpd-orb"><i className="fa-brands fa-windows" /></span> start
+          </button>
+          {startOpen && (
+            <div className="xpd-startmenu" role="menu">
+              <div className="xpd-sm-head"><img src="/images/scott_headshot.JPEG" alt="" /> <span>Scott Adams</span></div>
+              <div className="xpd-sm-cols">
+                <div className="xpd-sm-col">
+                  <div className="xpd-sm-label">Featured</div>
+                  {FEATURED.map((f) => <button type="button" key={f.id} role="menuitem" onClick={() => { launch(f.id); setStartOpen(false); }}><i className={`fa-solid ${f.icon}`} /> {f.title}</button>)}
+                  <div className="xpd-sm-label">All projects</div>
+                  {ICONS.map((p) => <button type="button" key={p.id} role="menuitem" onClick={() => { launch(p.id); setStartOpen(false); }}><i className={`fa-solid ${p.icon}`} /> {p.title}</button>)}
+                </div>
+                <div className="xpd-sm-col right">
+                  <Link to="/never86" role="menuitem"><i className="fa-solid fa-utensils" /> NEVER86</Link>
+                  <Link to="/sjhc" role="menuitem"><i className="fa-solid fa-person-hiking" /> Hike Club</Link>
+                  <Link to="/games" role="menuitem"><i className="fa-solid fa-gamepad" /> Games</Link>
+                  <Link to="/guide" role="menuitem"><i className="fa-solid fa-book" /> Guide</Link>
+                  <a href="https://github.com/scotty3xe" target="_blank" rel="noreferrer" role="menuitem"><i className="fa-brands fa-github" /> GitHub</a>
+                  <a href="https://linkedin.com/in/scottadams" target="_blank" rel="noreferrer" role="menuitem"><i className="fa-brands fa-linkedin-in" /> LinkedIn</a>
+                  <a href="mailto:scottadamsx@gmail.com" role="menuitem"><i className="fa-solid fa-envelope" /> Email</a>
+                  <Link to="/admin/login" role="menuitem" className="admin"><i className="fa-solid fa-lock" /> Admin</Link>
+                </div>
+              </div>
+              <div className="xpd-sm-foot">St. John's, NL · available for work</div>
+            </div>
+          )}
         </div>
-      </section>
-
-      {/* ── About ── */}
-      <section className="lp-section">
-        <Reveal>
-          <div className="lp-about">
-            <div>
-              <span className="lp-kicker">cat about.md</span>
-              <h2 className="lp-h2">Building ideas from the Rock.</h2>
-              <p>
-                I&apos;m a developer, student and founder based in St. John&apos;s, Newfoundland. I build things
-                because I genuinely love it — a restaurant platform, a community hiking site, or my own tools.
-                I care about execution and the details people feel but never notice.
-              </p>
-              <p>
-                Off the keyboard I founded St. John&apos;s Hike Club and make music as <strong>scotty.3xe</strong>.
-                The best software is invisible — it just works.
-              </p>
-              <div className="lp-socials">
-                <a href="https://github.com/scotty3xe" target="_blank" rel="noreferrer" className="pill pill-ghost"><i className="fa-brands fa-github" /> GitHub</a>
-                <a href="https://linkedin.com/in/scottadams" target="_blank" rel="noreferrer" className="pill pill-ghost"><i className="fa-brands fa-linkedin-in" /> LinkedIn</a>
-              </div>
-            </div>
-            <div>
-              <span className="lp-kicker">stack --list</span>
-              <h2 className="lp-h2" style={{ fontSize: "clamp(1.5rem,4vw,2rem)" }}>What I work with</h2>
-              <div className="lp-skills">
-                {SKILLS.map((s) => <span className="lp-skill" key={s}>{s}</span>)}
-              </div>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── Music ── */}
-      <div className="lp-music-wrap">
-        <Reveal>
-          <section className="lp-music">
-            <span className="lp-kicker">play scotty.3xe</span>
-            <h2 className="lp-h2">SCOTTY 3XE</h2>
-            <p className="lp-music-sub">The artistic side — sharp lyricism, concept-driven storytelling and sonic experimentation. Always with purpose.</p>
-            <div className="lp-music-cta">
-              <a href="https://open.spotify.com/artist/2cLUqlaPtqUPBAMn5gdRbe" target="_blank" rel="noreferrer" className="pill pill-dark"><i className="fa-brands fa-spotify" /> Spotify</a>
-              <a href="https://music.apple.com/us/artist/scotty-3xe/1822133331" target="_blank" rel="noreferrer" className="pill pill-ghost"><i className="fa-brands fa-apple" /> Apple Music</a>
-            </div>
-          </section>
-        </Reveal>
-      </div>
-
-      {/* ── Contact ── */}
-      <section className="lp-section lp-contact">
-        <Reveal>
-          <span className="lp-kicker">mail scott</span>
-          <h2 className="lp-h2">Let&apos;s build<br />something good.</h2>
-          <p className="lp-contact-sub">A project, a collab, or just a conversation — my inbox is open.</p>
-          <a href="mailto:scottadamsx@gmail.com" className="pill pill-dark"><i className="fa-solid fa-paper-plane" /> scottadamsx@gmail.com</a>
-        </Reveal>
-      </section>
+        <div className="xpd-tasks">
+          {open.map((id) => {
+            const w = byId(id);
+            return w && (
+              <button type="button" key={id} className={`xpd-task${id === top && !minimized.includes(id) ? " active" : ""}`} onClick={() => (minimized.includes(id) || id !== top ? focus(id) : minimize(id))}>
+                <i className={`fa-solid ${w.icon}`} /> <span>{w.title}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="xpd-tray"><i className="fa-solid fa-volume-high" /><i className="fa-solid fa-wifi" /><Clock /></div>
+      </footer>
     </div>
   );
 }
