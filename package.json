@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "agents": "node agent-server/server.mjs",
-    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js"
+    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.177",

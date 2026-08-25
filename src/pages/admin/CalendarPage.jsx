@@ -416,7 +416,7 @@ export default function CalendarPage() {
       </div>
 
       {selectedDate && (
-        <div className="event-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
+        <div className="event-overlay day-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
           <div className="day-modal" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="day-modal-head">
               <button className="day-nav" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" /></button>
@@ -464,7 +464,9 @@ export default function CalendarPage() {
                     <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
-                      {t.recurrence && t.recurrence !== "none" && <div className="day-item-sub">{t.recurrence}</div>}
+                      {(t.time || (t.recurrence && t.recurrence !== "none")) && (
+                        <div className="day-item-sub">{[t.time ? String(t.time).slice(0, 5) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
+                      )}
                     </div>
                     <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
                   </div>

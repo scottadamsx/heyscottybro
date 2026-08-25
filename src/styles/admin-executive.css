@@ -288,6 +288,12 @@
 .admin-shell .event-overlay,
 .admin-shell .doc-viewer-overlay,
 .admin-shell .admin-pop-backdrop { background: rgba(6,8,11,0.7); backdrop-filter: blur(4px); }
+/* The rule above (0,2,0) used to beat index.css's phone sheet override (0,1,0),
+   so the "full-screen" day view kept a card radius + border and clipped at the
+   bottom on phones. Same specificity, declared here, so the sheet wins. */
+@media (max-width: 768px) {
+  .admin-shell .day-modal { border-radius: 0; border: none; box-shadow: none; }
+}
 .admin-shell .day-modal-dow,
 .admin-shell .day-section-head { color: var(--accent-light); }
 .admin-shell .day-item-dot { box-shadow: none; }

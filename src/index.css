@@ -1687,7 +1687,7 @@ input, textarea, select { font-family: inherit; }
 }
 .day-modal-titles { flex: 1; min-width: 0; text-align: center; }
 .day-modal-dow { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
-.day-modal-date { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day-modal-date { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; overflow-wrap: anywhere; }
 .day-nav {
   width: 34px; height: 34px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -1733,6 +1733,12 @@ input, textarea, select { font-family: inherit; }
   .day-add-form input,
   .day-add-form select,
   .day-add-form textarea { font-size: 16px; }
+  .day-modal-date { font-size: 1.05rem; }
+}
+/* Older WebKit without :has(): the overlay still gets the sheet treatment via
+   the explicit .day-overlay class the calendar sets. */
+@media (max-width: 768px) {
+  .event-overlay.day-overlay { padding: 0; align-items: stretch; }
 }
 
 .day-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
@@ -5095,37 +5101,27 @@ input, textarea, select { font-family: inherit; }
   .planner-tasks { flex: 1; overflow-y: auto; }
 }
 
-/* Mobile: horizontal swipe between panels */
+/* Mobile: one panel at a time, chosen by a visible segmented switch.
+   (The previous horizontal snap-scroller hid the Tasks panel off-screen with
+   only two 6px dots as a hint — reported as "reminders gone on mobile".) */
 @media (max-width: 768px) {
-  .planner-overview {
-    flex-direction: row;
-    overflow-x: scroll;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
+  .planner-overview { flex-direction: column; }
+  .planner-panel + .planner-panel { border-top: none; }
+  .planner-overview.show-cal .planner-tasks,
+  .planner-overview.show-tasks .planner-cal { display: none; }
+  .mobile-only { display: flex; }
+  .planner-switch {
+    gap: 4px; padding: 4px; margin: 0.5rem 0 0.25rem;
+    background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
   }
-  .planner-panel {
-    min-width: 100%;
-    scroll-snap-align: start;
-    overflow-y: auto;
+  .planner-switch button {
+    flex: 1; height: 40px; border: none; border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-secondary); font: inherit; font-weight: 600; font-size: 0.85rem;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
   }
-  .planner-panel + .planner-panel { border-top: none; border-left: 1px solid var(--border); }
-  .planner-panel::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    padding: 0.75rem 1rem 0;
-  }
-  .mobile-only { display: flex; gap: 6px; padding: 0.75rem 1.5rem 0; }
-  .mobile-only span {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--border);
-  }
-  .mobile-only span:first-child { background: var(--accent, #6366f1); }
+  .planner-switch button.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+  .planner-switch button:focus-visible { outline: 3px solid var(--accent-glow); outline-offset: 2px; }
 
   /* Combined header stacks on mobile */
   .combined-page-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }

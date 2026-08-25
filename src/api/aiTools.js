@@ -16,6 +16,7 @@ import { loadContext, addContextEntry, deleteContextEntry, replaceContext } from
 import { linkNodes as linkBrainNodes } from "./brainApi";
 import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
 import { clearAllMembers } from "./hikerApi";
+import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
 import { supabase, getAuthHeaders } from "../utils/supabase";
@@ -178,6 +179,7 @@ export const TOOLS = [
     },
   },
   { name: "complete_reminder", description: "Mark a reminder/task complete (shortcut for update_item with completed: true)", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+  { name: "log_habit", description: "Log a habit tracker (Life › Habits) as done for a day. Get the tracker id from query on the 'habits' collection. Checkbox trackers toggle (logging twice un-logs); count trackers add one tally.", input_schema: { type: "object", properties: { tracker_id: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" } }, required: ["tracker_id"] } },
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
@@ -292,6 +294,20 @@ async function runTool(name, input) {
     case "update_item": return await libraryUpdate(input);
     case "delete_item": return await libraryDelete(input);
     case "complete_reminder": await completeReminder(input.id); return { success: true };
+    case "log_habit": {
+      const state = await loadAccountability();
+      const tracker = state.trackers.find((t) => t.id === input.tracker_id);
+      if (!tracker) return { error: `no habit tracker with id ${input.tracker_id} — query the habits collection for the id` };
+      const date = input.date || nutritionToday();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
+      const existing = state.logs.filter((l) => l.trackerId === tracker.id && l.date === date);
+      let logs;
+      let action;
+      if (tracker.mode === "check" && existing.length) { logs = state.logs.filter((l) => !(l.trackerId === tracker.id && l.date === date)); action = "un-logged"; }
+      else { logs = [...state.logs, { id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() }]; action = "logged"; }
+      await saveAccountability({ ...state, logs });
+      return { success: true, action, tracker: tracker.name, date, count_that_day: logs.filter((l) => l.trackerId === tracker.id && l.date === date).length };
+    }
     case "set_balance": { const cfg = await loadBudgetConfig(); await saveBudgetConfig({ ...cfg, startingBalance: input.balance }); return { success: true }; }
     case "set_category_budget": {
       const cfg = await loadBudgetConfig();

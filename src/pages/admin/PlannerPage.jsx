@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ExportKit } from "../../components/ui";
 import { loadReminders, loadEvents } from "../../api/plannerApi";
 import { expandReminders, getWeekRange, toDateStr } from "../../utils/plannerUtils";
@@ -17,6 +18,7 @@ const TABS = [
 export default function PlannerPage() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") || "overview";
+  const [mobilePanel, setMobilePanel] = useState("cal");
 
   const setTab = (key) => setParams(key === "overview" ? {} : { tab: key }, { replace: true });
 
@@ -54,10 +56,17 @@ export default function PlannerPage() {
       </div>
 
       {tab === "overview" && (
-        <div className="planner-overview">
-          {/* Mobile swipe indicator dots */}
-          <div className="planner-swipe-hint mobile-only">
-            <span /><span />
+        <div className={`planner-overview show-${mobilePanel}`}>
+          {/* Phone: the two panels can't fit side by side, and the old horizontal
+              swipe hid the Tasks panel behind two 6px dots ("my reminders are
+              gone on mobile"). A visible segmented switch replaces it. */}
+          <div className="planner-switch mobile-only" role="tablist" aria-label="Plan panel">
+            <button type="button" role="tab" aria-selected={mobilePanel === "cal"} className={mobilePanel === "cal" ? "active" : ""} onClick={() => setMobilePanel("cal")}>
+              <i className="fa-regular fa-calendar" /> Calendar
+            </button>
+            <button type="button" role="tab" aria-selected={mobilePanel === "tasks"} className={mobilePanel === "tasks" ? "active" : ""} onClick={() => setMobilePanel("tasks")}>
+              <i className="fa-solid fa-list-check" /> Tasks
+            </button>
           </div>
           <div className="planner-panel planner-cal" data-label="Calendar">
             <CalendarPage />

@@ -31,6 +31,10 @@ import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
+import { loadAccountability, saveAccountability } from "./accountabilityApi";
+import { getConnectionStatus } from "./plannerApi";
+import { planReminderRows } from "../utils/recurrence";
+import { toDateStr } from "../utils/plannerUtils";
 import { supabase } from "../utils/supabase";
 import { uid as authUid } from "./_base";
 
@@ -50,17 +54,50 @@ const COLLECTIONS = {
     fields: {
       name: { type: "string", required: true },
       date: { type: "date" },
-      time: { type: "string" },
+      time: { type: "string", description: "Clock time, HH:MM (24h) or \"8am\" — normalised on save" },
       description: { type: "string", long: true },
       recurrence: { type: "enum", values: RECUR },
       recur_until: { type: "date" },
-      recur_times: { type: "number" },
+      recur_times: { type: "number", description: "Occurrence cap PER ROW (a weekly row with recur_times 6 runs 6 weeks)" },
+      weekdays: { type: "array", createOnly: true, description: "Weekly schedule on named days, e.g. [\"tue\",\"fri\"] — expands to one weekly row per day" },
+      times_per_week: { type: "number", createOnly: true, description: "N times a week with no days named — auto-spaced (2 → Tue+Fri, 3 → Mon/Wed/Fri)" },
+      weeks: { type: "number", createOnly: true, description: "How many weeks a weekly schedule runs (sets recur_times on every row)" },
       project_id: { type: "string" },
       course_id: { type: "string", description: "Link to a courses row — makes this a school deadline (shows in School + Plan)" },
       show_on_calendar: { type: "boolean" },
       completed: { type: "boolean", updateOnly: true },
     },
-    load: loadReminders, create: newReminder, update: updateReminder, remove: deleteReminder,
+    load: loadReminders, create: createReminderPlanned, update: updateReminder, remove: deleteReminder,
+    echoFields: ["id", "name", "date", "time", "recurrence", "recur_until", "recur_times", "project_id"],
+  },
+  habits: {
+    table: "accountability_state",
+    description: "Habit / accountability trackers (Life › Habits). Each tracker is a habit Scott logs daily (checkbox) or tallies (count). Use log_habit to record a day.",
+    searchFields: ["name"],
+    defaultFields: ["id", "name", "emoji", "mode", "created"],
+    fields: {
+      name: { type: "string", required: true },
+      emoji: { type: "string" },
+      mode: { type: "enum", values: ["check", "count"], description: "check = once a day, count = tally taps" },
+      created: { type: "date", updateOnly: true },
+    },
+    load: async () => (await loadAccountability()).trackers,
+    create: async (data) => {
+      const state = await loadAccountability();
+      const tracker = { id: crypto.randomUUID(), name: data.name, emoji: data.emoji || "🔥", color: "var(--accent)", mode: data.mode || "check", created: toDateStr(new Date()) };
+      await saveAccountability({ ...state, trackers: [...state.trackers, tracker] });
+      return tracker;
+    },
+    update: async (id, data) => {
+      const state = await loadAccountability();
+      if (!state.trackers.some((t) => t.id === id)) throw new Error(`no habit tracker with id ${id}`);
+      await saveAccountability({ ...state, trackers: state.trackers.map((t) => (t.id === id ? { ...t, ...data } : t)) });
+    },
+    remove: async (id) => {
+      const state = await loadAccountability();
+      await saveAccountability({ trackers: state.trackers.filter((t) => t.id !== id), logs: state.logs.filter((l) => l.trackerId !== id) });
+    },
+    echoFields: ["id", "name", "emoji", "mode"],
   },
   events: {
     table: "events",
@@ -317,6 +354,7 @@ function validate(spec, data, { partial }) {
     const f = spec.fields[k];
     if (!f) { errors.push(`unknown field "${k}" — allowed: ${allowed.join(", ")}`); continue; }
     if (!partial && f.updateOnly) { errors.push(`"${k}" can only be set on update`); continue; }
+    if (partial && f.createOnly) { errors.push(`"${k}" can only be set on create — edit date/recurrence directly instead`); continue; }
     if (v == null) { clean[k] = v; continue; }
     if (f.type === "enum" && !f.values.includes(v)) errors.push(`${k} must be one of: ${f.values.join(" | ")}`);
     else if (f.type === "number" && Number.isNaN(Number(v))) errors.push(`${k} must be a number`);
@@ -487,13 +525,44 @@ export async function libraryQuery({ collection, fields, where, search, date_fro
   };
 }
 
+/** Reminders: derive dates/time/spacing deterministically, then insert one row per planned occurrence. */
+async function createReminderPlanned(clean) {
+  const now = new Date();
+  let plan;
+  try {
+    plan = planReminderRows(clean, { todayStr: toDateStr(now), nowMinutes: now.getHours() * 60 + now.getMinutes() });
+  } catch (e) {
+    throw new Error(`reminder not created: ${e.message}`);
+  }
+  const rows = [];
+  for (const r of plan.rows) rows.push(await newReminder(r));
+  const first = rows[0] || {};
+  return { ...first, _rows: rows, _notes: plan.notes };
+}
+
+function echo(spec, row) {
+  if (!row || typeof row !== "object") return undefined;
+  const keys = spec.echoFields || spec.defaultFields || ["id"];
+  const out = {};
+  for (const k of keys) if (row[k] != null) out[k] = row[k];
+  return out;
+}
+
 export async function libraryCreate({ collection, data }) {
   const spec = getSpec(collection);
   if (!spec.create) return { error: `${collection} is read-only` };
   const { errors, clean } = validate(spec, data, { partial: false });
   if (errors.length) return { error: `validation failed: ${errors.join("; ")}` };
   const created = await spec.create(clean);
-  return { success: true, ...(created?.id ? { id: created.id } : {}) };
+  const result = { success: true, ...(created?.id ? { id: created.id } : {}) };
+  // Echo what was actually stored so the model confirms real values, not what it hoped it sent.
+  if (Array.isArray(created?._rows) && created._rows.length > 1) result.created = created._rows.map((r) => echo(spec, r));
+  else if (created) result.created = echo(spec, created);
+  if (created?._notes?.length) result.notes = created._notes;
+  if (getConnectionStatus() === false) {
+    result.warning = "Supabase was unreachable — this was saved to THIS BROWSER's local storage only and will not appear on other devices. Tell Scott plainly.";
+  }
+  return result;
 }
 
 export async function libraryUpdate({ collection, id, data }) {
