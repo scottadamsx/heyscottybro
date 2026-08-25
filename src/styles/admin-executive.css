@@ -802,3 +802,31 @@
 .admin-shell .theme-picker-opt { white-space: nowrap; }
 /* The admin wordmark uses the action colour, not the public site's flag red */
 .admin-shell .admin-logo span { color: var(--accent); }
+
+/* ── Density: Apple-compact inside the admin (light/dark). XP keeps its own scale. ── */
+:root[data-density="compact"]:not([data-theme="xp"]) { font-size: 14px; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-main { padding: 1.1rem 1.5rem; max-width: 1280px; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .db-card,
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .form-card,
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .uik-card { padding: 0.9rem 1rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .db-grid { gap: 0.75rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .module-page { gap: 0.75rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .tasks-layout { gap: 0.75rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .db-list { gap: 0.35rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .db-list-item { padding: 0.45rem 0.65rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .module-header h1,
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .combined-page-title { font-size: 1.2rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .db-card-title { font-size: 0.68rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .stat-value { font-size: 1.35rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .btn { height: 34px; padding: 0 0.8rem; font-size: 0.82rem; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell input,
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell select { min-height: 34px; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .admin-rail-link { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+@media (max-width: 768px) {
+  :root[data-density="compact"]:not([data-theme="xp"]) .admin-main { padding: 0.75rem 0.75rem 5rem !important; }
+}
+
+/* ── Pickers must escape their card; the time picker anchors to the right edge ── */
+.admin-shell .tasks-form-panel, .admin-shell .db-card:has(.picker-pop), .admin-shell .form-card:has(.picker-pop) { overflow: visible; }
+.admin-shell .tmp-pop { left: auto; right: 0; min-width: 260px; }
+.admin-shell .picker-pop { z-index: 80; }

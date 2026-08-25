@@ -35,6 +35,11 @@ export default function AdminLayout() {
   // NAV_ITEMS is flat; smoke filtering happens inside HealthPage
   const navItems = NAV_ITEMS;
 
+  // Compact density only inside the admin (the public landing keeps its own scale).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-density", "compact");
+    return () => document.documentElement.removeAttribute("data-density");
+  }, []);
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPaletteOpen((o) => !o); }
