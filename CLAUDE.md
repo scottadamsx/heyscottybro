@@ -38,7 +38,18 @@ is plain CSS, so UI-2 (height), UI-3 (radius), UI-4 (border) and UI-6 (focus)
 report green *without being measured*. Treat those four as unchecked and review
 them by hand. Only UI-1 (hex literals), UI-5 (repeated classNames) and UI-7
 (reduced-motion) are real signals here. Baseline 2026-07-26: **UI-1 176 · UI-5 2
-· UI-7 missing**. Do not claim a check that does not exist.
+· UI-7 missing**. After the 2026-08-25 theme sweep: **UI-1 108 · UI-5 2 · UI-7 ✓**
+(the remaining UI-1 hits are JSX inline colours, mostly user data / chart
+palettes tagged `theme-fixed`). Do not claim a check that does not exist.
+
+## Themes (2026-08-25, DR-011)
+
+`<html data-theme="light|dark|xp">` is set before first paint by
+`src/utils/theme.js`; tokens live in `src/styles/globals.css` under `:root`,
+`:root[data-theme="dark"]`, `:root[data-theme="xp"]` with identical names.
+Light (Apple-esque) is the default. XP chrome is `src/styles/theme-xp.css`,
+scoped so the UI-3/UI-4 floors still hold in light/dark. A new colour must be
+added to all three scopes; a component must never carry a literal.
 
 ## The escalation rule (QF-8) — verbatim
 
