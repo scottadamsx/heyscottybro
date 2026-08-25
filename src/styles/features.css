@@ -10,8 +10,7 @@
   --text:       var(--text-primary);
   --bg:         var(--bg-base);
   --danger:     var(--red);
-  --danger-bg:  rgba(248, 113, 113, 0.12);
-  --accent-bg:  rgba(91, 141, 239, 0.10);
+  /* --danger-bg / --accent-bg / --success-bg / --warn-bg / --info-bg are per-theme in globals.css */
 }
 
 /* CSS gotcha: a custom property's var() is substituted where it is
@@ -42,8 +41,8 @@
 .snip-notes { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; white-space: pre-wrap; }
 
 /* Generic danger button variants */
-.btn.danger { background: var(--danger); border-color: var(--danger); color: #1a0b0b; }
-.btn-tiny-blue.danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn.danger { background: var(--danger); border-color: var(--danger); color: var(--text-on-accent); }
+.btn-tiny-blue.danger:hover { background: var(--danger); border-color: var(--danger); color: var(--text-on-accent); }
 
 /* ═══ Documents ═══ */
 .doc-grid { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -206,7 +205,7 @@
 .nut-recipe-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 .nut-recipe-title { font-weight: 600; color: var(--text-primary); }
 .nut-fav { color: var(--text-muted); cursor: pointer; }
-.nut-fav.on { color: #f5c542; }
+.nut-fav.on { color: var(--orange); }
 .nut-recipe-card-desc { font-size: 0.8rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .nut-recipe-card-meta { display: flex; gap: 0.7rem; flex-wrap: wrap; font-size: 0.74rem; color: var(--text-muted); }
 .nut-ai-pill { color: var(--accent); }

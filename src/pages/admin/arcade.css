@@ -7,7 +7,7 @@
 .arcade-tile {
   display: flex; flex-direction: column; gap: 4px; text-align: left; cursor: pointer;
   font: inherit; color: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-card);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px 14px;
   transition: border-color 0.15s, transform 0.15s;
 }
@@ -22,7 +22,7 @@
 }
 .arcade-stage {
   width: min(860px, 100%); height: min(640px, 92vh);
-  background: #FBFAF4; /* the game's paper world */
+  background: #FBFAF4; /* theme-fixed: the game's paper world */
   border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
   box-shadow: 0 40px 90px -30px rgba(0,0,0,0.8);
 }
@@ -31,7 +31,7 @@
   padding: 10px 14px; background: var(--bg-card); border-bottom: 1px solid var(--border-subtle);
 }
 .arcade-stage-title { font-size: 14px; font-weight: 650; color: var(--text-primary); }
-.arcade-frame { flex: 1; width: 100%; border: none; background: #FBFAF4; }
+.arcade-frame { flex: 1; width: 100%; border: none; background: #FBFAF4; /* theme-fixed: game paper */ }
 
 @media (max-width: 640px) {
   .arcade-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }

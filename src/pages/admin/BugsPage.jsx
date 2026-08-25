@@ -15,17 +15,17 @@ const PRIORITY_COLOR = {
   low:      { bg: "rgba(100,116,139,0.15)", text: "#94a3b8" },
   medium:   { bg: "rgba(234,179,8,0.15)",   text: "#eab308" },
   high:     { bg: "rgba(249,115,22,0.15)",  text: "var(--orange)" },
-  critical: { bg: "rgba(239,68,68,0.18)",   text: "var(--red)" },
+  critical: { bg: "var(--danger-bg)",   text: "var(--red)" },
 };
 const STATUS_COLOR = {
-  open:        { bg: "rgba(239,68,68,0.12)",  text: "var(--red)" },
-  in_progress: { bg: "rgba(99,102,241,0.15)", text: "var(--accent)" },
-  resolved:    { bg: "rgba(34,197,94,0.15)",  text: "var(--green)" },
+  open:        { bg: "var(--danger-bg)",  text: "var(--red)" },
+  in_progress: { bg: "var(--accent-bg)", text: "var(--accent)" },
+  resolved:    { bg: "var(--success-bg)",  text: "var(--green)" },
   closed:      { bg: "rgba(100,116,139,0.12)", text: "#94a3b8" },
 };
 const TYPE_META = {
-  bug:     { label: "Bug",     icon: "fa-bug",         bg: "rgba(239,68,68,0.12)",  text: "var(--red)" },
-  feature: { label: "Feature", icon: "fa-lightbulb",   bg: "rgba(99,102,241,0.15)", text: "var(--accent)" },
+  bug:     { label: "Bug",     icon: "fa-bug",         bg: "var(--danger-bg)",  text: "var(--red)" },
+  feature: { label: "Feature", icon: "fa-lightbulb",   bg: "var(--accent-bg)", text: "var(--accent)" },
 };
 
 const EMPTY_FORM = { title: "", description: "", steps: "", page: "", priority: "medium", type: "bug" };
@@ -189,10 +189,10 @@ export default function BugsPage() {
     }
   };
 
-  const card  = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.5rem", padding: "0.75rem 1rem", marginBottom: 8 };
+  const card  = { background: "var(--bg-card)", border: "0.5px solid var(--border-primary)", borderRadius: "0.5rem", padding: "0.75rem 1rem", marginBottom: 8 };
   const inp   = { width: "100%", marginBottom: 8, boxSizing: "border-box" };
   const sh    = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 4px", fontWeight: 500 };
-  const pill  = (active) => ({ fontSize: 12, padding: "4px 11px", borderRadius: 99, border: "0.5px solid var(--border)", cursor: "pointer", background: active ? "var(--accent)" : "var(--bg-elevated,#1a1a1a)", color: active ? "#fff" : "var(--text-secondary)" });
+  const pill  = (active) => ({ fontSize: 12, padding: "4px 11px", borderRadius: 99, border: "0.5px solid var(--border)", cursor: "pointer", background: active ? "var(--accent)" : "var(--bg-card)", color: active ? "#fff" : "var(--text-secondary)" });
   const FILTER_TABS = [
     { key: "active", label: "Active" }, { key: "open", label: "Open" },
     { key: "in_progress", label: "In Progress" }, { key: "resolved", label: "Resolved" }, { key: "all", label: "All" },
@@ -244,7 +244,7 @@ export default function BugsPage() {
           )}
           <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 10px" }}>You can drag in screenshots after saving — open the item below.</p>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn" onClick={handleCreate} disabled={saving || !form.title.trim()} style={{ flex: 1, background: "var(--accent)", color: "#fff", border: "none" }}>
+            <button className="btn" onClick={handleCreate} disabled={saving || !form.title.trim()} style={{ flex: 1, background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>
               {saving ? "Saving…" : "Submit"}
             </button>
             <button className="btn" onClick={() => setShowForm(false)} style={{ flex: 1 }}>Cancel</button>
@@ -296,7 +296,7 @@ export default function BugsPage() {
 
             {/* Expanded detail */}
             {isOpen && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "0.5px solid var(--border,#333)" }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "0.5px solid var(--border-primary)" }}>
                 <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                   <div style={{ flex: 1, minWidth: 140 }}>
                     <p style={sh}>Status</p>
@@ -334,8 +334,8 @@ export default function BugsPage() {
                     onDrop={e => { e.preventDefault(); setDragId(null); uploadFiles(bug, e.dataTransfer.files); }}
                     onClick={() => { if (expanded === bug.id) fileRef.current?.click(); }}
                     style={{
-                      border: `1.5px dashed ${dragId === bug.id ? "var(--accent)" : "var(--border,#333)"}`,
-                      background: dragId === bug.id ? "rgba(99,102,241,0.08)" : "transparent",
+                      border: `1.5px dashed ${dragId === bug.id ? "var(--accent)" : "var(--border-primary)"}`,
+                      background: dragId === bug.id ? "var(--accent-bg)" : "transparent",
                       borderRadius: 8, padding: "14px", textAlign: "center", cursor: "pointer",
                       fontSize: 12, color: "var(--text-muted)", transition: "all .15s",
                     }}>
@@ -347,12 +347,12 @@ export default function BugsPage() {
                   {shots.length > 0 && (
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 8, marginTop: 8 }}>
                       {shots.map(path => (
-                        <div key={path} style={{ position: "relative", borderRadius: 6, overflow: "hidden", border: "0.5px solid var(--border)", aspectRatio: "4/3", background: "var(--bg-raised,#111)" }}>
+                        <div key={path} style={{ position: "relative", borderRadius: 6, overflow: "hidden", border: "0.5px solid var(--border)", aspectRatio: "4/3", background: "var(--bg-raised)" }}>
                           {shotUrls[path]
                             ? <a href={shotUrls[path]} target="_blank" rel="noreferrer"><img src={shotUrls[path]} alt="screenshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></a>
                             : <div style={{ display: "grid", placeItems: "center", height: "100%", color: "var(--text-muted)" }}><i className="fa-solid fa-spinner fa-spin" /></div>}
                           <button onClick={() => handleRemoveShot(bug, path)} title="Remove"
-                            style={{ position: "absolute", top: 3, right: 3, width: 20, height: 20, borderRadius: 5, border: "none", cursor: "pointer", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, lineHeight: 1 }}>
+                            style={{ position: "absolute", top: 3, right: 3, width: 20, height: 20, borderRadius: 5, border: "none", cursor: "pointer", background: "rgba(0,0,0,0.6)", color: "var(--text-on-accent)", fontSize: 11, lineHeight: 1 }}>
                             <i className="fa-solid fa-xmark" />
                           </button>
                         </div>
@@ -410,7 +410,7 @@ export default function BugsPage() {
                     </div>
                   </div>
                   {promptShown === bug.id && (
-                    <pre style={{ fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", background: "var(--bg-raised,#111)", border: "0.5px solid var(--border,#333)", borderRadius: 8, padding: "10px 12px", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "var(--font-mono, monospace)", maxHeight: 320, overflowY: "auto" }}>
+                    <pre style={{ fontSize: 12, lineHeight: 1.55, color: "var(--text-secondary)", background: "var(--bg-raised)", border: "0.5px solid var(--border-primary)", borderRadius: 8, padding: "10px 12px", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "var(--font-mono, monospace)", maxHeight: 320, overflowY: "auto" }}>
                       {buildFixPrompt(bug)}
                     </pre>
                   )}
@@ -418,12 +418,12 @@ export default function BugsPage() {
 
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   {bug.status !== "resolved" && (
-                    <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(34,197,94,0.12)", color: "var(--green)", border: "none" }}
+                    <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "var(--success-bg)", color: "var(--green)", border: "none" }}
                       onClick={() => patch(bug.id, { status: "resolved", resolved_at: new Date().toISOString() })}>
                       <i className="fa-solid fa-check" style={{ marginRight: 4 }} />Resolve
                     </button>
                   )}
-                  <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "rgba(239,68,68,0.1)", color: "var(--red)", border: "none" }}
+                  <button className="btn" style={{ fontSize: 12, padding: "4px 12px", background: "var(--danger-bg)", color: "var(--red)", border: "none" }}
                     onClick={() => handleDelete(bug.id)}>
                     <i className="fa-solid fa-trash" style={{ marginRight: 4 }} />Delete
                   </button>

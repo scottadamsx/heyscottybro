@@ -1,0 +1,205 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   theme-xp.css — Windows XP "Luna" chrome.
+   Every rule is scoped to :root[data-theme="xp"]; in light/dark this file is
+   inert. Tokens (colours, fonts, radius 0) come from globals.css — this file
+   adds the things tokens can't express: bevelled controls, blue title bars,
+   the Start-button rail and the classic beige dialog surfaces.
+   Recorded as a deliberate house-style override (radius/border floors) in
+   ledger.jsonl — see DR-011.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root[data-theme="xp"] {
+  -webkit-font-smoothing: auto;
+  font-size: 15px;
+}
+:root[data-theme="xp"] body { font-family: var(--font-body); }
+:root[data-theme="xp"] body::before { display: none; }
+
+/* ── Window chrome: cards become XP windows ── */
+:root[data-theme="xp"] .admin-shell .db-card,
+:root[data-theme="xp"] .admin-shell .form-card,
+:root[data-theme="xp"] .admin-shell .event-card,
+:root[data-theme="xp"] .admin-shell .module-card,
+:root[data-theme="xp"] .admin-shell .uik-card,
+:root[data-theme="xp"] .admin-shell .day-modal,
+:root[data-theme="xp"] .admin-shell .modal-card,
+:root[data-theme="xp"] .admin-shell .modal {
+  border: 1px solid #0831D9; /* theme-fixed: Luna window frame */
+  border-radius: 8px 8px 0 0;
+  box-shadow: var(--shadow-floating);
+  background: var(--bg-card);
+  padding-top: 0;
+  overflow: hidden;
+}
+:root[data-theme="xp"] .admin-shell .db-card-title,
+:root[data-theme="xp"] .admin-shell .uik-card-head h3,
+:root[data-theme="xp"] .admin-shell .day-modal-head {
+  display: block;
+  margin: 0 -1.25rem 0.9rem;
+  padding: 6px 12px;
+  background: var(--titlebar-grad);
+  color: var(--titlebar-text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.45);
+}
+/* When the title sits in a header row with actions, the ROW is the title bar. */
+:root[data-theme="xp"] .admin-shell .db-card-header,
+:root[data-theme="xp"] .admin-shell .uik-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 0 -1.25rem 0.9rem; padding: 4px 8px 4px 12px;
+  background: var(--titlebar-grad); color: var(--titlebar-text);
+}
+:root[data-theme="xp"] .admin-shell .db-card-header .db-card-title,
+:root[data-theme="xp"] .admin-shell .uik-card-head h3 { margin: 0; padding: 0; background: none; flex: 1; min-width: 0; }
+:root[data-theme="xp"] .admin-shell .db-card-header .btn,
+:root[data-theme="xp"] .admin-shell .db-card-header button,
+:root[data-theme="xp"] .admin-shell .db-card-header a { height: 24px; padding: 0 8px; font-size: 0.75rem; white-space: nowrap; }
+:root[data-theme="xp"] .admin-shell .db-card-header a { color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .day-modal-head { margin: 0; }
+:root[data-theme="xp"] .admin-shell .day-modal-dow,
+:root[data-theme="xp"] .admin-shell .day-modal-date { color: var(--titlebar-text); }
+
+/* ── Bevelled controls ── */
+:root[data-theme="xp"] .admin-shell .btn,
+:root[data-theme="xp"] .admin-shell button.btn-sm,
+:root[data-theme="xp"] .admin-shell .btn-secondary-sm,
+:root[data-theme="xp"] .admin-shell .btn-mini,
+:root[data-theme="xp"] .admin-shell .btn-tiny-blue,
+:root[data-theme="xp"] .admin-shell .day-nav,
+:root[data-theme="xp"] .admin-shell .page-tabs button,
+:root[data-theme="xp"] .admin-shell .planner-switch button,
+:root[data-theme="xp"] .admin-shell .dashboard-expand {
+  background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%); /* theme-fixed: Luna button face */
+  color: var(--text-primary);
+  border: 1px solid #003C74; /* theme-fixed: Luna button rim */
+  border-radius: 3px;
+  box-shadow: inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark);
+  font-family: var(--font-body);
+  font-weight: 400;
+  text-shadow: none;
+}
+:root[data-theme="xp"] .admin-shell .btn:hover,
+:root[data-theme="xp"] .admin-shell .page-tabs button:hover,
+:root[data-theme="xp"] .admin-shell .planner-switch button:hover {
+  box-shadow: inset 0 0 0 2px #F8D77A, inset 1px 1px 0 var(--bevel-light); /* theme-fixed: Luna hover glow */
+}
+:root[data-theme="xp"] .admin-shell .btn:active { background: var(--bg-hover); box-shadow: inset 1px 1px 0 var(--bevel-dark); }
+:root[data-theme="xp"] .admin-shell .btn-primary,
+:root[data-theme="xp"] .admin-shell .btn.primary,
+:root[data-theme="xp"] .admin-shell .page-tabs button.active,
+:root[data-theme="xp"] .admin-shell .planner-switch button.active {
+  background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%); /* theme-fixed */
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px #3B81E6, inset 1px 1px 0 var(--bevel-light); /* theme-fixed: default-button ring */
+  font-weight: 700;
+}
+:root[data-theme="xp"] .admin-shell .btn-danger,
+:root[data-theme="xp"] .admin-shell .btn-delete { color: var(--red); }
+
+:root[data-theme="xp"] .admin-shell input,
+:root[data-theme="xp"] .admin-shell select,
+:root[data-theme="xp"] .admin-shell textarea {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--font-body);
+}
+:root[data-theme="xp"] .admin-shell input:focus-visible,
+:root[data-theme="xp"] .admin-shell select:focus-visible,
+:root[data-theme="xp"] .admin-shell textarea:focus-visible {
+  outline: 2px dotted var(--text-primary);
+  outline-offset: -3px;
+}
+
+/* ── Rail = Start-menu, topbar = title bar ── */
+:root[data-theme="xp"] .admin-shell .admin-rail,
+:root[data-theme="xp"] .admin-shell .admin-subbar {
+  background: linear-gradient(180deg, #D6DFF7 0%, #C9D7F4 100%); /* theme-fixed: Start-menu pane */
+  border-right: 1px solid #0831D9; /* theme-fixed */
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-head {
+  background: var(--titlebar-grad);
+  color: var(--titlebar-text);
+  margin: -1px -1px 0.5rem;
+  padding: 10px 12px;
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-word,
+:root[data-theme="xp"] .admin-shell .admin-rail-word span { color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .admin-rail-mark {
+  background: linear-gradient(180deg, #58B14B, #2E8A2B); /* theme-fixed: Start-orb green */
+  border: 1px solid #1E5E1C; /* theme-fixed */
+  color: var(--titlebar-text);
+  border-radius: 999px;
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-link,
+:root[data-theme="xp"] .admin-shell .admin-sub-link { border-radius: 0; color: var(--text-primary); }
+:root[data-theme="xp"] .admin-shell .admin-rail-link:hover,
+:root[data-theme="xp"] .admin-shell .admin-sub-link:hover { background: var(--accent); color: var(--text-on-accent); }
+:root[data-theme="xp"] .admin-shell .admin-rail-link:hover i { color: var(--text-on-accent); }
+:root[data-theme="xp"] .admin-shell .admin-rail-link.active,
+:root[data-theme="xp"] .admin-shell .admin-sub-link.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  box-shadow: none;
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-link.active i { color: var(--text-on-accent); }
+:root[data-theme="xp"] .admin-shell .admin-topbar {
+  background: var(--titlebar-grad);
+  color: var(--titlebar-text);
+  border-bottom: 1px solid #0831D9; /* theme-fixed */
+  backdrop-filter: none;
+}
+:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo,
+:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo span { color: var(--titlebar-text); }
+
+/* ── Tabs, chips, badges: square ── */
+:root[data-theme="xp"] .admin-shell .page-tabs { gap: 2px; background: transparent; border: none; padding: 0; }
+:root[data-theme="xp"] .admin-shell .db-count,
+:root[data-theme="xp"] .admin-shell .day-count,
+:root[data-theme="xp"] .admin-shell .badge,
+:root[data-theme="xp"] .admin-shell .uik-badge {
+  border-radius: 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--info-bg);
+  color: var(--text-primary);
+}
+:root[data-theme="xp"] .admin-shell .db-list-item,
+:root[data-theme="xp"] .admin-shell .stat-item {
+  border-radius: 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+:root[data-theme="xp"] .admin-shell .db-list-item:hover { background: var(--accent-bg); }
+
+/* ── Calendar ── */
+:root[data-theme="xp"] .admin-shell .calendar-cell { border-radius: 0; border: 1px solid var(--border-subtle); background: var(--bg-card); }
+:root[data-theme="xp"] .admin-shell .calendar-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ── Chat bubble / FAB ── */
+:root[data-theme="xp"] .admin-shell .chat-fab,
+:root[data-theme="xp"] .admin-shell .admin-mobile-fab {
+  border-radius: 3px;
+  background: var(--titlebar-grad);
+  border: 1px solid #0831D9; /* theme-fixed */
+  box-shadow: var(--shadow-floating);
+}
+:root[data-theme="xp"] .chat-panel { border-radius: 8px 8px 0 0; border: 1px solid #0831D9; /* theme-fixed */ }
+:root[data-theme="xp"] .chat-header { background: var(--titlebar-grad); color: var(--titlebar-text); }
+
+/* ── Scrollbars: chunky, like it's 2001 ── */
+:root[data-theme="xp"] ::-webkit-scrollbar { width: 17px; height: 17px; }
+:root[data-theme="xp"] ::-webkit-scrollbar-track { background: #F4F3EE; } /* theme-fixed */
+:root[data-theme="xp"] ::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #C6D6FB, #A9C0F5); /* theme-fixed */
+  border: 1px solid #7F9DB9; /* theme-fixed */
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="xp"] * { transition-duration: 0.01ms !important; }
+}

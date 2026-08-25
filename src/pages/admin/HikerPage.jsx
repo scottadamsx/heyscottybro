@@ -231,7 +231,7 @@ export default function HikerPage() {
                     <span style={{ fontWeight: 800, color: "var(--orange)", width: "28px" }}>#{i + 1}</span>
                     <span>{h.first} {h.last}</span>
                   </span>
-                  <span style={{ background: "rgba(251,146,60,0.15)", color: "var(--orange)", padding: "2px 12px", borderRadius: "100px", fontSize: "0.78rem", fontWeight: 700 }}>
+                  <span style={{ background: "var(--warn-bg)", color: "var(--orange)", padding: "2px 12px", borderRadius: "100px", fontSize: "0.78rem", fontWeight: 700 }}>
                     {h.attendance}×
                   </span>
                 </div>

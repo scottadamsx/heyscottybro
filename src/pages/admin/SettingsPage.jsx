@@ -1,3 +1,4 @@
+import { THEMES, useTheme, setTheme } from "../../utils/theme";
 import { Link } from "react-router-dom";
 import { HIDE_SMOKE_TRACKER, useSetting, setSetting } from "../../utils/settings";
 
@@ -17,6 +18,7 @@ function Toggle({ checked, onChange, label }) {
 }
 
 export default function SettingsPage() {
+  const theme = useTheme();
   const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
 
   return (
@@ -45,6 +47,32 @@ export default function SettingsPage() {
       </div>
 
       <div className="db-card">
+        <div className="settings-row">
+          <div className="settings-row-body">
+            <div className="settings-row-title">
+              <i className="fa-solid fa-circle-half-stroke" /> Theme
+            </div>
+            <div className="settings-row-meta">
+              Light is the default. Dark follows the same layout; Windows XP is the full Luna treatment.
+              Saved on this device and applied instantly.
+            </div>
+          </div>
+          <div className="theme-picker" role="radiogroup" aria-label="Theme">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === t.id}
+                className={`theme-picker-opt${theme === t.id ? " active" : ""}`}
+                onClick={() => setTheme(t.id)}
+                title={t.hint}
+              >
+                <i className={t.icon} /> {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="settings-row">
           <div className="settings-row-body">
             <div className="settings-row-title">

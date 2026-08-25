@@ -129,7 +129,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             </select>
             <input type="date" value={schedForm.anchorDate} onChange={e => setSchedForm(f => ({ ...f, anchorDate: e.target.value }))} placeholder="Anchor/next payday" className="bud-inp" />
             {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" className="bud-inp" />}
-            <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent)", color: "#fff", border: "none" }}>Save schedule</button>
+            <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>Save schedule</button>
           </div>
         )}
       </div>
@@ -184,7 +184,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <label className="bud-label">End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
           <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "#fff", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
+            <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
             <button className="btn bud-flex1" onClick={() => setShowIncForm(false)}>Cancel</button>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           )}
           <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={saveBill} style={{ background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "#000", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
+            <button className="btn bud-flex1" onClick={saveBill} style={{ background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "var(--text-on-accent)", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
             <button className="btn bud-flex1" onClick={() => setShowBillForm(false)}>Cancel</button>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
 
       {/* Fresh start */}
       <p className="bud-sh">Reset</p>
-      <div className="bud-panel bud-panel-bi" style={{ border: "0.5px solid rgba(239,68,68,0.3)" }}>
+      <div className="bud-panel bud-panel-bi" style={{ border: "0.5px solid var(--danger-bg)" }}>
         <div className="bud-muted-12" style={{ marginBottom: 10 }}>
           Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
         </div>
@@ -282,7 +282,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             if (!await confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.", { title: "Fresh start", confirmLabel: "Reset" })) return;
             if (onFreshStart) onFreshStart();
           }}
-          style={{ background: "rgba(239,68,68,0.12)", color: "var(--red)", border: "1px solid rgba(239,68,68,0.3)", fontWeight: 600, width: "100%" }}>
+          style={{ background: "var(--danger-bg)", color: "var(--red)", border: "1px solid var(--danger-bg)", fontWeight: 600, width: "100%" }}>
           Fresh start — clear transactions &amp; reset balance
         </button>
       </div>

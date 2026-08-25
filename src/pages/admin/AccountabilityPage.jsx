@@ -5,7 +5,7 @@ import { loadAccountability, saveAccountability } from "../../api/accountability
 import DatePicker from "../../components/DatePicker";
 
 const EMOJIS = ["🔥", "🏋️", "🏃", "🧘", "📚", "💧", "🥗", "💸", "🛌", "🧹", "🎸", "💖", "☕", "🚭", "✍️", "🙏"];
-const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
+const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 
 function genId() {
@@ -61,7 +61,7 @@ export default function AccountabilityPage() {
   const { trackers, logs } = data;
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff", mode: "count" });
+  const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
   const [detailId, setDetailId] = useState(null);
 
   const todayStr = toDateStr(new Date());
@@ -95,7 +95,7 @@ export default function AccountabilityPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     update((d) => { d.trackers.push({ id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr }); return d; });
-    setForm({ name: "", emoji: "🔥", color: "#4f7cff", mode: form.mode });
+    setForm({ name: "", emoji: "🔥", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
     setShowAdd(false);
   };
   const deleteTracker = (id) => {

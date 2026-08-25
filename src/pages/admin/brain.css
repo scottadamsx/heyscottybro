@@ -18,7 +18,7 @@
   min-height: 380px;
   /* Stop the browser from hijacking touch gestures — let Three.js orbit/pinch. */
   touch-action: none;
-  background: #0b1020;
+  background: var(--bg-raised);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -32,7 +32,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
-  color: #9aa0b5;
+  color: var(--text-muted);
   font-size: var(--text-sm);
 }
 
@@ -46,8 +46,8 @@
   align-items: center;
   flex-wrap: wrap;
   padding: var(--space-xs) var(--space-sm);
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55));
-  color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(180deg, transparent, var(--bg-card));
+  color: var(--text-secondary);
   font-size: 11px;
   pointer-events: none;
 }
@@ -90,7 +90,7 @@
   font-size: 13px; padding: 5px 12px; border-radius: 99px; cursor: pointer;
   border: 1px solid var(--border-subtle); background: var(--bg-raised); color: var(--text-secondary);
 }
-.brain-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.brain-tab.active { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
 
 /* ── Agent Tools reference ── */
 .brain-tools-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -101,7 +101,7 @@
 .brain-tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
 .brain-agent-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-left: 3px solid var(--agent, var(--accent)); border-radius: var(--radius-lg); padding: 14px 16px; }
 .brain-agent-head { display: flex; align-items: center; gap: 10px; }
-.brain-agent-avatar { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.brain-agent-avatar { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-on-accent); flex-shrink: 0; }
 .brain-agent-name { font-size: 15px; font-weight: 700; }
 .brain-agent-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .brain-agent-tagline { font-size: 12.5px; color: var(--text-secondary); margin: 8px 0 10px; }
@@ -130,6 +130,6 @@
 .brain-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px; z-index: 1000; }
 .brain-modal { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 14px; width: min(620px, 100%); max-height: 84vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-card); }
 .brain-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
-.brain-modal-stage { background: #0b1020; }
+.brain-modal-stage { background: var(--bg-raised); }
 .brain-modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--border-subtle); }
 .brain-modal-hint { font-size: 11px; color: var(--text-muted); }

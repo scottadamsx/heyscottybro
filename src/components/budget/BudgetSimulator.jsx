@@ -171,8 +171,8 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
         </div>
       </div>
       <div className="bud-hstack" style={{ marginBottom: 12 }}>
-        <button className="btn bud-flex1" onClick={generate} style={{ background: "var(--accent)", color: "#fff", border: "none" }}>From bill config</button>
-        <button className="btn bud-flex1" onClick={loadFromHabits} style={{ background: transactions.length ? "rgba(34,197,94,0.15)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "rgba(34,197,94,0.4)" : "var(--border-subtle)"}` }}
+        <button className="btn bud-flex1" onClick={generate} style={{ background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>From bill config</button>
+        <button className="btn bud-flex1" onClick={loadFromHabits} style={{ background: transactions.length ? "var(--success-bg)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "var(--success-bg)" : "var(--border-subtle)"}` }}
           title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
           From my habits {transactions.length ? "✓" : ""}
         </button>
@@ -190,7 +190,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
         </div>
       )}
 
-      {warning && <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid var(--red)", borderRadius: "0.375rem", padding: "0.75rem 1rem", marginBottom: 12, fontSize: 13, color: "var(--red)" }}>{warning}</div>}
+      {warning && <div style={{ background: "var(--danger-bg)", border: "1px solid var(--red)", borderRadius: "0.375rem", padding: "0.75rem 1rem", marginBottom: 12, fontSize: 13, color: "var(--red)" }}>{warning}</div>}
 
       {rows.length > 0 && (
         <>
@@ -202,7 +202,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
           {showSaveForm && (
             <div className="bud-hstack" style={{ marginBottom: 10 }}>
               <input value={simName} onChange={e => setSimName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveSimulation()} placeholder="Simulation name…" style={{ flex: 1, fontSize: 13 }} autoFocus />
-              <button className="btn" onClick={saveSimulation} style={{ fontSize: 12, background: "var(--green)", color: "#000", border: "none", fontWeight: 600 }}>Save</button>
+              <button className="btn" onClick={saveSimulation} style={{ fontSize: 12, background: "var(--green)", color: "var(--text-on-accent)", border: "none", fontWeight: 600 }}>Save</button>
             </div>
           )}
           <div style={{ overflowX: "auto" }}>
@@ -218,7 +218,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
                 {rows.map(r => {
                   const negBal = r.balance < 0, lowBal = r.balance < 200;
                   return (
-                    <tr key={r.id} style={{ background: negBal ? "rgba(239,68,68,0.08)" : lowBal ? "rgba(245,158,11,0.06)" : "transparent" }}>
+                    <tr key={r.id} style={{ background: negBal ? "var(--danger-bg)" : lowBal ? "var(--warn-bg)" : "transparent" }}>
                       <td>
                         <input type="date" value={r.date} onChange={e => updateRow(r.id, "date", e.target.value)} className="bud-sim-inp" style={{ width: 110 }} />
                       </td>

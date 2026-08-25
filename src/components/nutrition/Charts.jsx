@@ -100,16 +100,16 @@ export function MacroRing({ protein = 0, carbs = 0, fat = 0, size = 132 }) {
   const c = 2 * Math.PI * r;
   const segs = total > 0
     ? [
-        { key: "protein", color: "#22c55e", frac: pCal / total },
-        { key: "carbs", color: "#38bdf8", frac: cCal / total },
-        { key: "fat", color: "#f59e0b", frac: fCal / total },
+        { key: "protein", color: "var(--green)", frac: pCal / total },
+        { key: "carbs", color: "#38bdf8", frac: cCal / total }, // theme-fixed: user colour (macro series)
+        { key: "fat", color: "var(--orange)", frac: fCal / total },
       ]
     : [];
   let offset = 0;
   return (
     <div className="macro-ring-wrap">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="macro-ring">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border,#333)" strokeWidth="12" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-primary)" strokeWidth="12" />
         {segs.map((s) => {
           const dash = s.frac * c;
           const el = (
@@ -134,9 +134,9 @@ export function MacroRing({ protein = 0, carbs = 0, fat = 0, size = 132 }) {
         <text x="50%" y="62%" textAnchor="middle" className="macro-ring-lbl">kcal</text>
       </svg>
       <div className="macro-legend">
-        <span><i className="dot" style={{ background: "#22c55e" }} /> P {Math.round(protein)}g</span>
-        <span><i className="dot" style={{ background: "#38bdf8" }} /> C {Math.round(carbs)}g</span>
-        <span><i className="dot" style={{ background: "#f59e0b" }} /> F {Math.round(fat)}g</span>
+        <span><i className="dot" style={{ background: "var(--green)" }} /> P {Math.round(protein)}g</span>
+        <span><i className="dot" style={{ background: "#38bdf8" }} />{/* theme-fixed: user colour */} C {Math.round(carbs)}g</span>
+        <span><i className="dot" style={{ background: "var(--orange)" }} /> F {Math.round(fat)}g</span>
       </div>
     </div>
   );

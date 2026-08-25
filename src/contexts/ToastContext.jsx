@@ -82,7 +82,7 @@ function ToastItem({ toast: t, dismiss }) {
   const accent = t.type === "error" ? "var(--red)"
     : t.type === "success" ? "var(--green)"
     : t.type === "warning" ? "var(--orange)"
-    : "var(--text-primary, #fff)";
+    : "var(--text-primary)";
 
   const copyFull = () => {
     copyToClipboard(full)
@@ -100,7 +100,7 @@ function ToastItem({ toast: t, dismiss }) {
       display: "flex", alignItems: "flex-start", gap: "0.75rem",
       padding: "0.75rem 1rem",
       borderRadius: "0.5rem",
-      background: "var(--bg-raised, #1e1e1e)",
+      background: "var(--bg-raised)",
       border: `1px solid ${
         t.type === "error" ? "var(--red)"
         : t.type === "success" ? "var(--green)"
@@ -133,7 +133,7 @@ function ToastItem({ toast: t, dismiss }) {
             <button onClick={copyFull} style={{ ...microBtn, color: "var(--accent)" }}>
               {copied ? "✓ Copied" : "Copy full message"}
             </button>
-            <button onClick={() => setExpanded((v) => !v)} style={{ ...microBtn, color: "var(--text-muted, #888)" }}>
+            <button onClick={() => setExpanded((v) => !v)} style={{ ...microBtn, color: "var(--text-muted)" }}>
               {expanded ? "Show less" : "Show more"}
             </button>
           </div>
@@ -151,7 +151,7 @@ function ToastItem({ toast: t, dismiss }) {
         )}
         <button
           onClick={() => dismiss(t.id)}
-          style={{ fontSize: "0.875rem", color: "var(--text-muted, #666)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
+          style={{ fontSize: "0.875rem", color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
           aria-label="Dismiss"
         >
           ×

@@ -24,7 +24,7 @@ function Bar({ label, used, limit }) {
         <span style={{ fontWeight: 600 }}>{label}</span>
         <span style={{ color: "var(--text-muted)" }}>{fmt(used)} / {fmt(limit)} · {pct.toFixed(0)}%</span>
       </div>
-      <div style={{ height: 8, background: "var(--bg-raised,#222)", borderRadius: 5, overflow: "hidden" }}>
+      <div style={{ height: 8, background: "var(--bg-raised)", borderRadius: 5, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 5, transition: "width .3s" }} />
       </div>
     </div>

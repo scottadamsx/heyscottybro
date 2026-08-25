@@ -175,7 +175,7 @@
   padding: var(--space-2xs) var(--space-sm);
   font-size: var(--text-sm);
   font-weight: 600;
-  color: #fff;
+  color: var(--text-on-accent);
 }
 .ds-preview-btn.outline {
   background: transparent;
@@ -481,7 +481,7 @@
   height: 34px;
   border-radius: 50%;
   background: var(--grad-accent);
-  color: #fff;
+  color: var(--text-on-accent);
   font-weight: 800;
   font-size: var(--text-xs);
 }

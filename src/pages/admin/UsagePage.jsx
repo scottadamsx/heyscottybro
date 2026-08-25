@@ -10,8 +10,8 @@ function tokens(n) {
   if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
   return String(v);
 }
-const COLORS = ["#8b5cf6", "#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6", "#ec4899", "#94a3b8"];
-const TIER = {
+const COLORS = ["#8b5cf6", "#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#14b8a6", "#ec4899", "#94a3b8"]; /* theme-fixed: user colour (chart series palette) */
+const TIER = { /* theme-fixed: user colour (per-agent palette) */
   frodo:   { label: "Frodo",    color: "#22c55e", icon: "fa-ring" },
   sam:     { label: "Sam",      color: "#84cc16", icon: "fa-seedling" },
   gandalf: { label: "Gandalf",  color: "#a78bfa", icon: "fa-hat-wizard" },
@@ -80,7 +80,7 @@ export default function UsagePage() {
 
   const a = useMemo(() => digestActivity(actions), [actions]);
 
-  const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.6rem", padding: "1.1rem 1.25rem", marginBottom: 14 };
+  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-primary)", borderRadius: "0.6rem", padding: "1.1rem 1.25rem", marginBottom: 14 };
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 12px", fontWeight: 600 };
   const mono = { fontFamily: "var(--font-mono,monospace)" };
 
@@ -101,15 +101,15 @@ export default function UsagePage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 14 }}>
             <div style={{ ...card, marginBottom: 0 }}>
               <div style={sh}>AI actions</div>
-              <div style={{ ...mono, fontSize: 28, color: "#6366f1", lineHeight: 1 }}>{a.total}</div>
+              <div style={{ ...mono, fontSize: 28, color: "var(--accent)", lineHeight: 1 }}>{a.total}</div>
             </div>
             <div style={{ ...card, marginBottom: 0 }}>
               <div style={sh}>Agents used</div>
-              <div style={{ ...mono, fontSize: 28, color: "#22c55e", lineHeight: 1 }}>{a.byTier.length}</div>
+              <div style={{ ...mono, fontSize: 28, color: "var(--green)", lineHeight: 1 }}>{a.byTier.length}</div>
             </div>
             <div style={{ ...card, marginBottom: 0 }}>
               <div style={sh}>Errors</div>
-              <div style={{ ...mono, fontSize: 28, color: a.errors ? "#ef4444" : "#22c55e", lineHeight: 1 }}>{a.errors}</div>
+              <div style={{ ...mono, fontSize: 28, color: a.errors ? "var(--red)" : "var(--green)", lineHeight: 1 }}>{a.errors}</div>
             </div>
           </div>
 
@@ -118,7 +118,7 @@ export default function UsagePage() {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 90 }}>
               {a.daily.map((day, i) => (
                 <div key={i} style={{ flex: 1, height: "100%", display: "flex", alignItems: "flex-end" }} title={`${day.date}: ${day.n}`}>
-                  <div style={{ width: "100%", height: `${Math.max(2, (day.n / a.maxDay) * 100)}%`, background: "#6366f1", borderRadius: "3px 3px 0 0", opacity: 0.85 }} />
+                  <div style={{ width: "100%", height: `${Math.max(2, (day.n / a.maxDay) * 100)}%`, background: "var(--accent)", borderRadius: "3px 3px 0 0", opacity: 0.85 }} />
                 </div>
               ))}
             </div>
@@ -138,7 +138,7 @@ export default function UsagePage() {
                     <span><i className={`fa-solid ${t.icon}`} style={{ color: t.color, marginRight: 6 }} />{t.label}</span>
                     <span style={{ ...mono, color: "var(--text-muted)" }}>{n} <span style={{ opacity: 0.6 }}>({pct.toFixed(0)}%)</span></span>
                   </div>
-                  <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, background: t.color, borderRadius: 4 }} />
                   </div>
                 </div>
@@ -162,11 +162,11 @@ export default function UsagePage() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                 <div style={{ ...card, marginBottom: 0 }}>
                   <div style={sh}>API cost · 30 days</div>
-                  <div style={{ ...mono, fontSize: 28, color: "#8b5cf6", lineHeight: 1 }}>{dollars(cost.totalCents)}</div>
+                  <div style={{ ...mono, fontSize: 28, color: "var(--accent)", lineHeight: 1 }}>{dollars(cost.totalCents)}</div>
                 </div>
                 <div style={{ ...card, marginBottom: 0 }}>
                   <div style={sh}>API tokens · 30 days</div>
-                  <div style={{ ...mono, fontSize: 28, color: "#22c55e", lineHeight: 1 }}>{tokens(cost.tokTotal)}</div>
+                  <div style={{ ...mono, fontSize: 28, color: "var(--green)", lineHeight: 1 }}>{tokens(cost.tokTotal)}</div>
                 </div>
               </div>
               <div style={card}>
@@ -178,7 +178,7 @@ export default function UsagePage() {
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 3 }}>
                         <span>{m}</span><span style={{ ...mono, color: "var(--text-muted)" }}>{dollars(c)}</span>
                       </div>
-                      <div style={{ height: 6, background: "var(--bg-raised,#222)", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: 6, background: "var(--bg-raised)", borderRadius: 4, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${pct}%`, background: COLORS[i % COLORS.length], borderRadius: 4 }} />
                       </div>
                     </div>
@@ -187,9 +187,9 @@ export default function UsagePage() {
               </div>
             </>
           ) : (
-            <div style={{ ...card, borderColor: "rgba(245,158,11,0.3)" }}>
+            <div style={{ ...card, borderColor: "var(--warn-bg)" }}>
               <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-                <i className="fa-solid fa-circle-info" style={{ color: "#f59e0b", marginRight: 6 }} />
+                <i className="fa-solid fa-circle-info" style={{ color: "var(--orange)", marginRight: 6 }} />
                 Dollar cost &amp; token totals need an Anthropic <strong>Organization + admin key</strong> (not available on individual accounts, and separate from Max).
                 Until then, this shows your app&apos;s AI <strong>activity</strong> — every Frodo/Griphook action. Add <code>ANTHROPIC_ADMIN_KEY</code> later and the cost section appears here automatically.
               </p>
@@ -205,7 +205,7 @@ export default function UsagePage() {
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, padding: "5px 0", borderBottom: "0.5px solid var(--border)" }}>
                     <span style={{ color: t.color, fontWeight: 600, minWidth: 56 }}>{t.label}</span>
                     <span style={{ ...mono, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {r.tool}{r.collection ? ` · ${r.collection}` : ""}{r.error ? <span style={{ color: "#ef4444" }}> · error</span> : ""}
+                      {r.tool}{r.collection ? ` · ${r.collection}` : ""}{r.error ? <span style={{ color: "var(--red)" }}> · error</span> : ""}
                     </span>
                     <span style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>{new Date(r.created_at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
                   </div>

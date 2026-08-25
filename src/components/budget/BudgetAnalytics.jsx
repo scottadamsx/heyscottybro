@@ -23,12 +23,12 @@ function OverviewChart({ periodHistory }) {
       {yTicks.map(v => (
         <line key={v} x1={P.l} y1={toY(v)} x2={W - P.r} y2={toY(v)} className="bud-stroke-grid" strokeWidth="1" />
       ))}
-      <polygon points={spnArea} fill="rgba(239,68,68,0.09)" />
+      <polygon points={spnArea} fill="var(--danger-bg)" />
       <polyline points={spnPts} fill="none" className="bud-stroke-red" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       <polyline points={incPts} fill="none" className="bud-stroke-green" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       {active.map((p, i) => (
         <g key={i}>
-          <line x1={toX(i)} y1={toY(p.income)} x2={toX(i)} y2={toY(p.spending)} stroke={p.net >= 0 ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"} strokeWidth="2" />
+          <line x1={toX(i)} y1={toY(p.income)} x2={toX(i)} y2={toY(p.spending)} stroke={p.net >= 0 ? "var(--success-bg)" : "var(--danger-bg)"} strokeWidth="2" />
           <circle cx={toX(i)} cy={toY(p.income)} r="4" className="bud-fill-green" />
           <circle cx={toX(i)} cy={toY(p.spending)} r="4" className="bud-fill-red" />
         </g>

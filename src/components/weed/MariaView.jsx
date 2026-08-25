@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { TAPER_INTERVAL, TAPER_STEP, FLOWER_THC_PCT, DAY, genId, toDateStr, today, timeAgo, taperDays, taperedCapG, gramsOf } from "../../utils/weedCalc";
 
+// theme-fixed: user colour — #b68bd6 / #cda6e8 / #f0a87a are Maria's tracker palette (wt-* custom props), not theme tokens
 export default function MariaView({ state, onUpdate }) {
   const [showJointLog, setShowJointLog] = useState(false);
   const [jointGrams, setJointGrams] = useState("");

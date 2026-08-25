@@ -9,6 +9,7 @@ const PREFIX = "setting:";
 
 // Setting keys live here so they can't drift between callers.
 export const HIDE_SMOKE_TRACKER = "hideSmokeTracker";
+export const THEME = "theme";
 
 const listeners = new Set();
 
@@ -21,6 +22,21 @@ export function getSetting(key, fallback = false) {
 export function setSetting(key, value) {
   localStorage.setItem(PREFIX + key, value ? "1" : "0");
   listeners.forEach((fn) => fn());
+}
+
+/** String-valued settings (theme etc.). Stored raw; missing → fallback. */
+export function getStringSetting(key, fallback = "") {
+  try {
+    const raw = localStorage.getItem(PREFIX + key);
+    return raw === null ? fallback : raw;
+  } catch { return fallback; }
+}
+export function setStringSetting(key, value) {
+  try { localStorage.setItem(PREFIX + key, String(value)); } catch { /* private mode */ }
+  listeners.forEach((fn) => fn());
+}
+export function useStringSetting(key, fallback = "") {
+  return useSyncExternalStore(subscribe, () => getStringSetting(key, fallback), () => fallback);
 }
 
 function subscribe(listener) {

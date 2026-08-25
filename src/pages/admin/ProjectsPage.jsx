@@ -10,11 +10,11 @@ import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import DocLinks from "../../components/docs/DocLinks";
 
-const PROJECT_COLORS = ["#6366f1", "#22d3ee", "#4ade80", "#f59e0b", "#f87171", "#a78bfa", "#fb923c", "#ec4899"];
+const PROJECT_COLORS = ["var(--accent)", "#22d3ee", "var(--green)", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
 
-const emptyProject = { name: "", description: "", color: "#6366f1" };
+const emptyProject = { name: "", description: "", color: "#6366f1" }; // theme-fixed: user colour (default project colour)
 const emptyInitiative = { name: "", description: "", recurrence: "weekly" };
-const emptyEventType = { name: "", color: "#22d3ee" };
+const emptyEventType = { name: "", color: "#22d3ee" }; // theme-fixed: user colour (default event-type colour)
 
 export default function ProjectsPage() {
   const [params, setParams] = useSearchParams();

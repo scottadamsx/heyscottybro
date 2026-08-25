@@ -5,10 +5,9 @@
    here as a custom property. Components reference tokens; they do not write
    literals. `index.css` holds component rules only and is loaded after this.
 
-   Two token scopes on purpose:
-     :root         — the public site (light "paper" canvas)
-     .admin-shell  — the admin/command-centre skin (dark), same names, different
-                     values, so one component works under both.
+   Three theme scopes, all on <html> via data-theme (see theme.js): light
+   (default, Apple-esque), dark (Apple dark), xp (Windows XP Luna). Same token
+   names in every scope, so one component works under all three.
 
    Named `globals.css` deliberately: devrules/validate-ui.mjs resolves the
    global stylesheet by that exact basename, and while this project called it
@@ -18,71 +17,104 @@
    checker is the bonus. See ledger DR-009.
    ───────────────────────────────────────────────────────────────────────── */
 
+/* ═══ Theme scopes ═══════════════════════════════════════════════════════════
+   <html data-theme="light|dark|xp"> is set before first paint (src/utils/theme.js,
+   applied in main.jsx). Same token NAMES in every scope; only values change.
+   light = the default: an Apple-esque paper-and-hairline look.
+   dark  = Apple dark (near-black canvas, elevated greys).
+   xp    = Windows XP "Luna" — bliss-blue chrome, bevels, Tahoma.
+   The admin shell no longer carries its own palette; it inherits from here.
+   ═════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Surfaces — off-white paper canvas */
-  --bg-base: #F7F6F4;       /* paper */
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg-base: #F5F5F7;
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-raised: #F1F0ED;     /* subtle gray for inputs / raised tiles */
-  --bg-hover: #E7E6E3;
+  --bg-raised: #F2F2F7;
+  --bg-hover: #E8E8ED;
+  --canvas-bg: linear-gradient(180deg, #FBFBFD 0%, #F5F5F7 100%);
+  --canvas-dot: rgba(29,29,31,0.045);
 
-  --border-subtle: rgba(14,14,16,0.08);
-  --border-primary: rgba(14,14,16,0.14);
-  --border-accent: rgba(31,98,255,0.4);
-  --line: #E7E6E3;
+  /* Hairlines */
+  --border-subtle: rgba(60,60,67,0.12);
+  --border-primary: rgba(60,60,67,0.22);
+  --border-accent: rgba(0,113,227,0.45);
+  --line: rgba(60,60,67,0.12);
 
-  --text-primary: #0E0E10;
-  --text-secondary: #54545B;
-  --text-muted: #8A8A90;
+  /* Text */
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-muted: #86868B;
+  --text-on-accent: #FFFFFF;
 
-  /* Identity — flag red (decoration & brand only) */
+  /* Identity — flag red (public-site decoration only) */
   --red-flag: #CF1124;
   --red-flag-deep: #A50D1D;
   --pure-black: #000000;
 
-  /* Actions — blue is every "go" button */
-  --accent: #1F62FF;
-  --accent-deep: #0E3FCC;
-  --accent-light: #1F62FF;
-  --accent-glow: transparent;
-  --cyan: #1F62FF;
-  --cyan-glow: transparent;
-  --green: #1f9d4d;
-  --red: #FF2233;           /* DESTRUCTIVE only — cancel / delete */
-  --red-deep: #D8101F;
-  --orange: #E07B00;
+  /* Actions */
+  --accent: #0071E3;
+  --accent-deep: #0060C0;
+  --accent-light: #0A84FF;
+  --accent-bg: rgba(0,113,227,0.10);
+  --accent-glow: rgba(0,113,227,0.28);
+  --cyan: #32ADE6;
+  --cyan-glow: rgba(50,173,230,0.25);
+  --green: #1E9E4C;
+  --red: #E0342B;
+  --red-deep: #B8281F;
+  --orange: #D97706;
+
+  /* Status tints — tint background + dark text of the same hue */
+  --success-bg: rgba(52,199,89,0.14);
+  --danger-bg: rgba(255,59,48,0.12);
+  --warn-bg: rgba(255,149,0,0.14);
+  --info-bg: rgba(0,113,227,0.10);
+
+  /* Overlays & elevation */
+  --overlay: rgba(29,29,31,0.45);
+  --shadow-card: 0 1px 2px rgba(29,29,31,0.04);
+  --shadow-floating: 0 12px 32px rgba(29,29,31,0.10), 0 1px 2px rgba(29,29,31,0.06);
+  --shadow-modal: 0 28px 70px rgba(29,29,31,0.28);
+  --shadow-glow: none;
 
   /* Gradients */
   --grad-hero: transparent;
   --grad-card: #FFFFFF;
-  --grad-accent: linear-gradient(180deg, #1F62FF, #0E3FCC);
+  --grad-accent: linear-gradient(180deg, #0A84FF, #0071E3);
   --grad-glow: transparent;
-
-  /* Flag stripe accent (red field · black band · white edge) */
   --flag-stripe: linear-gradient(90deg,
     var(--red-flag) 0 60%, var(--pure-black) 60% 80%,
     #FFFFFF 80% 86%, var(--red-flag) 86% 100%);
 
-  /* Typography */
-  --font-display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Typography — SF on Apple hardware, Inter-class fallbacks elsewhere */
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Geist", "Archivo", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
+  --letter-spacing-body: -0.01em;
 
-  /* Spacing */
+  /* Layout */
   --nav-height: 68px;
+  --control-h: 40px;
 
-  /* Radius */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  /* Radius ramp (housestyle-ui §3) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  /* Shadows */
-  --shadow-card: 0 18px 40px -22px rgba(14,14,16,0.35), 0 2px 0 #fff inset;
-  --shadow-glow: none;
+  /* XP-only chrome (neutral no-ops elsewhere) */
+  --bevel-light: transparent;
+  --bevel-dark: transparent;
+  --titlebar-grad: var(--bg-surface);
+  --titlebar-text: var(--text-primary);
+  --chrome-blur: saturate(180%) blur(20px);
+  --chrome-bg: rgba(255,255,255,0.72);
 
-  /* ── Foundation additions (track C) ─────────
-     Appended, not edited — a spacing/type scale so pages stop hard-coding
-     ad-hoc rem values. Documented & exportable from the Design page. */
+  /* Spacing scale */
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
@@ -91,6 +123,7 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
 
+  /* Type scale */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -103,31 +136,124 @@
   --leading-relaxed: 1.7;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #0E0E10;
+  --bg-surface: #161618;
+  --bg-card: #1C1C1E;
+  --bg-raised: #2C2C2E;
+  --bg-hover: #3A3A3C;
+  --canvas-bg: linear-gradient(180deg, #121214 0%, #0E0E10 100%);
+  --canvas-dot: rgba(255,255,255,0.035);
+
+  --border-subtle: rgba(255,255,255,0.09);
+  --border-primary: rgba(255,255,255,0.16);
+  --border-accent: rgba(10,132,255,0.5);
+  --line: rgba(255,255,255,0.09);
+
+  --text-primary: #F5F5F7;
+  --text-secondary: #A1A1A6;
+  --text-muted: #6E6E73;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #0A84FF;
+  --accent-deep: #0071E3;
+  --accent-light: #409CFF;
+  --accent-bg: rgba(10,132,255,0.16);
+  --accent-glow: rgba(10,132,255,0.35);
+  --cyan: #64D2FF;
+  --green: #30D158;
+  --red: #FF453A;
+  --red-deep: #D93A31;
+  --orange: #FF9F0A;
+
+  --success-bg: rgba(48,209,88,0.16);
+  --danger-bg: rgba(255,69,58,0.16);
+  --warn-bg: rgba(255,159,10,0.16);
+  --info-bg: rgba(10,132,255,0.16);
+
+  --overlay: rgba(0,0,0,0.6);
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset;
+  --shadow-floating: 0 14px 34px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
+  --shadow-modal: 0 40px 90px rgba(0,0,0,0.7);
+
+  --grad-card: var(--bg-card);
+  --grad-accent: linear-gradient(180deg, #409CFF, #0A84FF);
+  --chrome-bg: rgba(22,22,24,0.72);
+}
+
+:root[data-theme="xp"] {
+  color-scheme: light;
+  --bg-base: #ECE9D8;
+  --bg-surface: #F6F5EE;
+  --bg-card: #FFFFFF;
+  --bg-raised: #F1EFE2;
+  --bg-hover: #E3E1D3;
+  --canvas-bg: linear-gradient(180deg, #5A7EDC 0%, #3A6BD2 18%, #7CB0E6 38%, #8FC1EA 55%, #6FA24A 78%, #4E8A2F 100%);
+  --canvas-dot: transparent;
+
+  --border-subtle: #ACA899;
+  --border-primary: #7F9DB9;
+  --border-accent: #316AC5;
+  --line: #ACA899;
+
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-muted: #6D6D6D;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #316AC5;
+  --accent-deep: #0A246A;
+  --accent-light: #3399FF;
+  --accent-bg: #C1D2EE;
+  --accent-glow: rgba(49,106,197,0.45);
+  --cyan: #3399FF;
+  --green: #3B9F3C;
+  --red: #C93A2E;
+  --red-deep: #A22C22;
+  --orange: #E68A00;
+
+  --success-bg: #D8F0D3;
+  --danger-bg: #F5D3CF;
+  --warn-bg: #FBEBC5;
+  --info-bg: #FFFFE1;
+
+  --overlay: rgba(0,0,0,0.35);
+  --shadow-card: none;
+  --shadow-floating: 2px 2px 3px rgba(0,0,0,0.35);
+  --shadow-modal: 4px 4px 6px rgba(0,0,0,0.45);
+
+  --grad-card: #FFFFFF;
+  --grad-accent: linear-gradient(180deg, #4C9CFF 0%, #1C5FDE 50%, #0B4BC7 100%);
+
+  --font-body: Tahoma, "Trebuchet MS", Verdana, "Segoe UI", sans-serif;
+  --font-display: "Trebuchet MS", Tahoma, Verdana, sans-serif;
+  --font-mono: "Lucida Console", Consolas, monospace;
+  --letter-spacing-body: 0;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+
+  --bevel-light: #FFFFFF;
+  --bevel-dark: #ACA899;
+  --titlebar-grad: linear-gradient(180deg, #0A5FE5 0%, #0842C9 6%, #0A5FE5 12%, #1B67F0 45%, #0A50DE 88%, #0A3FB8 100%);
+  --titlebar-text: #FFFFFF;
+  --chrome-blur: none;
+  --chrome-bg: #ECE9D8;
+}
+
+html { background: var(--bg-base); }
+
+/* The admin shell inherits the active theme; the only thing it still owns is
+   the tighter tracking that the Geist/SF UI look wants. */
 .admin-shell {
-  --bg-base: #0a0a0c;
-  --bg-surface: #111114;
-  --bg-card: #111114;
-  --bg-raised: #18181c;
-  --bg-hover: #222227;
-  --border-subtle: rgba(255,255,255,0.08);
-  --border-primary: rgba(255,255,255,0.14);
-  --border-accent: rgba(79,124,255,0.5);
-  --text-primary: #ededed;
-  --text-secondary: #b2b2b8;
-  --text-muted: #82828b;
-  --accent: #4f7cff;
-  --accent-deep: #3f6cf0;
-  --accent-light: #8aa6ff;
-  --grad-accent: linear-gradient(180deg, #f4f4f5, #b2b2b8);
-  --font-body: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
-  --font-mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
-  --radius-md: 12px;
-  --radius-lg: 14px;
+  --font-mono: ui-monospace, "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
   background: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-body);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--letter-spacing-body);
 }
 
 /* ── UI-7 · Motion respects the OS setting ────────────────────────────────────

@@ -16,7 +16,7 @@ const ForceGraph3D = lazy(() => import("react-force-graph-3d"));
 // Node colours by type. CSS vars are resolved to concrete values at runtime
 // because WebGL can't read `var(--x)`.
 const TYPE_COLOR = {
-  root: "#8b5cf6", projects: "var(--green)", checkpoints: "var(--orange)",
+  root: "var(--accent)", projects: "var(--green)", checkpoints: "var(--orange)",
   procedures: "#14b8a6", note: "var(--accent)",
 };
 const FALLBACK = "#94a3b8";

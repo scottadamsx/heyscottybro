@@ -18,12 +18,12 @@
   flex-direction: column;
   width: min(1100px, 100%);
   height: min(94vh, 100%);
-  background: var(--card, #fff);
-  color: var(--text, #1a1d24);
+  background: var(--bg-card);
+  color: var(--text-primary);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-subtle);
 }
 
 /* ── Toolbar ───────────────────────────────────────────────────────────── */
@@ -34,8 +34,8 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 14px;
-  background: var(--card-2, var(--card, #14161d));
-  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pdfv-title {
@@ -52,7 +52,7 @@
   white-space: nowrap;
   max-width: 42vw;
 }
-.pdfv-title i { color: var(--red, #e5484d); }
+.pdfv-title i { color: var(--red); }
 
 .pdfv-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
@@ -61,8 +61,8 @@
   align-items: center;
   gap: 2px;
   padding: 2px;
-  background: var(--bg, rgba(127, 127, 127, 0.1));
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
   border-radius: 9px;
 }
 
@@ -75,16 +75,16 @@
   padding: 0 8px;
   border: none;
   background: transparent;
-  color: var(--text, #1a1d24);
+  color: var(--text-primary);
   border-radius: 7px;
   cursor: pointer;
   font-size: 0.85rem;
   text-decoration: none;
   transition: background 0.12s ease, color 0.12s ease;
 }
-.pdfv-btn:hover:not(:disabled) { background: var(--blue, #3b82f6); color: #fff; }
+.pdfv-btn:hover:not(:disabled) { background: var(--accent); color: var(--text-on-accent); }
 .pdfv-btn:disabled { opacity: 0.35; cursor: default; }
-.pdfv-close:hover { background: var(--red, #e5484d) !important; color: #fff; }
+.pdfv-close:hover { background: var(--red) !important; color: var(--text-on-accent); }
 
 .pdfv-pageno {
   min-width: 64px;
@@ -109,13 +109,13 @@
   padding: 22px;
   background:
     repeating-linear-gradient(45deg, rgba(0,0,0,0.015) 0 10px, transparent 10px 20px),
-    var(--bg, #2a2d36);
+    var(--bg-base);
 }
 
 .pdfv-page {
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
   border-radius: 2px;
-  background: #fff;
+  background: #fff; /* theme-fixed: PDF page is white paper */
 }
 .pdfv-page canvas { border-radius: 2px; display: block; }
 
@@ -123,13 +123,13 @@
   margin: auto;
   padding: 40px 20px;
   text-align: center;
-  color: var(--text-muted, #cfd2da);
+  color: var(--text-muted);
   display: flex;
   gap: 8px;
   align-items: center;
   justify-content: center;
 }
-.pdfv-error { color: var(--red, #e5484d); }
+.pdfv-error { color: var(--red); }
 
 @media (max-width: 640px) {
   .pdfv-title span { max-width: 30vw; }

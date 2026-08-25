@@ -211,7 +211,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
 
       {/* Spendable this week (current week of the pay period) */}
       {currentWeek && (
-        <div className="bud-panel bud-panel-db" style={{ marginBottom: 12, background: "rgba(99,102,241,0.06)", borderColor: "var(--accent)" }}>
+        <div className="bud-panel bud-panel-db" style={{ marginBottom: 12, background: "var(--accent-bg)", borderColor: "var(--accent)" }}>
           <div className="bud-row-b">
             <div className="bud-sec-13">Left to spend this week</div>
             <div className="bud-mono" style={{ fontSize: 24, color: currentWeek.remaining < 0 ? "var(--red)" : currentWeek.remaining < currentWeek.allowance * 0.25 ? "var(--orange)" : "var(--green)" }}>
@@ -287,9 +287,9 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 </div>
                 <span className="bud-mono" style={{ fontSize: 14, marginRight: 12, textDecoration: b.paid ? "line-through" : "none", color: b.paid ? "var(--text-muted)" : undefined }}>{formatMoney(b.amount)}</span>
                 {b.paid
-                  ? <button className="btn bud-btn-xs" style={{ color: "var(--green)", background: "rgba(34,197,94,0.1)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
+                  ? <button className="btn bud-btn-xs" style={{ color: "var(--green)", background: "var(--success-bg)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
                   : b.autoPay
-                    ? <span style={{ fontSize: 11, color: "var(--green)", background: "rgba(34,197,94,0.1)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
+                    ? <span style={{ fontSize: 11, color: "var(--green)", background: "var(--success-bg)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
                     : <button className="btn bud-btn-sm" onClick={(e) => { e.stopPropagation(); onPayBill(b); }}>Pay now</button>}
               </div>
               {isOpen && (
@@ -495,7 +495,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
               <div className="bud-ellipsis" style={{ fontSize: 13, fontWeight: 500 }}>{t.description}</div>
               <div className="bud-muted-11" style={{ marginTop: 1 }}>{t.category} · {t.date}</div>
             </div>
-            <span className="bud-mono" style={{ fontSize: 13, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : "var(--red)", flexShrink: 0 }}>
+            <span className="bud-mono" style={{ fontSize: 13, color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : /* theme-fixed: user colour (savings category) */ "var(--red)", flexShrink: 0 }}>
               {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
             </span>
           </div>

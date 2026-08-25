@@ -7,54 +7,13 @@
    cascade. Replaces the previous hacker-terminal skin.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Re-map the admin design tokens ──────────────────────── */
+/* ── Tokens come from globals.css per theme (light / dark / xp). This skin
+   only shapes the shell; it no longer paints its own palette. ── */
 .admin-shell {
-  --bg-base:        #0B0D10;
-  --bg-surface:     #0F1216;
-  --bg-card:        #13161B;
-  --bg-raised:      #191D23;
-  --bg-hover:       #20252D;
-
-  --border-subtle:  rgba(255,255,255,0.07);
-  --border-primary: rgba(255,255,255,0.13);
-  --border-accent:  rgba(108,161,255,0.5);
-  --line:           rgba(255,255,255,0.07);
-
-  --text-primary:   #EDF0F4;
-  --text-secondary: #9AA3B0;
-  --text-muted:     #626B77;
-
-  --accent:         #5B8DEF;
-  --accent-deep:    #3F6FD8;
-  --accent-light:   #84ABFF;
-  --red-flag:       #5B8DEF;   /* repurpose brand accents → blue */
-  --red-flag-deep:  #3F6FD8;
-  --green:          #3DD68C;
-  --red:            #F0635A;
-  --red-deep:       #D04A42;
-  --orange:         #E5B454;
-  --grad-accent:    linear-gradient(180deg, #5B8DEF, #3F6FD8);
-  --grad-card:      var(--bg-card);
-  --shadow-card:    0 1px 0 rgba(255,255,255,0.03) inset, 0 14px 34px -22px rgba(0,0,0,0.7);
-
-  --font-body:    "Geist", "Hanken Grotesk", system-ui, -apple-system, sans-serif;
-  --font-display: "Geist", "Archivo", system-ui, -apple-system, sans-serif;
-  --font-mono:    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-
-  --accent-bg: rgba(91,141,239,0.10); /* used by features.css banners */
-
   color: var(--text-primary);
   font-family: var(--font-body);
-  letter-spacing: -0.01em;
-  /* calm graphite canvas, one whisper of depth at the top */
-  background:
-    radial-gradient(1100px 480px at 50% -180px, rgba(91,141,239,0.05), transparent 70%),
-    var(--bg-base) !important;
+  letter-spacing: var(--letter-spacing-body);
+  background: var(--bg-base);
 }
 
 /* ── Type ── */
@@ -83,15 +42,15 @@
 }
 
 /* ── Nav rail / sub panel ── */
-.admin-shell .admin-rail { background: var(--bg-surface); border-right: 1px solid var(--line); }
+.admin-shell .admin-rail { background: var(--chrome-bg); backdrop-filter: var(--chrome-blur); -webkit-backdrop-filter: var(--chrome-blur); border-right: 1px solid var(--line); }
 .admin-shell .admin-subbar { background: var(--bg-surface); border-right: 1px solid var(--line); }
-.admin-shell .admin-topbar { background: var(--bg-surface); border-bottom: 1px solid var(--line); }
+.admin-shell .admin-topbar { background: var(--chrome-bg); backdrop-filter: var(--chrome-blur); -webkit-backdrop-filter: var(--chrome-blur); border-bottom: 1px solid var(--line); }
 
 .admin-shell .admin-rail-word { color: var(--text-primary); }
 .admin-shell .admin-rail-word span { color: var(--accent-light); }
 
 .admin-shell .admin-rail-mark {
-  background: rgba(91,141,239,0.12);
+  background: var(--accent-bg);
   border: 1px solid var(--border-primary);
   color: var(--accent-light);
 }
@@ -107,13 +66,13 @@
 .admin-shell .admin-rail-link i,
 .admin-shell .admin-sub-link i { color: var(--text-muted); }
 .admin-shell .admin-rail-link:hover,
-.admin-shell .admin-sub-link:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.admin-shell .admin-sub-link:hover { background: var(--bg-hover); color: var(--text-primary); }
 .admin-shell .admin-rail-link:hover i,
 .admin-shell .admin-sub-link:hover i { color: var(--text-secondary); }
 
 .admin-shell .admin-rail-link.active,
 .admin-shell .admin-sub-link.active {
-  background: rgba(91,141,239,0.12);
+  background: var(--accent-bg);
   color: var(--text-primary);
   box-shadow: inset 2px 0 0 var(--accent);
 }
@@ -158,7 +117,7 @@
 /* AI briefing */
 .admin-shell .ai-briefing-card {
   background:
-    radial-gradient(620px 200px at 0% 0%, rgba(91,141,239,0.08), transparent 60%),
+    radial-gradient(620px 200px at 0% 0%, var(--accent-bg), transparent 60%),
     var(--bg-card);
 }
 .admin-shell .ai-briefing-date { color: var(--accent-light); font-size: 0.78rem; font-weight: 500; }
@@ -195,7 +154,7 @@
   padding: 0.7rem 0.25rem;
 }
 .admin-shell .db-list:last-child .db-list-item:last-child { border-bottom-color: transparent; }
-.admin-shell .db-list-item:hover { background: rgba(255,255,255,0.025); }
+.admin-shell .db-list-item:hover { background: var(--bg-hover); }
 .admin-shell .db-list-item-title { color: var(--text-primary); font-weight: 550; }
 .admin-shell .db-list-item-subtitle { color: var(--text-muted); font-size: 0.76rem; }
 .admin-shell .no-entries,
@@ -208,7 +167,7 @@
   font-family: var(--font-body);
   background: var(--accent);
   border: 1px solid transparent;
-  color: #FFFFFF;
+  color: var(--text-on-accent);
   border-radius: var(--radius-sm);
   font-weight: 600;
   box-shadow: none;
@@ -218,7 +177,7 @@
 .admin-shell .btn-primary:hover {
   background: var(--accent-deep);
   transform: none;
-  box-shadow: 0 6px 18px -10px rgba(91,141,239,0.7);
+  box-shadow: 0 6px 18px -10px var(--accent-glow);
 }
 .admin-shell .btn-secondary-sm,
 .admin-shell .btn.btn-secondary-sm,
@@ -230,7 +189,7 @@
 .admin-shell .btn-secondary-sm:hover,
 .admin-shell .btn.btn-secondary-sm:hover,
 .admin-shell .btn-secondary:hover {
-  background: rgba(255,255,255,0.05) !important;
+  background: var(--bg-hover) !important;
   color: var(--text-primary) !important;
 }
 .admin-shell .dashboard-expand { color: var(--accent-light); background: transparent; }
@@ -238,12 +197,12 @@
 .admin-shell .btn-danger,
 .admin-shell .btn.btn-danger,
 .admin-shell .btn.danger {
-  background: rgba(240,99,90,0.12);
-  border: 1px solid rgba(240,99,90,0.45);
+  background: var(--danger-bg);
+  border: 1px solid var(--red);
   color: var(--red);
 }
 .admin-shell .btn-danger:hover,
-.admin-shell .btn.danger:hover { background: rgba(240,99,90,0.2); }
+.admin-shell .btn.danger:hover { background: var(--danger-bg); }
 
 /* ── Inputs ── */
 .admin-shell input,
@@ -267,7 +226,7 @@
 .admin-shell .event-card input:focus,
 .admin-shell .event-card textarea:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(91,141,239,0.18) !important;
+  box-shadow: 0 0 0 3px var(--accent-bg) !important;
   outline: none;
 }
 .admin-shell label { color: var(--text-secondary); }
@@ -283,11 +242,11 @@
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  box-shadow: 0 40px 90px -50px #000;
+  box-shadow: var(--shadow-modal);
 }
 .admin-shell .event-overlay,
 .admin-shell .doc-viewer-overlay,
-.admin-shell .admin-pop-backdrop { background: rgba(6,8,11,0.7); backdrop-filter: blur(4px); }
+.admin-shell .admin-pop-backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 /* The rule above (0,2,0) used to beat index.css's phone sheet override (0,1,0),
    so the "full-screen" day view kept a card radius + border and clipped at the
    bottom on phones. Same specificity, declared here, so the sheet wins. */
@@ -301,10 +260,10 @@
 /* ── Mobile sheet / fab ── */
 .admin-shell .admin-mobile-fab,
 .admin-mobile-fab {
-  background: var(--bg-raised, #191D23);
-  color: var(--text-primary, #EDF0F4);
-  border: 1px solid var(--border-primary, rgba(255,255,255,0.13));
-  box-shadow: 0 14px 34px -16px rgba(0,0,0,0.8);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary, var(--border-primary));
+  box-shadow: var(--shadow-floating);
 }
 .admin-mobile-sheet {
   position: fixed;
@@ -313,13 +272,13 @@
   max-height: min(72vh, 620px);
   overflow-y: auto;
   padding: 0.5rem 0.9rem calc(1rem + env(safe-area-inset-bottom));
-  background: rgba(15,18,22,0.97);
+  background: var(--bg-surface);
   backdrop-filter: saturate(140%) blur(18px);
   -webkit-backdrop-filter: saturate(140%) blur(18px);
   border: none;
-  border-top: 1px solid var(--border-primary, rgba(255,255,255,0.13));
+  border-top: 1px solid var(--border-primary, var(--border-primary));
   border-radius: 18px 18px 0 0;
-  box-shadow: 0 -30px 70px -30px #000;
+  box-shadow: var(--shadow-modal);
   animation: sheet-rise 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 /* grab handle */
@@ -329,38 +288,38 @@
   width: 38px; height: 4px;
   margin: 0.3rem auto 0.6rem;
   border-radius: 999px;
-  background: rgba(255,255,255,0.22);
+  background: var(--border-primary);
 }
 .admin-mobile-sheet .admin-sub-label {
-  color: var(--text-muted, #626B77);
+  color: var(--text-muted);
   padding: 0.15rem 0.6rem 0.5rem;
 }
 .admin-mobile-sheet .admin-sub-link {
   font-size: 0.95rem;
   padding: 0.85rem 0.7rem;
   border-radius: 8px;
-  color: var(--text-secondary, #9AA3B0);
+  color: var(--text-secondary);
 }
 .admin-mobile-sheet .admin-sub-link::after {
   content: "›";
   margin-left: auto;
-  color: var(--text-muted, #626B77);
+  color: var(--text-muted);
 }
 .admin-mobile-sheet .admin-sub-link:hover,
-.admin-mobile-sheet .admin-sub-link:active { background: rgba(255,255,255,0.05); color: var(--text-primary, #EDF0F4); }
-.admin-mobile-sheet .admin-sub-link.active { color: var(--accent-light, #84ABFF); background: rgba(91,141,239,0.12); }
-.admin-mobile-sheet .admin-sub-link.active::after { color: var(--accent-light, #84ABFF); }
-.admin-mobile-sheet .admin-pop-divider { border-top: 1px solid rgba(255,255,255,0.07); margin: 0.4rem 0; }
+.admin-mobile-sheet .admin-sub-link:active { background: var(--bg-hover); color: var(--text-primary); }
+.admin-mobile-sheet .admin-sub-link.active { color: var(--accent-light); background: var(--accent-bg); }
+.admin-mobile-sheet .admin-sub-link.active::after { color: var(--accent-light); }
+.admin-mobile-sheet .admin-pop-divider { border-top: 1px solid var(--bg-hover); margin: 0.4rem 0; }
 @keyframes sheet-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .admin-mobile-sheet { animation: none; } }
 
 /* ── Scrollbars ── */
 .admin-shell ::-webkit-scrollbar-track { background: transparent !important; }
-.admin-shell ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14) !important; }
-.admin-shell ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.26) !important; }
+.admin-shell ::-webkit-scrollbar-thumb { background: var(--border-primary) !important; }
+.admin-shell ::-webkit-scrollbar-thumb:hover { background: var(--text-muted) !important; }
 
 /* ── Chat (Frodo) ── */
-.admin-shell .chat-fab { background: var(--accent); box-shadow: 0 14px 30px -14px rgba(91,141,239,0.8); }
+.admin-shell .chat-fab { background: var(--accent); box-shadow: 0 14px 30px -14px var(--accent-glow); }
 .admin-shell .chat-fab:hover { background: var(--accent-deep); }
 .admin-shell .chat-panel { background: var(--bg-surface); border-color: var(--border-primary); }
 
@@ -398,7 +357,7 @@
   background: transparent; border: 1px solid transparent; color: var(--text-secondary); cursor: pointer;
   transition: color .15s, background .15s, border-color .15s;
 }
-.admin-shell .fin-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.admin-shell .fin-tab:hover { color: var(--text-primary); background: var(--bg-hover); }
 .admin-shell .fin-tab.active { color: var(--text-primary); border-color: var(--border-primary); background: var(--bg-raised); }
 .admin-shell .fin-view { flex: 1 1 auto; overflow-y: auto; padding-right: 2px; }
 .admin-shell .fin-err { margin-bottom: 0.6rem; }
@@ -443,7 +402,7 @@
 /* finance accents */
 .admin-shell .fin-hero {
   background:
-    radial-gradient(700px 240px at 0% 0%, rgba(91,141,239,0.07), transparent 60%),
+    radial-gradient(700px 240px at 0% 0%, var(--accent-bg), transparent 60%),
     var(--bg-card);
   border: 1px solid var(--border-primary);
 }
@@ -470,9 +429,9 @@
 .admin-shell .fin-amt.neg { color: var(--text-secondary); }
 .admin-shell .fin-pay {
   padding: 0.3rem 0.8rem !important; font-size: 0.78rem !important; min-height: 30px;
-  background: rgba(91,141,239,0.12) !important; border: 1px solid rgba(91,141,239,0.4) !important; color: var(--accent-light) !important;
+  background: var(--accent-bg) !important; border: 1px solid var(--border-accent) !important; color: var(--accent-light) !important;
 }
-.admin-shell .fin-pay:hover { background: var(--accent) !important; color: #fff !important; }
+.admin-shell .fin-pay:hover { background: var(--accent) !important; color: var(--text-on-accent) !important; }
 .admin-shell .bill-badge { font-size: 0.72rem; color: var(--text-muted); }
 .admin-shell .bill-badge.overdue { color: var(--red); }
 .admin-shell .bill-badge.due-soon { color: var(--orange); }
@@ -529,18 +488,6 @@
    appended last so it wins the cascade without !important wars.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Tokens, retuned: a touch more surface separation ── */
-.admin-shell {
-  --bg-base:    #0C0F13;
-  --bg-surface: #10141A;
-  --bg-card:    #151A21;
-  --bg-raised:  #1C222B;
-  --bg-hover:   #232A35;
-  --border-subtle:  rgba(255,255,255,0.08);
-  --border-primary: rgba(255,255,255,0.14);
-  --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 30px -18px rgba(0,0,0,0.65);
-}
-
 /* ── The measure: center content in the space beside the rail ── */
 .admin-shell .admin-main { max-width: none; }
 .admin-shell .admin-main > * ,
@@ -581,7 +528,7 @@
 .admin-shell .db-card,
 .admin-shell .uik-card,
 .admin-shell .uik-stat {
-  background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent 30%), var(--bg-card);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
@@ -590,10 +537,10 @@
 /* ── Tabs: quiet until chosen ── */
 .admin-shell .page-tab { padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 999px; }
 .admin-shell .page-tab.active {
-  color: #fff;
+  color: var(--text-on-accent);
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 6px 18px -10px rgba(91,141,239,0.8);
+  box-shadow: 0 6px 18px -10px var(--accent-glow);
 }
 
 /* ── Calendar: from gray waffle to an actual calendar ── */
@@ -602,7 +549,7 @@
 .admin-shell .calendar-cell {
   min-height: 92px;
   background: var(--bg-surface);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--bg-hover);
   border-radius: 10px;
   padding: 0.45rem 0.5rem;
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
@@ -626,7 +573,7 @@
 .admin-shell .calendar-cell[data-today="true"],
 .admin-shell .calendar-cell.is-today {
   border-color: var(--border-accent);
-  background: rgba(91,141,239,0.06);
+  background: var(--accent-bg);
 }
 .admin-shell .calendar-cell.today > span:first-child,
 .admin-shell .calendar-cell.is-today > span:first-child,
@@ -634,7 +581,7 @@
 /* weekend columns sit back slightly */
 .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n+1):not(.empty),
 .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n):not(.empty) {
-  background: color-mix(in srgb, var(--bg-surface) 88%, black);
+  background: var(--bg-raised);
 }
 .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n+1):hover,
 .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n):hover { background: var(--bg-raised); }
@@ -647,9 +594,9 @@
   font-weight: 600;
   letter-spacing: 0;
 }
-.admin-shell .calendar-count.event-count { background: rgba(91,141,239,0.16); color: var(--accent-light); }
-.admin-shell .calendar-count.task-count  { background: rgba(255,255,255,0.07); color: var(--text-secondary); }
-.admin-shell .calendar-count.done-count  { background: rgba(61,214,140,0.12); color: var(--green); }
+.admin-shell .calendar-count.event-count { background: var(--accent-bg); color: var(--accent-light); }
+.admin-shell .calendar-count.task-count  { background: var(--bg-hover); color: var(--text-secondary); }
+.admin-shell .calendar-count.done-count  { background: var(--success-bg); color: var(--green); }
 .admin-shell .calendar-item { font-size: 0.68rem; padding: 2px 6px; border-radius: 6px; margin-top: 3px; }
 
 /* month label above the grid */
@@ -688,7 +635,7 @@
 .admin-shell select:focus-visible {
   outline: none;
   border-color: var(--border-accent);
-  box-shadow: 0 0 0 3px rgba(91,141,239,0.18);
+  box-shadow: 0 0 0 3px var(--accent-bg);
   color: var(--text-primary);
 }
 .admin-shell select:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -706,14 +653,14 @@
 .admin-shell .btn-primary,
 .admin-shell .nav-cta {
   background: var(--grad-accent);
-  box-shadow: 0 8px 20px -12px rgba(91,141,239,0.9);
+  box-shadow: 0 8px 20px -12px var(--accent-glow);
 }
 
 /* ── Rail: give the seven spaces room and a real active state ── */
 .admin-shell .admin-rail-link { margin: 1px 8px; padding: 0.55rem 0.8rem; }
 .admin-shell .admin-rail-link.active {
-  background: rgba(91,141,239,0.14);
-  box-shadow: inset 0 0 0 1px rgba(91,141,239,0.25);
+  background: var(--accent-bg);
+  box-shadow: inset 0 0 0 1px var(--border-accent);
   border-radius: 10px;
 }
 .admin-shell .admin-rail-link.active i { color: var(--accent-light); }
@@ -721,7 +668,7 @@
 .admin-shell .admin-rail-spacer { border-top: 1px solid var(--line); margin: 0.75rem 12px; }
 
 /* ── School / Brief / kit surfaces inherit card voice (already token-driven) ── */
-.admin-shell .school-course-code { box-shadow: 0 6px 16px -10px rgba(0,0,0,0.8); }
+.admin-shell .school-course-code { box-shadow: var(--shadow-card); }
 
 /* ═══ MOBILE — first-class, not shrunk desktop ═══ */
 @media (max-width: 860px) {
@@ -834,3 +781,24 @@
   .admin-shell .recipe-ask-hints button { min-height: 40px; }
   .admin-shell .brief-item { padding: 9px 8px; }
 }
+
+/* ── Theme picker (Settings › Theme) ── */
+.admin-shell .theme-picker {
+  display: inline-flex; gap: 4px; padding: 4px;
+  background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+}
+.admin-shell .theme-picker-opt {
+  height: 32px; padding: 0 12px; border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.8rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.admin-shell .theme-picker-opt:hover { color: var(--text-primary); }
+.admin-shell .theme-picker-opt.active { background: var(--bg-card); color: var(--text-primary); box-shadow: var(--shadow-card), 0 0 0 1px var(--border-subtle); }
+.admin-shell .theme-picker-opt:focus-visible { outline: 3px solid var(--accent-glow); outline-offset: 2px; }
+
+/* Settings rows inside one card get a hairline between them */
+.admin-shell .settings-row + .settings-row { border-top: 1px solid var(--border-subtle); margin-top: 1rem; padding-top: 1rem; }
+.admin-shell .theme-picker-opt { white-space: nowrap; }
+/* The admin wordmark uses the action colour, not the public site's flag red */
+.admin-shell .admin-logo span { color: var(--accent); }

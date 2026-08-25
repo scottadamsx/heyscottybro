@@ -97,7 +97,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             {["expense", "income", "savings"].map(t => {
               // Savings is money set aside (a transfer), so it reads as accent/neutral — not expense-red.
               const tone = t === "income" ? "var(--green)" : t === "savings" ? "var(--accent)" : "var(--red)";
-              const tint = t === "income" ? "rgba(34,197,94,0.15)" : t === "savings" ? "rgba(99,102,241,0.15)" : "rgba(239,68,68,0.15)";
+              const tint = t === "income" ? "var(--success-bg)" : t === "savings" ? "var(--accent-bg)" : "var(--danger-bg)";
               const on = form.type === t;
               return (
                 <button key={t} onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
@@ -131,7 +131,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           )}
           <input placeholder="Notes (optional)" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={save} style={{ background: "var(--accent)", color: "#fff", border: "none" }}>Save</button>
+            <button className="btn bud-flex1" onClick={save} style={{ background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>Save</button>
             <button className="btn bud-flex1" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
@@ -168,7 +168,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                   </thead>
                   <tbody>
                     {/* Opening balance row */}
-                    <tr style={{ background: "rgba(255,255,255,0.02)" }}>
+                    <tr style={{ background: "var(--bg-raised)" }}>
                       <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>Opening</td>
                       <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontStyle: "italic", fontSize: 11 }}>Starting balance</td>
                       <td /><td /><td />
@@ -178,7 +178,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                       const isIncome = t.type === "income";
                       const balNeg = t.runningBalance < 0;
                       return (
-                        <tr key={t.id} style={{ background: balNeg ? "rgba(239,68,68,0.04)" : "transparent" }}>
+                        <tr key={t.id} style={{ background: balNeg ? "var(--danger-bg)" : "transparent" }}>
                           <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap", fontSize: 11 }}>{t.date}</td>
                           <td className="bud-ellipsis" style={{ maxWidth: 200 }}>
                             {t.description}
@@ -252,11 +252,11 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           {t.notes && <span className="bud-muted-11" style={{ marginLeft: 6 }}>· {t.notes}</span>}
                         </td>
                         <td><span className="bud-pill">{t.category}</span></td>
-                        <td className="bud-right bud-mono" style={{ color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : "var(--red)", whiteSpace: "nowrap" }}>
+                        <td className="bud-right bud-mono" style={{ color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : /* theme-fixed: user colour (savings category) */ "var(--red)", whiteSpace: "nowrap" }}>
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "rgba(245,158,11,0.12)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
+                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "var(--warn-bg)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
                           {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>

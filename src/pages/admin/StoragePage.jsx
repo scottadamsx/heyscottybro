@@ -29,7 +29,7 @@ function QuotaBar({ label, icon, used, limit }) {
         <span style={{ fontWeight: 600, fontSize: 14 }}><i className={`fa-solid ${icon}`} style={{ marginRight: 8, opacity: 0.7 }} />{label}</span>
         <span style={{ color: "var(--text-muted)", fontSize: 13, fontFamily: "var(--font-mono,monospace)" }}>{fmt(used)} / {fmt(limit)} · {pct.toFixed(1)}%</span>
       </div>
-      <div style={{ height: 12, background: "var(--bg-raised,#222)", borderRadius: 6, overflow: "hidden" }}>
+      <div style={{ height: 12, background: "var(--bg-raised)", borderRadius: 6, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 6, transition: "width .3s" }} />
       </div>
       {pct >= 75 && (
@@ -56,7 +56,7 @@ function ItemRow({ name, sub, bytes, maxBytes, totalBytes }) {
           {fmt(bytes)} <span style={{ opacity: 0.6 }}>({shareOfTotal.toFixed(0)}%)</span>
         </span>
       </div>
-      <div style={{ height: 5, background: "var(--bg-raised,#222)", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: 5, background: "var(--bg-raised)", borderRadius: 3, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pctOfMax}%`, background: "var(--accent)", borderRadius: 3 }} />
       </div>
     </div>
@@ -87,7 +87,7 @@ export default function StoragePage() {
   const maxTable = tables.length ? Number(tables[0].bytes) || 0 : 0;
   const maxBucket = buckets.length ? Number(buckets[0].bytes) || 0 : 0;
 
-  const card = { background: "var(--bg-elevated,#1a1a1a)", border: "0.5px solid var(--border,#333)", borderRadius: "0.6rem", padding: "1.1rem 1.25rem", marginBottom: 14 };
+  const card = { background: "var(--bg-card)", border: "0.5px solid var(--border-primary)", borderRadius: "0.6rem", padding: "1.1rem 1.25rem", marginBottom: 14 };
   const sh = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-muted)", margin: "0 0 12px", fontWeight: 600 };
 
   return (
@@ -102,7 +102,7 @@ export default function StoragePage() {
       {status === "loading" && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Measuring database and file storage…</p>}
 
       {status === "error" && (
-        <div style={{ ...card, borderColor: "rgba(239,68,68,0.3)" }}>
+        <div style={{ ...card, borderColor: "var(--danger-bg)" }}>
           <p style={{ color: "var(--red)", fontSize: 13, margin: 0 }}>
             {/function .*does not exist|could not find/i.test(error)
               ? "storage_usage() isn’t in the database yet — run MIGRATION_2026-06-14-storage-usage.sql in the Supabase SQL editor, then refresh."
