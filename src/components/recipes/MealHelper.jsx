@@ -5,6 +5,7 @@ import { generateRecipe } from "../../api/aiFood";
 import { createRecipe } from "../../api/recipesApi";
 import { useToast } from "../../contexts/ToastContext";
 import "./mealhelper.css";
+import { parseJsonResponse } from "../../lib/http";
 
 /**
  * Scotty's Meal Helper — "we want supper and don't know what to make."
@@ -76,7 +77,7 @@ export default function MealHelper({ recipes }) {
           messages: [{ role: "user", content: `INGREDIENTS I HAVE:\n${stock}\n\nMY SAVED RECIPES:\n${JSON.stringify(compact)}` }],
         }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error?.message || `AI error ${res.status}`);
       const block = (data.content || []).find((b) => b.type === "tool_use");
       if (!block) throw new Error("No answer — try again.");

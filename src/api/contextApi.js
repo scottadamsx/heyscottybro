@@ -5,6 +5,7 @@
 // never silently masked with stale local data.
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { uid } from "./_base";
+import { parseJsonResponse } from "../lib/http";
 
 // Legacy localStorage key — read ONCE by syncLocalToCloud() to migrate the
 // old browser-only facts up to the cloud. Never written to anymore.
@@ -111,7 +112,7 @@ export async function refineContextEntry(raw) {
       messages: [{ role: "user", content: raw }],
     }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error?.message || `AI error ${res.status}`);
   const block = data.content?.find((b) => b.type === "tool_use");
   if (!block?.input?.text) throw new Error("No refined fact returned");

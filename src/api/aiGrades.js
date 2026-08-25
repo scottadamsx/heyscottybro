@@ -3,6 +3,7 @@
 // returns a prioritised plan. Each plan item becomes a reminder (created by the
 // UI via plannerApi.newReminder). Goes through the /api/chat proxy like aiReceipt.
 import { getAuthHeaders } from "../utils/supabase";
+import { parseJsonResponse } from "../lib/http";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -60,7 +61,7 @@ export async function generateCatchUpPlan(grades = []) {
       messages: [{ role: "user", content: `Here are my assessments:\n${lines || "(none yet)"}\n\nBuild my catch-up plan.` }],
     }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error?.message || data.error || `AI error ${res.status}`);
   const block = data.content?.find((b) => b.type === "tool_use");
   if (!block) throw new Error("Couldn't generate a plan — try again.");

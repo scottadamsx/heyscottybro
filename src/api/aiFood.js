@@ -3,6 +3,7 @@
 // existing Vercel proxy (/api/chat) which forwards to the Anthropic API, so no
 // API key is exposed client-side. We force tool use to get strict JSON back.
 import { getAuthHeaders } from "../utils/supabase";
+import { parseJsonResponse } from "../lib/http";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -12,7 +13,7 @@ async function callClaude(body) {
     headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ model: MODEL, ...body }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error?.message || data.error || `AI error ${res.status}`);
   return data;
 }

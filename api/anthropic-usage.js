@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
   const key = process.env.ANTHROPIC_ADMIN_KEY;
   if (!key) {
-    return res.status(200).json({
+    return res.status(503).json({
       error: "no_admin_key",
       message: "ANTHROPIC_ADMIN_KEY is not set. Add an Admin API key (sk-ant-admin01-…) from an Anthropic Organization to your Vercel environment.",
     });
@@ -49,6 +49,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ days, starting_at, cost, usage });
   } catch (err) {
     // Individual accounts / non-admin keys surface a 401/403 here.
-    return res.status(200).json({ error: "admin_api_error", message: err.message });
+    return res.status(502).json({ error: "admin_api_error", message: err.message });
   }
 }

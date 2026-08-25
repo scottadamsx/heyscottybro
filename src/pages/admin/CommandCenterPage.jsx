@@ -11,16 +11,10 @@ import AulePanel from "./AulePanel";
 import DocLinks from "../../components/docs/DocLinks";
 import PdfViewer from "../../components/PdfViewer";
 import { markdownToPdfBlob } from "../../lib/markdownToPdf";
+import { readDataUrl, normaliseImage } from "../../utils/image";
 import "./command.css";
 
 const todayStr = () => toDateStr(new Date());
-
-const readDataUrl = (file) => new Promise((res, rej) => {
-  const r = new FileReader();
-  r.onload = () => res(r.result);
-  r.onerror = rej;
-  r.readAsDataURL(file);
-});
 
 export default function CommandCenterPage() {
   const { addToast } = useToast();
@@ -105,21 +99,31 @@ export default function CommandCenterPage() {
 
   // Attach images so the (vision-capable) agent can SEE them. We read them to
   // base64 in the browser — no upload needed; they ride along with the message.
+  // Same pipeline as Frodo's chat (ChatBot.jsx): HEIC → JPEG, long edge
+  // capped, so phone photos don't arrive as 8 MB HEIC the model can't read.
+  const isImageFile = (f) => (f.type || "").startsWith("image/") || /\.(hei[cf])$/i.test(f.name || "");
   const addFiles = async (fileList) => {
-    const files = [...fileList].filter((f) => f.type.startsWith("image/"));
-    for (const file of files) {
+    const all = [...fileList];
+    const files = all.filter(isImageFile);
+    const rejected = all.length - files.length;
+    if (rejected > 0) addToast(`${rejected} file${rejected === 1 ? " isn't" : "s aren't"} an image — only images can be attached.`, "error");
+    for (const original of files) {
       const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-      try {
-        const dataUrl = await readDataUrl(file);
-        setShots((prev) => [...prev, { id, dataUrl, media_type: file.type }]);
-      } catch {
-        addToast("Couldn't read that image.", "error");
+      let dataUrl;
+      try { dataUrl = await readDataUrl(original); }
+      catch (err) { addToast(`Couldn't read ${original.name || "that image"}: ${err?.message || "read failed"}`, "error"); continue; }
+      const norm = await normaliseImage(original, dataUrl);
+      if (!norm && !(original.type || "").startsWith("image/")) {
+        // HEIC outside Safari: the browser can't decode it and the model can't either.
+        addToast(`${original.name || "That image"} couldn't be decoded in this browser — export it as JPEG/PNG and try again.`, "error");
+        continue;
       }
+      setShots((prev) => [...prev, { id, dataUrl: norm?.dataUrl || dataUrl, media_type: norm?.media_type || original.type }]);
     }
   };
   const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
   const onPaste = (e) => {
-    const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.type.startsWith("image/")).map((i) => i.getAsFile()).filter(Boolean);
+    const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
     if (imgs.length) { e.preventDefault(); addFiles(imgs); }
   };
   const onDropFiles = (e) => {
@@ -276,6 +280,7 @@ export default function CommandCenterPage() {
                                 ))}
                               </div>
                             )}
+                            {!m.images?.length && m.shots > 0 && <span className="cmd-msg-meta">📎 {m.shots} screenshot{m.shots === 1 ? "" : "s"} </span>}
                             {m.text && <span>{m.text}</span>}
                           </>
                         )}

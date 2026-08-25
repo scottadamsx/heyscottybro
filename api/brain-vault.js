@@ -8,7 +8,7 @@ import { verifySupabaseUser } from "./_utils.js";
 
 export default async function handler(req, res) {
   if (!(await verifySupabaseUser(req))) return res.status(401).json({ error: "Not authenticated" });
-  return res.status(200).json({
+  return res.status(501).json({
     error: "server_unavailable",
     message: "Vault sync runs in local dev only (npm run dev on your Mac). The live site reads the Brain from Supabase.",
   });

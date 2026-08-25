@@ -8,6 +8,7 @@ import { Card, ExportKit } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 import "./recipe.css";
+import { parseJsonResponse } from "../../lib/http";
 
 /**
  * Full-page recipe view (replaces the old modal): the whole recipe as a clean
@@ -52,7 +53,7 @@ function AskRecipe({ recipe }) {
           messages: nextMsgs.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })),
         }),
       });
-      const data = await res.json();
+      const data = await parseJsonResponse(res);
       if (!res.ok) throw new Error(data.error?.message || `AI error ${res.status}`);
       const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
       setMsgs((m) => [...m, { role: "assistant", text: text || "…" }]);

@@ -1,5 +1,6 @@
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { uid } from "./_base";
+import { parseJsonResponse } from "../lib/http";
 
 
 /** Load the whole brain: nodes + links for the current user. */
@@ -53,8 +54,8 @@ export async function linkNodes(sourceSlug, targetSlug) {
  */
 export async function syncFromVault() {
   const res = await fetch("/api/brain-vault", { headers: { ...(await getAuthHeaders()) } });
-  const data = await res.json();
-  if (data?.error) throw new Error(data.message || data.error);
+  const data = await parseJsonResponse(res);
+  if (!res.ok || data?.error) throw new Error(data?.message || data?.error || `Vault sync failed (${res.status})`);
 
   const userId = await uid();
   const nodes = (data.nodes || []).map((n) => ({ ...n, user_id: userId }));

@@ -72,7 +72,7 @@ export default function UsagePage() {
     setStatus("loading");
     const acts = await loadAgentActions(1000).catch(() => []);
     setActions(acts);
-    const usage = await loadAnthropicUsage(30).catch(() => ({ error: "x" }));
+    const usage = await loadAnthropicUsage(30).catch((e) => { console.error("[usage] Anthropic usage load failed:", e); return { error: "load_failed", message: e.message }; });
     setCost(digestCost(usage));
     setStatus("ready");
   }, []);

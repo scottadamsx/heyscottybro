@@ -3,6 +3,7 @@
 // like him. Goes through the /api/chat proxy like the other AI helpers.
 import { getAuthHeaders } from "../utils/supabase";
 import { loadContext } from "./contextApi";
+import { parseJsonResponse } from "../lib/http";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -61,7 +62,7 @@ export async function generateDraft(msg) {
       messages: [{ role: "user", content: `Draft my reply to this message:\n\n${lines}` }],
     }),
   });
-  const data = await res.json();
+  const data = await parseJsonResponse(res);
   if (!res.ok) throw new Error(data.error?.message || data.error || `AI error ${res.status}`);
   const block = data.content?.find((b) => b.type === "tool_use");
   if (!block) throw new Error("Couldn't draft a reply — try again.");
