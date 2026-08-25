@@ -179,9 +179,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   margin-bottom: var(--space-md);
 }
+.add-idea-row input { flex: 1 1 0; min-width: 0; }
+.add-idea-row .btn { flex-shrink: 0; }
+@media (max-width: 640px) { .add-idea-row { flex-wrap: wrap; } }
 .add-idea-row input,
 .add-idea-row select {
   height: 40px;                       /* UI-2: declared, not derived from padding */
