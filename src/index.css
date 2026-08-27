@@ -2365,6 +2365,8 @@ input, textarea, select { font-family: inherit; }
 .calendar-count { display: block; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; width: 100%; box-sizing: border-box; }
 .calendar-count.event-count { background: var(--info-bg); color: var(--cyan); }
 .calendar-count.task-count { background: var(--accent-bg); color: var(--accent-light); }
+.calendar-count.habit-count { background: var(--warn-bg); color: var(--orange); }
+.calendar-count.journal-count { background: var(--bg-hover); color: var(--text-secondary); }
 .calendar-count.done-count { background: var(--success-bg); color: var(--green); }
 
 /* Event overlay */

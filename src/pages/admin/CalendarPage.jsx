@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams , useNavigate } from "react-router-dom";
 import {
   loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
@@ -31,6 +31,7 @@ export default function CalendarPage() {
   const [eventTypes, setEventTypes] = useState([]);
   // Everything-that-happened-that-day sources for the robust day view.
   const [journal, setJournal] = useState([]);
+  const navigate = useNavigate();
   const [workouts, setWorkouts] = useState([]);
   const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
@@ -134,7 +135,8 @@ export default function CalendarPage() {
 
     const byProject = (item) => !filterProject || String(item.project_id) === filterProject;
 
-    if (filterKind !== "events") {
+    const only = (k) => filterKind === "all" || filterKind === k;
+    if (only("tasks")) {
       const visible = reminders.filter((r) => r.show_on_calendar !== false && !r.completed && byProject(r));
       expandReminders(visible, toDateStr(first), toDateStr(last)).forEach((item) => {
         map[item.date] = map[item.date] || [];
@@ -156,7 +158,7 @@ export default function CalendarPage() {
       }
     }
 
-    if (filterKind !== "tasks") {
+    if (only("events")) {
       // expandReminders is generic over date/recurrence/recur_until/recur_times,
       // so it expands recurring events too (events have no `completed` to skip).
       expandEvents(events.filter(byProject), toDateStr(first), toDateStr(last)).forEach((item) => {
@@ -169,8 +171,23 @@ export default function CalendarPage() {
       });
     }
 
+    // Journal entries and habit logs are part of the day too — a day you wrote
+    // and trained on is not an empty day.
+    if (only("journal")) {
+      journal.forEach((j) => { if (j.date) { map[j.date] = map[j.date] || []; map[j.date].push({ kind: "journal", label: j.title || "Journal" }); } });
+    }
+    if (only("habits")) {
+      const seen = new Set();
+      (habits.logs || []).forEach((l) => {
+        if (!l.date) return;
+        const key = l.trackerId + "|" + l.date;
+        if (seen.has(key)) return; seen.add(key);
+        const tr = (habits.trackers || []).find((t) => t.id === l.trackerId);
+        map[l.date] = map[l.date] || []; map[l.date].push({ kind: "habit", label: tr?.name || "Habit" });
+      });
+    }
     return map;
-  }, [year, month, reminders, events, transactions, filterProject, filterKind, showCompleted]);
+  }, [year, month, reminders, events, transactions, journal, habits, filterProject, filterKind, showCompleted]);
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -356,7 +373,7 @@ export default function CalendarPage() {
         </select>
 
         <div style={{ display: "flex", gap: "0.25rem" }}>
-          {[["all", "All"], ["events", "Events"], ["tasks", "Tasks"]].map(([val, label]) => (
+          {[["all", "All"], ["events", "Events"], ["tasks", "Tasks"], ["habits", "Habits"], ["journal", "Journal"]].map(([val, label]) => (
             <button
               key={val}
               className={`btn-sm ${filterKind === val ? "btn" : "btn-secondary-sm btn"}`}
@@ -409,12 +426,16 @@ export default function CalendarPage() {
                   const evCount = items.filter((x) => x.kind === "event" || x.kind === "future").length;
                   const taskCount = items.filter((x) => x.kind === "reminder").length;
                   const doneCount = items.filter((x) => x.kind === "done").length;
+                  const habitCount = items.filter((x) => x.kind === "habit").length;
+                  const journalCount = items.filter((x) => x.kind === "journal").length;
                   if (items.length === 0) return null;
                   return (
                     <>
                       {evCount > 0 && <span className="calendar-count event-count">{evCount} event{evCount !== 1 ? "s" : ""}</span>}
                       {taskCount > 0 && <span className="calendar-count task-count">{taskCount} task{taskCount !== 1 ? "s" : ""}</span>}
                       {doneCount > 0 && <span className="calendar-count done-count">{doneCount} done</span>}
+                      {habitCount > 0 && <span className="calendar-count habit-count">{habitCount} habit{habitCount !== 1 ? "s" : ""}</span>}
+                      {journalCount > 0 && <span className="calendar-count journal-count">{journalCount} journal</span>}
                     </>
                   );
                 })()}
@@ -521,13 +542,13 @@ export default function CalendarPage() {
                     <span className="day-count">{dayJournal.length}</span>
                   </div>
                   {dayJournal.map((j) => (
-                    <div className="day-item" key={j.id}>
+                    <button type="button" className="day-item day-item--clickable day-journal" key={j.id} onClick={() => navigate("/admin/planner?tab=journal")} title="Open in Journal">
                       <span className="day-item-dot" style={{ background: "var(--accent)" }} />
                       <div className="day-item-body">
                         {j.title && <div className="day-item-title">{j.title}</div>}
-                        {j.entry && <div className="day-item-sub" style={{ whiteSpace: "pre-wrap" }}>{j.entry}</div>}
+                        {j.entry && <div className="day-item-sub day-journal-body">{j.entry}</div>}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

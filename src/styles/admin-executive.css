@@ -597,6 +597,8 @@
 .admin-shell .calendar-count.event-count { background: var(--accent-bg); color: var(--accent-light); }
 .admin-shell .calendar-count.task-count  { background: var(--bg-hover); color: var(--text-secondary); }
 .admin-shell .calendar-count.done-count  { background: var(--success-bg); color: var(--green); }
+.admin-shell .calendar-count.habit-count { background: var(--warn-bg); color: var(--orange); }
+.admin-shell .calendar-count.journal-count { background: var(--bg-hover); color: var(--text-secondary); }
 .admin-shell .calendar-item { font-size: 0.68rem; padding: 2px 6px; border-radius: 6px; margin-top: 3px; }
 
 /* month label above the grid */
@@ -847,3 +849,9 @@
 .admin-shell .day-group + .day-group { margin-top: 6px; }
 .admin-shell .day-group-title { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin: 4px 0 2px; }
 :root[data-theme="xp"] .admin-shell .day-group-title { text-transform: none; letter-spacing: 0; font: 700 11px var(--font-pixel); color: #000000; }
+
+/* Journal entries in the day sheet: a teaser, not the whole essay */
+.admin-shell .day-journal { text-align: left; border: none; width: 100%; font: inherit; }
+.admin-shell .day-journal-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+:root[data-theme="xp"] .admin-shell .day-journal:hover { background: var(--xp-menu); color: #000000; }
+:root[data-theme="xp"] .admin-shell .day-journal:hover * { color: #000000; }
