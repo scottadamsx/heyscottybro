@@ -5,6 +5,7 @@
 // re-sync that recreates nodes never drops a user's links.
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
+import { uploadDocument, getSignedUrl } from "./documentsApi";
 
 
 /** Host item types that can carry linked documents. */
@@ -48,9 +49,37 @@ export async function loadDocLinksFor(entityType, entityIds = []) {
   return map;
 }
 
-// Join links to their brain nodes (title/type) by slug, in one query.
+/**
+ * Upload a file (screenshot, PDF…) as a Document and link it to the host item.
+ * Returns the enriched link.
+ */
+export async function attachFile(entityType, entityId, file) {
+  const userId = await uid();
+  const doc = await uploadDocument(file, { name: file.name || `Screenshot ${new Date().toLocaleString()}`, tags: [entityType] });
+  const { data, error } = await supabase
+    .from("doc_links")
+    .insert({ user_id: userId, entity_type: entityType, entity_id: asId(entityId), document_id: doc.id })
+    .select().single();
+  if (error) throw error;
+  return { ...data, node_title: doc.name, node_type: doc.mime_type?.startsWith("image/") ? "image" : "file", document: doc };
+}
+
+/** Signed URL for a file link (1 hour). */
+export async function fileLinkUrl(link) {
+  if (!link.document?.storage_path) throw new Error("This link has no file behind it");
+  return getSignedUrl(link.document.storage_path);
+}
+
+// Join links to their brain nodes (title/type) by slug — and file links to
+// their documents — in one query each.
 async function enrich(userId, links) {
-  const slugs = [...new Set(links.map((l) => l.node_slug))];
+  const docIds = [...new Set(links.map((l) => l.document_id).filter(Boolean))];
+  let docsById = {};
+  if (docIds.length) {
+    const { data: docs } = await supabase.from("documents").select("id, name, mime_type, storage_path, size_bytes").in("id", docIds);
+    for (const d of docs ?? []) docsById[d.id] = d;
+  }
+  const slugs = [...new Set(links.map((l) => l.node_slug).filter(Boolean))];
   let nodesBySlug = {};
   if (slugs.length) {
     const { data: nodes } = await supabase
@@ -60,12 +89,18 @@ async function enrich(userId, links) {
       .in("slug", slugs);
     for (const n of nodes ?? []) nodesBySlug[n.slug] = n;
   }
-  return links.map((l) => ({
-    ...l,
-    node_title: nodesBySlug[l.node_slug]?.title || l.node_slug,
-    node_type: nodesBySlug[l.node_slug]?.type || "note",
-    node_missing: !nodesBySlug[l.node_slug],
-  }));
+  return links.map((l) => {
+    if (l.document_id) {
+      const d = docsById[l.document_id];
+      return { ...l, document: d || null, node_title: d?.name || "Missing file", node_type: d?.mime_type?.startsWith("image/") ? "image" : "file", node_missing: !d };
+    }
+    return {
+      ...l,
+      node_title: nodesBySlug[l.node_slug]?.title || l.node_slug,
+      node_type: nodesBySlug[l.node_slug]?.type || "note",
+      node_missing: !nodesBySlug[l.node_slug],
+    };
+  });
 }
 
 /** Attach a Brain doc to a host item (idempotent on the unique constraint). */

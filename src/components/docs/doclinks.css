@@ -30,7 +30,10 @@
 .doclinks-dot.read { background: var(--border-primary); }
 .doclinks-missing { font-size: 0.68rem; color: var(--red); border: 1px solid var(--red); border-radius: 6px; padding: 0 0.3rem; }
 
-.doclinks-attach { position: relative; align-self: flex-start; }
+.doclinks-attach { position: relative; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.doclinks-hint { font-size: 0.75rem; color: var(--text-muted); }
+.doclinks.drag-over { outline: 2px dashed var(--accent); outline-offset: 4px; border-radius: 8px; background: var(--accent-bg); }
+.doclinks.drag-over .doclinks-body { pointer-events: none; }
 .doclinks-picker {
   position: absolute; z-index: 40; top: calc(100% + 4px); left: 0; width: min(320px, 80vw);
   background: var(--bg-card); border: 1px solid var(--border-subtle);

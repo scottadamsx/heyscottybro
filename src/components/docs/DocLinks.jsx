@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loadDocLinks, attachDoc, detachDoc, setDocRead } from "../../api/docLinksApi";
+import { loadDocLinks, attachDoc, attachFile, fileLinkUrl, detachDoc, setDocRead } from "../../api/docLinksApi";
 import { loadBrain } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import "./doclinks.css";
@@ -10,7 +10,7 @@ const TYPE_ICON = {
   deliverable: "fa-file-arrow-down", research: "fa-magnifying-glass",
   doc: "fa-file-lines", reference: "fa-link",
 };
-const icon = (t) => TYPE_ICON[t] || "fa-file-lines";
+const icon = (t) => (t === "image" ? "fa-image" : t === "file" ? "fa-file" : TYPE_ICON[t] || "fa-file-lines");
 
 /**
  * Reusable "linked documents" panel for any host item.
@@ -71,6 +71,30 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       .slice(0, 30);
   }, [nodes, query, linkedSlugs]);
 
+  // Files: drop, paste, or pick. Uploaded as Documents and linked here.
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(0);
+  const fileRef = useRef(null);
+  async function addFiles(fileList) {
+    const files = [...(fileList || [])].filter((f) => f && f.size > 0);
+    if (!files.length) return;
+    setOpen(true);
+    setUploading((n) => n + files.length);
+    for (const file of files) {
+      try {
+        const link = await attachFile(entityType, entityId, file);
+        setLinks((ls) => { const next = [...ls, link]; summarize(next); return next; });
+      } catch (e) { addToast(`Couldn't attach ${file.name || "file"}: ${e.message}`, "error"); }
+      finally { setUploading((n) => n - 1); }
+    }
+  }
+  const onDrop = (e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); addFiles(e.dataTransfer?.files); };
+  const onDragOver = (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { e.preventDefault(); e.stopPropagation(); setDragOver(true); } };
+  const onPaste = (e) => {
+    const files = [...(e.clipboardData?.items || [])].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
+    if (files.length) { e.preventDefault(); addFiles(files); }
+  };
+
   async function attach(slug) {
     try {
       await attachDoc(entityType, entityId, slug);
@@ -79,7 +103,12 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
     } catch (e) { addToast(e.message || "Could not attach", "error"); }
   }
 
-  function open_(link) {
+  async function open_(link) {
+    if (link.document_id) {
+      try { window.open(await fileLinkUrl(link), "_blank", "noopener"); }
+      catch (e) { addToast(e.message, "error"); }
+      return;
+    }
     // Open the note as a full-page article (reads far better on a phone than a
     // modal). ?link lets the reader mark this link read on arrival.
     navigate(`/admin/read/${encodeURI(link.node_slug)}?link=${link.id}`);
@@ -102,7 +131,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   const unread = links.filter((l) => !l.read).length;
 
   return (
-    <div className="doclinks">
+    <div className={`doclinks${dragOver ? " drag-over" : ""}`} onDrop={onDrop} onDragOver={onDragOver} onDragLeave={() => setDragOver(false)} onPaste={onPaste}>
       <button type="button" className="doclinks-head" onClick={() => setOpen((o) => !o)}>
         <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} />
         <i className="fa-solid fa-paperclip" />
@@ -113,7 +142,8 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       {open && (
         <div className="doclinks-body">
           {loading && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
-          {!loading && links.length === 0 && <p className="no-entries doclinks-empty">No documents linked yet.</p>}
+          {!loading && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
+          {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
 
           {links.map((l) => (
             <div className={`doclinks-row${l.read ? " read" : ""}`} key={l.id}>
@@ -140,6 +170,11 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
             <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => (picking ? setPicking(false) : openPicker())}>
               <i className="fa-solid fa-plus" /> Attach document
             </button>
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => fileRef.current?.click()}>
+              <i className="fa-solid fa-upload" /> Upload file
+            </button>
+            <input ref={fileRef} type="file" multiple accept="image/*,.heic,.heif,.pdf,.txt,.md,.csv,.docx" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+            <span className="doclinks-hint">or drop / paste a screenshot</span>
             {picking && (
               <div className="doclinks-picker">
                 <input autoFocus placeholder="Search your Brain…" value={query} onChange={(e) => setQuery(e.target.value)} />
