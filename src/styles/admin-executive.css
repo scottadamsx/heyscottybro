@@ -855,3 +855,9 @@
 .admin-shell .day-journal-body { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
 :root[data-theme="xp"] .admin-shell .day-journal:hover { background: var(--xp-menu); color: #000000; }
 :root[data-theme="xp"] .admin-shell .day-journal:hover * { color: #000000; }
+
+/* Calendar: upcoming split under the grid; event form actions */
+.admin-shell .calendar-upcoming { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 900px) { .admin-shell .calendar-upcoming { grid-template-columns: 1fr; } }
+.admin-shell .event-form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+:root[data-theme="xp"] .admin-shell .calendar-upcoming { gap: 11px; margin-top: 11px; }

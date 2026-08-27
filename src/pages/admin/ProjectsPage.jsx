@@ -4,11 +4,16 @@ import {
   loadProjects, newProject, deleteProject,
   loadInitiatives, newInitiative, deleteInitiative,
   loadEventTypes, newEventType, deleteEventType, updateEventType,
-  loadReminders, loadEvents, newReminder, completeReminder, updateReminder, deleteReminder,
+  loadReminders, loadEvents, newReminder, completeReminder, updateReminder, deleteReminder, updateEvent, deleteEvent,
 } from "../../api/plannerApi";
+import EventForm from "../../components/EventForm";
+import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
+import { formatTime12 } from "../../utils/plannerUtils";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import DocLinks from "../../components/docs/DocLinks";
+// Auto-task templates read chronologically: N days before → day of → N days after.
+const byOffset = (a, b) => (Number(a.offset_days) - Number(b.offset_days)) || String(a.name || "").localeCompare(String(b.name || ""));
 
 const PROJECT_COLORS = ["var(--accent)", "#22d3ee", "var(--green)", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
 
@@ -67,6 +72,20 @@ export default function ProjectsPage() {
     </div>
   );
   const [projectEvents, setProjectEvents] = useState([]);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const eventWhen = (e) => {
+    const range = e.end_date && e.end_date > e.date ? `${formatDisplayDate(e.date)} – ${formatDisplayDate(e.end_date)}` : formatDisplayDate(e.date);
+    const time = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
+    return range + time;
+  };
+  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); setShowEventForm(false); await loadAll(); };
+  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); setEditingEvent(null); await loadAll(); };
+  const removeEvent = async (e) => {
+    if (!window.confirm(`Delete "${e.title}"?`)) return;
+    setProjectEvents((prev) => prev.filter((x) => x.id !== e.id));
+    try { await deleteEvent(e.id); } catch (err) { alert("Couldn't delete: " + err.message); loadAll(); }
+  };
 
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showInitiativeForm, setShowInitiativeForm] = useState(false);
@@ -198,16 +217,16 @@ export default function ProjectsPage() {
     if (!newAutoTask.name.trim() || !editingAutoTasks) return;
     const et = eventTypes.find(x => x.id === editingAutoTasks);
     if (!et) return;
-    const updated = [...(et.auto_tasks || []), { ...newAutoTask, offset_days: Number(newAutoTask.offset_days) }];
+    const updated = [...(et.auto_tasks || []), { ...newAutoTask, offset_days: Number(newAutoTask.offset_days) }].sort(byOffset);
     await updateEventType(editingAutoTasks, { auto_tasks: updated });
     setNewAutoTask({ offset_days: -3, name: "" });
     await loadAll();
   };
 
-  const removeAutoTask = async (etId, idx) => {
+  const removeAutoTask = async (etId, task) => {
     const et = eventTypes.find(x => x.id === etId);
     if (!et) return;
-    const updated = et.auto_tasks.filter((_, i) => i !== idx);
+    const updated = et.auto_tasks.filter((t) => t !== task);
     await updateEventType(etId, { auto_tasks: updated });
     await loadAll();
   };
@@ -364,21 +383,36 @@ export default function ProjectsPage() {
             })()}
           </div>
 
-          {/* Upcoming Events */}
+          {/* Events — add, edit and delete right here; same form as the calendar */}
           <div className="db-card">
             <div className="db-card-header">
               <h3 className="db-card-title"><i className="fa-solid fa-calendar-days" /> Scheduled Events</h3>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Add via Calendar page</span>
+              <button className="btn btn-sm" onClick={() => { setEditingEvent(null); setShowEventForm((v) => !v); }}>
+                <i className={`fa-solid ${showEventForm ? "fa-xmark" : "fa-plus"}`} /> {showEventForm ? "Cancel" : "Add event"}
+              </button>
             </div>
-            {projectEvents.length === 0 && <p className="no-entries">No events linked to this project.</p>}
+            {showEventForm && (
+              <div className="form-card">
+                <EventForm lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} onSubmit={addEvent} onCancel={() => setShowEventForm(false)} />
+              </div>
+            )}
+            {projectEvents.length === 0 && !showEventForm && <p className="no-entries">No events linked to this project yet.</p>}
             <div className="db-list">
-              {projectEvents.map(e => (
-                <div className="db-list-item" key={e.id}>
-                  <div className="db-list-item-content">
-                    <div className="db-list-item-title">{e.title}</div>
-                    <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{e.description ? ` — ${e.description}` : ""}</div>
+              {projectEvents.slice().sort((a, b) => a.date.localeCompare(b.date)).map(e => (
+                editingEvent?.id === e.id ? (
+                  <div className="form-card" key={e.id}>
+                    <EventForm initial={e} lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={saveEventEdit} onCancel={() => setEditingEvent(null)} autoFocus={false} />
                   </div>
-                </div>
+                ) : (
+                  <div className="db-list-item" key={e.id}>
+                    <div className="db-list-item-content">
+                      <div className="db-list-item-title">{e.title}</div>
+                      <div className="db-list-item-subtitle">{eventWhen(e)}{e.description ? ` — ${e.description}` : ""}</div>
+                    </div>
+                    <button type="button" className="btn-mini" onClick={() => { setShowEventForm(false); setEditingEvent(e); }} title="Edit"><i className="fa-solid fa-pen" /> Edit</button>
+                    <button type="button" className="icon-x sm" onClick={() => removeEvent(e)} aria-label={`Delete ${e.title}`}><i className="fa-solid fa-xmark" /></button>
+                  </div>
+                )
               ))}
             </div>
           </div>
@@ -436,14 +470,14 @@ export default function ProjectsPage() {
               </div>
               {(et.auto_tasks || []).length > 0 && (
                 <div className="auto-tasks-list">
-                  {et.auto_tasks.map((task, idx) => (
+                  {et.auto_tasks.slice().sort(byOffset).map((task, idx) => (
                     <div key={idx} className="auto-task-item">
                       <span className="auto-task-offset">
                         {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
                       </span>
                       <span className="auto-task-name">{task.name}</span>
                       {editingAutoTasks === et.id && (
-                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, idx)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, task)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                       )}
                     </div>
                   ))}
