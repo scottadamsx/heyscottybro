@@ -5,6 +5,7 @@ import { HIDE_SMOKE_TRACKER, useSetting } from "../utils/settings";
 const COMMANDS = [
   { label: "Today",           to: "/admin/today",                    icon: "fa-house",            section: "Home" },
   { label: "Plan",            to: "/admin/planner",                  icon: "fa-calendar-check",   section: "Plan" },
+  { label: "Work log",        to: "/admin/work",                    icon: "fa-briefcase",        section: "Plan" },
   { label: "Tasks",           to: "/admin/planner",                  icon: "fa-list-check",       section: "Plan" },
   { label: "Calendar",        to: "/admin/planner",                  icon: "fa-calendar-days",    section: "Plan" },
   { label: "Journal",         to: "/admin/planner?tab=journal",      icon: "fa-book",             section: "Plan" },
