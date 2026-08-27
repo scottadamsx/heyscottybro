@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import PopoverPortal from "./PopoverPortal";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS12 = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
 const PRESETS = ["09:00", "12:00", "15:00", "17:00"];
 
@@ -44,6 +44,11 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
     const M = nm == null ? (mn ?? 0) : nm;
     onChange(`${pad(H)}:${pad(M)}`);
   };
+  // 12-hour face over a 24-hour value: the stored value never changes shape.
+  const ap = h == null ? "AM" : h < 12 ? "AM" : "PM";
+  const h12 = h == null ? null : (h % 12 || 12);
+  const setHour12 = (H12) => set((H12 % 12) + (ap === "PM" ? 12 : 0), null);
+  const setAp = (next) => { if (h == null) { set(next === "PM" ? 12 : 9, null); return; } if (next === ap) return; set(next === "PM" ? h + 12 : h - 12, null); };
 
   return (
     <div className="picker" ref={ref}>
@@ -79,9 +84,9 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
             <div className="tmp-col">
               <div className="tmp-col-head">Hour</div>
               <div className="tmp-col-scroll">
-                {HOURS.map((H) => (
-                  <button type="button" key={H} className={`tmp-opt${h === H ? " sel" : ""}`} onClick={() => set(H, null)}>
-                    {pad(H)}
+                {HOURS12.map((H) => (
+                  <button type="button" key={H} className={`tmp-opt${h12 === H ? " sel" : ""}`} onClick={() => setHour12(H)}>
+                    {H}
                   </button>
                 ))}
               </div>
@@ -95,6 +100,11 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="tmp-col tmp-ap">
+              <div className="tmp-col-head">&nbsp;</div>
+              <button type="button" className={`tmp-opt${ap === "AM" && h != null ? " sel" : ""}`} onClick={() => setAp("AM")}>AM</button>
+              <button type="button" className={`tmp-opt${ap === "PM" && h != null ? " sel" : ""}`} onClick={() => setAp("PM")}>PM</button>
             </div>
           </div>
         </div>

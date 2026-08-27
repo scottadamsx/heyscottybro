@@ -2251,6 +2251,8 @@ input, textarea, select { font-family: inherit; }
 .tmp-preset.sel { border-color: var(--accent); color: var(--accent); }
 
 .tmp-cols { display: flex; gap: 0.5rem; }
+.tmp-ap { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; }
+.tmp-ap .tmp-opt { padding: 0.3rem 0.55rem; }
 .tmp-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .tmp-col-head { text-align: center; font-size: 0.66rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
 .tmp-col-scroll { height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; padding-right: 2px; }
