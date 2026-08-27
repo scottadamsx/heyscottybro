@@ -45,7 +45,7 @@ export default function PlannerPage() {
                 const evs = events.filter((e) => e.date === ds);
                 L.push(`## ${d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}`);
                 if (!day.length && !evs.length) L.push("_free_");
-                evs.forEach((e) => L.push(`- 📅 ${e.title}`));
+                evs.forEach((e) => L.push(`- ${e.title}`));
                 day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${r.time}` : ""}`));
                 L.push("");
               }

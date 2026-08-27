@@ -253,10 +253,10 @@ export const TOOLS = [
   },
   { name: "web_fetch", description: "Fetch a web page or API URL and return its title + readable text (truncated). Use when Scott shares a link, asks you to read/check a page, or look something current up by URL.", input_schema: { type: "object", properties: { url: { type: "string", description: "Full http(s) URL" } }, required: ["url"] } },
   { name: "link_brain_nodes", description: "Connect two existing Brain notes in the knowledge graph (directed link source → target). Use real slugs from a brain query — don't invent them. Idempotent.", input_schema: { type: "object", properties: { source_slug: { type: "string" }, target_slug: { type: "string" } }, required: ["source_slug", "target_slug"] } },
-  { name: "list_context", description: "Read all saved context facts about Scott and Maria. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
+  { name: "list_context", description: "Read all saved context facts about Scott. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
   {
     name: "save_context",
-    description: "Save a fact to the persistent context store. Call automatically whenever you learn something worth remembering about Scott or Maria.",
+    description: "Save a fact to the persistent context store. Call automatically whenever you learn something worth remembering about Scott.",
     input_schema: {
       type: "object",
       properties: {

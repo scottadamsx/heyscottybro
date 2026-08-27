@@ -196,7 +196,7 @@ export default function Inbox() {
                       )}
                       <button className="btn btn-sm" onClick={() => copyDraft(m)} disabled={!draftFor(m)}><i className="fa-solid fa-copy" /> Copy</button>
                       <button className="btn btn-sm" onClick={() => saveDraft(m)}>Save draft</button>
-                      <button className="btn btn-sm" onClick={() => setStatus(m, "replied")}>✓ Replied</button>
+                      <button className="btn btn-sm" onClick={() => setStatus(m, "replied")}>Replied</button>
                       <button className="btn btn-sm" onClick={() => setStatus(m, m.status === "archived" ? "needs_reply" : "archived")}>{m.status === "archived" ? "Unarchive" : "Archive"}</button>
                       <button className="btn-mini danger" onClick={() => remove(m)}><i className="fa-solid fa-trash" /></button>
                     </div>

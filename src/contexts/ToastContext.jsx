@@ -111,7 +111,7 @@ function ToastItem({ toast: t, dismiss }) {
       lineHeight: 1.4,
     }}>
       <span style={{ fontSize: "1rem", flexShrink: 0, marginTop: "1px", color: accent }}>
-        {t.type === "error" ? "✕" : t.type === "success" ? "✓" : t.type === "warning" ? "⚠" : "ℹ"}
+        <i className={`fa-solid ${t.type === "error" ? "fa-xmark" : t.type === "success" ? "fa-check" : t.type === "warning" ? "fa-triangle-exclamation" : "fa-circle-info"}`} aria-hidden="true" />
       </span>
 
       <div style={{ flex: 1, minWidth: 0, color: accent }}>
@@ -131,7 +131,7 @@ function ToastItem({ toast: t, dismiss }) {
         {isLong && (
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
             <button onClick={copyFull} style={{ ...microBtn, color: "var(--accent)" }}>
-              {copied ? "✓ Copied" : "Copy full message"}
+              {copied ? "Copied" : "Copy full message"}
             </button>
             <button onClick={() => setExpanded((v) => !v)} style={{ ...microBtn, color: "var(--text-muted)" }}>
               {expanded ? "Show less" : "Show more"}

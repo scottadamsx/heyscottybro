@@ -64,7 +64,6 @@ const ICONS = [
   { id: "kiwi-games", title: "Kiwi Games", icon: "fa-gamepad", href: "https://scottadamsx.github.io/kiwiGames/", tag: "50 browser games", desc: "Snake, 2048, Minesweeper, solitaire, word games and more. No sign-up, no install, works offline." },
   { id: "planner", title: "heyScottyBro", icon: "fa-list-check", to: "/admin/login", tag: "Personal command centre", desc: "The app behind this site — reminders, calendar, money, school, and a fellowship of AI agents. Password protected." },
   { id: "eliquinn", title: "eliquinn.space", icon: "fa-compass-drafting", href: "https://eliquinn.space", tag: "Client site", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, intro film, pinned work gallery." },
-  { id: "twomonths", title: "Our First Two Months", icon: "fa-heart", href: "https://ourfirsttwomonths.vercel.app", tag: "Personal", desc: "A little web gift for my girlfriend — a scrollable keepsake." },
   { id: "minecraft", title: "Minecraft Trivia", icon: "fa-cube", to: "/games/minecraft-trivia", tag: "Game", desc: "How well do you know the world of Minecraft? Blocks, mobs, biomes and more." },
   { id: "monopoly", title: "Monopoly Banker", icon: "fa-sack-dollar", to: "/games/monopoly-banker", tag: "Game", desc: "The digital Monopoly bank. No paper money, no arguments." },
   { id: "tictactoe", title: "Tic-Tac-Toe", icon: "fa-hashtag", to: "/games/tictactoe", tag: "Game", desc: "Classic Tic-Tac-Toe with score tracking." },

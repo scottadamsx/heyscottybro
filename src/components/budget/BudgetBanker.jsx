@@ -75,7 +75,7 @@ export default function BudgetBanker({ onChanged }) {
     <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, borderBottom: "0.5px solid var(--border-subtle)", marginBottom: 10 }}>
-        <div style={{ fontSize: 26, lineHeight: 1 }}>{BANKER.emoji}</div>
+        <div style={{ fontSize: 26, lineHeight: 1 }}><i className={`fa-solid ${BANKER.icon}`} aria-hidden="true" /></div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{BANKER.name} <i className={`fa-solid ${BANKER.icon}`} style={{ fontSize: 12, opacity: 0.6, marginLeft: 2 }} /></div>
           <div className="bud-muted-11">{BANKER.tagline} · guards your gold</div>
@@ -91,7 +91,7 @@ export default function BudgetBanker({ onChanged }) {
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 4 }}>
         {display.length === 0 && (
           <div className="bud-muted-13">
-            <p style={{ marginTop: 0 }}>{BANKER.emoji} <strong>{BANKER.name}</strong> keeps your ledger. Tell him what to change — he handles the rest. Try:</p>
+            <p style={{ marginTop: 0 }}><strong>{BANKER.name}</strong> keeps your ledger. Tell him what to change — he handles the rest. Try:</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {SUGGESTIONS.map((s) => (
                 <button key={s} onClick={() => send(s)} disabled={loading} className="bud-suggestion">
@@ -105,7 +105,7 @@ export default function BudgetBanker({ onChanged }) {
           m.role === "user"
             ? <div key={i} className="bud-bubble bud-bubble-user">{m.text}</div>
             : <div key={i} className="chat-md bud-bubble bud-bubble-bot">
-                <div className="bud-muted-11" style={{ marginBottom: 3 }}>{BANKER.emoji} {BANKER.name}</div>
+                <div className="bud-muted-11" style={{ marginBottom: 3 }}>{BANKER.name}</div>
                 <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
               </div>
         ))}

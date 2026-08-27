@@ -49,7 +49,7 @@ function stripImages(msgs) {
 /**
  * Display rows keep the thumbnails (data URLs) for the live session only. For
  * the stored row they collapse to a `shots` count so a few photos don't turn
- * a 20 KB row into 5 MB; after a reload the bubble shows "📎 N screenshot(s)".
+ * a 20 KB row into 5 MB; after a reload the bubble shows "N screenshot(s)".
  */
 function stripDisplayImages(rows) {
   return rows.map((m) => {
@@ -144,7 +144,7 @@ export default function useAIAgent() {
     setInput("");
     setLoading(true);
 
-    const shown = text || (attachments.length ? `📎 ${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
+    const shown = text || (attachments.length ? `${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
     // Thumbnails ride on the display row for this session so the photo is
     // visible in the bubble; they're collapsed to a count when persisted.
     const images = attachments.map((a) => `data:${a.media_type};base64,${a.data}`);

@@ -199,8 +199,8 @@ export default function BugsPage() {
   ];
   const KIND_TABS = [
     { key: "all", label: "Everything" },
-    { key: "bug", label: "🐞 Bugs" },
-    { key: "feature", label: "💡 Requests" },
+    { key: "bug", label: "Bugs" },
+    { key: "feature", label: "Requests" },
   ];
 
   return (

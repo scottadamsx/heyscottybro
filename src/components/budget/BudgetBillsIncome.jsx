@@ -120,7 +120,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             <div className="bud-title-14">{config.paySchedule?.type || "biweekly"}</div>
             <div className="bud-muted-12" style={{ marginTop: 2 }}>Next paydays: {upcomingPaydays.join(", ")}</div>
           </div>
-          <button className="btn bud-btn-sm" onClick={() => setShowSchedEdit(s => !s)}>{flash === "sched" ? "✓ Saved!" : "Edit"}</button>
+          <button className="btn bud-btn-sm" onClick={() => setShowSchedEdit(s => !s)}>{flash === "sched" ? "Saved" : "Edit"}</button>
         </div>
         {showSchedEdit && (
           <div style={{ marginTop: 12 }}>
@@ -184,7 +184,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <label className="bud-label">End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
           <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>{flash === "inc" ? "✓ Saved!" : "Save"}</button>
+            <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>{flash === "inc" ? "Saved" : "Save"}</button>
             <button className="btn bud-flex1" onClick={() => setShowIncForm(false)}>Cancel</button>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <input type="date" value={billForm.startDate} onChange={e => setBillForm(f => ({ ...f, startDate: e.target.value }))} className="bud-inp" />
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>
             <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} style={{ marginTop: 3 }} />
-            <span>Variable / quantifiable <span style={{ color: "var(--text-muted)" }}>— track spending against this amount (e.g. Groceries, Gas, Maria). Shows a progress bar instead of paid/unpaid.</span></span>
+            <span>Variable / quantifiable <span style={{ color: "var(--text-muted)" }}>— track spending against this amount (e.g. Groceries, Gas, Fun). Shows a progress bar instead of paid/unpaid.</span></span>
           </label>
           {!billForm.variable && (
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 10, cursor: "pointer" }}>
@@ -238,7 +238,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           )}
           <input placeholder="Notes (optional)" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={saveBill} style={{ background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "var(--text-on-accent)", border: "none", fontWeight: 600 }}>{flash === "bill" ? "✓ Saved!" : "Save bill"}</button>
+            <button className="btn bud-flex1" onClick={saveBill} style={{ background: flash === "bill" ? "var(--green)" : "var(--orange)", color: "var(--text-on-accent)", border: "none", fontWeight: 600 }}>{flash === "bill" ? "Saved" : "Save bill"}</button>
             <button className="btn bud-flex1" onClick={() => setShowBillForm(false)}>Cancel</button>
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
         <div className="bud-hstack">
           <input type="number" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0.00" style={{ flex: 1, fontFamily: "var(--font-mono,monospace)" }} />
           <button className="btn bud-btn-sm2" onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }} style={{ background: flash === "bal" ? "var(--green)" : undefined, color: flash === "bal" ? "#000" : undefined }}>
-            {flash === "bal" ? "✓ Saved!" : "Set balance"}
+            {flash === "bal" ? "Saved" : "Set balance"}
           </button>
         </div>
       </div>

@@ -223,7 +223,7 @@ export default function RecipePage() {
         ) : (
           <div className="recipe-log">
             <select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
-              {profiles.map((p) => <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>)}
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
               {MEAL_TYPES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}

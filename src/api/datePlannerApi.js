@@ -12,7 +12,7 @@ export async function loadDateIdeas() {
   return data || [];
 }
 
-export async function addDateIdea({ title, emoji = "💖", note = "" }) {
+export async function addDateIdea({ title, emoji = "", note = "" }) {
   const userId = await uid();
   if (!userId) throw new Error("Not signed in.");
   const { data, error } = await supabase
@@ -40,7 +40,7 @@ export async function loadDateCompleted() {
   return data || [];
 }
 
-export async function addDateCompleted({ title, emoji = "💖", note = "", done_on }) {
+export async function addDateCompleted({ title, emoji = "", note = "", done_on }) {
   const userId = await uid();
   if (!userId) throw new Error("Not signed in.");
   const { data, error } = await supabase
@@ -81,10 +81,10 @@ export async function syncLocalDatePlanner() {
   const newDone = (local.completed || []).filter((c) => c.title && !doneTitles.has(c.title.trim().toLowerCase()));
 
   if (newIdeas.length) {
-    await supabase.from("date_ideas").insert(newIdeas.map((i) => ({ user_id: userId, title: i.title, emoji: i.emoji || "💖", note: i.note || "" })));
+    await supabase.from("date_ideas").insert(newIdeas.map((i) => ({ user_id: userId, title: i.title, emoji: i.emoji || "", note: i.note || "" })));
   }
   if (newDone.length) {
-    await supabase.from("date_completed").insert(newDone.map((c) => ({ user_id: userId, title: c.title, emoji: c.emoji || "💖", note: c.note || "", memory: c.memory || "", done_on: c.doneOn || null })));
+    await supabase.from("date_completed").insert(newDone.map((c) => ({ user_id: userId, title: c.title, emoji: c.emoji || "", note: c.note || "", memory: c.memory || "", done_on: c.doneOn || null })));
   }
   return { ideas: newIdeas.length, completed: newDone.length };
 }

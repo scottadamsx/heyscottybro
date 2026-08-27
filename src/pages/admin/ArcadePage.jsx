@@ -72,7 +72,7 @@ export default function ArcadePage() {
     if (won === true) bits.push("won");
     if (score != null) bits.push(`score ${score}`);
     if (bonus > 0) bits.push(`+${bonus} bonus`);
-    addToast(`${playing.title}: ${bits.join(" · ") || "done"} — back to it! 📚`, "success");
+    addToast(`${playing.title}: ${bits.join(" · ") || "done"} — back to it!`, "success");
   };
 
   const Tile = ({ g }) => (
@@ -92,7 +92,7 @@ export default function ArcadePage() {
             {tokens > 0 ? `${tokens} break${tokens === 1 ? "" : "s"} earned` : "free play"}
           </Badge>
           {import.meta.env.DEV && (
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => { earnBreak(1, "dev"); setTokens(breakTokens()); }} title="Dev: grant a break token">+🎟</button>
+            <button className="btn btn-sm btn-secondary-sm" onClick={() => { earnBreak(1, "dev"); setTokens(breakTokens()); }} title="Dev: grant a break token">+1 token</button>
           )}
         </div>
       </div>

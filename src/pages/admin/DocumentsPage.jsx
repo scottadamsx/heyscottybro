@@ -79,7 +79,7 @@ export default function DocumentsPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>📄 Documents</h1>
+        <h1>Documents</h1>
         <button className="btn" onClick={() => setShowUploader((s) => !s)}>
           <i className={`fa-solid ${showUploader ? "fa-xmark" : "fa-plus"}`} /> {showUploader ? "Close" : "Upload"}
         </button>

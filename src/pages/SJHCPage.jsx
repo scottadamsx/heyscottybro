@@ -4,12 +4,12 @@ import { ease } from "../lib/motion";
 import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const FEATURES = [
-  { icon: "🥾", title: "Group Hikes", desc: "Weekly organized hikes across Newfoundland's most stunning trails." },
-  { icon: "🌿", title: "Local Community", desc: "Real people, real connections, real adventures in St. John's." },
-  { icon: "👕", title: "Exclusive Merch", desc: "Custom-designed activewear and accessories for members." },
-  { icon: "🤝", title: "Local Partnerships", desc: "Collaborating with local businesses to support the community." },
-  { icon: "📸", title: "Adventure Content", desc: "Photos, stories, and memories from every trail we conquer." },
-  { icon: "🌊", title: "Coastal Exploration", desc: "Discover the wild, rugged coastlines of the Avalon Peninsula." },
+  { icon: "fa-person-hiking", title: "Group Hikes", desc: "Weekly organized hikes across Newfoundland's most stunning trails." },
+  { icon: "fa-leaf", title: "Local Community", desc: "Real people, real connections, real adventures in St. John's." },
+  { icon: "fa-shirt", title: "Exclusive Merch", desc: "Custom-designed activewear and accessories for members." },
+  { icon: "fa-handshake", title: "Local Partnerships", desc: "Collaborating with local businesses to support the community." },
+  { icon: "fa-camera", title: "Adventure Content", desc: "Photos, stories, and memories from every trail we conquer." },
+  { icon: "fa-water", title: "Coastal Exploration", desc: "Discover the wild, rugged coastlines of the Avalon Peninsula." },
 ];
 
 const PHOTOS = [
@@ -82,7 +82,7 @@ export default function SJHCPage() {
             <motion.div className="lp-feature" key={f.title}
               initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, ease: ease.out, delay: (i % 3) * 0.06 }}>
-              <div className="lp-feature-icon">{f.icon}</div>
+              <div className="lp-feature-icon"><i className={`fa-solid ${f.icon}`} aria-hidden="true" /></div>
               <div className="lp-feature-title">{f.title}</div>
               <div className="lp-feature-desc">{f.desc}</div>
             </motion.div>

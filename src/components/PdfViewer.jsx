@@ -21,7 +21,7 @@ const STEP = 0.2;
  *   blob?     Blob           in-memory PDF (object URL is managed for you)
  *   title?    string         shown in the toolbar
  *   filename? string         download name (default "document.pdf")
- *   onClose() void           close handler (overlay click / Esc / ✕)
+ *   onClose() void           close handler (overlay click / Esc / close button)
  */
 export default function PdfViewer({ fileUrl, blob, title = "Document", filename = "document.pdf", onClose }) {
   // A blob gets its own object URL (revoked on unmount); otherwise use fileUrl.

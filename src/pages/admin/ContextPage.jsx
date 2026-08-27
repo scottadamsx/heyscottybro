@@ -31,8 +31,8 @@ function classify(raw) {
   if (!fact) fact = t;
   fact = fact.charAt(0).toUpperCase() + fact.slice(1);
   const tags = [];
-  ["scott", "maria"].forEach(n => {
-    if (lower.includes(n)) { const T = n === "scott" ? "Scott" : "Maria"; if (!tags.includes(T)) tags.push(T); }
+  ["scott"].forEach(n => {
+    if (lower.includes(n)) { const T = "Scott"; if (!tags.includes(T)) tags.push(T); }
   });
   (t.match(/(?<!^)(?<![.!?]\s)\b[A-Z][a-z]{2,}\b/g) || []).forEach(c => {
     if (!tags.includes(c) && !["Remember", "Note"].includes(c)) tags.push(c);
@@ -53,7 +53,7 @@ function timeAgo(ts) {
 }
 
 const BY_COLOR = { scott: "var(--orange)", maria: "#b68bd6", frodo: "var(--accent)", manual: "var(--text-muted)" };
-const BY_LABEL = { scott: "Scott", maria: "Maria", frodo: "Frodo", manual: "Manual" };
+const BY_LABEL = { scott: "Scott", frodo: "Frodo", manual: "Manual" };
 
 export default function ContextPage() {
   const { confirm, dialog } = useConfirm();
@@ -188,7 +188,7 @@ export default function ContextPage() {
     <div className="module-page">
       {dialog}
       <div className="module-header">
-        <h1>🧠 Context</h1>
+        <h1>Context</h1>
         <span className="module-header-sub">{items.length} saved fact{items.length !== 1 ? "s" : ""}</span>
         <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={runSync} disabled={syncing}>
           {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" /> Sync local facts</>}
@@ -205,7 +205,7 @@ export default function ContextPage() {
         <textarea
           className="ctx-textarea"
           rows={3}
-          placeholder={`e.g. "remember that Scott is allergic to shellfish" or "Maria loves sativa strains"`}
+          placeholder={`e.g. "remember that Scott is allergic to shellfish" or "Scott prefers morning workouts"`}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
@@ -219,7 +219,7 @@ export default function ContextPage() {
           <div className="ctx-chips">
             <span className="ctx-chip preview">&ldquo;{verdict.fact.slice(0, 60)}{verdict.fact.length > 60 ? "…" : ""}&rdquo;</span>
             {(verdict.tags || []).map(tag => (
-              <span key={tag} className={`ctx-chip${["Scott", "Maria"].includes(tag) ? " person" : ""}`}>#{tag}</span>
+              <span key={tag} className={`ctx-chip${tag === "Scott" ? " person" : ""}`}>#{tag}</span>
             ))}
           </div>
         )}
@@ -263,7 +263,7 @@ export default function ContextPage() {
               {(item.tags || []).length > 0 && (
                 <div className="ctx-chips" style={{ marginTop: "0.4rem" }}>
                   {item.tags.map(tag => (
-                    <span key={tag} className={`ctx-chip${["Scott", "Maria"].includes(tag) ? " person" : ""}`}>#{tag}</span>
+                    <span key={tag} className={`ctx-chip${tag === "Scott" ? " person" : ""}`}>#{tag}</span>
                   ))}
                 </div>
               )}
@@ -296,7 +296,7 @@ export default function ContextPage() {
                   <span className="ctx-item-why">{item.why}</span>
                 )}
                 <button className="ctx-del-btn" style={{ marginLeft: editingId === item.id ? 0 : "auto" }} onClick={() => startEdit(item)} title="Edit with Frodo"><i className="fa-solid fa-pen" /></button>
-                <button className="ctx-del-btn" onClick={() => remove(item)} title="Delete">✕</button>
+                <button className="ctx-del-btn" onClick={() => remove(item)} title="Delete"><i className="fa-solid fa-xmark" /></button>
               </div>
             </div>
           ))}

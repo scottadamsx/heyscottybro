@@ -48,7 +48,7 @@ Be concrete and ready-to-use. Reply in Markdown; use short sections and bullet l
 export const AGENTS = [
   overseerAgent,
   {
-    id: "elrond", name: "Elrond", title: "Research Agent", emoji: "📜", icon: "fa-book-open",
+    id: "elrond", name: "Elrond", title: "Research Agent", icon: "fa-book-open",
     color: "#22d3ee", kind: "api", model: "claude-sonnet-4-6", maxToolTurns: 16,
     tagline: "Researches the web → files into the Brain",
     thinking: "Elrond consults the archives…",
@@ -64,7 +64,7 @@ export const AGENTS = [
     buildPrompt: buildArchivistPrompt,
   },
   {
-    id: "luthien", name: "Lúthien", title: "Marketing Agent", emoji: "✨", icon: "fa-bullhorn",
+    id: "luthien", name: "Lúthien", title: "Marketing Agent", icon: "fa-bullhorn",
     color: "#ec4899", kind: "api", model: "claude-sonnet-4-6", maxToolTurns: 14,
     tagline: "Copy, campaigns & positioning for your products",
     thinking: "Lúthien weaves the words…",
@@ -72,12 +72,12 @@ export const AGENTS = [
     buildPrompt: buildMarketingPrompt,
   },
   {
-    id: "aule", name: "Aulë", title: "Coding Agent", emoji: "🔨", icon: "fa-hammer",
+    id: "aule", name: "Aulë", title: "Coding Agent", icon: "fa-hammer",
     color: "#f59e0b", kind: "local", model: "Claude Code (Max plan)",
     tagline: "Real Claude Code in your terminal — needs the agent server",
   },
   {
-    id: "frodo", name: "Frodo", title: "Personal Assistant", emoji: "💍", icon: "fa-ring",
+    id: "frodo", name: "Frodo", title: "Personal Assistant", icon: "fa-ring",
     color: "#4ade80", kind: "api", model: TIERS[0].model, maxToolTurns: TIERS[0].maxToolTurns,
     tagline: "Your everyday planner assistant",
     thinking: "Frodo is on it…",

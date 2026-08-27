@@ -330,7 +330,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
         })}
       </>}
 
-      {/* Quantifiable budgets (Groceries, Gas, Maria… — category budgets + variable bills) */}
+      {/* Quantifiable budgets (Groceries, Gas, Fun… — category budgets + variable bills) */}
       <div className="bud-row-b">
         <p className="bud-sh">Category budgets</p>
         <span className="bud-muted-11">this pay period</span>
@@ -338,7 +338,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
       <div className="bud-panel bud-panel-db">
         {quantBudgets.length === 0 && !adding && (
           <p className="bud-muted-12" style={{ margin: "2px 0 10px" }}>
-            Track variable spending (Groceries, Gas, Maria…) here. Add a budget below, or in Bills &amp; Income tick &ldquo;variable&rdquo; on a bill.
+            Track variable spending (Groceries, Gas, Fun…) here. Add a budget below, or in Bills &amp; Income tick &ldquo;variable&rdquo; on a bill.
           </p>
         )}
         {quantBudgets.map(({ category: cat, budget, spent: spentCat, fromBill, editable }) => {
@@ -423,7 +423,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
           return (
             <div key={g.id} style={{ marginBottom: 14 }}>
               <div className="bud-row" style={{ marginBottom: 4, fontSize: 13 }}>
-                <span style={{ fontWeight: 500 }}>{g.name} {g.done && <span style={{ color: "var(--green)", fontSize: 11 }}>✓ funded</span>}</span>
+                <span style={{ fontWeight: 500 }}>{g.name} {g.done && <span style={{ color: "var(--green)", fontSize: 11 }}>funded</span>}</span>
                 <span className="bud-mono" style={{ fontSize: 12, color: "var(--text-muted)" }}>{formatMoney(g.saved)} / {formatMoney(g.target)}</span>
               </div>
               <div className="bud-bar">

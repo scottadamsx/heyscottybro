@@ -255,7 +255,7 @@ export default function SnippetsPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>🔐 Vault</h1>
+        <h1>Vault</h1>
         <button
           className="btn"
           onClick={() => { setShowAdd((s) => !s); setAddForm((f) => emptyForm(f.type)); }}

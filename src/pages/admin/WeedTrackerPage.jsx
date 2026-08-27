@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import { freshState } from "../../utils/weedCalc";
 import { loadWeedState, saveWeedState } from "../../api/weedApi";
 import ScottyView from "../../components/weed/ScottyView";
-import MariaView from "../../components/weed/MariaView";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
 export default function WeedTrackerPage() {
@@ -45,7 +44,7 @@ export default function WeedTrackerPage() {
   return (
     <div className="module-page">
       <div className="module-header" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
-        <h1>🌿 Wind Down</h1>
+        <h1>Wind Down</h1>
         <div className="wt-profile-switcher">
           <button
             className={`wt-profile-btn scott${activeProfile === "scott" ? " active" : ""}`}
@@ -54,18 +53,10 @@ export default function WeedTrackerPage() {
             <span className="wt-profile-dot" />
             Scott
           </button>
-          <button
-            className={`wt-profile-btn maria${activeProfile === "maria" ? " active" : ""}`}
-            onClick={() => onUpdate(d => { d.activeProfile = "maria"; })}
-          >
-            <span className="wt-profile-dot" />
-            Maria
-          </button>
         </div>
       </div>
 
       {activeProfile === "scott" && <ScottyView state={state} onUpdate={onUpdate} />}
-      {activeProfile === "maria" && <MariaView state={state} onUpdate={onUpdate} />}
     </div>
   );
 }

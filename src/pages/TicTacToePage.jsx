@@ -46,7 +46,7 @@ export default function TicTacToePage() {
   };
 
   let status;
-  if (winner) status = `Player ${winner} wins! 🎉`;
+  if (winner) status = `Player ${winner} wins!`;
   else if (isDraw) status = "It's a draw!";
   else status = `Player ${xIsNext ? "X" : "O"}'s turn`;
 

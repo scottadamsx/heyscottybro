@@ -166,7 +166,7 @@ export default function TaskDetailPage() {
             <button className="btn btn-sm" onClick={startEdit}><i className="fa-solid fa-pen" /> Edit</button>
             {task.completed
               ? <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={handleReopen}>↩ Reopen</button>
-              : <button className="btn btn-sm btn-complete" onClick={handleComplete}>✓ Done</button>}
+              : <button className="btn btn-sm btn-complete" onClick={handleComplete}>Done</button>}
           </div>
         )}
       </div>

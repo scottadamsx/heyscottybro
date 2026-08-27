@@ -1,21 +1,57 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   theme-xp.css — Windows XP "Luna" chrome.
-   Every rule is scoped to :root[data-theme="xp"]; in light/dark this file is
-   inert. Tokens (colours, fonts, radius 0) come from globals.css — this file
-   adds the things tokens can't express: bevelled controls, blue title bars,
-   the Start-button rail and the classic beige dialog surfaces.
-   Recorded as a deliberate house-style override (radius/border floors) in
-   ledger.jsonl — see DR-011.
+   theme-xp.css — Windows XP "Luna" (Blue) for the admin, to the metric.
+   Every rule is scoped to :root[data-theme="xp"]; inert elsewhere.
+   Sources: Luna visual style (caption 30px, Trebuchet MS bold captions,
+   Tahoma 8pt UI text, buttons 23×75, edits 21px, #7F9DB9 edit border,
+   #316AC5 selection, #ECE9D8 face, #D0D0BF groupbox), and the Windows UX
+   layout guide (dialog margin 11px, related controls 7px apart, groups 11px).
+   Hex literals here ARE the spec — theme-fixed by definition. Ledger DR-011.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="xp"] {
+  --xp-caption: linear-gradient(180deg, #0058EE 0%, #3593FF 4%, #288EFF 6%, #127DFF 8%, #036FFC 10%, #0262EE 14%, #0057E5 20%, #0054E3 24%, #0055EB 56%, #005BF5 66%, #026AFE 76%, #0062EF 86%, #0052D6 92%, #0040AB 94%, #003092 100%);
+  --xp-caption-inactive: linear-gradient(180deg, #7697E7 0%, #7E9EEC 3%, #94AFF1 6%, #97B4F3 8%, #82A5F0 14%, #7C9FEE 17%, #7B9DEB 25%, #7B9EEE 56%, #7FA4F2 81%, #7B9DEB 89%, #7896E5 94%, #7791E1 97%, #7391DF 100%);
+  --xp-frame: #0831D9;
+  --xp-face: #ECE9D8;
+  --xp-face-dark: #ACA899;
+  --xp-groupbox: #D0D0BF;
+  --xp-edit-border: #7F9DB9;
+  --xp-btn-border: #003C74;
+  --xp-sel: #316AC5;
+  --xp-btn-face: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 86%, #D8D0C4 100%);
+  --xp-btn-hover: inset -1px 1px #FFF0CF, inset 1px 2px #FDD889, inset -2px 2px #FBC761, inset 2px -2px #E5A01A;
+  --xp-btn-default: inset -1px 1px #CEE7FF, inset 1px 2px #98B8EA, inset -2px 2px #BCD4F6, inset 2px -2px #89ADE4;
+  --xp-btn-pressed: inset -1px 1px #FFFFFF, inset 1px 1px #E6E6E6, inset 2px 2px #C6C6C6;
+  --xp-menu: #D3E5FA;
+  --xp-start-green: linear-gradient(180deg, #3C9E3C 0%, #57B857 3%, #4FAB4F 8%, #3E9C3E 15%, #369536 50%, #2F8A2F 86%, #227A22 100%);
+  --control-h: 23px;
+  font-size: 11px;
   -webkit-font-smoothing: auto;
-  font-size: 15px;
 }
-:root[data-theme="xp"] body { font-family: var(--font-body); }
+:root[data-theme="xp"] body { font-family: var(--font-body); line-height: 1.3; }
 :root[data-theme="xp"] body::before { display: none; }
+:root[data-theme="xp"] .admin-shell { letter-spacing: 0; }
 
-/* ── Window chrome: cards become XP windows ── */
+/* ── Layout metrics: dialog margin 11 · group gap 11 · related 7 ── */
+:root[data-theme="xp"] .admin-main { padding: 11px; max-width: none; }
+:root[data-theme="xp"] .db-grid { gap: 11px; }
+:root[data-theme="xp"] .module-page { gap: 11px; }
+:root[data-theme="xp"] .tasks-layout { gap: 11px; }
+:root[data-theme="xp"] .db-list { gap: 0; }
+:root[data-theme="xp"] .admin-shell .module-header { margin-bottom: 0; gap: 7px; }
+:root[data-theme="xp"] .admin-shell .module-header h1,
+:root[data-theme="xp"] .admin-shell .combined-page-title { font: 700 13px/1.2 var(--font-display); letter-spacing: 0; }
+:root[data-theme="xp"] .admin-shell h2 { font-size: 12px; }
+:root[data-theme="xp"] .admin-shell h3 { font-size: 11px; }
+:root[data-theme="xp"] .admin-shell p, :root[data-theme="xp"] .admin-shell li, :root[data-theme="xp"] .admin-shell td, :root[data-theme="xp"] .admin-shell label { font-size: 11px; }
+:root[data-theme="xp"] .admin-shell .db-list-item-title { font-size: 11px; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .db-list-item-subtitle,
+:root[data-theme="xp"] .admin-shell .section-label-sm,
+:root[data-theme="xp"] .admin-shell .db-subhead { font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-secondary); }
+:root[data-theme="xp"] .admin-shell .stat-value { font-size: 18px; font-weight: 700; }
+:root[data-theme="xp"] .admin-shell .stat-label { font-size: 11px; text-transform: none; letter-spacing: 0; }
+
+/* ── Windows: every card is a Luna window (3px blue frame, 30px caption) ── */
 :root[data-theme="xp"] .admin-shell .db-card,
 :root[data-theme="xp"] .admin-shell .form-card,
 :root[data-theme="xp"] .admin-shell .event-card,
@@ -24,182 +60,209 @@
 :root[data-theme="xp"] .admin-shell .day-modal,
 :root[data-theme="xp"] .admin-shell .modal-card,
 :root[data-theme="xp"] .admin-shell .modal {
-  border: 1px solid #0831D9; /* theme-fixed: Luna window frame */
+  background: var(--xp-face);
+  border: 3px solid var(--xp-frame);
+  border-top: none;
   border-radius: 8px 8px 0 0;
-  box-shadow: var(--shadow-floating);
-  background: var(--bg-card);
-  padding-top: 0;
+  box-shadow: none;
+  padding: 11px;
   overflow: hidden;
+  transition: none;
+  transform: none !important;
 }
+:root[data-theme="xp"] .admin-shell .db-card:hover { border-color: var(--xp-frame); box-shadow: none; transform: none; }
+/* Caption bar: the FIRST title/header in the card spans the frame */
 :root[data-theme="xp"] .admin-shell .db-card-title,
 :root[data-theme="xp"] .admin-shell .uik-card-head h3,
 :root[data-theme="xp"] .admin-shell .day-modal-head {
-  display: block;
-  margin: 0 -1.25rem 0.9rem;
-  padding: 6px 12px;
-  background: var(--titlebar-grad);
-  color: var(--titlebar-text);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0;
-  text-transform: none;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.45);
+  display: flex; align-items: center;
+  height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  background: var(--xp-caption); color: #FFFFFF;
+  font: 700 13px/1 var(--font-display); text-shadow: 1px 1px 0 #0A1F5C;
+  letter-spacing: 0; text-transform: none;
+  border-radius: 8px 8px 0 0;
 }
-/* When the title sits in a header row with actions, the ROW is the title bar. */
 :root[data-theme="xp"] .admin-shell .db-card-header,
 :root[data-theme="xp"] .admin-shell .uik-card-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  margin: 0 -1.25rem 0.9rem; padding: 4px 8px 4px 12px;
-  background: var(--titlebar-grad); color: var(--titlebar-text);
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .db-card-header .db-card-title,
-:root[data-theme="xp"] .admin-shell .uik-card-head h3 { margin: 0; padding: 0; background: none; flex: 1; min-width: 0; }
+:root[data-theme="xp"] .admin-shell .uik-card-head h3 { height: auto; margin: 0; padding: 0; background: none; border-radius: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :root[data-theme="xp"] .admin-shell .db-card-header .btn,
 :root[data-theme="xp"] .admin-shell .db-card-header button,
-:root[data-theme="xp"] .admin-shell .db-card-header a { height: 24px; padding: 0 8px; font-size: 0.75rem; white-space: nowrap; }
-:root[data-theme="xp"] .admin-shell .db-card-header a { color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .db-card-header a.btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; }
+:root[data-theme="xp"] .admin-shell .db-card-header a:not(.btn) { color: #FFFFFF; font-size: 11px; text-decoration: underline; }
 :root[data-theme="xp"] .admin-shell .day-modal-head { margin: 0; }
-:root[data-theme="xp"] .admin-shell .day-modal-dow,
-:root[data-theme="xp"] .admin-shell .day-modal-date { color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .day-modal-dow, :root[data-theme="xp"] .admin-shell .day-modal-date { color: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .day-modal-body { background: #FFFFFF; }
 
-/* ── Bevelled controls ── */
+/* Content area inside a window is the white client, edged like an edit box */
+:root[data-theme="xp"] .admin-shell .db-list,
+:root[data-theme="xp"] .admin-shell .dashboard-list,
+:root[data-theme="xp"] .admin-shell .settings-row { background: #FFFFFF; border: 1px solid var(--xp-edit-border); padding: 2px; }
+:root[data-theme="xp"] .admin-shell .settings-row { padding: 7px; }
+:root[data-theme="xp"] .admin-shell .settings-row + .settings-row { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--xp-edit-border); }
+
+/* ── ListView rows: flat, 17px, selection blue ── */
+:root[data-theme="xp"] .admin-shell .db-list-item {
+  background: transparent; border: none; border-radius: 0;
+  padding: 2px 4px; min-height: 17px; gap: 7px; transition: none; transform: none;
+}
+:root[data-theme="xp"] .admin-shell .db-list-item + .db-list-item { border-top: 1px dotted var(--xp-groupbox); }
+:root[data-theme="xp"] .admin-shell .db-list-item:hover,
+:root[data-theme="xp"] .admin-shell .db-list-item.selected { background: var(--xp-sel); color: #FFFFFF; transform: none; box-shadow: none; }
+:root[data-theme="xp"] .admin-shell .db-list-item:hover * { color: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .db-list-item:hover .btn,
+:root[data-theme="xp"] .admin-shell .db-list-item:hover .btn-mini,
+:root[data-theme="xp"] .admin-shell .db-list-item:hover .btn-sm { color: #000000; }
+
+/* ── Group boxes: stat tiles, panels ── */
+:root[data-theme="xp"] .admin-shell .stat-item,
+:root[data-theme="xp"] .admin-shell .uik-stat,
+:root[data-theme="xp"] .admin-shell .brief-section,
+:root[data-theme="xp"] .admin-shell .fin-kpi {
+  background: transparent; border: 1px solid var(--xp-groupbox); border-radius: 3px;
+  padding: 7px; box-shadow: none;
+}
+:root[data-theme="xp"] .admin-shell .stat-grid { gap: 7px; }
+
+/* ── Push buttons: 23px tall, ≥75px wide, Tahoma 8pt ── */
 :root[data-theme="xp"] .admin-shell .btn,
 :root[data-theme="xp"] .admin-shell button.btn-sm,
 :root[data-theme="xp"] .admin-shell .btn-secondary-sm,
-:root[data-theme="xp"] .admin-shell .btn-mini,
 :root[data-theme="xp"] .admin-shell .btn-tiny-blue,
-:root[data-theme="xp"] .admin-shell .day-nav,
+:root[data-theme="xp"] .admin-shell .dashboard-expand,
 :root[data-theme="xp"] .admin-shell .page-tabs button,
 :root[data-theme="xp"] .admin-shell .planner-switch button,
-:root[data-theme="xp"] .admin-shell .dashboard-expand {
-  background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%); /* theme-fixed: Luna button face */
-  color: var(--text-primary);
-  border: 1px solid #003C74; /* theme-fixed: Luna button rim */
-  border-radius: 3px;
-  box-shadow: inset 1px 1px 0 var(--bevel-light), inset -1px -1px 0 var(--bevel-dark);
-  font-family: var(--font-body);
-  font-weight: 400;
-  text-shadow: none;
+:root[data-theme="xp"] .admin-shell .theme-picker-opt,
+:root[data-theme="xp"] .admin-shell .day-nav {
+  height: 23px; min-width: 75px; padding: 0 12px;
+  background: var(--xp-btn-face); color: #000000;
+  border: 1px solid var(--xp-btn-border); border-radius: 3px;
+  box-shadow: inset -1px 1px #FFFFFF, inset 1px 1px #FFFFFF, inset -2px -2px #D8D0C4;
+  font: 400 11px/1 var(--font-body); letter-spacing: 0; text-shadow: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  transition: none; transform: none;
 }
+:root[data-theme="xp"] .admin-shell .btn-mini,
+:root[data-theme="xp"] .admin-shell .icon-x,
+:root[data-theme="xp"] .admin-shell .day-nav { min-width: 23px; padding: 0 6px; }
+:root[data-theme="xp"] .admin-shell .icon-x { width: 21px; height: 21px; border: 1px solid var(--xp-btn-border); border-radius: 3px; background: var(--xp-btn-face); color: #000000; }
 :root[data-theme="xp"] .admin-shell .btn:hover,
+:root[data-theme="xp"] .admin-shell .btn-mini:hover,
+:root[data-theme="xp"] .admin-shell .icon-x:hover,
 :root[data-theme="xp"] .admin-shell .page-tabs button:hover,
-:root[data-theme="xp"] .admin-shell .planner-switch button:hover {
-  box-shadow: inset 0 0 0 2px #F8D77A, inset 1px 1px 0 var(--bevel-light); /* theme-fixed: Luna hover glow */
-}
-:root[data-theme="xp"] .admin-shell .btn:active { background: var(--bg-hover); box-shadow: inset 1px 1px 0 var(--bevel-dark); }
+:root[data-theme="xp"] .admin-shell .planner-switch button:hover,
+:root[data-theme="xp"] .admin-shell .theme-picker-opt:hover { background: var(--xp-btn-face); box-shadow: var(--xp-btn-hover); color: #000000; transform: none; }
+:root[data-theme="xp"] .admin-shell .btn:active { box-shadow: var(--xp-btn-pressed); background: #E6E6E6; }
 :root[data-theme="xp"] .admin-shell .btn-primary,
 :root[data-theme="xp"] .admin-shell .btn.primary,
 :root[data-theme="xp"] .admin-shell .page-tabs button.active,
-:root[data-theme="xp"] .admin-shell .planner-switch button.active {
-  background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%); /* theme-fixed */
-  color: var(--text-primary);
-  box-shadow: inset 0 0 0 1px #3B81E6, inset 1px 1px 0 var(--bevel-light); /* theme-fixed: default-button ring */
-  font-weight: 700;
-}
-:root[data-theme="xp"] .admin-shell .btn-danger,
-:root[data-theme="xp"] .admin-shell .btn-delete { color: var(--red); }
+:root[data-theme="xp"] .admin-shell .planner-switch button.active,
+:root[data-theme="xp"] .admin-shell .theme-picker-opt.active { background: var(--xp-btn-face); color: #000000; box-shadow: var(--xp-btn-default); font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .btn:focus-visible,
+:root[data-theme="xp"] .admin-shell .page-tabs button:focus-visible { outline: 1px dotted #000000; outline-offset: -4px; }
+:root[data-theme="xp"] .admin-shell .btn-danger, :root[data-theme="xp"] .admin-shell .btn-delete { color: #000000; }
+:root[data-theme="xp"] .admin-shell .btn[disabled] { color: var(--xp-face-dark); border-color: #C9C7BA; box-shadow: none; }
 
-:root[data-theme="xp"] .admin-shell input,
+/* ── Edit controls: 21px, #7F9DB9 ── */
+:root[data-theme="xp"] .admin-shell input:not([type="checkbox"]):not([type="radio"]),
 :root[data-theme="xp"] .admin-shell select,
 :root[data-theme="xp"] .admin-shell textarea {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: 0;
-  box-shadow: none;
-  font-family: var(--font-body);
+  min-height: 21px; height: 21px; padding: 2px 4px;
+  background: #FFFFFF; color: #000000;
+  border: 1px solid var(--xp-edit-border); border-radius: 0; box-shadow: none;
+  font: 400 11px/1.3 var(--font-body);
 }
+:root[data-theme="xp"] .admin-shell textarea { height: auto; min-height: 60px; }
+:root[data-theme="xp"] .admin-shell select { padding-right: 18px; }
 :root[data-theme="xp"] .admin-shell input:focus-visible,
 :root[data-theme="xp"] .admin-shell select:focus-visible,
-:root[data-theme="xp"] .admin-shell textarea:focus-visible {
-  outline: 2px dotted var(--text-primary);
-  outline-offset: -3px;
-}
+:root[data-theme="xp"] .admin-shell textarea:focus-visible { outline: none; border-color: var(--xp-edit-border); box-shadow: none !important; }
+:root[data-theme="xp"] .admin-shell input::placeholder, :root[data-theme="xp"] .admin-shell textarea::placeholder { color: #808080; }
+:root[data-theme="xp"] .admin-shell .form-row, :root[data-theme="xp"] .admin-shell form { gap: 7px; }
+:root[data-theme="xp"] .admin-shell .settings-switch { border-radius: 0; height: 13px; width: 26px; border: 1px solid var(--xp-btn-border); background: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .settings-switch-knob { border-radius: 0; background: var(--xp-sel); }
 
-/* ── Rail = Start-menu, topbar = title bar ── */
-:root[data-theme="xp"] .admin-shell .admin-rail,
-:root[data-theme="xp"] .admin-shell .admin-subbar {
-  background: linear-gradient(180deg, #D6DFF7 0%, #C9D7F4 100%); /* theme-fixed: Start-menu pane */
-  border-right: 1px solid #0831D9; /* theme-fixed */
+/* ── Tabs: real tab strip ── */
+:root[data-theme="xp"] .admin-shell .page-tabs { gap: 0; padding: 0; background: transparent; border: none; border-bottom: 1px solid #919B9C; align-items: flex-end; }
+:root[data-theme="xp"] .admin-shell .page-tabs button {
+  min-width: 0; height: 21px; padding: 0 8px; margin-bottom: -1px;
+  border: 1px solid #919B9C; border-bottom: none; border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #FFFFFF, #ECEBE5); box-shadow: none;
 }
-:root[data-theme="xp"] .admin-shell .admin-rail-head {
-  background: var(--titlebar-grad);
-  color: var(--titlebar-text);
-  margin: -1px -1px 0.5rem;
-  padding: 10px 12px;
-}
-:root[data-theme="xp"] .admin-shell .admin-rail-word,
-:root[data-theme="xp"] .admin-shell .admin-rail-word span { color: var(--titlebar-text); }
-:root[data-theme="xp"] .admin-shell .admin-rail-mark {
-  background: linear-gradient(180deg, #58B14B, #2E8A2B); /* theme-fixed: Start-orb green */
-  border: 1px solid #1E5E1C; /* theme-fixed */
-  color: var(--titlebar-text);
-  border-radius: 999px;
-}
-:root[data-theme="xp"] .admin-shell .admin-rail-link,
-:root[data-theme="xp"] .admin-shell .admin-sub-link { border-radius: 0; color: var(--text-primary); }
-:root[data-theme="xp"] .admin-shell .admin-rail-link:hover,
-:root[data-theme="xp"] .admin-shell .admin-sub-link:hover { background: var(--accent); color: var(--text-on-accent); }
-:root[data-theme="xp"] .admin-shell .admin-rail-link:hover i { color: var(--text-on-accent); }
-:root[data-theme="xp"] .admin-shell .admin-rail-link.active,
-:root[data-theme="xp"] .admin-shell .admin-sub-link.active {
-  background: var(--accent);
-  color: var(--text-on-accent);
-  box-shadow: none;
-}
-:root[data-theme="xp"] .admin-shell .admin-rail-link.active i { color: var(--text-on-accent); }
-:root[data-theme="xp"] .admin-shell .admin-topbar {
-  background: var(--titlebar-grad);
-  color: var(--titlebar-text);
-  border-bottom: 1px solid #0831D9; /* theme-fixed */
-  backdrop-filter: none;
-}
-:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo,
-:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo span { color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .page-tabs button.active { height: 23px; background: #FCFCFE; box-shadow: inset 0 2px 0 #FFC73C; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .page-tabs button:hover { box-shadow: inset 0 2px 0 #FFC73C; }
 
-/* ── Tabs, chips, badges: square ── */
-:root[data-theme="xp"] .admin-shell .page-tabs { gap: 2px; background: transparent; border: none; padding: 0; }
+/* ── Chips / counts: plain text in parentheses feel ── */
 :root[data-theme="xp"] .admin-shell .db-count,
 :root[data-theme="xp"] .admin-shell .day-count,
 :root[data-theme="xp"] .admin-shell .badge,
-:root[data-theme="xp"] .admin-shell .uik-badge {
-  border-radius: 0;
-  border: 1px solid var(--border-subtle);
-  background: var(--info-bg);
-  color: var(--text-primary);
-}
-:root[data-theme="xp"] .admin-shell .db-list-item,
-:root[data-theme="xp"] .admin-shell .stat-item {
-  border-radius: 0;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-}
-:root[data-theme="xp"] .admin-shell .db-list-item:hover { background: var(--accent-bg); }
+:root[data-theme="xp"] .admin-shell .uik-badge { background: transparent; border: none; border-radius: 0; padding: 0; color: inherit; font-size: 11px; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .db-card-header .db-count { color: #FFFFFF; }
 
-/* ── Calendar ── */
-:root[data-theme="xp"] .admin-shell .calendar-cell { border-radius: 0; border: 1px solid var(--border-subtle); background: var(--bg-card); }
-:root[data-theme="xp"] .admin-shell .calendar-cell.today { outline: 2px solid var(--accent); outline-offset: -2px; }
-
-/* ── Chat bubble / FAB ── */
-:root[data-theme="xp"] .admin-shell .chat-fab,
-:root[data-theme="xp"] .admin-shell .admin-mobile-fab {
-  border-radius: 3px;
-  background: var(--titlebar-grad);
-  border: 1px solid #0831D9; /* theme-fixed */
-  box-shadow: var(--shadow-floating);
+/* ── Rail: the Explorer task pane · topbar: caption ── */
+:root[data-theme="xp"] .admin-shell .admin-rail,
+:root[data-theme="xp"] .admin-shell .admin-subbar {
+  background: linear-gradient(180deg, #7BA2E7 0%, #6375D6 100%);
+  border-right: none; padding: 11px 8px;
+  backdrop-filter: none;
 }
-:root[data-theme="xp"] .chat-panel { border-radius: 8px 8px 0 0; border: 1px solid #0831D9; /* theme-fixed */ }
-:root[data-theme="xp"] .chat-header { background: var(--titlebar-grad); color: var(--titlebar-text); }
+:root[data-theme="xp"] .admin-shell .admin-rail-head {
+  height: 30px; margin: 0 0 11px; padding: 0 8px; border-radius: 3px 3px 0 0;
+  background: var(--xp-caption); color: #FFFFFF; display: flex; align-items: center; gap: 6px;
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-word, :root[data-theme="xp"] .admin-shell .admin-rail-word span { color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .admin-shell .admin-rail-mark { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFFFF, #6FC46F 40%, #2E8A2B); border: none; color: #FFFFFF; font-size: 10px; }
+:root[data-theme="xp"] .admin-shell .admin-rail-link,
+:root[data-theme="xp"] .admin-shell .admin-sub-link {
+  height: 22px; padding: 0 8px; border-radius: 0; gap: 7px;
+  color: #FFFFFF; font-size: 11px; font-weight: 400; text-shadow: none;
+}
+:root[data-theme="xp"] .admin-shell .admin-rail-link i, :root[data-theme="xp"] .admin-shell .admin-sub-link i { color: #FFFFFF; width: 16px; }
+:root[data-theme="xp"] .admin-shell .admin-rail-link:hover,
+:root[data-theme="xp"] .admin-shell .admin-sub-link:hover { background: var(--xp-sel); color: #FFFFFF; text-decoration: underline; }
+:root[data-theme="xp"] .admin-shell .admin-rail-link.active,
+:root[data-theme="xp"] .admin-shell .admin-sub-link.active { background: #FFFFFF; color: #000000; box-shadow: none; }
+:root[data-theme="xp"] .admin-shell .admin-rail-link.active i { color: var(--xp-sel); }
+:root[data-theme="xp"] .admin-shell .admin-pop-divider { border-color: rgba(255,255,255,0.35); }
+:root[data-theme="xp"] .admin-shell .admin-topbar { height: 30px; background: var(--xp-caption); color: #FFFFFF; border-bottom: none; backdrop-filter: none; padding: 0 8px; }
+:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo, :root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo span { color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .admin-shell .admin-rail-reopen { border-radius: 3px; }
 
-/* ── Scrollbars: chunky, like it's 2001 ── */
+/* ── Calendar: a month control ── */
+:root[data-theme="xp"] .admin-shell .calendar-grid-react { gap: 0; border: 1px solid var(--xp-edit-border); background: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .calendar-day-name { font-size: 11px; letter-spacing: 0; text-transform: none; color: #000000; border-bottom: 1px solid var(--xp-face-dark); background: var(--xp-face); padding: 2px 0; }
+:root[data-theme="xp"] .admin-shell .calendar-cell { border: none; border-right: 1px solid var(--xp-groupbox); border-bottom: 1px solid var(--xp-groupbox); border-radius: 0; background: #FFFFFF; min-height: 64px; padding: 2px 4px; transition: none; }
+:root[data-theme="xp"] .admin-shell .calendar-cell:hover { background: var(--xp-menu); transform: none; box-shadow: none; }
+:root[data-theme="xp"] .admin-shell .calendar-cell.today { background: #FFFFFF; outline: 2px solid var(--xp-sel); outline-offset: -2px; }
+:root[data-theme="xp"] .admin-shell .calendar-cell.today .day-number { color: #000000; font-weight: 700; }
+:root[data-theme="xp"] .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n+1):not(.empty),
+:root[data-theme="xp"] .admin-shell .calendar-grid-react > .calendar-cell:nth-child(7n):not(.empty) { background: #F5F4EE; }
+:root[data-theme="xp"] .admin-shell .calendar-count, :root[data-theme="xp"] .admin-shell .calendar-item { border-radius: 0; font-size: 10px; }
+
+/* ── Chat panel & FAB ── */
+:root[data-theme="xp"] .admin-shell .chat-fab, :root[data-theme="xp"] .admin-shell .admin-mobile-fab { border-radius: 3px; background: var(--xp-caption); border: 1px solid var(--xp-frame); box-shadow: 2px 2px 3px rgba(0,0,0,0.35); }
+:root[data-theme="xp"] .chat-panel { border-radius: 8px 8px 0 0; border: 3px solid var(--xp-frame); border-top: none; background: var(--xp-face); }
+:root[data-theme="xp"] .chat-header { height: 30px; background: var(--xp-caption); color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .chat-msg { border-radius: 0; font-size: 11px; }
+:root[data-theme="xp"] .chat-msg.user { background: var(--xp-sel); color: #FFFFFF; }
+:root[data-theme="xp"] .chat-msg.assistant { background: #FFFFFF; border: 1px solid var(--xp-groupbox); }
+
+/* ── Toasts: balloon tips ── */
+:root[data-theme="xp"] .toast { background: #FFFFE1; color: #000000; border: 1px solid #000000; border-radius: 6px; box-shadow: 2px 2px 3px rgba(0,0,0,0.35); font-size: 11px; }
+
+/* ── Scrollbars ── */
 :root[data-theme="xp"] ::-webkit-scrollbar { width: 17px; height: 17px; }
-:root[data-theme="xp"] ::-webkit-scrollbar-track { background: #F4F3EE; } /* theme-fixed */
-:root[data-theme="xp"] ::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #C6D6FB, #A9C0F5); /* theme-fixed */
-  border: 1px solid #7F9DB9; /* theme-fixed */
-  border-radius: 2px;
-}
+:root[data-theme="xp"] ::-webkit-scrollbar-track { background: #F4F3EE; }
+:root[data-theme="xp"] ::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #C6D6FB, #A9C0F5); border: 1px solid #7F9DB9; border-radius: 2px; }
+:root[data-theme="xp"] ::-webkit-scrollbar-button { background: linear-gradient(180deg, #C6D6FB, #A9C0F5); border: 1px solid #7F9DB9; border-radius: 2px; height: 17px; width: 17px; }
 
-@media (prefers-reduced-motion: reduce) {
-  :root[data-theme="xp"] * { transition-duration: 0.01ms !important; }
+@media (max-width: 768px) {
+  :root[data-theme="xp"] .admin-main { padding: 7px 7px 5rem !important; }
+  :root[data-theme="xp"] .admin-shell .db-card { padding: 7px; }
+  :root[data-theme="xp"] .admin-shell .db-card-title, :root[data-theme="xp"] .admin-shell .db-card-header { margin: 0 -10px 7px; }
 }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="xp"] * { transition-duration: 0.01ms !important; } }

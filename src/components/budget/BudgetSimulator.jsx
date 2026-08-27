@@ -174,7 +174,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
         <button className="btn bud-flex1" onClick={generate} style={{ background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>From bill config</button>
         <button className="btn bud-flex1" onClick={loadFromHabits} style={{ background: transactions.length ? "var(--success-bg)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "var(--success-bg)" : "var(--border-subtle)"}` }}
           title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
-          From my habits {transactions.length ? "✓" : ""}
+          From my habits{transactions.length ? <> <i className="fa-solid fa-check" aria-hidden="true" /></> : null}
         </button>
       </div>
 

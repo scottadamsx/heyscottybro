@@ -274,7 +274,7 @@ export default function DashboardPage() {
         )}
 
         {todayItems.length === 0 && nextFew.length === 0 && anytimeItems.length === 0 && (
-          <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear 🎉</p>
+          <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear.</p>
         )}
         {upcomingAll.length > 4 && (
           <button className="dashboard-expand" onClick={() => setShowWeek(true)}>

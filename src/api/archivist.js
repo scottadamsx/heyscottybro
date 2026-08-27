@@ -1,5 +1,5 @@
 /**
- * Bilbo 📚 — Scott's Archivist. A READ-ONLY retrieval specialist that finds and
+ * Bilbo — Scott's Archivist. A READ-ONLY retrieval specialist that finds and
  * returns information from his planner data + Brain (knowledge graph). Other
  * agents call him through the `consult_archivist` tool when they need context
  * they don't already have, instead of running many query calls themselves; he
@@ -18,7 +18,7 @@ import { toDateStr } from "../utils/plannerUtils";
 export const ARCHIVIST = {
   id: "bilbo",
   name: "Bilbo",
-  emoji: "📚",
+  emoji: "",
   icon: "fa-book-bookmark",
   model: "claude-haiku-4-5-20251001",
   tagline: "Finds anything across your data + Brain",
@@ -33,7 +33,7 @@ const BILBO_TOOLS = ["library_catalog", "query", "list_context", "create_item", 
 export function buildArchivistPrompt() {
   const now = new Date();
   const todayStr = toDateStr(now);
-  return `You are Bilbo 📚 — Scott's Archivist and the keeper of the Brain (his knowledge graph), guardian of the Red Book and every record in heyScottyBro.
+  return `You are Bilbo — Scott's Archivist and the keeper of the Brain (his knowledge graph), guardian of the Red Book and every record in heyScottyBro.
 
 VOICE: precise, unhurried, helpful. A hobbit-scholar who loves a well-kept index. No theatrics — you find what was asked and report it cleanly.
 

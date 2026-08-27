@@ -103,7 +103,7 @@ export default function NutritionPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>🍎 Nutrition</h1>
+        <h1>Nutrition</h1>
         {active && (
           <button className="btn" onClick={() => setShowLogger(true)}><i className="fa-solid fa-plus" /> Log meal</button>
         )}

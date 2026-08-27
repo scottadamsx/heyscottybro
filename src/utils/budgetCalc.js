@@ -240,7 +240,7 @@ export function monthlyCategorySpend(transactions, monthKey) {
 }
 
 // Quantifiable / variable spending envelopes (Groceries, Gas, an allowance like
-// "Maria"…): a category gets a monthly budget either from config.categoryBudgets
+// "Fun"…): a category gets a monthly budget either from config.categoryBudgets
 // OR from a recurring bill flagged `variable`. Returns each one with its budget
 // and month-to-date spend so the dashboard can draw a progress bar instead of a
 // paid/unpaid badge. `editable` is true only for plain category budgets (the

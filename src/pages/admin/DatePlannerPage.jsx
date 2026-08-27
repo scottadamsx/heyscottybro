@@ -9,8 +9,6 @@ import {
 } from "../../api/datePlannerApi";
 import "./dates.css";
 
-const EMOJIS = ["💖", "🍷", "🍿", "🎬", "🥾", "🏖️", "🎨", "🍣", "🎢", "🌃", "🎳", "🕯️", "☕", "🍜", "⛸️", "🎤"];
-
 export default function DatePlannerPage() {
   const [params] = useSearchParams();
   const { addToast } = useToast();
@@ -24,7 +22,6 @@ export default function DatePlannerPage() {
 
   // add-idea form
   const [title, setTitle] = useState("");
-  const [emoji, setEmoji] = useState("💖");
   const [note, setNote] = useState("");
 
   // "mark done" date picker modal
@@ -66,9 +63,9 @@ export default function DatePlannerPage() {
   const addIdea = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const optimistic = { id: `tmp-${Date.now()}`, title: title.trim(), emoji, note: note.trim() };
+    const optimistic = { id: `tmp-${Date.now()}`, title: title.trim(), emoji: "", note: note.trim() };
     setIdeas((prev) => [...prev, optimistic]);
-    setTitle(""); setNote(""); setEmoji("💖");
+    setTitle(""); setNote("");
     try {
       const saved = await addDateIdea({ title: optimistic.title, emoji: optimistic.emoji, note: optimistic.note });
       setIdeas((prev) => prev.map((i) => (i.id === optimistic.id ? saved : i)));
@@ -171,7 +168,7 @@ export default function DatePlannerPage() {
   return (
     <div className="module-page dates-page">
       <div className="module-header">
-        <h1>💕 Date Night</h1>
+        <h1>Date Night</h1>
         <div className="dates-toolbar">
           <span className="db-count dates-count">{ideas.length} on the list · {completed.length} done</span>
           <button className="btn btn-sm btn-secondary-sm" onClick={runSync} disabled={syncing}>
@@ -193,7 +190,7 @@ export default function DatePlannerPage() {
               {ideas.length > 0 && <span className="db-count">{ideas.length} in the pack</span>}
             </div>
             {ideas.length === 0 ? (
-              <p className="no-entries">Add a few ideas below, then open a pack to pick one ✨</p>
+              <p className="no-entries">Add a few ideas below, then open a pack to pick one.</p>
             ) : (
               <div className="pack-stage">
                 <div className={`date-pack ${opening ? "opening" : ""}`} aria-live="polite">
@@ -203,7 +200,7 @@ export default function DatePlannerPage() {
                       <span className="pack-flash">{flash}</span>
                     ) : (
                       <>
-                        <span className="date-pack-spark">✨</span>
+                        <span className="date-pack-spark"><i className="fa-solid fa-gift" aria-hidden="true" /></span>
                         <span className="date-pack-label">A surprise date is waiting</span>
                         <span className="date-pack-sub">{ideas.length} idea{ideas.length !== 1 ? "s" : ""} shuffled inside</span>
                       </>
@@ -225,9 +222,6 @@ export default function DatePlannerPage() {
             </div>
 
             <form className="add-idea-row" onSubmit={addIdea}>
-              <select className="emoji-select" value={emoji} onChange={(e) => setEmoji(e.target.value)} aria-label="Emoji">
-                {EMOJIS.map((em) => <option key={em} value={em}>{em}</option>)}
-              </select>
               <input className="field-grow" placeholder="A date idea…" value={title} onChange={(e) => setTitle(e.target.value)} required aria-label="Date idea" />
               <input className="field-note" placeholder="note (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="Note" />
               <button className="btn btn-sm" type="submit"><i className="fa-solid fa-plus" /> Add</button>
@@ -241,7 +235,6 @@ export default function DatePlannerPage() {
                 <div className="db-list">
                   {ideas.map((i) => (
                     <div className="db-list-item dates-row" key={i.id}>
-                      <span className="dates-row-emoji" aria-hidden="true">{i.emoji || "💖"}</span>
                       <div className="db-list-item-content dates-row-body">
                         <div className="db-list-item-title">{i.title}</div>
                         {i.note && <div className="db-list-item-subtitle">{i.note}</div>}
@@ -262,16 +255,15 @@ export default function DatePlannerPage() {
         <div className="col-6 dates-col">
           <div className="db-card" id="dates-done">
             <div className="db-card-header">
-              <h3 className="db-card-title">Been there 💞</h3>
+              <h3 className="db-card-title">Been there</h3>
               <span className="db-count">{completed.length}</span>
             </div>
             {completed.length === 0 ? (
-              <p className="no-entries">No dates logged yet. Go make some memories 🥰</p>
+              <p className="no-entries">No dates logged yet. Go make some memories.</p>
             ) : (
               <div className="db-list">
                 {completed.map((c) => (
                   <div className="db-list-item dates-row" key={c.id}>
-                    <span className="dates-row-emoji" aria-hidden="true">{c.emoji || "💖"}</span>
                     <div className="db-list-item-content dates-row-body dates-row-body--fixed">
                       <div className="db-list-item-title">{c.title}</div>
                       {c.done_on && <div className="db-list-item-subtitle">{fmtDoneDate(c.done_on)}</div>}
@@ -302,7 +294,7 @@ export default function DatePlannerPage() {
           </div>
           <div className="reveal-card" role="dialog" aria-modal="true" aria-label="Tonight's date">
             <div className="reveal-tag">Tonight&apos;s date</div>
-            <div className="reveal-emoji">{reveal.emoji || "💖"}</div>
+            <div className="reveal-emoji"><i className="fa-solid fa-heart" aria-hidden="true" /></div>
             <div className="reveal-title">{reveal.title}</div>
             {reveal.note && <div className="reveal-note">{reveal.note}</div>}
             <div className="reveal-actions">
@@ -322,12 +314,12 @@ export default function DatePlannerPage() {
       {markingDone && (
         <div className="event-overlay" onClick={(e) => { if (e.target.className === "event-overlay") setMarkingDone(null); }}>
           <div className="event-card" role="dialog" aria-modal="true" aria-label="When did you do this?">
-            <h3>When did you do this? 💞</h3>
-            <div className="dates-modal-subject">{markingDone.emoji} {markingDone.title}</div>
+            <h3>When did you do this?</h3>
+            <div className="dates-modal-subject">{markingDone.title}</div>
             <label className="dates-modal-label" htmlFor="dates-done-on">Date</label>
             <input id="dates-done-on" type="date" value={doneDate} onChange={(e) => setDoneDate(e.target.value)} />
             <div className="budget-widget-actions">
-              <button className="btn" onClick={confirmMarkDone}>✓ Save memory</button>
+              <button className="btn" onClick={confirmMarkDone}>Save memory</button>
               <button className="btn btn-secondary-sm" onClick={() => setMarkingDone(null)}>Cancel</button>
             </div>
           </div>

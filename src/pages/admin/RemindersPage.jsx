@@ -131,10 +131,10 @@ export default function RemindersPage() {
       </span>
       <span>
         <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r.id)}>
-          ✓ Done
+          Done
         </button>
         <button type="button" className="btn-sm btn-delete" onClick={() => handleDelete(r.id)}>
-          ✕
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
         </button>
       </span>
     </div>
@@ -249,7 +249,7 @@ export default function RemindersPage() {
         <div className="tasks-list">
           <div className="db-card">
             <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Active ({active.length})</h3>
-            {active.length === 0 && <p className="no-entries">No active tasks. All clear! 🎉</p>}
+            {active.length === 0 && <p className="no-entries">No active tasks. All clear.</p>}
             {active.map(renderTask)}
           </div>
 

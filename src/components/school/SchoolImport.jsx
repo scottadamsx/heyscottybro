@@ -120,7 +120,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
     try {
       for (const [i, d] of (out.deadlines || []).entries()) {
         if (!checks[`d${i}`]) continue;
-        await newReminder({ name: `🎓 ${d.name}`, date: d.date, course_id: course.id, description: d.detail || `${course.code} — from imported document` });
+        await newReminder({ name: `${d.name}`, date: d.date, course_id: course.id, description: d.detail || `${course.code} — from imported document` });
         made++;
       }
       for (const [i, g] of (out.grade_updates || []).entries()) {

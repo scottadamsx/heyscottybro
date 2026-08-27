@@ -78,10 +78,9 @@ export default function AccountabilitySummary() {
             return (
               <div className="db-list-item" key={t.id}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0 }}>
-                  <span style={{ fontSize: "1.1rem" }}>{t.emoji}</span>
-                  <div className="db-list-item-content">
+                                    <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
-                    <div className="db-list-item-subtitle">🔥 {streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</div>
+                    <div className="db-list-item-subtitle">{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</div>
                   </div>
                 </div>
                 <button
@@ -89,7 +88,7 @@ export default function AccountabilitySummary() {
                   style={done ? {} : { background: "var(--bg-raised)", color: "var(--text-primary)" }}
                   onClick={() => logToday(t)}
                 >
-                  {t.mode === "check" ? (done ? "✓ Done" : "Mark done") : "+ Log"}
+                  {t.mode === "check" ? (done ? "Done" : "Mark done") : "+ Log"}
                 </button>
               </div>
             );

@@ -41,7 +41,7 @@ export default function RecipesPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>👨‍🍳 Recipes</h1>
+        <h1>Recipes</h1>
         <button className="btn" onClick={() => setShowBuilder(true)}><i className="fa-solid fa-plus" /> New recipe</button>
       </div>
 

@@ -53,7 +53,7 @@ const TABS = [
   { key: "transactions", label: "Transactions",   icon: "fa-list-ul" },
   { key: "bills",        label: "Bills & Income", icon: "fa-file-invoice-dollar" },
   { key: "receipts",     label: "Receipts",       icon: "fa-receipt" },
-  { key: "banker",       label: "🧌 Banker" },
+  { key: "banker",       label: "Banker" },
   { key: "tools",        label: "Tools",          icon: "fa-flask" },
 ];
 

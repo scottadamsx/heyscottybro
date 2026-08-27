@@ -3,7 +3,6 @@ import { createProfile, updateProfile, deleteProfile } from "../../api/nutrition
 import { toKg, toLb } from "../../utils/nutrition";
 import { useConfirm } from "../../hooks/useConfirm";
 
-const EMOJIS = ["🙂", "💪", "🏃", "🧗", "🥗", "🍳", "👩", "👨", "🐻", "🦊", "🌟", "🔥"];
 const COLORS = ["#6366f1", "#22c55e", "#ec4899", "#f59e0b", "#38bdf8", "#a855f7"];
 const ACTIVITY = [
   { key: "sedentary", label: "Sedentary (little exercise)" },
@@ -14,7 +13,7 @@ const ACTIVITY = [
 ];
 
 const blank = () => ({
-  name: "", emoji: "🙂", color: "#6366f1", sex: "male", height_cm: "",
+  name: "", emoji: "", color: "#6366f1", sex: "male", height_cm: "",
   birth_year: "", activity_level: "moderate", goal: "maintain",
   target_calories: "", start_weight_kg: "", goal_weight_kg: "",
 });
@@ -33,7 +32,7 @@ export default function ProfileBar({ profiles, activeId, onSelect, onChanged, un
               style={p.id === activeId ? { borderColor: p.color, boxShadow: `0 0 0 1px ${p.color}` } : undefined}
               onClick={() => onSelect(p.id)}
             >
-              <span className="nut-profile-emoji">{p.emoji}</span> {p.name}
+              {p.name}
             </button>
           ))}
           <button className="nut-profile-chip ghost" onClick={() => setEditing(blank())} title="Add profile">
@@ -139,11 +138,6 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
             </select>
           </div>
 
-          <div className="nut-pick-row">
-            {EMOJIS.map((em) => (
-              <button type="button" key={em} className={`nut-pick ${form.emoji === em ? "on" : ""}`} onClick={() => set("emoji", em)}>{em}</button>
-            ))}
-          </div>
           <div className="nut-pick-row">
             {COLORS.map((c) => (
               <button type="button" key={c} className={`nut-pick-color ${form.color === c ? "on" : ""}`} style={{ background: c }} onClick={() => set("color", c)} />

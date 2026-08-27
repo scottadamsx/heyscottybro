@@ -4,7 +4,6 @@ import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, saveAccountability } from "../../api/accountabilityApi";
 import DatePicker from "../../components/DatePicker";
 
-const EMOJIS = ["🔥", "🏋️", "🏃", "🧘", "📚", "💧", "🥗", "💸", "🛌", "🧹", "🎸", "💖", "☕", "🚭", "✍️", "🙏"];
 const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -61,7 +60,7 @@ export default function AccountabilityPage() {
   const { trackers, logs } = data;
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", emoji: "🔥", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
+  const [form, setForm] = useState({ name: "", emoji: "", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
   const [detailId, setDetailId] = useState(null);
 
   const todayStr = toDateStr(new Date());
@@ -95,7 +94,7 @@ export default function AccountabilityPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     update((d) => { d.trackers.push({ id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr }); return d; });
-    setForm({ name: "", emoji: "🔥", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
+    setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
     setShowAdd(false);
   };
   const deleteTracker = (id) => {
@@ -161,7 +160,7 @@ export default function AccountabilityPage() {
             <button className="btn btn-sm btn-secondary-sm" onClick={() => setDetailId(null)}>
               <i className="fa-solid fa-arrow-left" /> Back
             </button>
-            <span style={{ fontSize: "1.5rem" }}>{t.emoji}</span>
+            
             <h2 style={{ margin: 0 }}>{t.name}</h2>
           </div>
         </div>
@@ -169,7 +168,7 @@ export default function AccountabilityPage() {
         <div className="acc-detail-stats">
           <div className="acc-stat-pill"><b>{st.total}</b><span>total</span></div>
           <div className="acc-stat-pill"><b>{st.weekCount}</b><span>this week</span></div>
-          <div className="acc-stat-pill"><b>{st.streak}🔥</b><span>streak</span></div>
+          <div className="acc-stat-pill"><b>{st.streak}</b><span>day streak</span></div>
         </div>
 
         <div className="db-card" style={{ "--acc-color": t.color, marginBottom: "1rem" }}>
@@ -196,7 +195,7 @@ export default function AccountabilityPage() {
                       key={ds}
                       className={`acc-hist-dot${isToday ? " today" : ""}${future ? " future" : ""}`}
                       style={{ background: on ? t.color : undefined, opacity: future ? 0.2 : on ? opacity : undefined }}
-                      title={`${ds}${on ? ` · ${cnt > 1 ? cnt + "×" : "✓"}` : ""}`}
+                      title={`${ds}${on ? ` · ${cnt > 1 ? cnt + "x" : "done"}` : ""}`}
                     />
                   );
                 })}
@@ -247,7 +246,7 @@ export default function AccountabilityPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>🔥 Accountability</h1>
+        <h1>Accountability</h1>
         <button className="btn" onClick={() => setShowAdd((s) => !s)}>
           <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} /> {showAdd ? "Close" : "New Tracker"}
         </button>
@@ -256,10 +255,7 @@ export default function AccountabilityPage() {
       {showAdd && (
         <form className="form-card" onSubmit={addTracker} style={{ maxWidth: 520 }}>
           <div className="form-row">
-            <select className="emoji-select" value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} aria-label="Emoji">
-              {EMOJIS.map((em) => <option key={em} value={em}>{em}</option>)}
-            </select>
-            <input className="field-grow" placeholder="Track what? (e.g. Gym, Saw Maria)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus required />
+            <input className="field-grow" placeholder="Track what? (e.g. Gym, Read, Journal)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus required />
           </div>
           <div className="color-picker">
             {COLORS.map((c) => (
@@ -291,7 +287,7 @@ export default function AccountabilityPage() {
           return (
             <div className="acc-card" id={`acc-${t.id}`} key={t.id} style={{ "--acc-color": t.color }}>
               <div className="acc-card-top" style={{ cursor: "pointer" }} onClick={() => setDetailId(t.id)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setDetailId(t.id)}>
-                <span className="acc-emoji">{t.emoji}</span>
+                
                 <div className="acc-card-name">{t.name}</div>
                 <button className="icon-x sm" onClick={(e) => { e.stopPropagation(); deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
               </div>
@@ -299,7 +295,7 @@ export default function AccountabilityPage() {
               <div className="acc-stats">
                 <div className="acc-big"><b>{st.total}</b><span>total</span></div>
                 <div className="acc-sub"><b>{st.weekCount}</b><span>this week</span></div>
-                <div className="acc-sub"><b>{st.streak}🔥</b><span>streak</span></div>
+                <div className="acc-sub"><b>{st.streak}</b><span>day streak</span></div>
               </div>
 
               <div className="acc-week">

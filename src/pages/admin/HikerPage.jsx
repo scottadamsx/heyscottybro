@@ -124,7 +124,7 @@ export default function HikerPage() {
   return (
     <div className="module-page">
       <div className="module-header">
-        <h1>⛰️ SJHC Hiker Database</h1>
+        <h1>SJHC Hiker Database</h1>
       </div>
 
       {/* Hike Name Modal */}
@@ -162,7 +162,7 @@ export default function HikerPage() {
         onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
       >
         <input ref={fileRef} type="file" accept=".csv" multiple hidden onChange={e => handleFiles(e.target.files)} />
-        <div className="hiker-drop-icon">{importing ? "⏳" : "📂"}</div>
+        <div className="hiker-drop-icon"><i className={`fa-solid ${importing ? "fa-spinner fa-spin" : "fa-folder-open"}`} aria-hidden="true" /></div>
         <div className="hiker-drop-text">{importing ? "Importing…" : "Drop CSV files here or tap to upload"}</div>
         <div className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</div>
       </div>
@@ -183,11 +183,11 @@ export default function HikerPage() {
             </div>
             <div className="hiker-import-card">
               <div className="hiker-import-num" style={{ color: "var(--green)" }}>{importResult.first_timers}</div>
-              <div className="hiker-import-label">🆕 First Timers</div>
+              <div className="hiker-import-label">First Timers</div>
             </div>
             <div className="hiker-import-card">
               <div className="hiker-import-num" style={{ color: "var(--orange)" }}>{importResult.returning}</div>
-              <div className="hiker-import-label">🔄 Returning</div>
+              <div className="hiker-import-label">Returning</div>
             </div>
           </div>
           <button className="btn" style={{ marginTop: "0.75rem" }} onClick={() => { setView("members"); setImportResult(null); }}>
@@ -224,7 +224,7 @@ export default function HikerPage() {
 
           {stats.topHikers.length > 0 && (
             <div className="db-card">
-              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>🏆 Most Active Hikers</h3>
+              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Most Active Hikers</h3>
               {stats.topHikers.map((h, i) => (
                 <div key={i} className="completed-item">
                   <span style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -255,7 +255,7 @@ export default function HikerPage() {
               {sorted.length} result{sorted.length !== 1 ? "s" : ""}
             </span>
             <button className="btn-sm btn-secondary-sm btn" onClick={() => exportCSV(sorted)}>
-              📥 Export
+              <i className="fa-solid fa-download" aria-hidden="true" /> Export
             </button>
           </div>
 
@@ -298,7 +298,7 @@ export default function HikerPage() {
       {/* Hike History List */}
       {view === "history" && (
         <div className="db-card">
-          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>🗓️ Hike History</h3>
+          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Hike History</h3>
           {hikes.length === 0 && (
             <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>No hikes recorded yet. Import a CSV to get started.</p>
           )}
@@ -342,7 +342,7 @@ export default function HikerPage() {
                 onClick={copyEmails}
                 disabled={hikeAttendees.filter(m => m.email).length === 0}
               >
-                {copyAnim ? "✓ Copied!" : "📋 Copy Emails"}
+                {copyAnim ? "Copied!" : "Copy Emails"}
               </button>
             </div>
 

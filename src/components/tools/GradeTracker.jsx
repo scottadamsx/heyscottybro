@@ -81,7 +81,7 @@ export default function GradeTracker({ courseId = null, courseCode = "" } = {}) 
     for (const item of plan.action_items) {
       const d = new Date(today); d.setDate(d.getDate() + (Number(item.offset_days) || 0));
       try {
-        await newReminder({ name: `📚 ${item.title}`, date: toDateStr(d), description: item.detail || "Catch-up task from your Grade Tracker plan." });
+        await newReminder({ name: `${item.title}`, date: toDateStr(d), description: item.detail || "Catch-up task from your Grade Tracker plan." });
         made++;
       } catch { /* keep going */ }
     }

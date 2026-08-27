@@ -257,7 +257,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                         </td>
                         <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                           {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "var(--warn-bg)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
-                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>✓ Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
+                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
                           <div className="bud-actions">

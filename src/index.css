@@ -4020,9 +4020,7 @@ input, textarea, select { font-family: inherit; }
 .wt-profile-btn { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px; border: none; background: none; color: var(--text-muted); font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s; }
 .wt-profile-btn.active { background: var(--bg-card); color: var(--text-primary); }
 .wt-profile-btn.scott .wt-profile-dot { background: #e8915b; box-shadow: 0 0 8px #e8915b88; } /* theme-fixed */
-.wt-profile-btn.maria .wt-profile-dot { background: #b68bd6; box-shadow: 0 0 8px #b68bd688; } /* theme-fixed */
 .wt-profile-btn.scott.active { background: #e8915b18; color: #e8915b; } /* theme-fixed */
-.wt-profile-btn.maria.active { background: #b68bd618; color: #b68bd6; } /* theme-fixed */
 .wt-profile-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
 
 /* Tabs */

@@ -374,7 +374,7 @@ export default function ProjectsPage() {
                     </div>
                     <DocLinks entityType="initiative" entityId={i.id} title="Documents" compact />
                   </div>
-                  <button className="btn-sm btn-delete" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected))}>✕</button>
+                  <button className="btn-sm btn-delete" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected))}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               ))}
             </div>
@@ -401,7 +401,7 @@ export default function ProjectsPage() {
                   onClick={() => setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id)}>
                   {editingAutoTasks === et.id ? "Done" : "Edit Tasks"}
                 </button>
-                <button className="btn-sm btn-delete" onClick={() => deleteEventType(et.id).then(loadAll)}>✕</button>
+                <button className="btn-sm btn-delete" onClick={() => deleteEventType(et.id).then(loadAll)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
               {(et.auto_tasks || []).length > 0 && (
                 <div className="auto-tasks-list">
@@ -412,7 +412,7 @@ export default function ProjectsPage() {
                       </span>
                       <span className="auto-task-name">{task.name}</span>
                       {editingAutoTasks === et.id && (
-                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, idx)}>✕</button>
+                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, idx)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                       )}
                     </div>
                   ))}

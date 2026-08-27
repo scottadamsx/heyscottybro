@@ -63,7 +63,7 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
       {/* Unreconciled */}
       <p className="bud-sh bud-sh-tight" style={{ marginTop: 18 }}>Unreconciled ({unreconciled.length})</p>
       {unreconciled.length === 0
-        ? <p className="bud-muted-13">All clear — everything reconciled! ✓</p>
+        ? <p className="bud-muted-13">All clear — everything reconciled.</p>
         : <>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>

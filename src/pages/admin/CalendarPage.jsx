@@ -364,7 +364,7 @@ export default function CalendarPage() {
           style={showCompleted ? { background: "var(--accent)", color: "#fff", border: "none" } : {}}
           onClick={() => setFilter("fc", showCompleted ? "0" : "1")}
         >
-          ✓ Done
+          Done
         </button>
 
         {(filterProject || filterKind !== "all" || !showCompleted) && (
@@ -546,7 +546,7 @@ export default function CalendarPage() {
                     <div className="day-item" key={tracker.id}>
                       <span className="day-item-dot" style={{ background: tracker.color || "var(--accent)" }} />
                       <div className="day-item-body">
-                        <div className="day-item-title">{tracker.emoji} {tracker.name}</div>
+                        <div className="day-item-title">{tracker.name}</div>
                       </div>
                       {count > 1
                         ? <span className="day-count">{count}×</span>
@@ -589,7 +589,7 @@ export default function CalendarPage() {
                     <div className="day-item" key={d.id}>
                       <span className="day-item-dot" style={{ background: "var(--accent)" }} />
                       <div className="day-item-body">
-                        <div className="day-item-title">{d.emoji} {d.title}</div>
+                        <div className="day-item-title">{d.title}</div>
                         {(d.memory || d.note) && <div className="day-item-sub">{d.memory || d.note}</div>}
                       </div>
                     </div>

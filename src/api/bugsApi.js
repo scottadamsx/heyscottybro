@@ -228,10 +228,10 @@ export async function exportBugsZip() {
     ``,
     `_Exported ${reportDate} — ${bugCount} bug${bugCount === 1 ? "" : "s"}, ${featCount} feature request${featCount === 1 ? "" : "s"}, ${shotCount} screenshot${shotCount === 1 ? "" : "s"}._`,
     ``,
-    `## 🐞 Bugs (${bugCount})`,
+    `## Bugs (${bugCount})`,
     ``,
     bugCount ? bugMd.join("\n") : "_None._\n",
-    `## ✨ Feature requests (${featCount})`,
+    `## Feature requests (${featCount})`,
     ``,
     featCount ? featMd.join("\n") : "_None._\n",
   ].join("\n");

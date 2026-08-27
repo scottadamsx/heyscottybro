@@ -65,15 +65,15 @@ export function DesignFigure() {
     <Figure caption="show 2–3 apps you love + 1 you hate → your look gets pulled from the real pictures">
       <div className="lp-refs">
         <div className="lp-ref-item">
-          <div className="lp-ref" style={{ background: "linear-gradient(135deg,#143a2a,#0f261c)" }}>🌿</div>
+          <div className="lp-ref" style={{ background: "linear-gradient(135deg,#143a2a,#0f261c)" }}><i className="fa-solid fa-leaf" aria-hidden="true" /></div>
           <div className="lp-ref-label">love it</div>
         </div>
         <div className="lp-ref-item">
-          <div className="lp-ref" style={{ background: "linear-gradient(135deg,#1a2238,#121a2e)" }}>📱</div>
+          <div className="lp-ref" style={{ background: "linear-gradient(135deg,#1a2238,#121a2e)" }}><i className="fa-solid fa-mobile-screen" aria-hidden="true" /></div>
           <div className="lp-ref-label">love it</div>
         </div>
         <div className="lp-ref-item">
-          <div className="lp-ref" style={{ background: "repeating-linear-gradient(45deg,#3a1a1a,#3a1a1a 6px,#2a1212 6px,#2a1212 12px)" }}>🚫</div>
+          <div className="lp-ref" style={{ background: "repeating-linear-gradient(45deg,#3a1a1a,#3a1a1a 6px,#2a1212 6px,#2a1212 12px)" }}><i className="fa-solid fa-ban" aria-hidden="true" /></div>
           <div className="lp-ref-label">hate it</div>
         </div>
         <i className="fa-solid fa-arrow-right lp-refs-arrow" />
@@ -128,12 +128,12 @@ export function ScreensFigure() {
         <div className="lp-screen">
           <div className="lp-screen-bar"><span /><span /><span /></div>
           <div className="lp-screen-body"><i className="fa-solid fa-list" /></div>
-          <div className="lp-screen-tag"><span className="ok">✓ tested</span></div>
+          <div className="lp-screen-tag"><span className="ok">tested</span></div>
         </div>
         <div className="lp-screen">
           <div className="lp-screen-bar"><span /><span /><span /></div>
           <div className="lp-screen-body"><i className="fa-solid fa-plus" /></div>
-          <div className="lp-screen-tag"><span className="ok">✓ tested</span></div>
+          <div className="lp-screen-tag"><span className="ok">tested</span></div>
         </div>
         <div className="lp-screen building">
           <div className="lp-screen-bar"><span /><span /><span /></div>

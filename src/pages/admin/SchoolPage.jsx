@@ -86,7 +86,7 @@ export default function SchoolPage() {
   const addDeadline = async () => {
     if (!dl.name.trim()) { addToast("Name the deadline.", "error"); return; }
     try {
-      await newReminder({ name: `🎓 ${dl.name.trim()}`, date: dl.date, course_id: deadlineFor.id, description: `${deadlineFor.code} deadline` });
+      await newReminder({ name: `${dl.name.trim()}`, date: dl.date, course_id: deadlineFor.id, description: `${deadlineFor.code} deadline` });
       addToast(`Deadline added — it's on your Plan too.`, "success");
       setDeadlineFor(null); setDl({ name: "", date: toDateStr(new Date()) });
       refresh();

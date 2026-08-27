@@ -1,5 +1,5 @@
 // src/api/contextApi.js
-// Shared context store — facts worth remembering about Scott & Maria.
+// Shared context store — facts worth remembering about Scott.
 // Backed by Supabase (context_entries) as the SINGLE source of truth.
 // No localStorage fallback: if the DB is unreachable the error is surfaced,
 // never silently masked with stale local data.
@@ -106,7 +106,7 @@ export async function refineContextEntry(raw) {
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 300,
-      system: "You clean up notes for a personal memory store about Scott and his partner Maria. Rewrite the note as a clear, concise third-person fact: fix typos, drop filler like 'remember that', and keep every concrete detail. Tag the people involved (Scott, Maria) plus topics.",
+      system: "You clean up notes for a personal memory store about Scott. Rewrite the note as a clear, concise third-person fact: fix typos, drop filler like 'remember that', and keep every concrete detail. Tag the people involved plus topics.",
       tools: [REFINE_TOOL],
       tool_choice: { type: "tool", name: "save_fact" },
       messages: [{ role: "user", content: raw }],

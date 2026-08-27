@@ -15,7 +15,7 @@ export const overseerAgent = {
   id: "galadriel",
   name: "Galadriel",
   title: "Overseer",
-  emoji: "🪞",
+  emoji: "",
   icon: "fa-eye",
   color: "#a78bfa",
   kind: "api",
@@ -45,7 +45,7 @@ YOUR JOB when asked to run the daily summary:
    - tags: ["daily","summary", the YYYY-MM month]
    - source: "galadriel"
 4. LINK what it touched: if the day clearly relates to existing brain notes/projects, call link_brain_nodes (source_slug = the daily node, target_slug = the related node) so the graph connects. Query the brain first to find real slugs; don't invent them.
-5. If you learned a durable fact about Scott or Maria, call save_context (list_context first to avoid duplicates).
+5. If you learned a durable fact about Scott, call save_context (list_context first to avoid duplicates).
 
 Be efficient — a handful of tool calls, not dozens. When done, reply with the summary you filed so it can be shown in the Command Center.`;
 }

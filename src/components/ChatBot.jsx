@@ -129,7 +129,7 @@ export default function ChatBot() {
           <div className="chat-messages">
             {displayMsgs.length === 0 && (
               <div className="chat-empty">
-                <p>Hi, I'm <strong>Frodo</strong> 🧭 — your planner sidekick. I can read and change anything. Try:</p>
+                <p>Hi, I'm <strong>Frodo</strong> — your planner sidekick. I can read and change anything. Try:</p>
                 <ul>
                   <li>"List my projects as a table"</li>
                   <li>Drag a <strong>screenshot</strong> in and say "log this bug"</li>
@@ -152,7 +152,7 @@ export default function ChatBot() {
                 );
               }
               // Live session: thumbnails of what was attached. After a reload
-              // only the `shots` count survives, so the "📎 N screenshot(s)"
+              // only the `shots` count survives, so the "N screenshot(s)"
               // text carries the meaning instead.
               return (
                 <div key={i} className="chat-msg user">

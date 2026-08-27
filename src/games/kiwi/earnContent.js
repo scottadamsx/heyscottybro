@@ -450,7 +450,7 @@ function kiwiQuestion(spec) {
     .kq-go.on{opacity:1;pointer-events:auto}
   </style>
   <div class="wrap"><div class="kq">
-    <span class="kq-badge">\u{1F95D} Kiwi Question</span>
+    <span class="kq-badge">Kiwi Question</span>
     <div class="kq-q" id="kqq"></div>
     <div class="kq-sub">Helps tune what you see \xB7 totally optional</div>
     <div id="kqbody"></div>
@@ -464,7 +464,7 @@ function kiwiQuestion(spec) {
     KM.qType=S.type;KM.qTarget=S.target||'';
     function enableGo(){go.classList.add('on');}
     if(S.type==='rating'){
-      var sc=document.createElement('div');sc.className='kq-scale';var faces=['\u{1F61E}','\u{1F615}','\u{1F610}','\u{1F642}','\u{1F60D}'];
+      var sc=document.createElement('div');sc.className='kq-scale';var faces=['1','2','3','4','5'];
       faces.forEach(function(f,i){var b=document.createElement('button');b.className='kq-face';b.textContent=f;b.addEventListener('click',function(){for(var k=0;k<sc.children.length;k++)sc.children[k].classList.remove('sel');b.classList.add('sel');KM.qRating=i+1;enableGo();if(i+1<=3&&S.whyOptions&&S.whyOptions.length){why.classList.add('on');}else{why.classList.remove('on');}});sc.appendChild(b);});
       body.appendChild(sc);
       (S.whyOptions||[]).forEach(function(o){var b=document.createElement('button');b.className='kq-pill';b.textContent=o;b.addEventListener('click',function(){for(var k=0;k<whyo.children.length;k++)whyo.children[k].classList.remove('sel');b.classList.add('sel');KM.qChoice=o;});whyo.appendChild(b);});

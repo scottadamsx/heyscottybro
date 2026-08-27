@@ -51,7 +51,7 @@ export default function ScottyView({ state, onUpdate }) {
           <div>
             <div className="wt-card-title">Today</div>
             <div className="wt-card-sub">
-              Cap is <strong>{effectiveCap.toFixed(2)}g</strong> flower (~{FLOWER_THC_PCT}% THC) — shared with Maria, joints + pen hits counted together.
+              Cap is <strong>{effectiveCap.toFixed(2)}g</strong> flower (~{FLOWER_THC_PCT}% THC) — joints + pen hits counted together.
             </div>
           </div>
           {s.taperEnabled && s.taperStart && (
@@ -92,12 +92,12 @@ export default function ScottyView({ state, onUpdate }) {
           <div className="wt-today-types">
             {todayLogs.filter(l => !l.type || l.type === "joint").length > 0 && (
               <span className="wt-type-chip joint">
-                🌿 {todayLogs.filter(l => !l.type || l.type === "joint").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g joints
+                {todayLogs.filter(l => !l.type || l.type === "joint").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g joints
               </span>
             )}
             {todayLogs.filter(l => l.type === "pen").length > 0 && (
               <span className="wt-type-chip pen">
-                💨 {todayLogs.filter(l => l.type === "pen").reduce((a,l)=>a+(l.penHits||0),0)} hits
+                {todayLogs.filter(l => l.type === "pen").reduce((a,l)=>a+(l.penHits||0),0)} hits
                 {" "}(≈{todayLogs.filter(l => l.type === "pen").reduce((a,l)=>a+(l.grams||0),0).toFixed(2)}g)
               </span>
             )}
@@ -122,7 +122,7 @@ export default function ScottyView({ state, onUpdate }) {
         <div className="wt-ctrl">
           <div>
             <div className="wt-ctrl-label">Shared daily cap</div>
-            <div className="wt-ctrl-sub">grams per day — same limit for you and Maria</div>
+            <div className="wt-ctrl-sub">grams per day — your daily limit</div>
           </div>
           <div className="wt-stepper">
             <button onClick={() => onUpdate(d => { d.sharedDailyCapG = Math.max(0.25, +(d.sharedDailyCapG - 0.25).toFixed(2)); })}>−</button>
@@ -189,7 +189,7 @@ export default function ScottyView({ state, onUpdate }) {
           <ul className="wt-hist">
             {[...s.logs].reverse().slice(0, 25).map(l => (
               <li key={l.id} className="wt-hist-item">
-                <span className="wt-hist-ic">{l.type === "pen" ? "💨" : "🌿"}</span>
+                <span className="wt-hist-ic">{l.type === "pen" ? "pen" : "joint"}</span>
                 <span className="wt-hist-desc">
                   {l.type === "pen"
                     ? `${l.penHits} hit${l.penHits !== 1 ? "s" : ""} · ≈${(l.grams || 0).toFixed(2)}g`
@@ -198,7 +198,7 @@ export default function ScottyView({ state, onUpdate }) {
                 <span className="wt-hist-time">{timeAgo(l.ts)}</span>
                 <button className="wt-hist-del"
                   onClick={() => onUpdate(d => { d.scott.logs = d.scott.logs.filter(x => x.id !== l.id); })}>
-                  ✕
+                  <i className="fa-solid fa-xmark" />
                 </button>
               </li>
             ))}
@@ -217,10 +217,10 @@ export default function ScottyView({ state, onUpdate }) {
             <div className="wt-modal-body">
               <div className="wt-log-type-toggle">
                 <button className={`wt-log-type-btn${logType === "joint" ? " active" : ""}`} onClick={() => setLogType("joint")}>
-                  🌿 Joint (grams)
+                  Joint (grams)
                 </button>
                 <button className={`wt-log-type-btn${logType === "pen" ? " active pen" : ""}`} onClick={() => setLogType("pen")}>
-                  💨 Pen hit
+                  Pen hit
                 </button>
               </div>
 

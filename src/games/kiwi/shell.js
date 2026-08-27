@@ -94,9 +94,7 @@ export const SHELL_HEAD = `<meta charset="utf-8"><meta name="viewport" content="
   /* Small pill chip (best-tile, pairs-progress, etc.) */
   .k-chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);color:var(--clay-d);
           font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:5px 10px;border-radius:999px}
-  /* Earn button as a chip: locked (🔒) -> claimable (🥝, soft glow the moment it unlocks). */
-  .k-earnbtn::before{content:'\\1F512 ';margin-right:6px;font-size:11px;vertical-align:1px;opacity:.85}
-  .k-earnbtn:not(:disabled)::before{content:'\\1F95D '}
+  /* Earn button as a chip: locked -> claimable (soft glow the moment it unlocks). */
   .k-earnbtn.k-earn-ready{animation:kglowpulse 900ms ease-out}
   @keyframes kglowpulse{0%{box-shadow:0 0 0 0 rgba(217,119,87,.55)}70%{box-shadow:0 0 0 14px rgba(217,119,87,0)}100%{box-shadow:0 0 0 0 rgba(217,119,87,0)}}
   /* Press-down feedback for interactive controls. */

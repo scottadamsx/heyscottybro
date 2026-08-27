@@ -117,7 +117,7 @@ function generateInsights(periodHistory, trends, projection, lastIncome) {
 }
 
 const INSIGHT_META = {
-  success: { cls: "bud-insight-success", icon: "✓" },
+  success: { cls: "bud-insight-success", icon: <i className="fa-solid fa-check" aria-hidden="true" /> },
   warning: { cls: "bud-insight-warning", icon: "!" },
   danger:  { cls: "bud-insight-danger",  icon: "↑" },
   info:    { cls: "bud-insight-info",    icon: "i" },
@@ -134,7 +134,7 @@ export default function BudgetAnalytics({ config, transactions, startingBalance 
   if (!transactions.length) {
     return (
       <div style={{ textAlign: "center", padding: "4rem 1rem", color: "var(--text-muted)" }}>
-        <div style={{ fontSize: 36, marginBottom: 14 }}>📊</div>
+        <div style={{ fontSize: 36, marginBottom: 14 }}><i className="fa-solid fa-chart-column" aria-hidden="true" /></div>
         <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 15 }}>Nothing to show yet</div>
         <div style={{ fontSize: 13, maxWidth: 280, margin: "0 auto" }}>Log a few transactions across two pay periods and your spending habits will appear here automatically.</div>
       </div>

@@ -280,7 +280,7 @@ export default function CommandCenterPage() {
                                 ))}
                               </div>
                             )}
-                            {!m.images?.length && m.shots > 0 && <span className="cmd-msg-meta">📎 {m.shots} screenshot{m.shots === 1 ? "" : "s"} </span>}
+                            {!m.images?.length && m.shots > 0 && <span className="cmd-msg-meta"><i className="fa-solid fa-paperclip" aria-hidden="true" /> {m.shots} screenshot{m.shots === 1 ? "" : "s"} </span>}
                             {m.text && <span>{m.text}</span>}
                           </>
                         )}

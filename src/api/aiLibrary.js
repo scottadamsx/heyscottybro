@@ -84,7 +84,7 @@ const COLLECTIONS = {
     load: async () => (await loadAccountability()).trackers,
     create: async (data) => {
       const state = await loadAccountability();
-      const tracker = { id: crypto.randomUUID(), name: data.name, emoji: data.emoji || "🔥", color: "var(--accent)", mode: data.mode || "check", created: toDateStr(new Date()) };
+      const tracker = { id: crypto.randomUUID(), name: data.name, emoji: data.emoji || "", color: "var(--accent)", mode: data.mode || "check", created: toDateStr(new Date()) };
       await saveAccountability({ ...state, trackers: [...state.trackers, tracker] });
       return tracker;
     },

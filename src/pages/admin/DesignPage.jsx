@@ -328,7 +328,7 @@ function ComponentGallery({ values }) {
         <button className="btn">Primary</button>
         <button className="btn btn-sm">Primary small</button>
         <button className="btn btn-sm btn-secondary-sm">Secondary</button>
-        <button className="btn-sm btn-complete">✓ Done</button>
+        <button className="btn-sm btn-complete">Done</button>
         <button className="btn-sm btn-delete">Delete</button>
         <button className="btn" disabled>Disabled</button>
       </GallerySection>

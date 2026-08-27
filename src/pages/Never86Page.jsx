@@ -4,12 +4,12 @@ import { ease } from "../lib/motion";
 import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const FEATURES = [
-  { icon: "📋", title: "Order Management", desc: "Streamlined ticket flow from table to kitchen to delivery." },
-  { icon: "🗣️", title: "Staff Communication", desc: "Real-time messaging between FOH, BOH, and management." },
-  { icon: "📊", title: "Analytics", desc: "Revenue, waste, and performance insights at a glance." },
-  { icon: "🎛️", title: "Custom POS", desc: "Built around your menu — not the other way around." },
-  { icon: "📱", title: "Mobile Ready", desc: "Works on any device, anywhere on the floor." },
-  { icon: "🔗", title: "Integrations", desc: "Connects with the tools your restaurant already uses." },
+  { icon: "fa-clipboard-list", title: "Order Management", desc: "Streamlined ticket flow from table to kitchen to delivery." },
+  { icon: "fa-comments", title: "Staff Communication", desc: "Real-time messaging between FOH, BOH, and management." },
+  { icon: "fa-chart-column", title: "Analytics", desc: "Revenue, waste, and performance insights at a glance." },
+  { icon: "fa-sliders", title: "Custom POS", desc: "Built around your menu — not the other way around." },
+  { icon: "fa-mobile-screen", title: "Mobile Ready", desc: "Works on any device, anywhere on the floor." },
+  { icon: "fa-link", title: "Integrations", desc: "Connects with the tools your restaurant already uses." },
 ];
 
 export default function Never86Page() {
@@ -74,7 +74,7 @@ export default function Never86Page() {
             <motion.div className="lp-feature" key={f.title}
               initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, ease: ease.out, delay: (i % 3) * 0.06 }}>
-              <div className="lp-feature-icon">{f.icon}</div>
+              <div className="lp-feature-icon"><i className={`fa-solid ${f.icon}`} aria-hidden="true" /></div>
               <div className="lp-feature-title">{f.title}</div>
               <div className="lp-feature-desc">{f.desc}</div>
             </motion.div>
