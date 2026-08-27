@@ -95,14 +95,19 @@ export async function loadReminders() {
 }
 
 export async function newReminder({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id }) {
-  const base = { name, date: date || null, recurrence: recurrence || "none", completed: false };
+  const base = {
+    name,
+    date: date || null,
+    recurrence: recurrence || "none",
+    completed: false,
+    show_on_calendar: show_on_calendar !== false,
+  };
   if (project_id) base.project_id = project_id;
   if (course_id) base.course_id = course_id;
   if (recur_until) base.recur_until = recur_until;
   if (recur_times) base.recur_times = Number(recur_times);
   if (time) base.time = time;
   if (description) base.description = description;
-  if (show_on_calendar === false) base.show_on_calendar = false;
   const result = await op(
     async () => {
       const userId = await uid();

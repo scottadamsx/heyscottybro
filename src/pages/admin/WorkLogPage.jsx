@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "../../api/workLogApi";
-import { loadProjects } from "../../api/plannerApi";
+import { loadProjects, newReminder, updateReminder } from "../../api/plannerApi";
 import { onDataChange } from "../../utils/dataEvents";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
@@ -20,6 +20,7 @@ export default function WorkLogPage() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [mirrorToReminders, setMirrorToReminders] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -46,6 +47,23 @@ export default function WorkLogPage() {
     setSaving(true);
     try {
       await createWorkLog(form);
+      if (mirrorToReminders) {
+        const linked = await newReminder({
+          name: form.task.trim(),
+          date: form.date || null,
+          description: form.notes?.trim() || null,
+          recurrence: "none",
+          project_id: form.project_id || null,
+          show_on_calendar: true,
+        });
+        // Work log rows represent finished work, so mirrored reminders are closed.
+        if (linked?.id) {
+          await updateReminder(linked.id, {
+            completed: true,
+            completed_date: form.date || toDateStr(new Date()),
+          });
+        }
+      }
       setForm((f) => ({ ...emptyForm(), date: f.date, project_id: f.project_id }));
       addToast("Logged.", "success");
     } catch (err) { addToast(`Couldn't save: ${err.message}`, "error"); }
@@ -101,6 +119,14 @@ export default function WorkLogPage() {
           <input className="field-grow" placeholder="What did you do?" value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} autoFocus required />
         </div>
         <textarea placeholder="Notes (optional)" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+        <label className="checkbox-inline">
+          <input
+            type="checkbox"
+            checked={mirrorToReminders}
+            onChange={(e) => setMirrorToReminders(e.target.checked)}
+          />
+          Also add this to Reminders + Calendar
+        </label>
         <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Log work"}</button>
       </form>
 

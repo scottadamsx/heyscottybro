@@ -512,3 +512,119 @@
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; margin: 0; }
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child > div:last-child { gap: 6px; padding-right: 2px; }
 :root[data-theme="xp"] .admin-shell .db-list-item--clickable { cursor: pointer; }
+
+/* ── Retro polish pass (Plan / Task / Work) ─────────────────────────────── */
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page,
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page {
+  background: linear-gradient(180deg, #F4F1E4 0%, #EDE9D8 100%);
+  border: 1px solid #C8C3AE;
+  padding: 8px;
+}
+
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header,
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header {
+  margin: 0 0 8px;
+  padding: 4px 6px;
+  border: 1px solid #CDC7B1;
+  background: linear-gradient(180deg, #FAF9F4, #EDE7D5);
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-grid-react {
+  border: 1px solid #7F9DB9;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px #D8D8CE;
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-day-name {
+  background: linear-gradient(180deg, #F8F6EE 0%, #E9E4D2 100%);
+  color: #1D3E85;
+  font-weight: 700;
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-cell {
+  min-height: 72px;
+  padding: 3px 5px;
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-cell .day-number {
+  color: #1F2F52;
+  font-weight: 700;
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-upcoming .db-card {
+  background: #F6F3E8;
+  border-color: #C9C3AC;
+}
+
+:root[data-theme="xp"] .admin-shell .calendar-upcoming .db-list {
+  background: #FFFDF6;
+  border: 1px solid #D2CCB7;
+  padding: 6px;
+}
+
+:root[data-theme="xp"] .admin-shell .completed-item {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4F1E4 100%);
+  border: 1px solid #CFC9B3;
+  border-radius: 3px;
+  padding: 7px 8px;
+  margin-bottom: 5px;
+}
+
+:root[data-theme="xp"] .admin-shell .task-row-main strong {
+  font-size: 13px;
+  color: #101010;
+}
+
+:root[data-theme="xp"] .admin-shell .task-detail-header {
+  background: #F9F7EF;
+  border: 1px solid #C9C3AD;
+  border-left-width: 4px;
+  padding: 9px 10px;
+}
+
+:root[data-theme="xp"] .admin-shell .task-detail-grid {
+  row-gap: 5px;
+}
+
+:root[data-theme="xp"] .admin-shell .task-detail-grid dt {
+  color: #4D4D4D;
+  font-weight: 700;
+}
+
+:root[data-theme="xp"] .admin-shell .worklog-project {
+  color: #1E4EA8;
+  font-weight: 700;
+}
+
+:root[data-theme="xp"] .admin-shell .worklog-notes {
+  margin-top: 4px;
+  color: #404040;
+  line-height: 1.35;
+}
+
+/* Keep action labels readable in dense rows (fixes clipped Edit/Delete text). */
+:root[data-theme="xp"] .admin-shell .db-list-item .btn-mini {
+  min-width: 52px;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+:root[data-theme="xp"] .admin-shell .db-list-item .icon-x.sm {
+  width: 22px;
+  height: 22px;
+}
+
+/* Primary XP CTA in page toolbars (e.g. New Task). */
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header .btn:not(.btn-secondary-sm),
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header .btn:not(.btn-secondary-sm) {
+  background: linear-gradient(180deg, #4A8DF8 0%, #2A66D8 100%);
+  border-color: #1A4EA8;
+  color: #FFFFFF;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header .btn:not(.btn-secondary-sm):hover,
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header .btn:not(.btn-secondary-sm):hover {
+  filter: brightness(1.06);
+}

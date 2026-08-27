@@ -45,8 +45,8 @@
 .xpw-btns button:hover { filter: brightness(1.12); }
 .xpw-btns button:focus-visible { outline: 2px solid #F8D77A; outline-offset: 1px; }
 
-.xpw-body { flex: 1; min-height: 0; overflow: auto; background: var(--xp-face, #ECE9D8); }
-.xpw-page { padding: 11px; min-height: 100%; }
+.xpw-body { flex: 1; min-height: 0; overflow: auto; background: linear-gradient(180deg, #F4F1E4 0%, #E9E5D6 100%); }
+.xpw-page { padding: 10px; min-height: 100%; }
 /* The page's own window chrome is redundant inside a real window */
 .xpw-page .module-page, .xpw-page .combined-page { border: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; background: transparent !important; }
 .xpw-page .module-page > .module-header, .xpw-page .combined-page > .combined-page-header {
