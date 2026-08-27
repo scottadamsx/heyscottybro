@@ -82,6 +82,11 @@
 .admin-shell.xp-desktop .admin-rail { bottom: 45px; }
 .admin-shell.xp-desktop .chat-fab { bottom: 46px; }
 
+/* Keep rail actions clear; chat controls dock beside the rail, not on top of it. */
+.admin-shell.xp-desktop .admin-rail { padding-bottom: 72px; }
+.admin-shell.xp-desktop .chat-fab { right: calc(var(--rail-w) + 12px); }
+.admin-shell.xp-desktop .chat-panel { right: calc(var(--rail-w) + 12px); bottom: 86px; }
+
 /* Rail clears the taskbar; the page's own title is redundant under a caption (its buttons stay) */
 :root[data-theme="xp"] .admin-shell.xp-desktop .admin-rail { bottom: 45px; }
 .xpw-page .module-page > .module-header h1, .xpw-page .combined-page > .combined-page-header .combined-page-title { display: none; }

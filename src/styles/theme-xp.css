@@ -218,10 +218,11 @@
 :root[data-theme="xp"] .admin-shell .admin-rail-mark { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFFFF, #6FC46F 40%, #2E8A2B); border: none; color: #FFFFFF; font-size: 10px; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link,
 :root[data-theme="xp"] .admin-shell .admin-sub-link {
-  height: 24px; padding: 0 6px; border-radius: 0; gap: 7px;
+  min-height: 31px; padding: 4px 8px; border-radius: 0; gap: 9px;
   color: #000000; font-size: 13px; font-weight: 400; text-shadow: none;
 }
-:root[data-theme="xp"] .admin-shell .admin-rail-link i, :root[data-theme="xp"] .admin-shell .admin-sub-link i { color: var(--xp-sel); width: 16px; }
+:root[data-theme="xp"] .admin-shell .admin-rail-link i, :root[data-theme="xp"] .admin-shell .admin-sub-link i { color: var(--xp-sel); width: 18px; }
+:root[data-theme="xp"] .admin-shell .admin-rail-label { line-height: 1.15; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link:hover,
 :root[data-theme="xp"] .admin-shell .admin-sub-link:hover { background: var(--xp-sel); color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link:hover i { color: #FFFFFF; }
