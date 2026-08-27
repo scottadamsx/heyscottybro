@@ -11,6 +11,7 @@ import { loadBrain, deleteNode } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./school.css";
+import DatePicker from "../../components/DatePicker";
 
 /**
  * SCHOOL — the semester at a glance. Courses are first-class; deadlines are
@@ -300,7 +301,7 @@ export default function SchoolPage() {
           </>}>
           <div className="school-form">
             <input placeholder="What's due? (Lab 3, Final report…) *" value={dl.name} onChange={(e) => setDl({ ...dl, name: e.target.value })} />
-            <input type="date" value={dl.date} onChange={(e) => setDl({ ...dl, date: e.target.value })} />
+            <DatePicker value={dl.date} onChange={(v) => setDl({ ...dl, date: v })} />
             <p className="school-form-hint">Deadlines are reminders under the hood — they'll show on Plan and Today automatically.</p>
           </div>
         </Modal>

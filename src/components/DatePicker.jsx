@@ -23,7 +23,7 @@ function fmtDisplay(date) {
 const sameDay = (a, b) =>
   a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-export default function DatePicker({ value, onChange, placeholder = "Select date" }) {
+export default function DatePicker({ value, onChange, placeholder = "Select date", min, max, id, className = "" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const popRef = useRef(null);
@@ -53,12 +53,14 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const pick = (d) => { onChange(fmt(new Date(y, m, d))); setOpen(false); };
+  const inRange = (d) => { const s = fmt(new Date(y, m, d)); return (!min || s >= min) && (!max || s <= max); };
+  const pick = (d) => { if (!inRange(d)) return; onChange(fmt(new Date(y, m, d))); setOpen(false); };
 
   return (
-    <div className="picker" ref={ref}>
+    <div className={`picker ${className}`.trim()} ref={ref}>
       <button
         type="button"
+        id={id}
         className={`picker-trigger ${selected ? "" : "is-placeholder"}`}
         onClick={() => setOpen((o) => !o)}
       >
@@ -97,7 +99,8 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
                 <button
                   type="button"
                   key={d}
-                  className={`dtp-day${sameDay(new Date(y, m, d), today) ? " today" : ""}${sameDay(new Date(y, m, d), selected) ? " sel" : ""}`}
+                  className={`dtp-day${sameDay(new Date(y, m, d), today) ? " today" : ""}${sameDay(new Date(y, m, d), selected) ? " sel" : ""}${inRange(d) ? "" : " off"}`}
+                  disabled={!inRange(d)}
                   onClick={() => pick(d)}
                 >
                   {d}

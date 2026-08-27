@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatMoney, toDateStr } from "../../utils/plannerUtils";
+import DatePicker from "../DatePicker";
 
 export default function RecurringCard({ item, kind, categories, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
@@ -42,10 +43,10 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
         )}
         <div className="form-row">
           <label className="bud-mini-label">Start
-            <input type="date" value={draft.startDate || ""} onChange={e => setDraft({ ...draft, startDate: e.target.value })} />
+            <DatePicker value={draft.startDate || ""} onChange={(v) => setDraft({ ...draft, startDate: v })} />
           </label>
           <label className="bud-mini-label">End (optional)
-            <input type="date" value={draft.endDate || ""} onChange={e => setDraft({ ...draft, endDate: e.target.value || null })} />
+            <DatePicker value={draft.endDate || ""} onChange={(v) => setDraft({ ...draft, endDate: v || null })} />
           </label>
           {!isIncome && (
             <label className="bud-mini-label" title="Day of month the bill hits. Leave blank for continuous bills (groceries, gas) that you pay as you go.">

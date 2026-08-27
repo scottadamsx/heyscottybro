@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import DatePicker from "../DatePicker";
 
 const WEEKS_PER_MONTH = 4.33;
 
@@ -292,7 +293,7 @@ export default function WeeklyTracker({
                     <select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}>
                       {categories.map(c => <option key={c}>{c}</option>)}
                     </select>
-                    <input type="date" value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} />
+                    <DatePicker value={draft.date} onChange={(v) => setDraft({ ...draft, date: v })} />
                     <button type="button" className="btn-mini accent" onClick={commit}><i className="fa-solid fa-check" /></button>
                     <button type="button" className="btn-mini muted" onClick={cancel}><i className="fa-solid fa-xmark" /></button>
                   </div>

@@ -9,6 +9,7 @@ import { loadProjects } from "../../api/plannerApi";
 import { onDataChange } from "../../utils/dataEvents";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
+import DatePicker from "../../components/DatePicker";
 
 const emptyForm = () => ({ date: toDateStr(new Date()), task: "", notes: "", project_id: "", minutes: "" });
 
@@ -62,7 +63,7 @@ export default function WorkLogPage() {
 
       <form className="form-card" onSubmit={submit}>
         <div className="form-row">
-          <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} aria-label="Date" required />
+          <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
           <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
             <option value="">No project</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

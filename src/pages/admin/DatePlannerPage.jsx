@@ -8,6 +8,7 @@ import {
   syncLocalDatePlanner,
 } from "../../api/datePlannerApi";
 import "./dates.css";
+import DatePicker from "../../components/DatePicker";
 
 export default function DatePlannerPage() {
   const [params] = useSearchParams();
@@ -317,7 +318,7 @@ export default function DatePlannerPage() {
             <h3>When did you do this?</h3>
             <div className="dates-modal-subject">{markingDone.title}</div>
             <label className="dates-modal-label" htmlFor="dates-done-on">Date</label>
-            <input id="dates-done-on" type="date" value={doneDate} onChange={(e) => setDoneDate(e.target.value)} />
+            <DatePicker value={doneDate} onChange={(v) => setDoneDate(v)} id="dates-done-on" />
             <div className="budget-widget-actions">
               <button className="btn" onClick={confirmMarkDone}>Save memory</button>
               <button className="btn btn-secondary-sm" onClick={() => setMarkingDone(null)}>Cancel</button>

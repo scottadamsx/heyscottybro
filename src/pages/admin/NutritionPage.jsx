@@ -8,6 +8,7 @@ import { generateInsights } from "../../api/aiFood";
 import ProfileBar from "../../components/nutrition/ProfileBar";
 import MealLogger from "../../components/nutrition/MealLogger";
 import { LineChart, CalorieBars, MacroRing } from "../../components/nutrition/Charts";
+import DatePicker from "../../components/DatePicker";
 import {
   todayStr, addDaysStr, prettyDate, sumMacros, suggestedTarget, tdee,
   toKg, toLb, formatWeight, weightTrendPerWeek, round, MEAL_TYPES,
@@ -338,7 +339,7 @@ function WeightView({ active, weights, unit, onSaved, onDeleted }) {
       <form className="form-card" onSubmit={submit} style={{ maxWidth: 520 }}>
         <div className="form-row">
           <label className="nut-qty">Weight ({unit})<input type="number" step="0.1" value={w} onChange={(e) => setW(e.target.value)} required autoFocus /></label>
-          <label className="nut-qty">Date<input type="date" value={d} onChange={(e) => setD(e.target.value)} max={todayStr()} /></label>
+          <label className="nut-qty">Date<DatePicker value={d} onChange={(v) => setD(v)} max={todayStr()} /></label>
         </div>
         <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
         {err && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{err}</p>}

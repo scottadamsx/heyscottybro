@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { estimateMealFromText, estimateMealFromImage } from "../../api/aiFood";
 import { createFoodLog, uploadMealPhoto } from "../../api/nutritionApi";
 import { MEAL_TYPES, round } from "../../utils/nutrition";
+import DatePicker from "../DatePicker";
 
 const MODES = [
   { key: "ai", label: "Describe it", icon: "fa-wand-magic-sparkles" },
@@ -181,7 +182,7 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
               </div>
               <div className="form-row">
                 <label className="nut-qty">Servings<input type="number" step="0.5" min="0.5" value={entry.quantity} onChange={(e) => set("quantity", e.target.value)} /></label>
-                <input type="date" value={entry.date} onChange={(e) => set("date", e.target.value)} />
+                <DatePicker value={entry.date} onChange={(v) => set("date", v)} />
               </div>
               {entry.items?.length > 0 && (
                 <details className="nut-items">

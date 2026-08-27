@@ -12,6 +12,7 @@ import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import DocLinks from "../../components/docs/DocLinks";
+import DatePicker from "../../components/DatePicker";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -634,7 +635,7 @@ export default function CalendarPage() {
                   </div>
                   <div className="day-time-row">
                     <label htmlFor="ev-end-date">Ends on</label>
-                    <input id="ev-end-date" type="date" value={endDate || selectedDate} min={selectedDate} onChange={(e) => setEndDate(e.target.value)} />
+                    <DatePicker value={endDate || selectedDate} onChange={(v) => setEndDate(v)} id="ev-end-date" min={selectedDate} />
                     <span className="day-span-note">{endDate && endDate > selectedDate ? (Math.round((new Date(endDate + "T00:00:00") - new Date(selectedDate + "T00:00:00")) / 86400000) + 1) + " days" : "Same day — pick a later date for a multi-day event"}</span>
                   </div>
                   <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ resize: "vertical" }} />

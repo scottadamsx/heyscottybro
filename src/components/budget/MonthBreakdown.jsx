@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatMoney } from "../../utils/plannerUtils";
+import DatePicker from "../DatePicker";
 
 export default function MonthBreakdown({ month, categories, onUpdateTx, onDeleteTx, onLogFromSource }) {
   const [editingId, setEditingId] = useState(null);
@@ -51,7 +52,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                   <select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}>
                     {categories.map(c => <option key={c}>{c}</option>)}
                   </select>
-                  <input type="date" value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} />
+                  <DatePicker value={draft.date} onChange={(v) => setDraft({ ...draft, date: v })} />
                   <button type="button" className="btn-mini" onClick={commit} aria-label="Save"><i className="fa-solid fa-check" /></button>
                   <button type="button" className="btn-mini muted" onClick={cancel} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
                 </div>

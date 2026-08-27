@@ -7,6 +7,7 @@ import {
 } from "../../api/groceryApi";
 import { extractReceipt, fileToBase64 } from "../../api/aiReceipt";
 import "./grocery.css";
+import DatePicker from "../../components/DatePicker";
 
 const money = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const blankItem = () => ({ raw_text: "", quantity: 1, unit_price: "", total_price: "" });
@@ -177,7 +178,7 @@ export default function GroceryPage() {
                 <input value={draft.store_name} onChange={(e) => setField("store_name", e.target.value)} placeholder="Store name" />
               </label>
               <label>Date
-                <input type="date" value={draft.purchase_date} onChange={(e) => setField("purchase_date", e.target.value)} />
+                <DatePicker value={draft.purchase_date} onChange={(v) => setField("purchase_date", v)} />
               </label>
               <label>Subtotal
                 <input type="number" step="0.01" value={draft.subtotal} onChange={(e) => setField("subtotal", e.target.value)} placeholder="—" />

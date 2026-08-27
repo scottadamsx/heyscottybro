@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./budget.css";
+import DatePicker from "../DatePicker";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, variable: false, notes: "" };
@@ -127,7 +128,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             <select value={schedForm.type} onChange={e => setSchedForm(f => ({ ...f, type: e.target.value }))} className="bud-inp">
               {["weekly","biweekly","semimonthly","monthly","custom"].map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input type="date" value={schedForm.anchorDate} onChange={e => setSchedForm(f => ({ ...f, anchorDate: e.target.value }))} placeholder="Anchor/next payday" className="bud-inp" />
+            <DatePicker value={schedForm.anchorDate} onChange={(v) => setSchedForm(f => ({ ...f, anchorDate: v }))} placeholder="Anchor/next payday" className="bud-inp" />
             {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" className="bud-inp" />}
             <button className="btn" onClick={saveSched} style={{ width: "100%", background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>Save schedule</button>
           </div>
@@ -180,9 +181,9 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             </select>
           </div>
           <label className="bud-label">Start date (first payday)</label>
-          <input type="date" value={incForm.startDate} onChange={e => setIncForm(f => ({ ...f, startDate: e.target.value }))} className="bud-inp" />
+          <DatePicker value={incForm.startDate} onChange={(v) => setIncForm(f => ({ ...f, startDate: v }))} className="bud-inp" />
           <label className="bud-label">End date <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional — leave blank for ongoing)</span></label>
-          <input type="date" value={incForm.endDate} onChange={e => setIncForm(f => ({ ...f, endDate: e.target.value }))} className="bud-inp" />
+          <DatePicker value={incForm.endDate} onChange={(v) => setIncForm(f => ({ ...f, endDate: v }))} className="bud-inp" />
           <div className="bud-hstack">
             <button className="btn bud-flex1" onClick={saveInc} style={{ background: flash === "inc" ? "var(--green)" : "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>{flash === "inc" ? "Saved" : "Save"}</button>
             <button className="btn bud-flex1" onClick={() => setShowIncForm(false)}>Cancel</button>
@@ -225,7 +226,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <label className="bud-label">Start date (first billing date)</label>
-          <input type="date" value={billForm.startDate} onChange={e => setBillForm(f => ({ ...f, startDate: e.target.value }))} className="bud-inp" />
+          <DatePicker value={billForm.startDate} onChange={(v) => setBillForm(f => ({ ...f, startDate: v }))} className="bud-inp" />
           <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, marginBottom: 8, cursor: "pointer" }}>
             <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} style={{ marginTop: 3 }} />
             <span>Variable / quantifiable <span style={{ color: "var(--text-muted)" }}>— track spending against this amount (e.g. Groceries, Gas, Fun). Shows a progress bar instead of paid/unpaid.</span></span>

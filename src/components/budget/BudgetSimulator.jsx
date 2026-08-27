@@ -4,6 +4,7 @@ import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toD
 import { useConfirm } from "../../hooks/useConfirm";
 import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 import "./budget.css";
+import DatePicker from "../DatePicker";
 
 function recalcBalances(rows, startBalance) {
   let bal = startBalance;
@@ -163,11 +164,11 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
         </div>
         <div>
           <label className="bud-label bud-label-sm">From</label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ width: "100%" }} />
+          <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
         </div>
         <div>
           <label className="bud-label bud-label-sm">To</label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ width: "100%" }} />
+          <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
         </div>
       </div>
       <div className="bud-hstack" style={{ marginBottom: 12 }}>
@@ -220,7 +221,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
                   return (
                     <tr key={r.id} style={{ background: negBal ? "var(--danger-bg)" : lowBal ? "var(--warn-bg)" : "transparent" }}>
                       <td>
-                        <input type="date" value={r.date} onChange={e => updateRow(r.id, "date", e.target.value)} className="bud-sim-inp" style={{ width: 110 }} />
+                        <DatePicker value={r.date} onChange={(v) => updateRow(r.id, "date", v)} className="bud-sim-inp" />
                       </td>
                       <td>
                         <input type="text" value={r.description} onChange={e => updateRow(r.id, "description", e.target.value)} className="bud-sim-inp" style={{ width: "100%", minWidth: 100 }} />

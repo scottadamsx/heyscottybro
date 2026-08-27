@@ -3,6 +3,7 @@ import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
 import "./budget.css";
+import DatePicker from "../DatePicker";
 
 const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "", fulfills_recurring_id: "", is_bill: false };
 
@@ -114,7 +115,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           <input placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bud-inp" />
           <div className="bud-hstack" style={{ marginBottom: 8 }}>
             <input type="number" placeholder="Amount" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} style={{ flex: 1 }} />
-            <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ flex: 1 }} />
+            <DatePicker value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
           </div>
           <label className="bud-caps-label">Category (Groceries, Gas…)</label>
           <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="bud-inp">
@@ -221,8 +222,8 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               <option value="all">All categories</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} placeholder="From" style={{ fontSize: 13 }} />
-            <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} placeholder="To" style={{ fontSize: 13 }} />
+            <DatePicker value={filterFrom} onChange={(v) => setFilterFrom(v)} placeholder="From" />
+            <DatePicker value={filterTo} onChange={(v) => setFilterTo(v)} placeholder="To" />
           </div>
 
           <p className="bud-sh bud-sh-tight">Transactions ({filtered.length})</p>

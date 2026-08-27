@@ -3,6 +3,7 @@ import { loadWorkouts, createWorkout, deleteWorkout, exerciseSummary } from "../
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
 import "./tools.css";
+import DatePicker from "../DatePicker";
 
 const EMPTY = () => ({ date: toDateStr(new Date()), exercise: "", weight: "", reps: "", sets: "1", notes: "" });
 
@@ -64,7 +65,7 @@ export default function GymTracker() {
       {/* Log form */}
       <div className="gym-form">
         <div className="gym-form-row">
-          <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
           <input className="gym-grow" placeholder="Exercise (e.g. Bench Press)" value={form.exercise} onChange={(e) => setForm({ ...form, exercise: e.target.value })} onKeyDown={(e) => e.key === "Enter" && log()} />
         </div>
         <div className="gym-form-row">

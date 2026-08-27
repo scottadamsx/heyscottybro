@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
 import { toDateStr } from "../../utils/plannerUtils";
+import DatePicker from "../../components/DatePicker";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -140,11 +141,7 @@ export default function HikerPage() {
               autoFocus
             />
             <label style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Hike date</label>
-            <input
-              type="date"
-              value={hikeDate}
-              onChange={e => setHikeDate(e.target.value)}
-            />
+            <DatePicker value={hikeDate} onChange={(v) => setHikeDate(v)} />
             <div className="budget-widget-actions">
               <button className="btn" onClick={runImport} disabled={!hikeName.trim()}>Import</button>
               <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setHikeModal(false)}>Cancel</button>

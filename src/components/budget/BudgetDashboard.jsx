@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { getPeriodBills, getQuantifiableBudgets, savingsPlan, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatPeriodLabel, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
 import { computeBudgetSnapshot } from "./budgetSummary";
 import "./budget.css";
+import DatePicker from "../DatePicker";
 
 function MoneyChart({ config, transactions, period }) {
   const W = 600, H = 160, padX = 48, padY = 16;
@@ -454,7 +455,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
               <input type="number" placeholder="Saved so far $" value={goalForm.saved} onChange={e => setGoalForm(f => ({ ...f, saved: e.target.value }))} style={{ flex: 1, minWidth: 90 }} />
             </div>
             <label className="bud-label">Need it by</label>
-            <input type="date" value={goalForm.targetDate} onChange={e => setGoalForm(f => ({ ...f, targetDate: e.target.value }))} className="bud-inp" style={{ boxSizing: "border-box" }} />
+            <DatePicker value={goalForm.targetDate} onChange={(v) => setGoalForm(f => ({ ...f, targetDate: v }))} className="bud-inp" />
             <div className="bud-hstack">
               <button className="btn-sm btn-complete bud-btn-md" onClick={saveGoal}>{goalEditId ? "Save" : "Add goal"}</button>
               <button className="btn-sm bud-btn-md" onClick={resetGoal}>Cancel</button>
