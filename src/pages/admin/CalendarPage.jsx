@@ -7,7 +7,7 @@ import {
 } from "../../api/plannerApi";
 import { loadWorkouts } from "../../api/workoutsApi";
 import { loadAccountability } from "../../api/accountabilityApi";
-import { expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
+import { formatTime12, expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
@@ -510,7 +510,7 @@ export default function CalendarPage() {
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
                       {(t.time || (t.recurrence && t.recurrence !== "none")) && (
-                        <div className="day-item-sub">{[t.time ? String(t.time).slice(0, 5) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
+                        <div className="day-item-sub">{[t.time ? formatTime12(t.time) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
                       )}
                     </div>
                     <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
