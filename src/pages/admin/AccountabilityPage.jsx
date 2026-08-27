@@ -62,6 +62,8 @@ export default function AccountabilityPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", emoji: "", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
   const [detailId, setDetailId] = useState(null);
+  // Deep link from Today: /admin/life?tab=habits&id=<tracker> opens that tracker.
+  useEffect(() => { const id = params.get("id"); if (id) setDetailId(id); }, [params]);
 
   const todayStr = toDateStr(new Date());
 
