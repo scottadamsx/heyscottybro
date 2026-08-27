@@ -151,7 +151,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
         )}
         <div className="xpd-actions">
           {(w.href || w.to) && <LinkOut href={w.href} to={w.to} className="xpd-btn primary">{w.cta || (w.to ? "Open" : "Visit site")} <i className="fa-solid fa-arrow-up-right-from-square" /></LinkOut>}
-          {!w.href && !w.to && <span className="xpd-btn" aria-disabled="true">Private beta</span>}
+          {!w.href && !w.to && <span className="xpd-badge">Private beta</span>}
           {w.extra?.map(([label, href]) => <a key={label} className="xpd-btn" href={href} target="_blank" rel="noreferrer">{label}</a>)}
         </div>
       </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
         {/* Icons: the "side" column of every other project */}
         <nav className="xpd-icons" aria-label="Projects">
           {ICONS.map((p) => (
-            <button type="button" className="xpd-icon" key={p.id} onDoubleClick={() => launch(p.id)} onClick={() => launch(p.id)} title={p.tag}>
+            <button type="button" className="xpd-icon" key={p.id} onClick={() => launch(p.id)} title={p.tag}>
               <span className="xpd-icon-img"><i className={`fa-solid ${p.icon}`} /></span>
               <span className="xpd-icon-label">{p.title}</span>
             </button>

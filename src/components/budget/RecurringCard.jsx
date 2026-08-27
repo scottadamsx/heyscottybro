@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { formatMoney, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
+import { useConfirm } from "../../hooks/useConfirm";
 
 export default function RecurringCard({ item, kind, categories, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item);
+  const { confirm, dialog } = useConfirm();
 
   const isIncome = kind === "income";
   const accent = isIncome ? "var(--bud-green)" : "var(--bud-red)";
@@ -70,6 +72,7 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
 
   return (
     <div className="bud-card" style={{ borderTopColor: accent, opacity: ended ? 0.55 : 1 }}>
+      {dialog}
       <div className="bud-card-head">
         <h4>{item.name}</h4>
         <span className="bud-card-amount" style={{ color: accent }}>
@@ -85,7 +88,7 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
       <div className="bud-card-actions">
         <button type="button" className="btn-mini" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" /> Edit</button>
         {!ended && <button type="button" className="btn-mini muted" onClick={pause} title="Set end date to end of this month"><i className="fa-solid fa-pause" /> Pause</button>}
-        <button type="button" className="btn-mini danger" onClick={() => { if (confirm(`Delete "${item.name}"?`)) onDelete(item.id); }}><i className="fa-solid fa-trash" /></button>
+        <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${item.name}"?`, { title: "Delete", confirmLabel: "Delete" })) onDelete(item.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
       </div>
     </div>
   );

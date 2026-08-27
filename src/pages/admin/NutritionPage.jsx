@@ -9,6 +9,7 @@ import ProfileBar from "../../components/nutrition/ProfileBar";
 import MealLogger from "../../components/nutrition/MealLogger";
 import { LineChart, CalorieBars, MacroRing } from "../../components/nutrition/Charts";
 import DatePicker from "../../components/DatePicker";
+import { useToast } from "../../contexts/ToastContext";
 import {
   todayStr, addDaysStr, prettyDate, sumMacros, suggestedTarget, tdee,
   toKg, toLb, formatWeight, weightTrendPerWeek, round, MEAL_TYPES,
@@ -20,6 +21,7 @@ const ACTIVE_KEY = "nutritionActiveProfile";
 const UNIT_KEY = "nutritionUnit_v2";
 
 export default function NutritionPage() {
+  const { addToast } = useToast();
   const [params, setParams] = useSearchParams();
   const view = params.get("view") || "today";
 
@@ -88,9 +90,15 @@ export default function NutritionPage() {
   const dayTotals = useMemo(() => sumMacros(dayLogs), [dayLogs]);
 
   const removeLog = async (log) => {
-    await deleteFoodLog(log);
-    setDayLogs((d) => d.filter((x) => x.id !== log.id));
-    setRangeLogs((d) => d.filter((x) => x.id !== log.id));
+    try {
+      await deleteFoodLog(log);
+      // Only drop the row once the delete has actually succeeded.
+      setDayLogs((d) => d.filter((x) => x.id !== log.id));
+      setRangeLogs((d) => d.filter((x) => x.id !== log.id));
+    } catch (err) {
+      console.error("[nutrition] delete food log failed", err);
+      addToast(`Couldn't delete "${log.name || "entry"}": ${err?.message || err}`, "error");
+    }
   };
 
   const onLogged = (log) => {
@@ -247,7 +255,7 @@ function TodayView({ date, setDate, dayLogs, dayTotals, target, onRemove, onLog 
       {dayLogs.length === 0 && <p className="no-entries">Nothing logged for this day.</p>}
 
       {/* Always-visible logger: the module-header "Log meal" button is hidden
-          inside the combined Health page, so keep one here too. */}
+          inside the Life page, so keep one here too. */}
       <button className="btn nut-log-cta" onClick={onLog} style={{ width: "100%", marginTop: "0.75rem" }}>
         <i className="fa-solid fa-plus" /> Log {dayLogs.length === 0 ? "a meal" : "another meal"}
       </button>
@@ -312,6 +320,7 @@ function TrendsView({ active, rangeLogs, weights, unit, target, tdeeVal, insight
 
 /* ── Weight ─────────────────────────────────────────────── */
 function WeightView({ active, weights, unit, onSaved, onDeleted }) {
+  const { addToast } = useToast();
   const [w, setW] = useState("");
   const [d, setD] = useState(todayStr);
   const [note, setNote] = useState("");
@@ -364,7 +373,10 @@ function WeightView({ active, weights, unit, onSaved, onDeleted }) {
               {row.note && <span className="nut-log-macros">{row.note}</span>}
             </div>
             <span className="nut-log-cal" style={{ fontWeight: 400, opacity: 0.7 }}>{prettyDate(row.date)}</span>
-            <button className="icon-x sm" onClick={async () => { await deleteWeight(row.id); onDeleted(row.id); }} aria-label="Delete"><i className="fa-solid fa-xmark" /></button>
+            <button className="icon-x sm" onClick={async () => {
+              try { await deleteWeight(row.id); onDeleted(row.id); }
+              catch (err) { console.error("[nutrition] delete weigh-in failed", err); addToast(`Couldn't delete weigh-in: ${err?.message || err}`, "error"); }
+            }} aria-label="Delete"><i className="fa-solid fa-xmark" /></button>
           </div>
         ))}
       </div>

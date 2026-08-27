@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail, sendReply, markRead } from "../../api/messagesApi";
 import { generateDraft } from "../../api/aiDraft";
 import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../hooks/useConfirm";
 import "./tools.css";
 
 const CHANNELS = ["manual", "email", "slack", "discord"];
@@ -23,6 +24,7 @@ function copy(text) {
 
 export default function Inbox() {
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const [rows, setRows] = useState([]);
   const [ready, setReady] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -63,7 +65,11 @@ export default function Inbox() {
     setOpen(expanded ? null : m.id);
     if (!expanded && !m.read) {
       setRows((rs) => rs.map((x) => (x.id === m.id ? { ...x, read: true } : x))); // optimistic
-      markRead(m.id).catch(() => {});
+      markRead(m.id).catch((err) => {
+        console.warn("[inbox] mark-read failed", err);
+        setRows((rs) => rs.map((x) => (x.id === m.id ? { ...x, read: false } : x))); // revert optimistic
+        addToast(`Couldn't mark as read: ${err?.message || err}`, "error");
+      });
     }
   };
 
@@ -103,7 +109,7 @@ export default function Inbox() {
   const send = async (m) => {
     const text = draftFor(m);
     if (!text.trim()) { addToast("Write or generate a draft first.", "error"); return; }
-    if (!window.confirm(`Send this reply to ${m.sender || "the sender"} from your Gmail? This can't be undone.`)) return;
+    if (!await confirm(`Send this reply to ${m.sender || "the sender"} from your Gmail? This can't be undone.`, { title: "Send reply", confirmLabel: "Send" })) return;
     setSending(m.id);
     try {
       const { to } = await sendReply(m.id, text);   // server sends, marks replied, clears draft
@@ -120,6 +126,7 @@ export default function Inbox() {
 
   return (
     <div className="inbox">
+      {dialog}
       <div className="inbox-bar">
         <button className="btn btn-sm btn-primary-sm" onClick={() => setShowAdd((s) => !s)}>
           <i className="fa-solid fa-plus" /> Add message

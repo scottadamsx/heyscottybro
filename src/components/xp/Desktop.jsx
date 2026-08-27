@@ -58,8 +58,8 @@ export function DesktopProvider({ children, initialPath, onFocusPath }) {
   const defaultGeom = (index) => {
     const area = areaRef.current;
     const W = area?.clientWidth || 1200, H = area?.clientHeight || 800;
-    const w = Math.min(980, Math.max(560, Math.round(W * 0.72)));
-    const h = Math.min(760, Math.max(420, Math.round(H * 0.8)));
+    const w = Math.min(W - 16, Math.min(980, Math.max(560, Math.round(W * 0.72))));
+    const h = Math.min(H - 16, Math.min(760, Math.max(420, Math.round(H * 0.8))));
     const off = (index % 8) * CASCADE;
     return { x: 24 + off, y: 16 + off, w, h };
   };
@@ -116,7 +116,8 @@ function XpWindow({ w }) {
         const maxX = (d.area?.width || 4000) - 120, maxY = (d.area?.height || 4000) - 40;
         setGeom(w.id, { x: Math.max(-d.w + 160, Math.min(d.x + dx, maxX)), y: Math.max(0, Math.min(d.y + dy, maxY)) });
       } else {
-        setGeom(w.id, { w: Math.max(420, d.w + dx), h: Math.max(240, d.h + dy) });
+        const minW = Math.min(420, (d.area?.width || 4000) - 16);
+        setGeom(w.id, { w: Math.max(minW, d.w + dx), h: Math.max(240, d.h + dy) });
       }
     };
     const up = () => { drag.current = null; window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };

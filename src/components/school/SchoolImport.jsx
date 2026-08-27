@@ -160,7 +160,10 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
           type: "note",
           tags: ["school", course.code, ...(docTag ? [docTag] : [])],
           source: "school",
-        }).catch(() => {}); // brain filing is best-effort, never blocks the real updates
+        }).catch((err) => { // brain filing is best-effort, never blocks the real updates — but say so
+          console.warn("[school-import] brain filing failed", err);
+          addToast(`Applied to School, but filing to the Brain failed: ${err?.message || err}`, "error");
+        });
       }
       addToast(`Applied ${made} change${made === 1 ? "" : "s"} from "${out.title}".`, "success");
       onApplied?.();

@@ -2,18 +2,20 @@ import { useEffect, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
 import { toDateStr } from "../../utils/plannerUtils";
 import {
-  loadReceipts, loadReceiptItems, saveReceipt, deleteReceipt,
+  loadReceipts, loadReceiptItems, saveReceipt, updateReceipt, deleteReceipt,
   uploadReceiptImage, receiptImageUrl, findOrCreateStore, postReceiptToBudget,
 } from "../../api/groceryApi";
 import { extractReceipt, fileToBase64 } from "../../api/aiReceipt";
 import "./grocery.css";
 import DatePicker from "../../components/DatePicker";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const money = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const blankItem = () => ({ raw_text: "", quantity: 1, unit_price: "", total_price: "" });
 
 export default function GroceryPage() {
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
 
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function GroceryPage() {
   const [draft, setDraft] = useState(null); // { store_name, purchase_date, subtotal, total, items:[] }
   const [addToBudget, setAddToBudget] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null); // receipt.id when the form edits an existing receipt
 
   // Receipt detail (expanded)
   const [openId, setOpenId] = useState(null);
@@ -77,6 +80,7 @@ export default function GroceryPage() {
   const removeRow = (i) => setDraft((d) => ({ ...d, items: d.items.filter((_, idx) => idx !== i) }));
 
   function resetForm() {
+    setEditingId(null);
     setFile(null);
     if (preview) URL.revokeObjectURL(preview);
     setPreview("");
@@ -91,20 +95,27 @@ export default function GroceryPage() {
     try {
       const store_id = draft.store_name?.trim() ? await findOrCreateStore(draft.store_name) : null;
       const purchase_date = draft.purchase_date || toDateStr(new Date());
-      const receipt = await saveReceipt(
-        {
-          store_id,
-          purchase_date,
-          subtotal: draft.subtotal === "" ? null : Number(draft.subtotal),
-          total,
-        },
-        draft.items.map((it) => ({
-          raw_text: it.raw_text,
-          quantity: it.quantity === "" ? 1 : Number(it.quantity),
-          unit_price: it.unit_price === "" ? null : Number(it.unit_price),
-          total_price: it.total_price === "" ? null : Number(it.total_price),
-        })),
-      );
+      const header = {
+        store_id,
+        purchase_date,
+        subtotal: draft.subtotal === "" || draft.subtotal == null ? null : Number(draft.subtotal),
+        total,
+      };
+      const rows = draft.items.map((it) => ({
+        raw_text: it.raw_text,
+        quantity: it.quantity === "" ? 1 : Number(it.quantity),
+        unit_price: it.unit_price === "" || it.unit_price == null ? null : Number(it.unit_price),
+        total_price: it.total_price === "" || it.total_price == null ? null : Number(it.total_price),
+      }));
+      if (editingId) {
+        await updateReceipt(editingId, header, rows);
+        addToast("Receipt updated", "success");
+        if (openId === editingId) { try { setOpenItems(await loadReceiptItems(editingId)); } catch { /* noop */ } }
+        resetForm();
+        refresh();
+        return;
+      }
+      const receipt = await saveReceipt(header, rows);
       if (file) { try { await uploadReceiptImage(file, receipt.id); } catch { /* image optional */ } }
       if (addToBudget) {
         try {
@@ -130,9 +141,32 @@ export default function GroceryPage() {
     if (r.image_path) { try { setOpenImg(await receiptImageUrl(r.image_path)); } catch { /* noop */ } }
   }
 
+  // Load an existing receipt into the review form (same form, keyed on receipt.id).
+  async function startEdit(r) {
+    let items = openId === r.id ? openItems : [];
+    if (openId !== r.id) { try { items = await loadReceiptItems(r.id); } catch { items = []; } }
+    setFile(null);
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview("");
+    setEditingId(r.id);
+    setDraft({
+      store_name: r.store_name || "",
+      purchase_date: r.purchase_date || toDateStr(new Date()),
+      subtotal: r.subtotal ?? "",
+      total: r.total ?? "",
+      items: items.map((it) => ({
+        raw_text: it.raw_text || "",
+        quantity: it.quantity ?? 1,
+        unit_price: it.unit_price ?? "",
+        total_price: it.total_price ?? "",
+      })),
+    });
+    document.querySelector(".grocery-page .db-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function removeReceipt(id) {
-    if (!window.confirm("Delete this receipt? This does not remove any budget transaction it created.")) return;
-    try { await deleteReceipt(id); if (openId === id) setOpenId(null); refresh(); addToast("Receipt deleted", "success"); }
+    if (!await confirm("Delete this receipt? This does not remove any budget transaction it created.", { title: "Delete receipt", confirmLabel: "Delete" })) return;
+    try { await deleteReceipt(id); if (openId === id) setOpenId(null); if (editingId === id) resetForm(); refresh(); addToast("Receipt deleted", "success"); }
     catch (err) { addToast(err.message || "Could not delete", "error"); }
   }
 
@@ -140,6 +174,7 @@ export default function GroceryPage() {
 
   return (
     <div className="module-page grocery-page">
+      {dialog}
       <div className="module-header">
         <h1><i className="fa-solid fa-receipt" /> Groceries</h1>
         <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
@@ -149,7 +184,7 @@ export default function GroceryPage() {
 
       {/* ── Upload + review ── */}
       <div className="db-card">
-        <h3 className="db-card-title"><i className="fa-solid fa-camera" /> Scan a receipt</h3>
+        <h3 className="db-card-title"><i className={`fa-solid ${editingId ? "fa-pen" : "fa-camera"}`} /> {editingId ? "Edit receipt" : "Scan a receipt"}</h3>
 
         {!draft && (
           <div className="grocery-upload">
@@ -172,7 +207,8 @@ export default function GroceryPage() {
         )}
 
         {draft && (
-          <div className="grocery-review">
+          <div className="grocery-review" key={editingId || "new"}>
+            {editingId && <p className="grocery-edit-note">Editing a saved receipt — changes replace its store, date, totals and item lines. Budget transactions are not touched.</p>}
             <div className="grocery-review-grid">
               <label>Store
                 <input value={draft.store_name} onChange={(e) => setField("store_name", e.target.value)} placeholder="Store name" />
@@ -212,14 +248,16 @@ export default function GroceryPage() {
               )}
             </div>
 
-            <label className="grocery-check">
-              <input type="checkbox" checked={addToBudget} onChange={(e) => setAddToBudget(e.target.checked)} />
-              Add {money(draft.total || 0)} to the budget as a Groceries expense
-            </label>
+            {!editingId && (
+              <label className="grocery-check">
+                <input type="checkbox" checked={addToBudget} onChange={(e) => setAddToBudget(e.target.checked)} />
+                Add {money(draft.total || 0)} to the budget as a Groceries expense
+              </label>
+            )}
 
             <div className="grocery-review-actions">
               <button className="btn btn-sm" onClick={save} disabled={saving}>
-                {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> Save receipt</>}
+                {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> {editingId ? "Save changes" : "Save receipt"}</>}
               </button>
               <button className="btn btn-sm btn-secondary-sm" onClick={resetForm} disabled={saving}>Cancel</button>
             </div>
@@ -255,9 +293,14 @@ export default function GroceryPage() {
                       </div>
                     ))}
                   </div>
-                  <button className="btn btn-sm btn-secondary-sm" onClick={() => removeReceipt(r.id)}>
-                    <i className="fa-solid fa-trash" /> Delete
-                  </button>
+                  <div className="grocery-detail-actions">
+                    <button className="btn btn-sm btn-secondary-sm" onClick={() => startEdit(r)}>
+                      <i className="fa-solid fa-pen" /> Edit
+                    </button>
+                    <button className="btn btn-sm btn-secondary-sm" onClick={() => removeReceipt(r.id)}>
+                      <i className="fa-solid fa-trash" /> Delete
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadDocuments, deleteDocument, getSignedUrl } from "../../api/documentsApi";
+import { loadDocuments, deleteDocument, getSignedUrl, updateDocument } from "../../api/documentsApi";
 import DocumentCard from "../../components/documents/DocumentCard";
 import DocumentUploader from "../../components/documents/DocumentUploader";
 import DocumentViewer from "../../components/documents/DocumentViewer";
@@ -63,6 +63,13 @@ export default function DocumentsPage() {
     } catch {
       setError("Failed to delete document.");
     }
+  };
+
+  // Inline rename / tags from a card. Errors propagate so the card can show them.
+  const handleUpdate = async (doc, fields) => {
+    const updated = await updateDocument(doc.id, fields);
+    setDocs((d) => d.map((x) => (x.id === doc.id ? { ...x, ...updated } : x)));
+    return updated;
   };
 
   const filtered = docs.filter((d) => {
@@ -143,6 +150,7 @@ export default function DocumentsPage() {
             onView={handleView}
             onShare={setSharing}
             onDelete={setConfirmDelete}
+            onUpdate={handleUpdate}
           />
         ))}
       </div>

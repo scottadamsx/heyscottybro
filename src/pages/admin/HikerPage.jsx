@@ -121,6 +121,7 @@ export default function HikerPage() {
   };
 
   const arrow = (col) => sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : " ↕";
+  const ariaSort = (col) => sortCol === col ? (sortDir === "asc" ? "ascending" : "descending") : "none";
 
   return (
     <div className="module-page">
@@ -260,11 +261,11 @@ export default function HikerPage() {
             <table className="hiker-table">
               <thead>
                 <tr>
-                  <th onClick={() => toggleSort("first")}>First{arrow("first")}</th>
-                  <th onClick={() => toggleSort("last")}>Last{arrow("last")}</th>
-                  <th onClick={() => toggleSort("email")}>Email{arrow("email")}</th>
-                  <th onClick={() => toggleSort("phone")}>Phone{arrow("phone")}</th>
-                  <th onClick={() => toggleSort("attendance")}>Check-ins{arrow("attendance")}</th>
+                  <th aria-sort={ariaSort("first")}><button type="button" className="hiker-sort-btn" onClick={() => toggleSort("first")}>First{arrow("first")}</button></th>
+                  <th aria-sort={ariaSort("last")}><button type="button" className="hiker-sort-btn" onClick={() => toggleSort("last")}>Last{arrow("last")}</button></th>
+                  <th aria-sort={ariaSort("email")}><button type="button" className="hiker-sort-btn" onClick={() => toggleSort("email")}>Email{arrow("email")}</button></th>
+                  <th aria-sort={ariaSort("phone")}><button type="button" className="hiker-sort-btn" onClick={() => toggleSort("phone")}>Phone{arrow("phone")}</button></th>
+                  <th aria-sort={ariaSort("attendance")}><button type="button" className="hiker-sort-btn" onClick={() => toggleSort("attendance")}>Check-ins{arrow("attendance")}</button></th>
                 </tr>
               </thead>
               <tbody>

@@ -13,10 +13,11 @@ import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import DocLinks from "../../components/docs/DocLinks";
 import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../hooks/useConfirm";
 // Auto-task templates read chronologically: N days before → day of → N days after.
 const byOffset = (a, b) => (Number(a.offset_days) - Number(b.offset_days)) || String(a.name || "").localeCompare(String(b.name || ""));
 
-const PROJECT_COLORS = ["var(--accent)", "#22d3ee", "var(--green)", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
+const PROJECT_COLORS = ["var(--accent)", "#22d3ee", "var(--green)", "var(--orange)", "#f87171", "#a78bfa", "var(--cyan)", "#ec4899"];
 
 const emptyProject = { name: "", description: "", color: "#6366f1" }; // theme-fixed: user colour (default project colour)
 const emptyInitiative = { name: "", description: "", recurrence: "weekly" };
@@ -33,6 +34,7 @@ export default function ProjectsPage() {
   };
 
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const [projects, setProjects] = useState([]);
   const [initiatives, setInitiatives] = useState([]);
   // Inline edit state — one at a time per kind; forms are prefilled from the row.
@@ -49,18 +51,18 @@ export default function ProjectsPage() {
   const markDone = async (t) => {
     setProjectTasks((prev) => prev.filter((x) => x.id !== t.id));
     setProjectDone((prev) => [{ ...t, completed: true, completed_date: new Date().toISOString().slice(0, 10) }, ...prev]);
-    try { await completeReminder(t.id); } catch (e) { setProjectTasks((prev) => [...prev, t]); setProjectDone((prev) => prev.filter((x) => x.id !== t.id)); alert("Couldn't complete: " + e.message); }
+    try { await completeReminder(t.id); } catch (e) { setProjectTasks((prev) => [...prev, t]); setProjectDone((prev) => prev.filter((x) => x.id !== t.id)); addToast("Couldn't complete: " + e.message, "error"); }
   };
   const undoDone = async (t) => {
     setProjectDone((prev) => prev.filter((x) => x.id !== t.id));
     setProjectTasks((prev) => [...prev, { ...t, completed: false, completed_date: null }]);
-    try { await updateReminder(t.id, { completed: false, completed_date: null }); } catch (e) { alert("Couldn't undo: " + e.message); }
+    try { await updateReminder(t.id, { completed: false, completed_date: null }); } catch (e) { addToast("Couldn't undo: " + e.message, "error"); }
   };
   const removeTask = async (t) => {
-    if (!window.confirm(`Delete "${t.name}"?`)) return;
+    if (!await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) return;
     setProjectTasks((prev) => prev.filter((x) => x.id !== t.id));
     setProjectDone((prev) => prev.filter((x) => x.id !== t.id));
-    try { await deleteReminder(t.id); } catch (e) { alert("Couldn't delete: " + e.message); }
+    try { await deleteReminder(t.id); } catch (e) { addToast("Couldn't delete: " + e.message, "error"); }
   };
   const TaskRow = ({ t, done }) => (
     <div className={`db-list-item${done ? " done" : ""}`} key={t.id}>
@@ -89,9 +91,9 @@ export default function ProjectsPage() {
   const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); setShowEventForm(false); await loadAll(); };
   const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); setEditingEvent(null); await loadAll(); };
   const removeEvent = async (e) => {
-    if (!window.confirm(`Delete "${e.title}"?`)) return;
+    if (!await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) return;
     setProjectEvents((prev) => prev.filter((x) => x.id !== e.id));
-    try { await deleteEvent(e.id); } catch (err) { alert("Couldn't delete: " + err.message); loadAll(); }
+    try { await deleteEvent(e.id); } catch (err) { addToast("Couldn't delete: " + err.message, "error"); loadAll(); }
   };
 
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -197,7 +199,7 @@ export default function ProjectsPage() {
   };
 
   const handleDeleteProject = async (id) => {
-    if (!confirm("Delete this project and all its tasks/initiatives?")) return;
+    if (!await confirm("Delete this project and all its tasks/initiatives?", { title: "Delete project", confirmLabel: "Delete" })) return;
     await deleteProject(id);
     if (selected === id) setSelected(null);
     await loadAll();
@@ -297,6 +299,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="module-page">
+      {dialog}
       {/* ── Header ── */}
       <div className="module-header">
         <h1>Projects</h1>

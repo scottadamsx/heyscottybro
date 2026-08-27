@@ -228,16 +228,16 @@ function ViewerMock() {
           <span className="ds-mock-search">
             <i className="fa-solid fa-magnifying-glass" /> Search…
           </span>
-          <button className="btn btn-sm"><i className="fa-solid fa-plus" /> New</button>
+          <span className="btn btn-sm" role="presentation" aria-hidden="true"><i className="fa-solid fa-plus" /> New</span>
           <span className="ds-mock-avatar">SB</span>
         </div>
       </div>
 
       {/* Stats */}
       <div className="stat-grid" style={{ marginTop: 0 }}>
-        <div className="stat-item"><div className="stat-label">Active Tasks</div><div className="stat-value">12</div></div>
-        <div className="stat-item"><div className="stat-label">Projects</div><div className="stat-value">5</div></div>
-        <div className="stat-item"><div className="stat-label">This week</div><div className="stat-value">$840</div></div>
+        <div className="stat-item" data-static-display="true"><div className="stat-label">Active Tasks</div><div className="stat-value">12</div><div className="ds-static-caption">static</div></div>
+        <div className="stat-item" data-static-display="true"><div className="stat-label">Projects</div><div className="stat-value">5</div><div className="ds-static-caption">static</div></div>
+        <div className="stat-item" data-static-display="true"><div className="stat-label">This week</div><div className="stat-value">$840</div><div className="ds-static-caption">static</div></div>
       </div>
 
       {/* Content + form */}
@@ -245,7 +245,7 @@ function ViewerMock() {
         <div className="db-card">
           <div className="db-card-header">
             <h3 className="db-card-title">Today</h3>
-            <button className="btn btn-sm btn-secondary-sm"><i className="fa-solid fa-up-right-and-down-left-from-center" /> Week</button>
+            <span className="btn btn-sm btn-secondary-sm" role="presentation" aria-hidden="true"><i className="fa-solid fa-up-right-and-down-left-from-center" /> Week</span>
           </div>
           <div className="db-list" style={{ marginTop: "0.6rem" }}>
             {[
@@ -281,8 +281,8 @@ function ViewerMock() {
             <input type="checkbox" defaultChecked /> Show on calendar
           </label>
           <div className="ds-mock-formbtns">
-            <button className="btn">Save</button>
-            <button className="btn btn-sm btn-secondary-sm">Cancel</button>
+            <span className="btn" role="presentation" aria-hidden="true">Save</span>
+            <span className="btn btn-sm btn-secondary-sm" role="presentation" aria-hidden="true">Cancel</span>
           </div>
         </div>
       </div>
@@ -296,7 +296,7 @@ function ViewerMock() {
         <div className="ds-alert" style={{ background: "color-mix(in srgb, var(--red) 12%, transparent)", borderColor: "color-mix(in srgb, var(--red) 40%, transparent)" }}>
           <i className="fa-solid fa-triangle-exclamation" style={{ color: css("--red") }} />
           <span>This will permanently delete the project.</span>
-          <button className="btn-sm btn-delete" style={{ marginLeft: "auto" }}>Delete</button>
+          <span className="btn-sm btn-delete" role="presentation" aria-hidden="true" style={{ marginLeft: "auto" }}>Delete</span>
         </div>
       </div>
     </>
@@ -325,19 +325,19 @@ function ComponentGallery({ values }) {
   return (
     <div className="ds-gallery">
       <GallerySection title="Buttons">
-        <button className="btn">Primary</button>
-        <button className="btn btn-sm">Primary small</button>
-        <button className="btn btn-sm btn-secondary-sm">Secondary</button>
-        <button className="btn-sm btn-complete">Done</button>
-        <button className="btn-sm btn-delete">Delete</button>
-        <button className="btn" disabled>Disabled</button>
+        <span className="btn" role="presentation" aria-hidden="true">Primary</span>
+        <span className="btn btn-sm" role="presentation" aria-hidden="true">Primary small</span>
+        <span className="btn btn-sm btn-secondary-sm" role="presentation" aria-hidden="true">Secondary</span>
+        <span className="btn-sm btn-complete" role="presentation" aria-hidden="true">Done</span>
+        <span className="btn-sm btn-delete" role="presentation" aria-hidden="true">Delete</span>
+        <button className="btn" disabled tabIndex={-1}>Disabled</button>
       </GallerySection>
 
       <GallerySection title="Mini buttons">
-        <button className="btn-mini">Mini</button>
-        <button className="btn-mini accent">Accent</button>
-        <button className="btn-mini danger">Danger</button>
-        <button className="btn-mini muted">Muted</button>
+        <span className="btn-mini" role="presentation" aria-hidden="true">Mini</span>
+        <span className="btn-mini accent" role="presentation" aria-hidden="true">Accent</span>
+        <span className="btn-mini danger" role="presentation" aria-hidden="true">Danger</span>
+        <span className="btn-mini muted" role="presentation" aria-hidden="true">Muted</span>
       </GallerySection>
 
       <GallerySection title="Inputs">

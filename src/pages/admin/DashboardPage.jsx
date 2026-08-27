@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , Link } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
 import { expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
 import { describeAction, actionTime } from "../../utils/agentActions";
@@ -377,14 +377,14 @@ export default function DashboardPage() {
             </div>
           </>
         ) : (
-          <p className="no-entries">Add an income source in Budget → Bills &amp; Income to see your weekly spending allowance.</p>
+          <p className="no-entries">Add an income source in <Link to="/admin/finance?tab=bills">Money → Bills &amp; Income</Link> to see your weekly spending allowance.</p>
         )}
       </Item>
 
       {/* ── Upcoming bills (same scheduling model as the Budget page) ── */}
       <Item className="db-card col-6">
         <h3 className="db-card-title">Upcoming bills</h3>
-        {upcomingBills.length === 0 && <p className="no-entries">No upcoming bills. Add recurring bills in Budget → Bills &amp; Income.</p>}
+        {upcomingBills.length === 0 && <p className="no-entries">No upcoming bills. Add recurring bills in <Link to="/admin/finance?tab=bills">Money → Bills &amp; Income</Link>.</p>}
         <div className="db-list" style={{ marginTop: "0.5rem" }}>
           {upcomingBills.map((b) => (
             <div className="db-list-item" key={`${b.id}-${b.due}`}>

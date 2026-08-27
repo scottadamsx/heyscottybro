@@ -52,7 +52,7 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-const BY_COLOR = { scott: "var(--orange)", maria: "#b68bd6", frodo: "var(--accent)", manual: "var(--text-muted)" };
+const BY_COLOR = { scott: "var(--orange)", frodo: "var(--accent)", manual: "var(--text-muted)" };
 const BY_LABEL = { scott: "Scott", frodo: "Frodo", manual: "Manual" };
 
 export default function ContextPage() {

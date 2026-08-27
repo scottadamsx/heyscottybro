@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDesktop } from "./xp/Desktop";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../utils/settings";
 
 const COMMANDS = [
   { label: "Today",           to: "/admin/today",                    icon: "fa-house",            section: "Home" },
   { label: "Plan",            to: "/admin/planner",                  icon: "fa-calendar-check",   section: "Plan" },
   { label: "Work log",        to: "/admin/work",                    icon: "fa-briefcase",        section: "Plan" },
-  { label: "Tasks",           to: "/admin/planner",                  icon: "fa-list-check",       section: "Plan" },
-  { label: "Calendar",        to: "/admin/planner",                  icon: "fa-calendar-days",    section: "Plan" },
+  { label: "Tasks",           to: "/admin/reminders",                icon: "fa-list-check",       section: "Plan" },
+  { label: "Calendar",        to: "/admin/planner?tab=overview",     icon: "fa-calendar-days",    section: "Plan" },
   { label: "Journal",         to: "/admin/planner?tab=journal",      icon: "fa-book",             section: "Plan" },
   { label: "Projects",        to: "/admin/planner?tab=projects",     icon: "fa-folder-open",      section: "Plan" },
   { label: "Money",           to: "/admin/finance",                  icon: "fa-wallet",           section: "Money" },
@@ -42,6 +43,7 @@ const COMMANDS = [
 ];
 
 export default function CommandPalette({ onClose }) {
+  const desk = useDesktop();
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
@@ -64,7 +66,13 @@ export default function CommandPalette({ onClose }) {
 
   useEffect(() => { setCursor(0); }, [results]);
 
-  const go = (cmd) => { navigate(cmd.to); onClose(); };
+  // In the XP desktop a command opens/focuses a window; the public site opens in a new tab so the desktop survives.
+  const go = (cmd) => {
+    if (desk && cmd.to.startsWith("/admin")) desk.openWindow(cmd.to);
+    else if (desk && cmd.to === "/") window.open("/", "_blank", "noopener");
+    else navigate(cmd.to);
+    onClose();
+  };
 
   const onKey = (e) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => Math.min(c + 1, results.length - 1)); }
@@ -106,7 +114,7 @@ export default function CommandPalette({ onClose }) {
           )}
           {results.map((cmd, i) => (
             <button
-              key={cmd.to}
+              key={cmd.label}
               onClick={() => go(cmd)}
               onMouseEnter={() => setCursor(i)}
               style={{

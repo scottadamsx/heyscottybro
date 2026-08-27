@@ -6,6 +6,7 @@ import { MEAL_TYPES, round, todayStr } from "../../utils/nutrition";
 import { getAuthHeaders } from "../../utils/supabase";
 import { Card, ExportKit } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
+import RecipeBuilder from "../../components/recipes/RecipeBuilder";
 import { useToast } from "../../contexts/ToastContext";
 import "./recipe.css";
 import { parseJsonResponse } from "../../lib/http";
@@ -105,6 +106,7 @@ export default function RecipePage() {
   const [mealType, setMealType] = useState("dinner");
   const [servingsEaten, setServingsEaten] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     getRecipe(id).then(setRecipe).catch(() => setRecipe(null));
@@ -183,6 +185,7 @@ export default function RecipePage() {
           <button className="btn btn-sm btn-secondary-sm" onClick={toggleFav} title={recipe.favorite ? "Unfavourite" : "Favourite"}>
             <i className={`fa-${recipe.favorite ? "solid" : "regular"} fa-star`} style={recipe.favorite ? { color: "var(--orange)" } : undefined} />
           </button>
+          <button className="btn btn-sm btn-secondary-sm" onClick={() => setEditing(true)} title="Edit recipe"><i className="fa-solid fa-pen" /> Edit</button>
           <ExportKit exporter={exporter} />
           <button className="btn btn-sm btn-secondary-sm recipe-del" onClick={onDelete}><i className="fa-solid fa-trash" /></button>
         </div>
@@ -238,6 +241,13 @@ export default function RecipePage() {
       </Card>
 
       <AskRecipe recipe={recipe} />
+      {editing && (
+        <RecipeBuilder
+          initial={recipe}
+          onClose={() => setEditing(false)}
+          onSaved={(r) => { setRecipe(r); setEditing(false); addToast("Recipe updated.", "success"); }}
+        />
+      )}
     </div>
   );
 }

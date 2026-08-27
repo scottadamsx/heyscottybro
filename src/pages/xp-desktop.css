@@ -186,3 +186,5 @@
 .xpd-body.linked { cursor: pointer; }
 .xpd-body.linked:hover { background: #FBFBF7; }
 .xpd-body.linked:focus-visible { outline: 1px dotted var(--xp-ink); outline-offset: -4px; }
+
+.xpd-badge { display: inline-flex; align-items: center; height: 23px; padding: 0 10px; border: 1px solid #ACA899; background: #FFFFE1; color: var(--xp-ink-soft); font-size: 11px; }

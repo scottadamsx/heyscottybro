@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { generateRecipe } from "../../api/aiFood";
-import { createRecipe } from "../../api/recipesApi";
+import { createRecipe, updateRecipe } from "../../api/recipesApi";
 import { round } from "../../utils/nutrition";
 
 const blank = () => ({
@@ -9,13 +9,29 @@ const blank = () => ({
   calories_per_serving: "", protein_g: "", carbs_g: "", fat_g: "", tags: [],
 });
 
-export default function RecipeBuilder({ onClose, onSaved }) {
+// Prefill from an existing recipe row so the same form edits in place.
+const fromInitial = (r) => ({
+  ...blank(),
+  title: r.title || "", description: r.description || "",
+  servings: r.servings ?? 2, prep_minutes: r.prep_minutes ?? "", cook_minutes: r.cook_minutes ?? "",
+  ingredients: Array.isArray(r.ingredients) && r.ingredients.length ? r.ingredients.map((i) => ({ item: i.item || "", quantity: i.quantity || "" })) : [{ item: "", quantity: "" }],
+  steps: Array.isArray(r.steps) && r.steps.length ? [...r.steps] : [""],
+  calories_per_serving: r.calories_per_serving ?? "", protein_g: r.protein_g ?? "", carbs_g: r.carbs_g ?? "", fat_g: r.fat_g ?? "",
+  tags: Array.isArray(r.tags) ? r.tags : [],
+});
+
+/**
+ * New-recipe modal (AI or manual). Pass `initial` (an existing recipe row) to
+ * open it prefilled in edit mode; save then goes through updateRecipe.
+ */
+export default function RecipeBuilder({ onClose, onSaved, initial = null }) {
+  const isEdit = Boolean(initial?.id);
   const [tab, setTab] = useState("ai");
   const [prompt, setPrompt] = useState("");
   const [servings, setServings] = useState(2);
   const [constraints, setConstraints] = useState("");
-  const [draft, setDraft] = useState(null);   // generated/edited recipe object
-  const [source, setSource] = useState("ai");
+  const [draft, setDraft] = useState(() => (initial ? fromInitial(initial) : null));   // generated/edited recipe object
+  const [source, setSource] = useState(initial?.source || "ai");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,12 +58,14 @@ export default function RecipeBuilder({ onClose, onSaved }) {
     if (!draft.title?.trim()) { setError("Give the recipe a title."); return; }
     setBusy(true); setError(null);
     try {
-      const saved = await createRecipe({
+      const payload = {
         ...draft,
         ingredients: draft.ingredients.filter((i) => i.item.trim()),
         steps: draft.steps.filter((s) => s.trim()),
-        source,
-      });
+      };
+      const saved = isEdit
+        ? await updateRecipe(initial.id, payload)
+        : await createRecipe({ ...payload, source });
       onSaved(saved);
     } catch (e) { setError(e.message); setBusy(false); }
   };
@@ -60,7 +78,7 @@ export default function RecipeBuilder({ onClose, onSaved }) {
     <div className="doc-viewer-overlay" onClick={onClose}>
       <div className="doc-viewer-modal" style={{ maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
-          <span className="doc-viewer-title"><i className="fa-solid fa-hat-chef" /> New recipe</span>
+          <span className="doc-viewer-title"><i className={`fa-solid ${isEdit ? "fa-pen" : "fa-hat-chef"}`} /> {isEdit ? "Edit recipe" : "New recipe"}</span>
           <button className="icon-x" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
         </div>
 
@@ -89,7 +107,7 @@ export default function RecipeBuilder({ onClose, onSaved }) {
 
           {draft && (
             <>
-              {source === "ai" && <p className="nut-ai-badge"><i className="fa-solid fa-wand-magic-sparkles" /> AI draft — edit anything, then save.</p>}
+              {!isEdit && source === "ai" && <p className="nut-ai-badge"><i className="fa-solid fa-wand-magic-sparkles" /> AI draft — edit anything, then save.</p>}
               <input className="field-grow" placeholder="Title" value={draft.title} onChange={(e) => setD("title", e.target.value)} />
               <textarea rows={2} placeholder="Description" value={draft.description} onChange={(e) => setD("description", e.target.value)} style={{ resize: "vertical" }} />
               <div className="nut-macro-grid five">
@@ -126,8 +144,9 @@ export default function RecipeBuilder({ onClose, onSaved }) {
 
               {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
               <div className="form-row">
-                <button className="btn" onClick={save} disabled={busy}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save recipe"}</button>
-                {source === "ai" && <button className="btn btn-ghost" onClick={() => setDraft(null)}>Back</button>}
+                <button className="btn" onClick={save} disabled={busy}>{busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : isEdit ? "Save changes" : "Save recipe"}</button>
+                {isEdit && <button className="btn btn-ghost" onClick={onClose}>Cancel</button>}
+                {!isEdit && source === "ai" && <button className="btn btn-ghost" onClick={() => setDraft(null)}>Back</button>}
               </div>
             </>
           )}

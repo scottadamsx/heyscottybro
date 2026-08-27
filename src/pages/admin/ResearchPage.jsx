@@ -6,6 +6,7 @@ import {
   RESEARCH_STATUSES,
 } from "../../api/researchApi";
 import DocLinks from "../../components/docs/DocLinks";
+import { useConfirm } from "../../hooks/useConfirm";
 import "./research.css";
 
 const STATUS_META = {
@@ -17,6 +18,7 @@ const STATUS_META = {
 
 export default function ResearchPage() {
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -55,7 +57,7 @@ export default function ResearchPage() {
   }
 
   async function remove(r) {
-    if (!window.confirm(`Delete "${r.title}" and its document links?`)) return;
+    if (!await confirm(`Delete "${r.title}" and its document links?`, { title: "Delete request", confirmLabel: "Delete" })) return;
     try { await deleteResearchRequest(r.id); setRequests((rs) => rs.filter((x) => x.id !== r.id)); addToast("Deleted", "success"); }
     catch (err) { addToast(err.message || "Could not delete", "error"); }
   }
@@ -64,6 +66,7 @@ export default function ResearchPage() {
 
   return (
     <div className="module-page research-page">
+      {dialog}
       <div className="module-header">
         <h1><i className="fa-solid fa-magnifying-glass-chart" /> Research</h1>
         <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{openCount} open</span>

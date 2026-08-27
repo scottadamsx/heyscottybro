@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
-import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
+import { formatDisplayDate, toDateStr , formatTime12 } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
@@ -180,7 +180,7 @@ export default function TaskDetailPage() {
               <dt>Due date</dt>
               <dd style={overdue ? { color: "var(--red)" } : undefined}>
                 {task.date ? formatDisplayDate(task.date) : "No due date"}
-                {task.time ? ` · ${task.time}` : ""}
+                {task.time ? ` · ${formatTime12(task.time)}` : ""}
               </dd>
 
               <dt>Repeats</dt>

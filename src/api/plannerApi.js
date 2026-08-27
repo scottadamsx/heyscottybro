@@ -612,18 +612,23 @@ export async function deleteInitiative(id) {
 
 /* ── Auth ────────────────────────────────────── */
 export async function login(email, password) {
-  if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } return; }
+  if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } return { ok: true }; }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
+  return { ok: true };
 }
 
+// Resolves { ok: true, redirected: false } in local mode — the caller navigates
+// with react-router. In Supabase mode the OAuth flow leaves the page, so the
+// promise resolving means the redirect is under way.
 export async function loginWithGoogle() {
-  if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } window.location.href = "/admin/dashboard"; return; }
+  if (isLocalMode()) { try { localStorage.setItem("localSession", "1"); } catch { /* noop */ } return { ok: true, redirected: false }; }
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${window.location.origin}/admin/dashboard` },
   });
   if (error) throw error;
+  return { ok: true, redirected: true };
 }
 
 export async function logout() {

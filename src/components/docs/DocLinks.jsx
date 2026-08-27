@@ -40,7 +40,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
     setLoading(true);
     loadDocLinks(entityType, entityId)
       .then((ls) => { setLinks(ls); summarize(ls); })
-      .catch(() => {})
+      .catch((err) => { console.warn("[doc-links] load failed", err); addToast(`Couldn't load linked docs: ${err?.message || err}`, "error"); })
       .finally(() => setLoading(false));
   };
   useEffect(() => { if (entityId) refresh(); /* eslint-disable-next-line */ }, [entityType, entityId]);

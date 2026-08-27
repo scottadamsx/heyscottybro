@@ -12,6 +12,7 @@ import { DesktopProvider, DesktopArea, Taskbar, useDesktop } from "../../compone
 /** In desktop mode a rail link opens/focuses a window instead of swapping the page. */
 function RailLink({ to, className, title, children, end, onClick, style }) {
   const desk = useDesktop();
+  if (desk && to === "/") return <a href="/" target="_blank" rel="noopener" className={typeof className === "function" ? className({ isActive: false }) : className} title={title} style={style} onClick={onClick}>{children}</a>;
   if (!desk || !to.startsWith("/admin")) return <NavLink to={to} className={className} title={title} end={end} onClick={onClick} style={style}>{children}</NavLink>;
   const space = to.replace(/^\/admin\/?/, "").split(/[/?]/)[0];
   const isActive = desk.focused && desk.focused.path.replace(/^\/admin\/?/, "").split(/[/?]/)[0] === space;
@@ -114,10 +115,10 @@ export default function AdminLayout() {
                   <i className="fa-solid fa-table-columns" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Show full menu</div></span>
                 </button>
-                <NavLink to="/" end className="admin-sub-link" onClick={() => setMenuOpen(false)}>
+                <RailLink to="/" className="admin-sub-link" onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-globe" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
-                </NavLink>
+                </RailLink>
                 <button className="admin-sub-link admin-side-logout" onClick={handleLogout}>
                   <i className="fa-solid fa-right-from-bracket" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
@@ -158,10 +159,10 @@ export default function AdminLayout() {
           <i className="fa-solid fa-gear" />
           <span className="admin-rail-label">Settings</span>
         </RailLink>
-        <NavLink to="/" className="admin-rail-link" title="View Site" end>
+        <RailLink to="/" className="admin-rail-link" title="View Site">
           <i className="fa-solid fa-globe" />
           <span className="admin-rail-label">View Site</span>
-        </NavLink>
+        </RailLink>
         <button className="admin-rail-link admin-rail-logout" onClick={handleLogout} title="Logout">
           <i className="fa-solid fa-right-from-bracket" />
           <span className="admin-rail-label">Logout</span>
@@ -210,10 +211,10 @@ export default function AdminLayout() {
               </RailLink>
             ))}
             <div className="admin-pop-divider" />
-            <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length + 2 }}>
+            <RailLink to="/" className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length + 2 }}>
               <i className="fa-solid fa-globe" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
-            </NavLink>
+            </RailLink>
             <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": navItems.length + 3 }}>
               <i className="fa-solid fa-right-from-bracket" />
               <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>

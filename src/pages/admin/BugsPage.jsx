@@ -104,8 +104,8 @@ export default function BugsPage() {
       setForm({ ...EMPTY_FORM });
       setShowForm(false);
       addToast(form.type === "feature" ? "Feature request added." : "Bug reported.", "success");
-    } catch {
-      addToast("Failed to create.", "error");
+    } catch (err) {
+      addToast(`Failed to create: ${err?.message || err}`, "error");
     } finally {
       setSaving(false);
     }
@@ -115,8 +115,8 @@ export default function BugsPage() {
     try {
       const updated = await updateBug(id, fields);
       setBugs(prev => prev.map(b => b.id === id ? updated : b));
-    } catch {
-      addToast("Update failed.", "error");
+    } catch (err) {
+      addToast(`Update failed: ${err?.message || err}`, "error");
     }
   };
 
@@ -127,8 +127,8 @@ export default function BugsPage() {
       setBugs(prev => prev.filter(b => b.id !== id));
       if (expanded === id) setExpanded(null);
       addToast("Deleted.", "success");
-    } catch {
-      addToast("Delete failed.", "error");
+    } catch (err) {
+      addToast(`Delete failed: ${err?.message || err}`, "error");
     }
   };
 
@@ -152,8 +152,8 @@ export default function BugsPage() {
     try {
       const r = await exportBugsZip();
       addToast(`Exported ${r.bugs} bug(s) + ${r.features} request(s), ${r.screenshots} screenshot(s).`, "success");
-    } catch {
-      addToast("Export failed.", "error");
+    } catch (err) {
+      addToast(`Export failed: ${err?.message || err}`, "error");
     } finally {
       setExporting(false);
     }
@@ -184,8 +184,8 @@ export default function BugsPage() {
     try {
       const updated = await removeScreenshot(bug, path);
       setBugs(prev => prev.map(b => b.id === updated.id ? updated : b));
-    } catch {
-      addToast("Couldn't remove screenshot.", "error");
+    } catch (err) {
+      addToast(`Couldn't remove screenshot: ${err?.message || err}`, "error");
     }
   };
 

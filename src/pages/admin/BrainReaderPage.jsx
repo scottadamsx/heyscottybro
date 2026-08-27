@@ -48,7 +48,7 @@ export default function BrainReaderPage() {
   }, [slug]);
 
   // Mark the originating doc link read, once, when arriving from a host item.
-  useEffect(() => { if (linkId) setDocRead(linkId, true).catch(() => {}); }, [linkId]);
+  useEffect(() => { if (linkId) setDocRead(linkId, true).catch((err) => console.warn("[brain-reader] mark doc link read failed", err)); }, [linkId]);
 
   const html = useMemo(
     () => (node ? renderMarkdown(prepArticle(node.body || "_(empty document)_")) : ""),

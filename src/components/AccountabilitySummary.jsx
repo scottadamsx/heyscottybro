@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
 import { loadAccountability, saveAccountability } from "../api/accountabilityApi";
+import { useToast } from "../contexts/ToastContext";
 
 function genId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -11,6 +12,7 @@ function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.ge
 
 export default function AccountabilitySummary() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   // Source of truth is Supabase (accountability_state) — the SAME store the
   // Hearth/Accountability page reads. This card used to read localStorage only,
   // so on any device/session where the mirror was empty it showed "No trackers
@@ -21,9 +23,11 @@ export default function AccountabilitySummary() {
 
   useEffect(() => {
     let alive = true;
-    loadAccountability().then((d) => { if (alive) { setData(d); setReady(true); } });
+    loadAccountability()
+      .then((d) => { if (alive) { setData(d); setReady(true); } })
+      .catch((err) => { if (alive) addToast(err?.message || "Couldn't load accountability.", "error"); });
     return () => { alive = false; };
-  }, []);
+  }, [addToast]);
 
   // Debounced write-through so a quick "Mark done" tap persists to Supabase
   // (and the localStorage mirror) without a write per render.
@@ -31,9 +35,11 @@ export default function AccountabilitySummary() {
   useEffect(() => {
     if (!ready) return;
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => { saveAccountability(data); }, 500);
+    saveTimer.current = setTimeout(() => {
+      saveAccountability(data).catch((err) => addToast(err?.message || "Couldn't save accountability.", "error"));
+    }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [data, ready]);
+  }, [data, ready, addToast]);
 
   // Computed per render (not module-level) so it stays correct past midnight.
   const todayStr = toDateStr(new Date());

@@ -10,7 +10,7 @@ import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
 /**
  * LIFE — health & happiness in one space: Food (nutrition), Recipes, Fitness
- * (gym log, promoted out of the old Tools junk drawer), Habits, Dates, and the
+ * (gym log, promoted out of the old Tools junk drawer), Habits, and the
  * optional Smoke tracker. Answers: "am I healthy and happy?"
  */
 export default function LifePage() {

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { GRAM_PRESETS, TAPER_INTERVAL, TAPER_STEP, FLOWER_THC_PCT, DAY, genId, toDateStr, today, timeAgo, taperDays, taperedCapG } from "../../utils/weedCalc";
 
 export default function ScottyView({ state, onUpdate }) {
@@ -7,6 +8,7 @@ export default function ScottyView({ state, onUpdate }) {
   const [selectedG, setSelectedG] = useState(null);
   const [customG, setCustomG] = useState("");
   const [penHits, setPenHits] = useState(1);
+  const { confirm, dialog } = useConfirm();
 
   const s = state.scott;
   const conv = state.penGramEquiv;
@@ -46,6 +48,7 @@ export default function ScottyView({ state, onUpdate }) {
 
   return (
     <>
+      {dialog}
       <div className="wt-card">
         <div className="wt-card-head">
           <div>
@@ -174,7 +177,7 @@ export default function ScottyView({ state, onUpdate }) {
               <strong>0.1g/day</strong>
             </div>
             <button className="wt-ghost-btn" style={{ marginTop: "0.5rem" }}
-              onClick={() => { if (confirm("Reset taper timer?")) onUpdate(d => { d.scott.taperStart = null; }); }}>
+              onClick={async () => { if (await confirm("Reset taper timer?", { title: "Reset taper", confirmLabel: "Reset" })) onUpdate(d => { d.scott.taperStart = null; }); }}>
               Reset taper
             </button>
           </div>

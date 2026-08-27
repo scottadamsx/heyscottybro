@@ -39,8 +39,10 @@ export async function loadAccountability() {
     const local = normalize(readLocal());
     if (local.trackers.length || local.logs.length) { await saveAccountability(local); return local; }
     return { ...EMPTY };
-  } catch {
-    return normalize(readLocal());
+  } catch (err) {
+    // QF-3: a real Supabase error must not silently degrade to the local mirror.
+    console.error("[accountability] load failed", err);
+    throw new Error(`Couldn't load accountability from Supabase: ${err?.message || err}`);
   }
 }
 
@@ -49,11 +51,16 @@ export async function saveAccountability(data) {
   writeLocal(state); // offline mirror stays current regardless of network
   try {
     const userId = await uid();
-    if (!userId) return;
+    if (!userId) return { ok: true, local: true };
     const { error } = await supabase.from("accountability_state").upsert(
       { user_id: userId, state, updated_at: new Date().toISOString() },
       { onConflict: "user_id" },
     );
     if (error) throw error;
-  } catch { /* offline: localStorage mirror already written above */ }
+    return { ok: true };
+  } catch (err) {
+    // The localStorage mirror is already written; the caller decides how to surface this.
+    console.error("[accountability] save failed", err);
+    throw new Error(`Couldn't save accountability to Supabase: ${err?.message || err}`);
+  }
 }

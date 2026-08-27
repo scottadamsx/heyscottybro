@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 // trace, a Supabase constraint message, a full API error. We show the start so
 // the toast stays compact, and hand over the COMPLETE message via copy/expand.
 const PREVIEW_CHARS = 140;
+// Spoken prefix so screen-reader users hear the toast kind, not just the colour/icon.
+const TYPE_PREFIX = { error: "Error: ", success: "Success: ", warning: "Warning: ", info: "Notice: " };
 
 function copyToClipboard(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
@@ -59,7 +61,7 @@ export function ToastProvider({ children }) {
 function ToastContainer({ toasts, dismiss }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="toast-stack" style={{
+    <div className="toast-stack" role="status" aria-live="polite" style={{
       position: "fixed", top: "1rem", right: "1rem", zIndex: 9999,
       display: "flex", flexDirection: "column", gap: "0.5rem",
       maxWidth: "360px", width: "calc(100vw - 2rem)",
@@ -113,6 +115,7 @@ function ToastItem({ toast: t, dismiss }) {
       <span style={{ fontSize: "1rem", flexShrink: 0, marginTop: "1px", color: accent }}>
         <i className={`fa-solid ${t.type === "error" ? "fa-xmark" : t.type === "success" ? "fa-check" : t.type === "warning" ? "fa-triangle-exclamation" : "fa-circle-info"}`} aria-hidden="true" />
       </span>
+      <span className="visually-hidden">{TYPE_PREFIX[t.type] || TYPE_PREFIX.info}</span>
 
       <div style={{ flex: 1, minWidth: 0, color: accent }}>
         <span

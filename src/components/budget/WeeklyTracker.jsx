@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const WEEKS_PER_MONTH = 4.33;
 
@@ -26,6 +27,7 @@ export default function WeeklyTracker({
   onDeleteTx,
   onLogBill,
 }) {
+  const { confirm, dialog } = useConfirm();
   const [weekOffset, setWeekOffset] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -170,6 +172,7 @@ export default function WeeklyTracker({
 
   return (
     <div className={`bud-week ${expanded ? "expanded" : ""}`}>
+      {dialog}
       <div className="bud-week-nav">
         <button type="button" className="btn-mini" onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week">
           <i className="fa-solid fa-chevron-left" />
@@ -310,7 +313,7 @@ export default function WeeklyTracker({
                   <div className="bud-tx-amount">{signed < 0 ? "-" : "+"}{formatMoney(signed)}</div>
                   <div className="bud-tx-actions">
                     <button type="button" className="btn-mini" onClick={() => startEdit(tx)}><i className="fa-solid fa-pen" /></button>
-                    <button type="button" className="btn-mini danger" onClick={() => { if (confirm(`Delete "${tx.description}"?`)) onDeleteTx(tx.id); }}><i className="fa-solid fa-trash" /></button>
+                    <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
                   </div>
                 </div>
               );

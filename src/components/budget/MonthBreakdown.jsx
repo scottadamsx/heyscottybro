@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { formatMoney } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
+import { useConfirm } from "../../hooks/useConfirm";
 
 export default function MonthBreakdown({ month, categories, onUpdateTx, onDeleteTx, onLogFromSource }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
+  const { confirm, dialog } = useConfirm();
 
   const startEdit = (tx) => {
     setEditingId(tx.id);
@@ -28,6 +30,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
 
   return (
     <div className="bud-breakdown">
+      {dialog}
       <div className="bud-breakdown-grid">
         <div className="bud-breakdown-col">
           <div className="bud-breakdown-head">
@@ -70,7 +73,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                 <div className="bud-tx-amount">{signed >= 0 ? "+" : "-"}{formatMoney(signed)}</div>
                 <div className="bud-tx-actions">
                   <button type="button" className="btn-mini" onClick={() => startEdit(tx)} aria-label="Edit"><i className="fa-solid fa-pen" /></button>
-                  <button type="button" className="btn-mini danger" onClick={() => { if (confirm(`Delete "${tx.description}"?`)) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
+                  <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
                 </div>
               </div>
             );

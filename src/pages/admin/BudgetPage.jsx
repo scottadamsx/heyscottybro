@@ -8,6 +8,7 @@ import {
   loadTransactions, newTransaction, updateTransaction, deleteTransaction,
 } from "../../api/plannerApi";
 import PageTabs from "../../components/PageTabs";
+import { useToast } from "../../contexts/ToastContext";
 import BudgetDashboard from "../../components/budget/BudgetDashboard";
 import BudgetTransactions from "../../components/budget/BudgetTransactions";
 import BudgetReconcile from "../../components/budget/BudgetReconcile";
@@ -58,6 +59,7 @@ const TABS = [
 ];
 
 export default function BudgetPage() {
+  const { addToast } = useToast();
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState(() => {
     const saved = sessionStorage.getItem("budgetTab");
@@ -127,10 +129,13 @@ export default function BudgetPage() {
     if (!ready) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveBudgetConfig(pageToApi(config, simulations, startingBalance)).catch(() => {});
+      saveBudgetConfig(pageToApi(config, simulations, startingBalance)).catch((err) => {
+        console.warn("[budget] config save failed", err);
+        addToast(`Budget settings didn't save: ${err?.message || err}`, "error");
+      });
     }, 600);
     return () => clearTimeout(saveTimer.current);
-  }, [ready, config, simulations, startingBalance]);
+  }, [ready, config, simulations, startingBalance, addToast]);
 
   // Reconciling setter: children keep calling setTransactions(updater) as
   // before, but every change is diffed against the previous list and the delta
@@ -142,7 +147,14 @@ export default function BudgetPage() {
       const prevById = new Map(prev.map((t) => [t.id, t]));
 
       // Deletes
-      for (const t of prev) if (!nextById.has(t.id)) deleteTransaction(t.id).catch(() => {});
+      for (const t of prev) if (!nextById.has(t.id)) {
+        deleteTransaction(t.id).catch((err) => {
+          console.warn("[budget] delete failed", err);
+          addToast(`Couldn't delete "${t.description}": ${err?.message || err}`, "error");
+          // Revert: put the row back if it's still gone.
+          setTxState((cur) => (cur.some((x) => x.id === t.id) ? cur : [t, ...cur]));
+        });
+      }
 
       // Inserts + updates
       for (const t of next) {
@@ -160,7 +172,12 @@ export default function BudgetPage() {
             if (saved?.id) setTxState((cur) => cur.map((x) => (x.id === t.id
               ? { ...uiShape(saved), reconciled: t.reconciled ?? false, is_bill: t.is_bill ?? false }
               : x)));
-          }).catch(() => {});
+          }).catch((err) => {
+            console.warn("[budget] insert failed", err);
+            addToast(`Couldn't save "${t.description}": ${err?.message || err}`, "error");
+            // Revert: drop the unsaved optimistic row.
+            setTxState((cur) => cur.filter((x) => x.id !== t.id));
+          });
         } else if (txChanged(before, t)) {
           // Persist core fields together; persist optional flags separately so a
           // DB without those columns only loses that flag, not the edit.
@@ -169,18 +186,27 @@ export default function BudgetPage() {
           if (coreChanged) {
             const patch = {};
             core.forEach((f) => { patch[f] = t[f]; });
-            updateTransaction(t.id, patch).catch(() => {});
+            updateTransaction(t.id, patch).catch((err) => {
+              console.warn("[budget] update failed", err);
+              addToast(`Couldn't update "${t.description}": ${err?.message || err}`, "error");
+              // Revert core fields to their last-known-saved values.
+              setTxState((cur) => cur.map((x) => (x.id === t.id ? { ...x, ...Object.fromEntries(core.map((f) => [f, before[f]])) } : x)));
+            });
           }
           OPTIONAL_TX_COLS.forEach((f) => {
             if ((before[f] ?? false) !== (t[f] ?? false)) {
-              updateTransaction(t.id, { [f]: t[f] }).catch(() => {});
+              updateTransaction(t.id, { [f]: t[f] }).catch((err) => {
+                console.warn(`[budget] update ${f} failed`, err);
+                addToast(`Couldn't update ${f.replace(/_/g, " ")} on "${t.description}": ${err?.message || err}`, "error");
+                setTxState((cur) => cur.map((x) => (x.id === t.id ? { ...x, [f]: before[f] ?? false } : x)));
+              });
             }
           });
         }
       }
       return next;
     });
-  }, []);
+  }, [addToast]);
 
   const switchTab = id => { setTab(id); sessionStorage.setItem("budgetTab", id); };
 

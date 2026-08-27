@@ -73,24 +73,33 @@ export default function CalendarPage() {
   };
 
   // event form
-  const fmtTime = (t) => { if (!t) return ""; const [h, m] = String(t).split(":").map(Number); const ap = h >= 12 ? "PM" : "AM"; return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ap}`; };
-  const timeRange = (e) => e.start_time ? `${fmtTime(e.start_time)}${e.end_time ? ` – ${fmtTime(e.end_time)}` : ""}` : "All day";
+  const timeRange = (e) => e.start_time ? `${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "All day";
+  const [loadErrors, setLoadErrors] = useState([]);
   const [selectedProject, setSelectedProject] = useState("");
   // task form
   const [taskName, setTaskName] = useState("");
   const [taskRecur, setTaskRecur] = useState("none");
 
+  const LOAD_SOURCES = [
+    ["tasks", loadReminders, []],
+    ["events", loadEvents, []],
+    ["transactions", loadTransactions, []],
+    ["projects", loadProjects, []],
+    ["event types", loadEventTypes, []],
+    ["journal", loadJournal, []],
+    ["workouts", loadWorkouts, []],
+    ["habits", loadAccountability, { trackers: [], logs: [] }],
+  ];
   const load = async () => {
-    const [r, e, t, p, et, j, w, acc] = await Promise.all([
-      loadReminders().catch(() => []),
-      loadEvents().catch(() => []),
-      loadTransactions().catch(() => []),
-      loadProjects().catch(() => []),
-      loadEventTypes().catch(() => []),
-      loadJournal().catch(() => []),
-      loadWorkouts().catch(() => []),
-      loadAccountability().catch(() => ({ trackers: [], logs: [] })),
-    ]);
+    const results = await Promise.allSettled(LOAD_SOURCES.map(([, fn]) => fn()));
+    const failed = [];
+    const [r, e, t, p, et, j, w, acc] = results.map((res, i) => {
+      if (res.status === "fulfilled") return res.value;
+      console.error(`[calendar] failed to load ${LOAD_SOURCES[i][0]}`, res.reason);
+      failed.push(LOAD_SOURCES[i][0]);
+      return LOAD_SOURCES[i][2];
+    });
+    setLoadErrors(failed);
     setReminders(r);
     setEvents(e);
     setTransactions(t);
@@ -312,6 +321,13 @@ export default function CalendarPage() {
   return (
     <div className="module-page">
       {dialog}
+      {loadErrors.length > 0 && (
+        <p className="error-message" role="alert">
+          Couldn't load {loadErrors.length} of {LOAD_SOURCES.length}: {loadErrors.join(", ")}
+          {" — "}
+          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
+        </p>
+      )}
       <div className="module-header">
         <h1>Calendar</h1>
         <div style={{ display: "flex", gap: "0.5rem" }}>

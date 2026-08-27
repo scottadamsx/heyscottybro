@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../../contexts/ToastContext";
 import {
   createShareToken,
   loadDocumentShares,
@@ -7,6 +8,7 @@ import {
 } from "../../api/documentsApi";
 
 export default function ShareModal({ doc, onClose }) {
+  const { addToast } = useToast();
   const [shares, setShares] = useState([]);
   const [email, setEmail] = useState("");
   const [expires, setExpires] = useState("never");
@@ -18,8 +20,11 @@ export default function ShareModal({ doc, onClose }) {
   const buildShareUrl = (token) => `${window.location.origin}/doc/${token}`;
 
   useEffect(() => {
-    loadDocumentShares(doc.id).then(setShares).catch(() => {}).finally(() => setLoading(false));
-  }, [doc.id]);
+    loadDocumentShares(doc.id)
+      .then(setShares)
+      .catch((err) => { console.warn("[share-modal] load shares failed", err); addToast(`Couldn't load share links: ${err?.message || err}`, "error"); })
+      .finally(() => setLoading(false));
+  }, [doc.id, addToast]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -58,7 +63,7 @@ export default function ShareModal({ doc, onClose }) {
     setSendingId(share.id);
     try {
       await emailShareLink({ to: recipient, documentName: doc.name, shareUrl });
-      alert(`Email sent to ${recipient}`);
+      addToast(`Email sent to ${recipient}`, "success");
     } catch {
       // Resend not configured or failed — fall back to the user's mail client.
       mailto(shareUrl);

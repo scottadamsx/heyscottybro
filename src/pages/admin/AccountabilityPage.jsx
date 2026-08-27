@@ -3,8 +3,10 @@ import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, saveAccountability } from "../../api/accountabilityApi";
 import DatePicker from "../../components/DatePicker";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
 
-const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "var(--orange)", "#f87171", "#a78bfa", "var(--orange)", "#ec4899"];
+const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "var(--orange)", "#f87171", "#a78bfa", "var(--cyan)", "#ec4899"];
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 
 function genId() {
@@ -58,6 +60,8 @@ export default function AccountabilityPage() {
   const [data, setData] = useState({ trackers: [], logs: [] });
   const [ready, setReady] = useState(false);
   const { trackers, logs } = data;
+  const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", emoji: "", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
@@ -71,7 +75,9 @@ export default function AccountabilityPage() {
   // Load from Supabase (with localStorage fallback) on mount.
   useEffect(() => {
     let alive = true;
-    loadAccountability().then((d) => { if (alive) { setData(d); setReady(true); } });
+    loadAccountability()
+      .then((d) => { if (alive) { setData(d); setReady(true); } })
+      .catch((err) => { if (alive) { setReady(true); addToast(err?.message || "Couldn't load habits", "error"); } });
     return () => { alive = false; };
   }, []);
 
@@ -80,9 +86,12 @@ export default function AccountabilityPage() {
   useEffect(() => {
     if (!ready) return;
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => { saveAccountability(data); }, 500);
+    saveTimer.current = setTimeout(async () => {
+      try { await saveAccountability(data); }
+      catch (err) { addToast(err?.message || "Couldn't save accountability", "error"); }
+    }, 500);
     return () => clearTimeout(saveTimer.current);
-  }, [data, ready]);
+  }, [data, ready, addToast]);
 
   useEffect(() => {
     const f = params.get("focus");
@@ -100,8 +109,8 @@ export default function AccountabilityPage() {
     setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
     setShowAdd(false);
   };
-  const deleteTracker = (id) => {
-    if (!confirm("Delete this tracker and its history?")) return;
+  const deleteTracker = async (id) => {
+    if (!await confirm("Delete this tracker and its history?", { title: "Delete tracker", confirmLabel: "Delete" })) return;
     update((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); return d; });
     if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
   };
@@ -298,6 +307,7 @@ export default function AccountabilityPage() {
 
   return (
     <div className="module-page">
+      {dialog}
       <div className="module-header">
         <h1>Accountability</h1>
         <button className="btn" onClick={() => setShowAdd((s) => !s)}>

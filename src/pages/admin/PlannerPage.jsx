@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ExportKit } from "../../components/ui";
 import { loadReminders, loadEvents } from "../../api/plannerApi";
-import { expandReminders, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { expandReminders, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
 import { useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import CalendarPage from "./CalendarPage";
@@ -48,7 +48,7 @@ export default function PlannerPage() {
                 L.push(`## ${d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}`);
                 if (!day.length && !evs.length) L.push("_free_");
                 evs.forEach((e) => L.push(`- ${e.title}`));
-                day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${r.time}` : ""}`));
+                day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${formatTime12(r.time)}` : ""}`));
                 L.push("");
               }
               return L.join("\n");

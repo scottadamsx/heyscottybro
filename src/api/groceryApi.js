@@ -70,6 +70,33 @@ export async function saveReceipt(receipt, items) {
   return r;
 }
 
+/**
+ * Update a receipt's header fields and replace its line items.
+ * receipt: { store_id, purchase_date, subtotal, total }
+ * items:   [{ raw_text, quantity, unit_price, total_price }]
+ */
+export async function updateReceipt(id, receipt, items) {
+  const userId = await uid();
+  const { data: r, error: e1 } = await supabase.from("grocery_receipts")
+    .update(receipt).eq("id", id).eq("user_id", userId).select().single();
+  if (e1) throw e1;
+  const { error: eDel } = await supabase.from("grocery_receipt_items")
+    .delete().eq("receipt_id", id).eq("user_id", userId);
+  if (eDel) throw eDel;
+  const rows = (items || []).filter((it) => (it.raw_text || "").trim()).map((it) => ({
+    user_id: userId, receipt_id: id,
+    raw_text: it.raw_text.trim(),
+    quantity: it.quantity ?? 1,
+    unit_price: it.unit_price ?? null,
+    total_price: it.total_price ?? null,
+  }));
+  if (rows.length) {
+    const { error: e2 } = await supabase.from("grocery_receipt_items").insert(rows);
+    if (e2) throw e2;
+  }
+  return r;
+}
+
 export async function loadReceipts() {
   const userId = await uid();
   const { data, error } = await supabase.from("grocery_receipts")

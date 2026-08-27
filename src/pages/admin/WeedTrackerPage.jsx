@@ -45,15 +45,6 @@ export default function WeedTrackerPage() {
     <div className="module-page">
       <div className="module-header" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
         <h1>Wind Down</h1>
-        <div className="wt-profile-switcher">
-          <button
-            className={`wt-profile-btn scott${activeProfile === "scott" ? " active" : ""}`}
-            onClick={() => onUpdate(d => { d.activeProfile = "scott"; })}
-          >
-            <span className="wt-profile-dot" />
-            Scott
-          </button>
-        </div>
       </div>
 
       {activeProfile === "scott" && <ScottyView state={state} onUpdate={onUpdate} />}
