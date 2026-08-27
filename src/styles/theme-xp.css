@@ -24,6 +24,11 @@
   --xp-btn-pressed: inset -1px 1px #FFFFFF, inset 1px 1px #E6E6E6, inset 2px 2px #C6C6C6;
   --xp-menu: #D3E5FA;
   --xp-start-green: linear-gradient(180deg, #3C9E3C 0%, #57B857 3%, #4FAB4F 8%, #3E9C3E 15%, #369536 50%, #2F8A2F 86%, #227A22 100%);
+  --xp-client: #FCFBF4;
+  --xp-client-edge: #C6C2AE;
+  --xp-row-hover: linear-gradient(180deg, #4E8AFB 0%, #2E6FD8 100%);
+  --xp-row-rest: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(252,248,238,0.85));
+  --xp-caption-glow: rgba(255,255,255,0.42);
   --control-h: 27px;
   font-size: 13px; /* XP "Large Fonts" (120 DPI): Tahoma 10pt */
   -webkit-font-smoothing: auto;
@@ -62,15 +67,30 @@
 :root[data-theme="xp"] .admin-shell .day-modal,
 :root[data-theme="xp"] .admin-shell .modal-card,
 :root[data-theme="xp"] .admin-shell .modal {
-  background: var(--xp-face);
+  background: linear-gradient(180deg, #F6F3E7 0%, #ECE9D8 56%, #E2DECC 100%);
   border: 3px solid var(--xp-frame);
   border-top: none;
   border-radius: 8px 8px 0 0;
   box-shadow: none;
-  padding: 11px;
+  padding: 10px;
   overflow: hidden;
   transition: none;
   transform: none !important;
+  position: relative;
+}
+:root[data-theme="xp"] .admin-shell .db-card::before,
+:root[data-theme="xp"] .admin-shell .form-card::before,
+:root[data-theme="xp"] .admin-shell .event-card::before,
+:root[data-theme="xp"] .admin-shell .module-card::before,
+:root[data-theme="xp"] .admin-shell .uik-card::before {
+  content: "";
+  position: absolute;
+  top: 33px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--xp-caption-glow);
+  pointer-events: none;
 }
 :root[data-theme="xp"] .admin-shell .db-card:hover { border-color: var(--xp-frame); box-shadow: none; transform: none; }
 /* Caption bar: the FIRST title/header in the card spans the frame */
@@ -87,7 +107,7 @@
 :root[data-theme="xp"] .admin-shell .db-card-header,
 :root[data-theme="xp"] .admin-shell .uik-card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  height: 33px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  height: 33px; margin: 0 -10px 10px; padding: 0 8px 0 10px;
   background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .db-card-header .db-card-title,
@@ -96,6 +116,8 @@
 :root[data-theme="xp"] .admin-shell .db-card-header button,
 :root[data-theme="xp"] .admin-shell .db-card-header a.btn { height: 24px; min-width: 0; padding: 0 10px; font-size: 13px; }
 :root[data-theme="xp"] .admin-shell .db-card-header a:not(.btn) { color: #FFFFFF; font-size: 13px; text-decoration: underline; }
+:root[data-theme="xp"] .admin-shell .db-card-header .db-count { color: #DCE6FF; font-weight: 700; }
+:root[data-theme="xp"] .admin-shell .db-card-title i { color: #E7F0FF; }
 :root[data-theme="xp"] .admin-shell .day-modal-head { margin: 0; }
 :root[data-theme="xp"] .admin-shell .day-modal-dow, :root[data-theme="xp"] .admin-shell .day-modal-date { color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .day-modal-body { background: #FFFFFF; }
@@ -107,26 +129,46 @@
 
 /* ── ListView rows: flat, 17px, selection blue ── */
 :root[data-theme="xp"] .admin-shell .db-list-item {
-  background: transparent; border: none; border-radius: 0;
-  padding: 3px 5px; min-height: 20px; gap: 7px; transition: none; transform: none;
+  background: var(--xp-row-rest); border: none; border-radius: 2px;
+  padding: 5px 7px; min-height: 24px; gap: 9px; transition: none; transform: none;
+  box-shadow: inset 0 0 0 1px rgba(198, 194, 174, 0.45);
 }
-:root[data-theme="xp"] .admin-shell .db-list-item + .db-list-item { border-top: 1px dotted var(--xp-groupbox); }
+:root[data-theme="xp"] .admin-shell .db-list-item + .db-list-item { margin-top: 3px; }
 :root[data-theme="xp"] .admin-shell .db-list-item:hover,
-:root[data-theme="xp"] .admin-shell .db-list-item.selected { background: var(--xp-sel); color: #FFFFFF; transform: none; box-shadow: none; }
+:root[data-theme="xp"] .admin-shell .db-list-item.selected { background: var(--xp-row-hover); color: #FFFFFF; transform: none; box-shadow: inset 0 0 0 1px #1A4FAE; }
 :root[data-theme="xp"] .admin-shell .db-list-item:hover * { color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .db-list-item:hover .btn,
 :root[data-theme="xp"] .admin-shell .db-list-item:hover .btn-mini,
 :root[data-theme="xp"] .admin-shell .db-list-item:hover .btn-sm { color: #000000; }
+:root[data-theme="xp"] .admin-shell .db-list-item-title { font-weight: 700; color: #101010; }
+:root[data-theme="xp"] .admin-shell .db-list-item-subtitle { color: #4A4A4A; }
+:root[data-theme="xp"] .admin-shell .db-list-item:hover .db-list-item-subtitle { color: #EDF4FF; }
+:root[data-theme="xp"] .admin-shell .db-list-item-chevron { color: #5A5A5A; }
+:root[data-theme="xp"] .admin-shell .db-list-item:hover .db-list-item-chevron { color: #FFFFFF; }
 
 /* ── Group boxes: stat tiles, panels ── */
 :root[data-theme="xp"] .admin-shell .stat-item,
 :root[data-theme="xp"] .admin-shell .uik-stat,
 :root[data-theme="xp"] .admin-shell .brief-section,
 :root[data-theme="xp"] .admin-shell .fin-kpi {
-  background: transparent; border: 1px solid var(--xp-groupbox); border-radius: 3px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3F0E3 100%); border: 1px solid var(--xp-groupbox); border-radius: 3px;
   padding: 7px; box-shadow: none;
 }
 :root[data-theme="xp"] .admin-shell .stat-grid { gap: 7px; }
+:root[data-theme="xp"] .admin-shell .stat-label { color: #3D3D3D; }
+:root[data-theme="xp"] .admin-shell .stat-value {
+  color: #143E8D;
+  text-shadow: 1px 1px 0 #FFFFFF;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* Calendar dashboard cards: give list content a framed client area. */
+:root[data-theme="xp"] .admin-shell .db-card .db-list {
+  background: var(--xp-client);
+  border: 1px solid var(--xp-client-edge);
+  padding: 6px;
+}
 
 /* ── Push buttons: 23px tall, ≥75px wide, Tahoma 8pt ── */
 :root[data-theme="xp"] .admin-shell .btn,

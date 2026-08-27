@@ -47,6 +47,7 @@ export function DesktopProvider({ children, initialPath, onFocusPath }) {
     return [];
   });
   const areaRef = useRef(null);
+  const hydratedInitialPath = useRef(false);
   const zTop = useRef(Math.max(10, ...wins.map((w) => w.z || 0)));
 
   // Persist geometry + order.
@@ -81,8 +82,13 @@ export function DesktopProvider({ children, initialPath, onFocusPath }) {
   const setGeom = useCallback((id, g) => setWins((ws) => ws.map((w) => (w.id === id ? { ...w, ...g } : w))), []);
   const setPathTitle = useCallback((id, path, title, icon) => setWins((ws) => ws.map((w) => (w.id === id && (w.path !== path || w.title !== title) ? { ...w, path, title, icon } : w))), []);
 
-  // First visit with an empty desktop: open whatever URL we arrived on.
-  useEffect(() => { if (wins.length === 0 && initialPath) openWindow(initialPath); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // On first mount, always hydrate the desktop with the current URL.
+  // openWindow de-duplicates by "space", so this won't create duplicates.
+  useEffect(() => {
+    if (hydratedInitialPath.current || !initialPath) return;
+    hydratedInitialPath.current = true;
+    openWindow(initialPath);
+  }, [initialPath, openWindow]);
 
   const value = useMemo(() => ({ wins, focused, openWindow, close, minimize, toggleMax, focus, setGeom, setPathTitle, areaRef }), [wins, focused, openWindow, close, minimize, toggleMax, focus, setGeom, setPathTitle]);
   return <DesktopCtx.Provider value={value}>{children}</DesktopCtx.Provider>;

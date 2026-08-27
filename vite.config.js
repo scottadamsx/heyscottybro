@@ -247,6 +247,19 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devAuleControlPlugin],
     build: {
       outDir: "dist",
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (id.includes("react-force-graph-3d") || id.includes("three")) return "vendor-graph";
+            if (id.includes("react-pdf") || id.includes("pdfjs-dist")) return "vendor-pdf";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("@supabase/supabase-js")) return "vendor-supabase";
+            if (id.includes("react-router") || id.includes("@remix-run")) return "vendor-router";
+            if (id.includes("@anthropic-ai/claude-agent-sdk")) return "vendor-agent-sdk";
+          },
+        },
+      },
     },
     server: {
       proxy: {
