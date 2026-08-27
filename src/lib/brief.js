@@ -10,7 +10,7 @@
  *
  * buildBrief(inputs) -> { date, sections: [{key,title,icon,items:[{text,to?,tone?}]}], toMarkdown() }
  */
-import { toDateStr, formatMoney, remindersForDay, expandReminders, undatedReminders } from "../utils/plannerUtils";
+import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders } from "../utils/plannerUtils";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -43,8 +43,7 @@ export function buildBrief({
   ];
 
   // ── Agenda: today's + tomorrow's events ──
-  const agenda = events
-    .filter((e) => e.date === todayStr || e.date === addDaysStr(todayStr, 1))
+  const agenda = expandEvents(events, todayStr, addDaysStr(todayStr, 1))
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     .map((e) => {
       const t = e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";

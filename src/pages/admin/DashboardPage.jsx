@@ -89,7 +89,7 @@ export default function DashboardPage() {
   const todayStr = toDateStr(today);
 
   const upcomingEvents = data.events
-    .filter(e => e.date >= todayStr)
+    .filter(e => e.date >= todayStr || (e.end_date && e.end_date >= todayStr))
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     .slice(0, 5);
   const evTime = (e) => e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";
@@ -318,7 +318,7 @@ export default function DashboardPage() {
               <div className="db-list-item" key={e.id}>
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{e.title}</div>
-                  <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{evTime(e)}{e.description ? ` — ${e.description}` : ""}</div>
+                  <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{e.end_date && e.end_date > e.date ? " – " + formatDisplayDate(e.end_date) : ""}{evTime(e)}{e.description ? ` — ${e.description}` : ""}</div>
                 </div>
               </div>
             ))}

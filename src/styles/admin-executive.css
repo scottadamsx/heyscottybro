@@ -841,3 +841,5 @@
 .admin-shell .day-time-row { display: flex; align-items: center; gap: 8px; }
 .admin-shell .day-time-row label { font-size: 0.78rem; color: var(--text-secondary); }
 .admin-shell .day-time-row input[type="time"] { flex: 1; min-width: 0; }
+
+.admin-shell .day-span-note { font-size: 0.75rem; color: var(--text-muted); }

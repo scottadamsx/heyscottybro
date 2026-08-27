@@ -109,6 +109,7 @@ const COLLECTIONS = {
     fields: {
       title: { type: "string", required: true },
       date: { type: "date", required: true },
+      end_date: { type: "date", description: "Last day of a multi-day event (inclusive). Omit for a single day." },
       start_time: { type: "string", description: "HH:MM 24h — when it starts. Omit for all-day." },
       end_time: { type: "string", description: "HH:MM 24h — when it ends" },
       description: { type: "string", long: true },
@@ -119,7 +120,7 @@ const COLLECTIONS = {
       recur_times: { type: "number" },
     },
     load: loadEvents, create: newEvent, update: updateEvent, remove: deleteEvent,
-    echoFields: ["id", "title", "date", "start_time", "end_time", "recurrence", "project_id"],
+    echoFields: ["id", "title", "date", "end_date", "start_time", "end_time", "recurrence", "project_id"],
   },
   projects: {
     table: "projects",

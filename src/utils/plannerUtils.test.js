@@ -2,7 +2,7 @@
 // Run with: node src/utils/plannerUtils.test.js
 // (No test framework — plain assertions, same style as budgetProjection.test.js.)
 
-import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange } from "./plannerUtils.js";
+import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange, expandEvents } from "./plannerUtils.js";
 
 let passed = 0;
 let failed = 0;
@@ -137,6 +137,16 @@ test("remindersForDay includes a recurring occurrence landing on the day", () =>
   const r = [{ id: "1", name: "daily", date: "2026-06-08", recurrence: "daily" }];
   const today = remindersForDay(r, "2026-06-15");
   assert(today.length === 1 && today[0].date === "2026-06-15", `got ${JSON.stringify(datesOf(today))}`);
+});
+
+test("expandEvents spreads a multi-day event across its span and numbers the days", () => {
+  const ev = [{ id: "v", title: "Vacation", date: "2026-08-28", end_date: "2026-09-01", recurrence: "none" }];
+  const days = expandEvents(ev, "2026-08-01", "2026-08-31");
+  if (days.length !== 4) throw new Error("expected 4 August days, got " + days.length);
+  if (days[0].span_day !== 1 || days[0].span_total !== 5) throw new Error("span numbering wrong");
+  if (days[3].date !== "2026-08-31") throw new Error("last August day wrong");
+  const single = expandEvents([{ id: "s", title: "x", date: "2026-08-10", recurrence: "none" }], "2026-08-01", "2026-08-31");
+  if (single.length !== 1 || single[0].span_day) throw new Error("single-day event should not be spanned");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

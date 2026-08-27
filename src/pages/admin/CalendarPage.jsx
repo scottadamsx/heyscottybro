@@ -7,7 +7,7 @@ import {
 } from "../../api/plannerApi";
 import { loadWorkouts } from "../../api/workoutsApi";
 import { loadAccountability } from "../../api/accountabilityApi";
-import { expandReminders, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
+import { expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
@@ -67,6 +67,9 @@ export default function CalendarPage() {
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [endAuto, setEndAuto] = useState(true); // end_time follows start+1h until Scott edits it
+  const [endDate, setEndDate] = useState("");
+  const plusHour = (t) => { const [h, m] = t.split(":").map(Number); return String((h + 1) % 24).padStart(2, "0") + ":" + String(m).padStart(2, "0"); };
   const fmtTime = (t) => { if (!t) return ""; const [h, m] = String(t).split(":").map(Number); const ap = h >= 12 ? "PM" : "AM"; return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ap}`; };
   const timeRange = (e) => e.start_time ? `${fmtTime(e.start_time)}${e.end_time ? ` – ${fmtTime(e.end_time)}` : ""}` : "All day";
   const [selectedProject, setSelectedProject] = useState("");
@@ -155,9 +158,9 @@ export default function CalendarPage() {
     if (filterKind !== "tasks") {
       // expandReminders is generic over date/recurrence/recur_until/recur_times,
       // so it expands recurring events too (events have no `completed` to skip).
-      expandReminders(events.filter(byProject), toDateStr(first), toDateStr(last)).forEach((item) => {
+      expandEvents(events.filter(byProject), toDateStr(first), toDateStr(last)).forEach((item) => {
         map[item.date] = map[item.date] || [];
-        map[item.date].push({ kind: "event", label: item.title });
+        map[item.date].push({ kind: "event", label: item.span_total ? item.title + " (" + item.span_day + "/" + item.span_total + ")" : item.title });
       });
       transactions.filter((t) => t.type === "future").forEach((item) => {
         map[item.date] = map[item.date] || [];
@@ -211,7 +214,7 @@ export default function CalendarPage() {
   // Derived day data — auto-refreshes after load(). Filters applied.
   const byProject = (item) => !filterProject || String(item.project_id) === filterProject;
   const dayEvents = selectedDate && filterKind !== "tasks"
-    ? expandReminders(events.filter(byProject), selectedDate, selectedDate).sort((a, b) => String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
+    ? expandEvents(events.filter(byProject), selectedDate, selectedDate).sort((a, b) => String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     : [];
   const dayTasks = selectedDate && filterKind !== "events"
     ? expandReminders(reminders.filter((r) => !r.completed && byProject(r)), selectedDate, selectedDate)
@@ -250,13 +253,15 @@ export default function CalendarPage() {
       recurrence: "none",
       start_time: startTime || null,
       end_time: endTime || null,
+      end_date: endDate && endDate > selectedDate ? endDate : null,
     };
     setEvents((prev) => [...prev, optimistic]);
-    setTitle(""); setDescription(""); setSelectedEventType(""); setStartTime(""); setEndTime("");
+    setTitle(""); setDescription(""); setSelectedEventType(""); setStartTime(""); setEndTime(""); setEndDate(""); setEndAuto(true);
     try {
       await newEvent({
         start_time: optimistic.start_time,
         end_time: optimistic.end_time,
+        end_date: optimistic.end_date,
         title: optimistic.title,
         description: optimistic.description,
         date: selectedDate,
@@ -442,7 +447,7 @@ export default function CalendarPage() {
                 {dayEvents.map((e) => (
                   <div className="day-item" key={e.id}>
                     <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
-                    <span className="day-item-time">{timeRange(e)}</span>
+                    <span className="day-item-time">{e.span_total ? "Day " + e.span_day + " of " + e.span_total : timeRange(e)}</span>
                     <div className="day-item-body">
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
@@ -606,10 +611,15 @@ export default function CalendarPage() {
                   <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
                   <div className="day-time-row">
                     <label htmlFor="ev-start">Start</label>
-                    <input id="ev-start" type="time" value={startTime} onChange={(e) => { setStartTime(e.target.value); if (e.target.value && !endTime) { const [h, m] = e.target.value.split(":").map(Number); setEndTime(`${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`); } }} />
+                    <input id="ev-start" type="time" value={startTime} onChange={(e) => { const v = e.target.value; setStartTime(v); if (v && endAuto) setEndTime(plusHour(v)); }} />
                     <label htmlFor="ev-end">End</label>
-                    <input id="ev-end" type="time" value={endTime} min={startTime || undefined} onChange={(e) => setEndTime(e.target.value)} />
-                    {startTime && <button type="button" className="btn-mini" onClick={() => { setStartTime(""); setEndTime(""); }}>All day</button>}
+                    <input id="ev-end" type="time" value={endTime} onChange={(e) => { setEndTime(e.target.value); setEndAuto(false); }} />
+                    {startTime && <button type="button" className="btn-mini" onClick={() => { setStartTime(""); setEndTime(""); setEndAuto(true); }}>All day</button>}
+                  </div>
+                  <div className="day-time-row">
+                    <label htmlFor="ev-end-date">Ends on</label>
+                    <input id="ev-end-date" type="date" value={endDate || selectedDate} min={selectedDate} onChange={(e) => setEndDate(e.target.value)} />
+                    <span className="day-span-note">{endDate && endDate > selectedDate ? (Math.round((new Date(endDate + "T00:00:00") - new Date(selectedDate + "T00:00:00")) / 86400000) + 1) + " days" : "Same day — pick a later date for a multi-day event"}</span>
                   </div>
                   <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ resize: "vertical" }} />
                   {eventTypes.length > 0 && (

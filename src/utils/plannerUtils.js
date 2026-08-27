@@ -143,3 +143,27 @@ export function remindersForDay(reminders, dayStr) {
 export function undatedReminders(reminders) {
   return (reminders || []).filter((r) => !r.completed && !r.date);
 }
+
+/**
+ * Events, expanded like reminders (recurrence) AND spread across every day of
+ * a multi-day span (date .. end_date, inclusive). Each occurrence carries
+ * span_day / span_total (1-based) so a day view can say "Day 2 of 5".
+ */
+export function expandEvents(events, startDate, endDate) {
+  const out = [];
+  const winStart = parseDate(startDate);
+  const winEnd = parseDate(endDate);
+  const seen = new Set();
+  const push = (e) => { const k = e.id + "|" + e.date; if (!seen.has(k)) { seen.add(k); out.push(e); } };
+  for (const e of events) {
+    if (!e.date) continue;
+    const spanEnd = e.end_date && e.end_date > e.date ? parseDate(e.end_date) : null;
+    if (!spanEnd) { expandReminders([e], startDate, endDate).forEach(push); continue; }
+    const total = Math.round((spanEnd - parseDate(e.date)) / 86400000) + 1;
+    const cur = parseDate(e.date);
+    for (let i = 1; i <= total; i++, cur.setDate(cur.getDate() + 1)) {
+      if (cur >= winStart && cur <= winEnd) push({ ...e, date: toDateStr(cur), span_day: i, span_total: total, first_day: e.date, last_day: e.end_date });
+    }
+  }
+  return out;
+}
