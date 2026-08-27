@@ -6,8 +6,20 @@ import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
 
 const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
+const toForm = (r) => ({
+  name: r.name || "",
+  date: r.date || "",
+  time: r.time ? String(r.time).slice(0, 5) : "",
+  description: r.description || "",
+  recurrence: r.recurrence || "none",
+  project_id: r.project_id || "",
+  recur_until: r.recur_until || "",
+  recur_times: r.recur_times != null ? String(r.recur_times) : "",
+  show_on_calendar: r.show_on_calendar !== false,
+});
 
 export default function RemindersPage() {
   const [params] = useSearchParams();
@@ -16,7 +28,10 @@ export default function RemindersPage() {
   const filter = params.get("project") || "all"; // "all" | "none" | project id (driven by the side panel)
 
   const { confirm, dialog } = useConfirm();
+  const { addToast } = useToast();
   const [list, setList] = useState([]);
+  const [editing, setEditing] = useState(null); // reminder id being edited (same form panel, prefilled)
+  const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
@@ -72,25 +87,60 @@ export default function RemindersPage() {
     try { await deleteReminder(id); } catch { await load(); }
   };
 
-  const addReminder = async (e) => {
-    e.preventDefault();
-    if (!form.name) return;
-    const tempId = `temp-${Date.now()}`;
-    const fields = {
-      name: form.name,
-      date: form.date || null,
-      time: form.time || null,
-      description: form.description || null,
-      recurrence: form.recurrence,
-      project_id: form.project_id || null,
-      recur_until: form.recur_until || null,
-      recur_times: form.recur_times ? Number(form.recur_times) : null,
-      show_on_calendar: form.show_on_calendar,
-    };
-    setList((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
+  const resetForm = () => {
     setForm(emptyForm);
     setShowDescription(false);
     setShowDateTime(false);
+    setEditing(null);
+  };
+  const closeForm = () => { resetForm(); setShowForm(false); };
+  const startEdit = (r) => {
+    setForm(toForm(r));
+    setShowDateTime(Boolean(r.date || r.time));
+    setShowDescription(Boolean(r.description));
+    setEditing(r.id);
+    setShowForm(true);
+  };
+
+  const fieldsFromForm = () => ({
+    name: form.name.trim(),
+    date: form.date || null,
+    time: form.time || null,
+    description: form.description || null,
+    recurrence: form.recurrence,
+    project_id: form.project_id || null,
+    recur_until: form.recurrence !== "none" ? (form.recur_until || null) : null,
+    recur_times: form.recurrence !== "none" && form.recur_times ? Number(form.recur_times) : null,
+    show_on_calendar: form.show_on_calendar,
+  });
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    const id = editing;
+    const prev = list.find((x) => x.id === id);
+    const fields = fieldsFromForm();
+    setSaving(true);
+    // Optimistic: apply locally, roll back and surface the real error on failure.
+    setList((l) => l.map((x) => x.id === id ? { ...x, ...fields } : x));
+    closeForm();
+    try {
+      await updateReminder(id, fields);
+      addToast("Task updated.", "success");
+    } catch (err) {
+      setList((l) => l.map((x) => x.id === id ? prev : x));
+      addToast(`Couldn't save task: ${err?.message || "unknown error"}`, "error");
+    } finally { setSaving(false); }
+  };
+
+  const addReminder = async (e) => {
+    e.preventDefault();
+    if (editing) return saveEdit(e);
+    if (!form.name) return;
+    const tempId = `temp-${Date.now()}`;
+    const fields = fieldsFromForm();
+    setList((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
+    resetForm();
     try {
       const saved = await newReminder(fields);
       if (saved?.id) {
@@ -98,8 +148,9 @@ export default function RemindersPage() {
       } else {
         await load();
       }
-    } catch {
+    } catch (err) {
       setList((prev) => prev.filter((r) => r.id !== tempId));
+      addToast(`Couldn't add task: ${err?.message || "unknown error"}`, "error");
     }
   };
 
@@ -129,7 +180,10 @@ export default function RemindersPage() {
           )}
         </span>
       </span>
-      <span>
+      <span className="header-actions">
+        <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
+          <i className="fa-solid fa-pen" /> Edit
+        </button>
         <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r.id)}>
           Done
         </button>
@@ -145,7 +199,7 @@ export default function RemindersPage() {
       {dialog}
       <div className="module-header">
         <h1>Tasks &amp; Reminders</h1>
-        <button className="btn" onClick={() => setShowForm((s) => !s)}>
+        <button className="btn" onClick={() => (showForm ? closeForm() : setShowForm(true))}>
           <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} /> {showForm ? "Close" : "New Task"}
         </button>
       </div>
@@ -156,8 +210,8 @@ export default function RemindersPage() {
           <aside className="tasks-form-panel">
             <form className="form-card" onSubmit={addReminder}>
               <div className="form-panel-head">
-                <h3>New task</h3>
-                <button type="button" className="icon-x" onClick={() => setShowForm(false)} aria-label="Close">
+                <h3>{editing ? "Edit task" : "New task"}</h3>
+                <button type="button" className="icon-x" onClick={closeForm} aria-label="Close">
                   <i className="fa-solid fa-xmark" />
                 </button>
               </div>
@@ -240,7 +294,10 @@ export default function RemindersPage() {
                 Show on calendar
               </label>
 
-              <button className="btn" type="submit">Add Task</button>
+              <div className="form-actions">
+                <button className="btn" type="submit" disabled={saving}>{editing ? (saving ? "Saving…" : "Save changes") : "Add Task"}</button>
+                {editing && <button className="btn btn-secondary-sm" type="button" onClick={closeForm}>Cancel</button>}
+              </div>
             </form>
           </aside>
         )}

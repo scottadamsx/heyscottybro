@@ -62,6 +62,7 @@ export default function AccountabilityPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", emoji: "", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
   const [detailId, setDetailId] = useState(null);
+  const [trackerEdit, setTrackerEdit] = useState(null); // { name, mode, color } for the tracker open in detail view
   // Deep link from Today: /admin/life?tab=habits&id=<tracker> opens that tracker.
   useEffect(() => { const id = params.get("id"); if (id) setDetailId(id); }, [params]);
 
@@ -102,9 +103,19 @@ export default function AccountabilityPage() {
   const deleteTracker = (id) => {
     if (!confirm("Delete this tracker and its history?")) return;
     update((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); return d; });
+    if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
   };
   const logOn = (trackerId, date) => update((d) => { d.logs.push({ id: genId(), trackerId, date, at: Date.now() }); return d; });
   const deleteLog = (id) => update((d) => { d.logs = d.logs.filter((l) => l.id !== id); return d; });
+  // Edits go through the same blob write as logging: update() mutates a copy,
+  // the debounced effect above persists it (localStorage mirror + Supabase).
+  const saveTrackerEdit = (e, id) => {
+    e.preventDefault();
+    if (!trackerEdit?.name.trim()) return;
+    const patch = { name: trackerEdit.name.trim(), mode: trackerEdit.mode, color: trackerEdit.color };
+    update((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); return d; });
+    setTrackerEdit(null);
+  };
 
   const countOn = (t, date) => (logsByTracker[t.id] || []).filter((l) => l.date === date).length;
   // Checkbox trackers = once/day (toggle). Counter trackers = increment each tap.
@@ -159,13 +170,53 @@ export default function AccountabilityPage() {
       <div className="module-page" style={{ paddingTop: 0 }}>
         <div className="module-header" style={{ marginBottom: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => setDetailId(null)}>
+            <button className="btn btn-sm btn-secondary-sm" onClick={() => { setDetailId(null); setTrackerEdit(null); }}>
               <i className="fa-solid fa-arrow-left" /> Back
             </button>
             
             <h2 style={{ margin: 0 }}>{t.name}</h2>
           </div>
+          {!trackerEdit && (
+            <div className="header-actions">
+              <button type="button" className="btn-mini" onClick={() => setTrackerEdit({ name: t.name || "", mode: t.mode || "count", color: t.color || COLORS[0] })} title="Edit tracker">
+                <i className="fa-solid fa-pen" /> Edit
+              </button>
+              <button type="button" className="icon-x sm" onClick={() => { deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
+            </div>
+          )}
         </div>
+
+        {trackerEdit && (
+          <form className="form-card" onSubmit={(e) => saveTrackerEdit(e, t.id)}>
+            <div className="form-panel-head">
+              <h3>Edit tracker</h3>
+              <button type="button" className="icon-x" onClick={() => setTrackerEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
+            </div>
+            <div className="form-row">
+              <input className="field-grow" placeholder="Tracker name" value={trackerEdit.name} onChange={(e) => setTrackerEdit({ ...trackerEdit, name: e.target.value })} required autoFocus />
+            </div>
+            <div className="color-picker">
+              {COLORS.map((c) => (
+                <button key={c} type="button" className={`color-swatch ${trackerEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTrackerEdit({ ...trackerEdit, color: c })} aria-label={`Colour ${c}`} />
+              ))}
+            </div>
+            <div className="day-seg" style={{ maxWidth: 320 }}>
+              <button type="button" className={trackerEdit.mode === "count" ? "active" : ""} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "count" })}>
+                <i className="fa-solid fa-hashtag" /> Counter
+              </button>
+              <button type="button" className={trackerEdit.mode === "check" ? "active" : ""} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "check" })}>
+                <i className="fa-solid fa-check" /> Once a day
+              </button>
+            </div>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+              {trackerEdit.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done. Existing extra logs on a day are kept."}
+            </p>
+            <div className="form-actions">
+              <button className="btn" type="submit">Save changes</button>
+              <button className="btn btn-secondary-sm" type="button" onClick={() => setTrackerEdit(null)}>Cancel</button>
+            </div>
+          </form>
+        )}
 
         <div className="acc-detail-stats">
           <div className="acc-stat-pill"><b>{st.total}</b><span>total</span></div>

@@ -11,6 +11,7 @@ import "./pages/home.css"; // front-facing design system (loads after index.css 
 import "./styles/admin-executive.css"; // minimal executive skin for /admin (loads last)
 import "./styles/features.css"; // documents · nutrition · recipes (loads after admin theme)
 import "./styles/theme-xp.css"; // Windows XP chrome — only matches [data-theme="xp"]
+import "./styles/xp-desktop-admin.css"; // XP admin desktop: windows + taskbar
 import "./styles/print.css"; // print layer — @media print only
 import { applyTheme, getTheme } from "./utils/theme.js";
 

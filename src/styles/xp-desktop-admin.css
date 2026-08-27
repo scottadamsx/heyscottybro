@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   xp-desktop-admin.css — the admin as a windowed XP desktop.
+   Only active when the shell carries .admin-shell.xp-desktop (XP theme on a
+   desktop-width viewport). Windows reuse the Luna caption/frame from
+   theme-xp.css tokens; the page inside keeps its normal styling.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.admin-shell.xp-desktop { height: 100vh; overflow: hidden; }
+.admin-shell.xp-desktop .admin-main { display: none; }
+
+.xp-desktop-area {
+  position: fixed; top: 0; left: 0; bottom: 34px;
+  right: calc(var(--rail-w) + 22px);
+  overflow: hidden;
+}
+.admin-shell.menu-hidden .xp-desktop-area { right: 0; }
+.xp-desktop-empty { position: absolute; top: 40%; left: 0; right: 0; text-align: center; color: #FFFFFF; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-size: 13px; }
+
+/* ── Window ── */
+.xpw {
+  position: absolute; display: flex; flex-direction: column;
+  background: var(--xp-face, #ECE9D8);
+  border: 3px solid var(--xp-frame, #0831D9); border-top: none; border-radius: 8px 8px 0 0;
+  box-shadow: 2px 2px 3px rgba(0,0,0,0.35);
+  min-width: 420px; min-height: 240px;
+}
+.xpw.max { border-radius: 0; border-width: 0 0 3px; }
+.xpw:not(.active) { border-color: #7A96DF; }
+.xpw-caption {
+  display: flex; align-items: center; gap: 6px; height: 33px; flex-shrink: 0;
+  padding: 0 4px 0 8px; margin: 0 -3px;
+  background: var(--xp-caption-inactive); color: #FFFFFF;
+  font: 700 15px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C;
+  border-radius: 8px 8px 0 0; user-select: none; cursor: move;
+}
+.xpw.max .xpw-caption { margin: 0; border-radius: 0; }
+.xpw.active .xpw-caption { background: var(--xp-caption); }
+.xpw-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xpw-btns { display: flex; gap: 2px; }
+.xpw-btns button {
+  width: 21px; height: 21px; border-radius: 3px; border: 1px solid #FFFFFF; color: #FFFFFF; font-size: 10px;
+  background: radial-gradient(circle at 90% 90%, #4E8AFB, #2160D6 60%, #1B52C2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+  display: grid; place-items: center; cursor: pointer;
+}
+.xpw-btns button.close { background: radial-gradient(circle at 90% 90%, #E8846C, #D1462B 60%, #B83A20); }
+.xpw-btns button:hover { filter: brightness(1.12); }
+.xpw-btns button:focus-visible { outline: 2px solid #F8D77A; outline-offset: 1px; }
+
+.xpw-body { flex: 1; min-height: 0; overflow: auto; background: var(--xp-face, #ECE9D8); }
+.xpw-page { padding: 11px; min-height: 100%; }
+/* The page's own window chrome is redundant inside a real window */
+.xpw-page .module-page, .xpw-page .combined-page { border: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; background: transparent !important; }
+.xpw-page .module-page > .module-header, .xpw-page .combined-page > .combined-page-header {
+  background: transparent !important; color: #000000 !important; margin: 0 0 7px !important; padding: 0 !important; min-height: 0 !important; border-radius: 0 !important;
+}
+.xpw-page .module-page > .module-header h1, .xpw-page .combined-page > .combined-page-header .combined-page-title { color: #000000 !important; text-shadow: none !important; }
+.xpw-page .module-page > .module-header h1 i, .xpw-page .combined-page-title i { color: var(--xp-sel, #316AC5) !important; }
+.xpw-page .db-grid > .db-card { margin-top: 0; }
+
+.xpw-resize {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; z-index: 2;
+  background: linear-gradient(135deg, transparent 50%, #ACA899 50%, #ACA899 60%, transparent 60%, transparent 75%, #ACA899 75%, #ACA899 85%, transparent 85%);
+}
+
+/* ── Taskbar ── */
+.xp-taskbar {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 34px; z-index: 900;
+  display: flex; align-items: stretch; gap: 6px; padding: 0 6px;
+  background: linear-gradient(180deg, #245EDC 0%, #3F8CF3 8%, #245EDC 40%, #1E52C6 90%, #1941A5 100%);
+  border-top: 1px solid #0A3FB8; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.xp-taskbar-tasks { flex: 1; display: flex; gap: 4px; padding: 4px 0; overflow-x: auto; min-width: 0; }
+.xp-taskbar .xpd-task {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; max-width: 200px; min-width: 0;
+  border: 1px solid #1941A5; border-radius: 3px; background: linear-gradient(180deg, #3C81F3, #2A6BE0); color: #FFFFFF;
+  font: 400 11px Tahoma, sans-serif; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer;
+}
+.xp-taskbar .xpd-task span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xp-taskbar .xpd-task.active { background: linear-gradient(180deg, #1B4FBF, #2A66D8); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.45); font-weight: 700; }
+.xp-taskbar-tray { display: flex; align-items: center; padding: 0 12px; margin: 3px 0; color: #FFFFFF; font: 400 11px Tahoma, sans-serif; background: linear-gradient(180deg, #0F8AE8, #0C6BC7 40%, #0A5CB0); border-left: 1px solid #0A3FB8; }
+
+/* The rail sits above the taskbar */
+.admin-shell.xp-desktop .admin-rail { bottom: 45px; }
+.admin-shell.xp-desktop .chat-fab { bottom: 46px; }
+
+/* Rail clears the taskbar; the page's own title is redundant under a caption (its buttons stay) */
+:root[data-theme="xp"] .admin-shell.xp-desktop .admin-rail { bottom: 45px; }
+.xpw-page .module-page > .module-header h1, .xpw-page .combined-page > .combined-page-header .combined-page-title { display: none; }
+.xpw-page .module-page > .module-header, .xpw-page .combined-page > .combined-page-header { justify-content: flex-end; }
+.xpw-page .module-page > .module-header:empty { display: none; }

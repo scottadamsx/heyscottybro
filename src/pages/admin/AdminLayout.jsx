@@ -6,6 +6,18 @@ import ChatBot from "../../components/ChatBot";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
+import { useTheme } from "../../utils/theme";
+import { DesktopProvider, DesktopArea, Taskbar, useDesktop } from "../../components/xp/Desktop";
+
+/** In desktop mode a rail link opens/focuses a window instead of swapping the page. */
+function RailLink({ to, className, title, children, end, onClick, style }) {
+  const desk = useDesktop();
+  if (!desk || !to.startsWith("/admin")) return <NavLink to={to} className={className} title={title} end={end} onClick={onClick} style={style}>{children}</NavLink>;
+  const space = to.replace(/^\/admin\/?/, "").split(/[/?]/)[0];
+  const isActive = desk.focused && desk.focused.path.replace(/^\/admin\/?/, "").split(/[/?]/)[0] === space;
+  const cls = typeof className === "function" ? className({ isActive }) : className;
+  return <button type="button" className={cls} title={title} style={style} onClick={(e) => { desk.openWindow(to); onClick?.(e); }}>{children}</button>;
+}
 
 // The Seven Spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
 // Reminders sits beside Plan: the dedicated Tasks & Reminders surface, restored
@@ -22,9 +34,15 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout() {
+  const theme = useTheme();
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.innerWidth > 900);
+  useEffect(() => { const f = () => setWide(window.innerWidth > 900); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const desktopMode = theme === "xp" && wide;
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
+  // Desktop mode: the URL mirrors the focused window so a refresh restores it.
+  const syncUrl = (path) => { if (path && location.pathname + location.search !== path) navigate(path, { replace: true }); };
 
   const [railCollapsed, setRailCollapsed] = useState(
     () => localStorage.getItem("adminRailCollapsed") === "1"
@@ -63,9 +81,9 @@ export default function AdminLayout() {
   const popClass   = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
 
   // The contextual sub-sidebar was removed (Phase 0) — sub-hidden is permanent.
-  const shellClass = hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden";
+  const shellClass = (hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden") + (desktopMode ? " xp-desktop" : "");
 
-  return (
+  const shell = (
     <div className={shellClass}>
       {/* Fully-collapsed burger */}
       {hidden && (
@@ -77,20 +95,20 @@ export default function AdminLayout() {
             <>
               <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
               <div className="admin-rail-pop">
-                <NavLink to="/admin/today" className={popClass} onClick={() => setMenuOpen(false)}>
+                <RailLink to="/admin/today" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-house" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Today</div></span>
-                </NavLink>
+                </RailLink>
                 {navItems.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
+                  <RailLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
                     <i className={`fa-solid ${item.icon}`} />
                     <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-                  </NavLink>
+                  </RailLink>
                 ))}
-                <NavLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
+                <RailLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
                   <i className="fa-solid fa-gear" />
                   <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
-                </NavLink>
+                </RailLink>
                 <div className="admin-pop-divider" />
                 <button className="admin-sub-link" onClick={() => { showAll(); setMenuOpen(false); }}>
                   <i className="fa-solid fa-table-columns" />
@@ -123,23 +141,23 @@ export default function AdminLayout() {
         </button>
 
         {/* Dashboard — always pinned */}
-        <NavLink to="/admin/today" className={railClass} title="Today">
+        <RailLink to="/admin/today" className={railClass} title="Today">
           <i className="fa-solid fa-house" />
           <span className="admin-rail-label">Today</span>
-        </NavLink>
+        </RailLink>
 
         {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} className={railClass} title={item.label}>
+          <RailLink key={item.to} to={item.to} className={railClass} title={item.label}>
             <i className={`fa-solid ${item.icon}`} />
             <span className="admin-rail-label">{item.label}</span>
-          </NavLink>
+          </RailLink>
         ))}
 
         <div className="admin-rail-spacer" />
-        <NavLink to="/admin/settings" className={railClass} title="Settings">
+        <RailLink to="/admin/settings" className={railClass} title="Settings">
           <i className="fa-solid fa-gear" />
           <span className="admin-rail-label">Settings</span>
-        </NavLink>
+        </RailLink>
         <NavLink to="/" className="admin-rail-link" title="View Site" end>
           <i className="fa-solid fa-globe" />
           <span className="admin-rail-label">View Site</span>
@@ -154,13 +172,20 @@ export default function AdminLayout() {
         <NavLink to="/admin/today" className="admin-logo">hey<span>Scotty</span>Bro</NavLink>
       </header>
 
-      <main className="admin-main">
-        <ErrorBoundary>
-          <AnimatePresence mode="wait" initial={false}>
-            <PageTransition key={location.pathname}>{outlet}</PageTransition>
-          </AnimatePresence>
-        </ErrorBoundary>
-      </main>
+      {desktopMode ? (
+        <>
+          <DesktopArea />
+          <Taskbar />
+        </>
+      ) : (
+        <main className="admin-main">
+          <ErrorBoundary>
+            <AnimatePresence mode="wait" initial={false}>
+              <PageTransition key={location.pathname}>{outlet}</PageTransition>
+            </AnimatePresence>
+          </ErrorBoundary>
+        </main>
+      )}
 
       <ChatBot />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
@@ -179,10 +204,10 @@ export default function AdminLayout() {
               ...navItems,
               { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
             ].map((item, i) => (
-              <NavLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
+              <RailLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
                 <i className={`fa-solid ${item.icon}`} />
                 <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-              </NavLink>
+              </RailLink>
             ))}
             <div className="admin-pop-divider" />
             <NavLink to="/" end className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length + 2 }}>
@@ -197,5 +222,12 @@ export default function AdminLayout() {
         </>
       )}
     </div>
+  );
+
+  if (!desktopMode) return shell;
+  return (
+    <DesktopProvider initialPath={location.pathname + location.search} onFocusPath={syncUrl}>
+      {shell}
+    </DesktopProvider>
   );
 }

@@ -4,7 +4,7 @@
  * agents reach them through the "work_log" collection in aiLibrary.
  */
 import { useEffect, useMemo, useState } from "react";
-import { loadWorkLog, createWorkLog, deleteWorkLog } from "../../api/workLogApi";
+import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "../../api/workLogApi";
 import { loadProjects } from "../../api/plannerApi";
 import { onDataChange } from "../../utils/dataEvents";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
@@ -20,6 +20,9 @@ export default function WorkLogPage() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const load = async () => {
     try {
@@ -54,6 +57,30 @@ export default function WorkLogPage() {
     try { await deleteWorkLog(r.id); } catch (err) { addToast(`Couldn't delete: ${err.message}`, "error"); load(); }
   };
 
+  const startEdit = (r) => {
+    setEditingId(r.id);
+    setEditForm({ date: r.date, task: r.task || "", notes: r.notes || "", project_id: r.project_id || "", minutes: r.minutes != null ? String(r.minutes) : "" });
+  };
+  const cancelEdit = () => { setEditingId(null); setEditForm(null); };
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.task.trim()) return;
+    const id = editingId;
+    const prev = rows.find((x) => x.id === id);
+    const patch = { date: editForm.date, task: editForm.task.trim(), notes: editForm.notes || "", project_id: editForm.project_id || null, minutes: editForm.minutes ? Number(editForm.minutes) : null };
+    setEditSaving(true);
+    // Optimistic: apply locally, roll back + surface the real error on failure.
+    setRows((list) => list.map((x) => x.id === id ? { ...x, ...patch } : x));
+    cancelEdit();
+    try {
+      await updateWorkLog(id, patch);
+      addToast("Updated.", "success");
+    } catch (err) {
+      setRows((list) => list.map((x) => x.id === id ? prev : x));
+      addToast(`Couldn't save: ${err.message}`, "error");
+    } finally { setEditSaving(false); }
+  };
+
   const minutesFor = (list) => list.reduce((a, r) => a + (Number(r.minutes) || 0), 0);
 
   return (
@@ -86,7 +113,26 @@ export default function WorkLogPage() {
             <span className="db-count">{list.length} {list.length === 1 ? "item" : "items"}{minutesFor(list) ? ` · ${minutesFor(list)} min` : ""}</span>
           </div>
           <div className="db-list">
-            {list.map((r) => (
+            {list.map((r) => editingId === r.id && editForm ? (
+              <form className="form-card" key={r.id} onSubmit={saveEdit}>
+                <div className="form-row">
+                  <DatePicker value={editForm.date} onChange={(v) => setEditForm({ ...editForm, date: v })} />
+                  <select value={editForm.project_id} onChange={(e) => setEditForm({ ...editForm, project_id: e.target.value })} aria-label="Project">
+                    <option value="">No project</option>
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <input type="number" min="0" step="5" placeholder="min" value={editForm.minutes} onChange={(e) => setEditForm({ ...editForm, minutes: e.target.value })} aria-label="Minutes" className="worklog-min" />
+                </div>
+                <div className="form-row">
+                  <input className="field-grow" placeholder="What did you do?" value={editForm.task} onChange={(e) => setEditForm({ ...editForm, task: e.target.value })} autoFocus required />
+                </div>
+                <textarea placeholder="Notes (optional)" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2} />
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? "Saving…" : "Save changes"}</button>
+                  <button type="button" className="btn btn-secondary-sm" onClick={cancelEdit}>Cancel</button>
+                </div>
+              </form>
+            ) : (
               <div className="db-list-item" key={r.id}>
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{r.task}</div>
@@ -96,6 +142,7 @@ export default function WorkLogPage() {
                     {r.notes && <div className="worklog-notes">{r.notes}</div>}
                   </div>
                 </div>
+                <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit"><i className="fa-solid fa-pen" /> Edit</button>
                 <button className="icon-x sm" onClick={() => remove(r)} aria-label="Delete entry"><i className="fa-solid fa-xmark" /></button>
               </div>
             ))}

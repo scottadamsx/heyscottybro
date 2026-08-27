@@ -861,3 +861,23 @@
 @media (max-width: 900px) { .admin-shell .calendar-upcoming { grid-template-columns: 1fr; } }
 .admin-shell .event-form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 :root[data-theme="xp"] .admin-shell .calendar-upcoming { gap: 11px; margin-top: 11px; }
+
+/* Day sheet: inline event edit + task title link */
+.admin-shell .day-item--editing { display: block; }
+.admin-shell .day-item--editing .event-form { width: 100%; }
+.admin-shell .day-item-link { background: none; border: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.admin-shell .day-item-link:hover { text-decoration: underline; }
+
+/* ── Inline editing (2026-08-27): every submitted item is editable in place ── */
+.admin-shell .auto-task-offset-input { width: 90px; flex: 0 0 auto; }
+.admin-shell .auto-task-name-input { flex: 1; min-width: 0; }
+.admin-shell .auto-task-edit { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: 100%; }
+.admin-shell .db-list > .form-card,
+.admin-shell .auto-tasks-list > .form-card { margin: 4px 0; }
+.admin-shell .form-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.admin-shell .edit-body { resize: vertical; min-height: 140px; }
+.admin-shell .header-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.admin-shell .color-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.admin-shell .color-row input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm, 6px); background: transparent; cursor: pointer; flex: 0 0 auto; }
+.admin-shell .field-label { font-size: 0.78rem; color: var(--text-muted); display: block; margin-bottom: 0.375rem; }
+.admin-shell .project-edit-form { margin-bottom: 1rem; }

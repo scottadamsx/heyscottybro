@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams , useNavigate } from "react-router-dom";
 import {
-  loadReminders, loadEvents, loadTransactions, newEvent, deleteEvent,
+  loadReminders, loadEvents, loadTransactions, newEvent, updateEvent, deleteEvent,
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
   loadJournal,
 } from "../../api/plannerApi";
@@ -39,6 +39,12 @@ export default function CalendarPage() {
 
   const [selectedDate, setSelectedDate] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const saveEventEdit = async (id, values) => {
+    await updateEvent(id, eventRowFromForm(values));
+    setEditingEventId(null);
+    await load();
+  };
   const [addMode, setAddMode] = useState("event"); // "event" | "task"
 
   // The day view is a full-screen sheet on phones — freeze the page under it so
@@ -469,7 +475,11 @@ export default function CalendarPage() {
                   <span className="day-count">{dayEvents.length}</span>
                 </div>
                 {dayEvents.length === 0 && <p className="day-empty">Nothing scheduled.</p>}
-                {dayEvents.map((e) => (
+                {dayEvents.map((e) => editingEventId === e.id ? (
+                  <div className="day-item day-item--editing" key={`edit-${e.id}`}>
+                    <EventForm initial={events.find((x) => x.id === e.id) || e} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={(v) => saveEventEdit(e.id, v)} onCancel={() => setEditingEventId(null)} />
+                  </div>
+                ) : (
                   <div className="day-item" key={e.id}>
                     <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
                     <span className="day-item-time">{e.span_total ? "Day " + e.span_day + " of " + e.span_total : timeRange(e)}</span>
@@ -478,6 +488,7 @@ export default function CalendarPage() {
                       {e.description && <div className="day-item-sub">{e.description}</div>}
                       <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
                     </div>
+                    <button className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event"><i className="fa-solid fa-pen" /></button>
                     <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
                   </div>
                 ))}
@@ -510,7 +521,7 @@ export default function CalendarPage() {
                   <div className="day-item" key={`${t.id}-${t.date}`}>
                     <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
                     <div className="day-item-body">
-                      <div className="day-item-title">{t.name}</div>
+                      <button type="button" className="day-item-title day-item-link" onClick={() => navigate(`/admin/tasks/${t.id}`)} title="Open task">{t.name}</button>
                       {(t.time || (t.recurrence && t.recurrence !== "none")) && (
                         <div className="day-item-sub">{[t.time ? formatTime12(t.time) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
                       )}

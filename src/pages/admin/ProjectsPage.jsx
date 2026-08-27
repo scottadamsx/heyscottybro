@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import {
-  loadProjects, newProject, deleteProject,
-  loadInitiatives, newInitiative, deleteInitiative,
+  loadProjects, newProject, updateProject, deleteProject,
+  loadInitiatives, newInitiative, updateInitiative, deleteInitiative,
   loadEventTypes, newEventType, deleteEventType, updateEventType,
   loadReminders, loadEvents, newReminder, completeReminder, updateReminder, deleteReminder, updateEvent, deleteEvent,
 } from "../../api/plannerApi";
@@ -12,6 +12,7 @@ import { formatTime12 } from "../../utils/plannerUtils";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import DocLinks from "../../components/docs/DocLinks";
+import { useToast } from "../../contexts/ToastContext";
 // Auto-task templates read chronologically: N days before → day of → N days after.
 const byOffset = (a, b) => (Number(a.offset_days) - Number(b.offset_days)) || String(a.name || "").localeCompare(String(b.name || ""));
 
@@ -31,8 +32,14 @@ export default function ProjectsPage() {
     setParams(next);
   };
 
+  const { addToast } = useToast();
   const [projects, setProjects] = useState([]);
   const [initiatives, setInitiatives] = useState([]);
+  // Inline edit state — one at a time per kind; forms are prefilled from the row.
+  const [projectEdit, setProjectEdit] = useState(null);        // { name, description, color } for the selected project
+  const [initEdit, setInitEdit] = useState(null);              // { id, name, description, recurrence }
+  const [typeEdit, setTypeEdit] = useState(null);              // { id, name, color }
+  const [autoTaskEdit, setAutoTaskEdit] = useState(null);      // { etId, task (ref), name, offset_days }
   const [eventTypes, setEventTypes] = useState([]);
   const [projectTasks, setProjectTasks] = useState([]);
   const [projectDone, setProjectDone] = useState([]);
@@ -124,6 +131,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     if (selected) loadProjectDetail(selected);
+    setProjectEdit(null); setInitEdit(null);
   }, [selected]);
 
   // Open the create form when arriving via the sidebar's "New project"
@@ -217,21 +225,70 @@ export default function ProjectsPage() {
     if (!newAutoTask.name.trim() || !editingAutoTasks) return;
     const et = eventTypes.find(x => x.id === editingAutoTasks);
     if (!et) return;
-    const updated = [...(et.auto_tasks || []), { ...newAutoTask, offset_days: Number(newAutoTask.offset_days) }].sort(byOffset);
-    await updateEventType(editingAutoTasks, { auto_tasks: updated });
-    setNewAutoTask({ offset_days: -3, name: "" });
-    await loadAll();
+    const updated = [...(et.auto_tasks || []), { ...newAutoTask, name: newAutoTask.name.trim(), offset_days: Number(newAutoTask.offset_days) || 0 }].sort(byOffset);
+    try { await updateEventType(editingAutoTasks, { auto_tasks: updated }); setNewAutoTask({ offset_days: -3, name: "" }); await loadAll(); }
+    catch (err) { addToast(`Couldn't add auto-task: ${err?.message || "unknown error"}`, "error"); }
   };
 
   const removeAutoTask = async (etId, task) => {
     const et = eventTypes.find(x => x.id === etId);
     if (!et) return;
     const updated = et.auto_tasks.filter((t) => t !== task);
-    await updateEventType(etId, { auto_tasks: updated });
-    await loadAll();
+    try { await updateEventType(etId, { auto_tasks: updated }); await loadAll(); }
+    catch (err) { addToast(`Couldn't remove auto-task: ${err?.message || "unknown error"}`, "error"); }
   };
 
   const selectedProject = projects.find(p => String(p.id) === String(selected));
+
+  const saveProjectEdit = async (e) => {
+    e.preventDefault();
+    if (!projectEdit?.name.trim() || !selectedProject) return;
+    const id = selectedProject.id;
+    const prev = selectedProject;
+    const updates = { name: projectEdit.name.trim(), description: projectEdit.description || "", color: projectEdit.color };
+    setProjects((list) => list.map((p) => p.id === id ? { ...p, ...updates } : p));
+    setProjectEdit(null);
+    try { await updateProject(id, updates); addToast("Project updated.", "success"); }
+    catch (err) { setProjects((list) => list.map((p) => p.id === id ? prev : p)); addToast(`Couldn't save project: ${err?.message || "unknown error"}`, "error"); }
+  };
+
+  const saveInitEdit = async (e) => {
+    e.preventDefault();
+    if (!initEdit?.name.trim()) return;
+    const { id } = initEdit;
+    const prev = initiatives.find((i) => i.id === id);
+    const fields = { name: initEdit.name.trim(), description: initEdit.description || "", recurrence: initEdit.recurrence };
+    setInitiatives((list) => list.map((i) => i.id === id ? { ...i, ...fields } : i));
+    setInitEdit(null);
+    try { await updateInitiative(id, fields); addToast("Initiative updated.", "success"); }
+    catch (err) { setInitiatives((list) => list.map((i) => i.id === id ? prev : i)); addToast(`Couldn't save initiative: ${err?.message || "unknown error"}`, "error"); }
+  };
+
+  const saveTypeEdit = async (e) => {
+    e.preventDefault();
+    if (!typeEdit?.name.trim()) return;
+    const { id } = typeEdit;
+    const prev = eventTypes.find((t) => t.id === id);
+    const updates = { name: typeEdit.name.trim(), color: typeEdit.color };
+    setEventTypes((list) => list.map((t) => t.id === id ? { ...t, ...updates } : t));
+    setTypeEdit(null);
+    try { await updateEventType(id, updates); addToast("Event type updated.", "success"); }
+    catch (err) { setEventTypes((list) => list.map((t) => t.id === id ? prev : t)); addToast(`Couldn't save event type: ${err?.message || "unknown error"}`, "error"); }
+  };
+
+  const saveAutoTaskEdit = async (e) => {
+    e.preventDefault();
+    if (!autoTaskEdit?.name.trim()) return;
+    const { etId, task } = autoTaskEdit;
+    const et = eventTypes.find((x) => x.id === etId);
+    if (!et) return;
+    const prevTasks = et.auto_tasks || [];
+    const updated = prevTasks.map((t) => t === task ? { ...t, name: autoTaskEdit.name.trim(), offset_days: Number(autoTaskEdit.offset_days) || 0 } : t).sort(byOffset);
+    setEventTypes((list) => list.map((t) => t.id === etId ? { ...t, auto_tasks: updated } : t));
+    setAutoTaskEdit(null);
+    try { await updateEventType(etId, { auto_tasks: updated }); }
+    catch (err) { setEventTypes((list) => list.map((t) => t.id === etId ? { ...t, auto_tasks: prevTasks } : t)); addToast(`Couldn't save auto-task: ${err?.message || "unknown error"}`, "error"); }
+  };
   const children = selected ? projects.filter(p => String(p.parent_id) === String(selected)) : [];
   const parentProject = selectedProject?.parent_id
     ? projects.find(p => String(p.id) === String(selectedProject.parent_id))
@@ -294,16 +351,47 @@ export default function ProjectsPage() {
             )}
           </div>
 
-          <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
-            <div>
-              {parentProject && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "2px" }}>{parentProject.name} /</div>}
-              <h2 style={{ color: selectedProject.color }}>{selectedProject.name}</h2>
-              {selectedProject.description && <p className="project-tile-desc">{selectedProject.description}</p>}
+          {projectEdit ? (
+            <form className="form-card project-edit-form" onSubmit={saveProjectEdit}>
+              <div className="form-panel-head">
+                <h3>Edit project</h3>
+                <button type="button" className="icon-x" onClick={() => setProjectEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
+              </div>
+              <input placeholder="Project name" value={projectEdit.name} onChange={(e) => setProjectEdit({ ...projectEdit, name: e.target.value })} required autoFocus />
+              <textarea placeholder="Description (optional)" value={projectEdit.description} onChange={(e) => setProjectEdit({ ...projectEdit, description: e.target.value })} rows={2} />
+              <div>
+                <label className="field-label" htmlFor="project-edit-color">Colour</label>
+                <div className="color-row">
+                  <div className="color-picker">
+                    {PROJECT_COLORS.map((c) => (
+                      <button key={c} type="button" className={`color-swatch ${projectEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setProjectEdit({ ...projectEdit, color: c })} aria-label={`Colour ${c}`} />
+                    ))}
+                  </div>
+                  <input id="project-edit-color" type="color" value={/^#[0-9a-f]{6}$/i.test(projectEdit.color) ? projectEdit.color : "#6366f1"} onChange={(e) => setProjectEdit({ ...projectEdit, color: e.target.value })} aria-label="Custom colour" />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button className="btn" type="submit">Save changes</button>
+                <button className="btn btn-secondary-sm" type="button" onClick={() => setProjectEdit(null)}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <div className="project-detail-header" style={{ borderLeftColor: selectedProject.color, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div>
+                {parentProject && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "2px" }}>{parentProject.name} /</div>}
+                <h2 style={{ color: selectedProject.color }}>{selectedProject.name}</h2>
+                {selectedProject.description && <p className="project-tile-desc">{selectedProject.description}</p>}
+              </div>
+              <div className="header-actions">
+                <button type="button" className="btn-mini" onClick={() => setProjectEdit({ name: selectedProject.name || "", description: selectedProject.description || "", color: selectedProject.color || emptyProject.color })} title="Edit project">
+                  <i className="fa-solid fa-pen" /> Edit
+                </button>
+                <button className="btn-sm btn-delete" onClick={() => handleDeleteProject(selectedProject.id)} title="Delete project">
+                  <i className="fa-solid fa-trash" /> Delete
+                </button>
+              </div>
             </div>
-            <button className="btn-sm btn-delete" onClick={() => handleDeleteProject(selectedProject.id)} title="Delete project">
-              <i className="fa-solid fa-trash" /> Delete
-            </button>
-          </div>
+          )}
 
           {/* Reference documents for this project */}
           <div className="db-card">
@@ -430,7 +518,21 @@ export default function ProjectsPage() {
             </p>
             {initiatives.length === 0 && <p className="no-entries">No initiatives yet.</p>}
             <div className="db-list">
-              {initiatives.map(i => (
+              {initiatives.map(i => initEdit?.id === i.id ? (
+                <form className="form-card" key={i.id} onSubmit={saveInitEdit}>
+                  <input placeholder="Name" value={initEdit.name} onChange={(e) => setInitEdit({ ...initEdit, name: e.target.value })} required autoFocus />
+                  <textarea placeholder="Description (optional)" value={initEdit.description} onChange={(e) => setInitEdit({ ...initEdit, description: e.target.value })} rows={2} />
+                  <select value={initEdit.recurrence} onChange={(e) => setInitEdit({ ...initEdit, recurrence: e.target.value })} aria-label="Recurrence">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                  <div className="form-actions">
+                    <button className="btn" type="submit">Save changes</button>
+                    <button className="btn btn-secondary-sm" type="button" onClick={() => setInitEdit(null)}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
                 <div className="db-list-item" key={i.id}>
                   <div className="db-list-item-content">
                     <div className="db-list-item-title">{i.name}</div>
@@ -439,7 +541,8 @@ export default function ProjectsPage() {
                     </div>
                     <DocLinks entityType="initiative" entityId={i.id} title="Documents" compact />
                   </div>
-                  <button className="btn-sm btn-delete" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected))}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                  <button type="button" className="btn-mini" onClick={() => setInitEdit({ id: i.id, name: i.name || "", description: i.description || "", recurrence: i.recurrence || "weekly" })} title="Edit"><i className="fa-solid fa-pen" /> Edit</button>
+                  <button type="button" className="icon-x sm" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected)).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${i.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               ))}
             </div>
@@ -459,27 +562,60 @@ export default function ProjectsPage() {
           {eventTypes.length === 0 && <p className="no-entries">No event types yet.</p>}
           {eventTypes.map(et => (
             <div key={et.id} className="event-type-card">
-              <div className="event-type-header">
-                <span className="event-type-dot" style={{ background: et.color }} />
-                <span className="event-type-name">{et.name}</span>
-                <button className="btn-sm" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}
-                  onClick={() => setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id)}>
-                  {editingAutoTasks === et.id ? "Done" : "Edit Tasks"}
-                </button>
-                <button className="btn-sm btn-delete" onClick={() => deleteEventType(et.id).then(loadAll)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-              </div>
+              {typeEdit?.id === et.id ? (
+                <form className="form-card" onSubmit={saveTypeEdit}>
+                  <input placeholder="Name" value={typeEdit.name} onChange={(e) => setTypeEdit({ ...typeEdit, name: e.target.value })} required autoFocus />
+                  <div className="color-row">
+                    <div className="color-picker">
+                      {PROJECT_COLORS.map((c) => (
+                        <button key={c} type="button" className={`color-swatch ${typeEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTypeEdit({ ...typeEdit, color: c })} aria-label={`Colour ${c}`} />
+                      ))}
+                    </div>
+                    <input type="color" value={/^#[0-9a-f]{6}$/i.test(typeEdit.color) ? typeEdit.color : "#22d3ee"} onChange={(e) => setTypeEdit({ ...typeEdit, color: e.target.value })} aria-label="Custom colour" />
+                  </div>
+                  <div className="form-actions">
+                    <button className="btn" type="submit">Save changes</button>
+                    <button className="btn btn-secondary-sm" type="button" onClick={() => setTypeEdit(null)}>Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <div className="event-type-header">
+                  <span className="event-type-dot" style={{ background: et.color }} />
+                  <span className="event-type-name">{et.name}</span>
+                  <button type="button" className="btn-mini" onClick={() => setTypeEdit({ id: et.id, name: et.name || "", color: et.color || emptyEventType.color })} title="Edit name & colour">
+                    <i className="fa-solid fa-pen" /> Edit
+                  </button>
+                  <button type="button" className="btn-sm" style={{ background: "var(--bg-hover)", color: "var(--text-secondary)" }}
+                    onClick={() => { setAutoTaskEdit(null); setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id); }}>
+                    {editingAutoTasks === et.id ? "Done" : "Edit Tasks"}
+                  </button>
+                  <button type="button" className="btn-sm btn-delete" onClick={() => deleteEventType(et.id).then(loadAll).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${et.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                </div>
+              )}
               {(et.auto_tasks || []).length > 0 && (
                 <div className="auto-tasks-list">
                   {et.auto_tasks.slice().sort(byOffset).map((task, idx) => (
-                    <div key={idx} className="auto-task-item">
-                      <span className="auto-task-offset">
-                        {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
-                      </span>
-                      <span className="auto-task-name">{task.name}</span>
-                      {editingAutoTasks === et.id && (
-                        <button className="btn-sm btn-delete" style={{ padding: "1px 6px" }} onClick={() => removeAutoTask(et.id, task)}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-                      )}
-                    </div>
+                    autoTaskEdit && autoTaskEdit.etId === et.id && autoTaskEdit.task === task ? (
+                      <form key={idx} className="auto-task-edit" onSubmit={saveAutoTaskEdit}>
+                        <input type="number" className="auto-task-offset-input" value={autoTaskEdit.offset_days} onChange={(e) => setAutoTaskEdit({ ...autoTaskEdit, offset_days: e.target.value })} aria-label="Days offset" />
+                        <input className="auto-task-name-input" value={autoTaskEdit.name} onChange={(e) => setAutoTaskEdit({ ...autoTaskEdit, name: e.target.value })} placeholder="Task name" required autoFocus />
+                        <button className="btn btn-sm" type="submit">Save</button>
+                        <button className="btn btn-sm btn-secondary-sm" type="button" onClick={() => setAutoTaskEdit(null)}>Cancel</button>
+                      </form>
+                    ) : (
+                      <div key={idx} className="auto-task-item">
+                        <span className="auto-task-offset">
+                          {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
+                        </span>
+                        <span className="auto-task-name">{task.name}</span>
+                        {editingAutoTasks === et.id && (
+                          <>
+                            <button type="button" className="btn-mini" onClick={() => setAutoTaskEdit({ etId: et.id, task, name: task.name || "", offset_days: task.offset_days ?? 0 })} title="Edit"><i className="fa-solid fa-pen" /> Edit</button>
+                            <button type="button" className="icon-x sm" onClick={() => removeAutoTask(et.id, task)} aria-label={`Remove ${task.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                          </>
+                        )}
+                      </div>
+                    )
                   ))}
                 </div>
               )}
@@ -490,15 +626,17 @@ export default function ProjectsPage() {
                     value={newAutoTask.offset_days}
                     onChange={e => setNewAutoTask({ ...newAutoTask, offset_days: e.target.value })}
                     placeholder="Days offset"
-                    style={{ width: "90px" }}
+                    className="auto-task-offset-input"
+                    aria-label="Days offset"
                   />
                   <input
                     value={newAutoTask.name}
                     onChange={e => setNewAutoTask({ ...newAutoTask, name: e.target.value })}
                     placeholder="Task name (e.g. Post preview)"
-                    style={{ flex: 1 }}
+                    className="auto-task-name-input"
+                    aria-label="Task name"
                   />
-                  <button className="btn btn-sm" onClick={addAutoTask}>Add</button>
+                  <button type="button" className="btn btn-sm" onClick={addAutoTask}>Add</button>
                 </div>
               )}
             </div>

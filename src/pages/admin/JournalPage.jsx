@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { loadJournal, newJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
+import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
+import DatePicker from "../../components/DatePicker";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -15,6 +16,9 @@ export default function JournalPage() {
   const [entry, setEntry] = useState("");
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const load = async () => setEntries(await loadJournal());
   useEffect(() => { load(); }, []);
@@ -34,6 +38,27 @@ export default function JournalPage() {
   };
 
   const todayLong = formatDisplayDate(toDateStr(new Date()));
+
+  const startEdit = (e) => { setEditForm({ title: e.title || "", entry: e.entry || "", date: e.date || toDateStr(new Date()) }); setEditing(true); };
+  const cancelEdit = () => { setEditing(false); setEditForm(null); };
+  const saveEdit = async (ev) => {
+    ev.preventDefault();
+    if (!selectedEntry || !editForm.entry.trim()) return;
+    const fields = { title: editForm.title.trim() || formatDisplayDate(editForm.date), entry: editForm.entry.trim(), date: editForm.date };
+    const prev = selectedEntry;
+    setSaving(true);
+    // Optimistic: show the edit immediately, roll back and surface the error if it fails.
+    setEntries((list) => list.map((x) => x.id === prev.id ? { ...x, ...fields } : x));
+    setEditing(false);
+    try {
+      await updateJournalEntry(prev.id, fields);
+      addToast("Entry updated.", "success");
+    } catch (err) {
+      setEntries((list) => list.map((x) => x.id === prev.id ? prev : x));
+      addToast(`Couldn't save entry: ${err?.message || "unknown error"}`, "error");
+      setEditing(true);
+    } finally { setSaving(false); }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -91,14 +116,33 @@ export default function JournalPage() {
         <div className="db-card" style={{ marginBottom: "var(--space-lg)" }}>
           <div className="db-card-header">
             <h3 className="db-card-title">{selectedEntry.title}</h3>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="header-actions">
               <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
+              {!editing && (
+                <button type="button" className="btn-mini" onClick={() => startEdit(selectedEntry)} title="Edit entry">
+                  <i className="fa-solid fa-pen" /> Edit
+                </button>
+              )}
               <button className="btn-sm btn-delete" onClick={() => handleDelete(selectedEntry)} title="Delete entry" style={{ fontSize: 12, padding: "4px 10px" }}>
                 <i className="fa-solid fa-trash" style={{ marginRight: 4 }} /> Delete
               </button>
             </div>
           </div>
-          <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: "var(--leading-relaxed)", fontSize: "var(--text-sm)" }}>{selectedEntry.entry}</p>
+          {editing && editForm ? (
+            <form className="form-card" onSubmit={saveEdit}>
+              <div className="form-row">
+                <input className="field-grow" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Title" aria-label="Title" />
+                <DatePicker value={editForm.date} onChange={(v) => setEditForm({ ...editForm, date: v })} placeholder="Date" />
+              </div>
+              <textarea className="edit-body" value={editForm.entry} onChange={(e) => setEditForm({ ...editForm, entry: e.target.value })} rows={8} required aria-label="Entry" />
+              <div className="form-actions">
+                <button className="btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+                <button className="btn btn-secondary-sm" type="button" onClick={cancelEdit}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: "var(--leading-relaxed)", fontSize: "var(--text-sm)" }}>{selectedEntry.entry}</p>
+          )}
         </div>
       )}
 
@@ -120,6 +164,7 @@ export default function JournalPage() {
                 next.set("id", String(e.id));
                 next.delete("new");
                 setParams(next);
+                cancelEdit();
               }}
             >
               <div className="journal-list-title">{e.title}</div>
