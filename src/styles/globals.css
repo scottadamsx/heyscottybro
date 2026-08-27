@@ -189,7 +189,7 @@
   --bg-card: #FFFFFF;
   --bg-raised: #F1EFE2;
   --bg-hover: #E3E1D3;
-  --canvas-bg: linear-gradient(180deg, #5A7EDC 0%, #3A6BD2 18%, #7CB0E6 38%, #8FC1EA 55%, #6FA24A 78%, #4E8A2F 100%);
+  --canvas-bg: url("/images/bliss.jpg") center / cover no-repeat fixed, linear-gradient(180deg, #5A7EDC 0%, #7CB0E6 40%, #4E8A2F 100%);
   --canvas-dot: transparent;
 
   --border-subtle: #ACA899;

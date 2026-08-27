@@ -12,7 +12,7 @@
   --xp-title: linear-gradient(180deg, #0058EE 0%, #3593FF 4%, #288EFF 6%, #127DFF 8%, #036FFC 10%, #0262EE 14%, #0057E5 20%, #0054E3 24%, #0055EB 56%, #005BF5 66%, #026AFE 76%, #0062EF 86%, #0052D6 92%, #0040AB 94%, #003092 100%);
   --xp-title-inactive: linear-gradient(180deg, #7697E7 0%, #94AFF1 6%, #82A5F0 14%, #7B9DEB 25%, #7B9EEE 56%, #7FA4F2 81%, #7B9DEB 89%, #7391DF 100%);
   --xp-btn: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 100%);
-  --xp-bliss: linear-gradient(180deg, #5A7EDC 0%, #3A6BD2 16%, #7CB0E6 36%, #8FC1EA 52%, #6FA24A 74%, #4E8A2F 100%);
+  --xp-bliss: url("/images/bliss.jpg") center / cover no-repeat, linear-gradient(180deg, #5A7EDC 0%, #7CB0E6 40%, #4E8A2F 100%);
   --xp-font: Tahoma, "Trebuchet MS", Verdana, "Segoe UI", sans-serif;
 
   position: fixed; inset: 0;
