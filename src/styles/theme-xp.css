@@ -452,3 +452,12 @@
 :root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header button,
 :root[data-theme="xp"] .admin-shell .admin-main .combined-page > .combined-page-header .btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; line-height: 1; }
 :root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header { padding-right: 6px; }
+
+/* Embedded page headers (Plan panels, Life tabs): a plain toolbar row, buttons normal size */
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header,
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header {
+  display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-height: 0; height: auto; margin: 0 0 7px;
+}
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header .btn,
+:root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header .btn,
+:root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header button { height: 23px; align-self: center; min-width: 88px; }
