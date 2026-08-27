@@ -446,3 +446,9 @@
 :root[data-theme="xp"] .tmp-preset.sel { background: #316AC5; color: #FFFFFF; border-color: #316AC5; }
 :root[data-theme="xp"] .picker-trigger { border-radius: 0; border: 1px solid #7F9DB9; background: #FFFFFF; height: 25px; font-family: var(--font-pixel); font-size: 13px; }
 :root[data-theme="xp"] .picker-lead { color: #316AC5; }
+
+/* Buttons that live in a page caption are caption-sized, like the tab strip */
+:root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header .btn,
+:root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header button,
+:root[data-theme="xp"] .admin-shell .admin-main .combined-page > .combined-page-header .btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; line-height: 1; }
+:root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header { padding-right: 6px; }
