@@ -24,8 +24,8 @@
   --xp-btn-pressed: inset -1px 1px #FFFFFF, inset 1px 1px #E6E6E6, inset 2px 2px #C6C6C6;
   --xp-menu: #D3E5FA;
   --xp-start-green: linear-gradient(180deg, #3C9E3C 0%, #57B857 3%, #4FAB4F 8%, #3E9C3E 15%, #369536 50%, #2F8A2F 86%, #227A22 100%);
-  --control-h: 23px;
-  font-size: 11px;
+  --control-h: 27px;
+  font-size: 13px; /* XP "Large Fonts" (120 DPI): Tahoma 10pt */
   -webkit-font-smoothing: auto;
 }
 :root[data-theme="xp"] body { font-family: var(--font-body); line-height: 1.3; }
@@ -42,16 +42,16 @@
 :root[data-theme="xp"] .db-list { gap: 0; }
 :root[data-theme="xp"] .admin-shell .module-header { margin-bottom: 0; gap: 7px; }
 :root[data-theme="xp"] .admin-shell .module-header h1,
-:root[data-theme="xp"] .admin-shell .combined-page-title { font: 700 13px/1.2 var(--font-display); letter-spacing: 0; }
+:root[data-theme="xp"] .admin-shell .combined-page-title { font: 700 15px/1.2 var(--font-display); letter-spacing: 0; }
 :root[data-theme="xp"] .admin-shell h2 { font-size: 12px; }
-:root[data-theme="xp"] .admin-shell h3 { font-size: 11px; }
-:root[data-theme="xp"] .admin-shell p, :root[data-theme="xp"] .admin-shell li, :root[data-theme="xp"] .admin-shell td, :root[data-theme="xp"] .admin-shell label { font-size: 11px; }
-:root[data-theme="xp"] .admin-shell .db-list-item-title { font-size: 11px; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell h3 { font-size: 13px; }
+:root[data-theme="xp"] .admin-shell p, :root[data-theme="xp"] .admin-shell li, :root[data-theme="xp"] .admin-shell td, :root[data-theme="xp"] .admin-shell label { font-size: 13px; }
+:root[data-theme="xp"] .admin-shell .db-list-item-title { font-size: 13px; font-weight: 400; }
 :root[data-theme="xp"] .admin-shell .db-list-item-subtitle,
 :root[data-theme="xp"] .admin-shell .section-label-sm,
-:root[data-theme="xp"] .admin-shell .db-subhead { font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-secondary); }
-:root[data-theme="xp"] .admin-shell .stat-value { font-size: 18px; font-weight: 700; }
-:root[data-theme="xp"] .admin-shell .stat-label { font-size: 11px; text-transform: none; letter-spacing: 0; }
+:root[data-theme="xp"] .admin-shell .db-subhead { font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text-secondary); }
+:root[data-theme="xp"] .admin-shell .stat-value { font-size: 20px; font-weight: 700; }
+:root[data-theme="xp"] .admin-shell .stat-label { font-size: 13px; text-transform: none; letter-spacing: 0; }
 
 /* ── Windows: every card is a Luna window (3px blue frame, 30px caption) ── */
 :root[data-theme="xp"] .admin-shell .db-card,
@@ -78,24 +78,24 @@
 :root[data-theme="xp"] .admin-shell .uik-card-head h3,
 :root[data-theme="xp"] .admin-shell .day-modal-head {
   display: flex; align-items: center;
-  height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  height: 33px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
   background: var(--xp-caption); color: #FFFFFF;
-  font: 700 13px/1 var(--font-display); text-shadow: 1px 1px 0 #0A1F5C;
+  font: 700 15px/1 var(--font-display); text-shadow: 1px 1px 0 #0A1F5C;
   letter-spacing: 0; text-transform: none;
   border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .db-card-header,
 :root[data-theme="xp"] .admin-shell .uik-card-head {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  height: 33px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
   background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .db-card-header .db-card-title,
 :root[data-theme="xp"] .admin-shell .uik-card-head h3 { height: auto; margin: 0; padding: 0; background: none; border-radius: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :root[data-theme="xp"] .admin-shell .db-card-header .btn,
 :root[data-theme="xp"] .admin-shell .db-card-header button,
-:root[data-theme="xp"] .admin-shell .db-card-header a.btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; }
-:root[data-theme="xp"] .admin-shell .db-card-header a:not(.btn) { color: #FFFFFF; font-size: 11px; text-decoration: underline; }
+:root[data-theme="xp"] .admin-shell .db-card-header a.btn { height: 24px; min-width: 0; padding: 0 10px; font-size: 13px; }
+:root[data-theme="xp"] .admin-shell .db-card-header a:not(.btn) { color: #FFFFFF; font-size: 13px; text-decoration: underline; }
 :root[data-theme="xp"] .admin-shell .day-modal-head { margin: 0; }
 :root[data-theme="xp"] .admin-shell .day-modal-dow, :root[data-theme="xp"] .admin-shell .day-modal-date { color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .day-modal-body { background: #FFFFFF; }
@@ -108,7 +108,7 @@
 /* ── ListView rows: flat, 17px, selection blue ── */
 :root[data-theme="xp"] .admin-shell .db-list-item {
   background: transparent; border: none; border-radius: 0;
-  padding: 2px 4px; min-height: 17px; gap: 7px; transition: none; transform: none;
+  padding: 3px 5px; min-height: 20px; gap: 7px; transition: none; transform: none;
 }
 :root[data-theme="xp"] .admin-shell .db-list-item + .db-list-item { border-top: 1px dotted var(--xp-groupbox); }
 :root[data-theme="xp"] .admin-shell .db-list-item:hover,
@@ -138,18 +138,18 @@
 :root[data-theme="xp"] .admin-shell .planner-switch button,
 :root[data-theme="xp"] .admin-shell .theme-picker-opt,
 :root[data-theme="xp"] .admin-shell .day-nav {
-  height: 23px; min-width: 75px; padding: 0 12px;
+  height: 27px; min-width: 88px; padding: 0 14px;
   background: var(--xp-btn-face); color: #000000;
   border: 1px solid var(--xp-btn-border); border-radius: 3px;
   box-shadow: inset -1px 1px #FFFFFF, inset 1px 1px #FFFFFF, inset -2px -2px #D8D0C4;
-  font: 400 11px/1 var(--font-body); letter-spacing: 0; text-shadow: none;
+  font: 400 13px/1 var(--font-body); letter-spacing: 0; text-shadow: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   transition: none; transform: none;
 }
 :root[data-theme="xp"] .admin-shell .btn-mini,
 :root[data-theme="xp"] .admin-shell .icon-x,
 :root[data-theme="xp"] .admin-shell .day-nav { min-width: 23px; padding: 0 6px; }
-:root[data-theme="xp"] .admin-shell .icon-x { width: 21px; height: 21px; border: 1px solid var(--xp-btn-border); border-radius: 3px; background: var(--xp-btn-face); color: #000000; }
+:root[data-theme="xp"] .admin-shell .icon-x { width: 25px; height: 25px; border: 1px solid var(--xp-btn-border); border-radius: 3px; background: var(--xp-btn-face); color: #000000; }
 :root[data-theme="xp"] .admin-shell .btn:hover,
 :root[data-theme="xp"] .admin-shell .btn-mini:hover,
 :root[data-theme="xp"] .admin-shell .icon-x:hover,
@@ -171,10 +171,10 @@
 :root[data-theme="xp"] .admin-shell input:not([type="checkbox"]):not([type="radio"]),
 :root[data-theme="xp"] .admin-shell select,
 :root[data-theme="xp"] .admin-shell textarea {
-  min-height: 21px; height: 21px; padding: 2px 4px;
+  min-height: 25px; height: 25px; padding: 3px 5px;
   background: #FFFFFF; color: #000000;
   border: 1px solid var(--xp-edit-border); border-radius: 0; box-shadow: none;
-  font: 400 11px/1.3 var(--font-body);
+  font: 400 13px/1.3 var(--font-body);
 }
 :root[data-theme="xp"] .admin-shell textarea { height: auto; min-height: 60px; }
 :root[data-theme="xp"] .admin-shell select { padding-right: 18px; }
@@ -189,18 +189,18 @@
 /* ── Tabs: real tab strip ── */
 :root[data-theme="xp"] .admin-shell .page-tabs { gap: 0; padding: 0; background: transparent; border: none; border-bottom: 1px solid #919B9C; align-items: flex-end; }
 :root[data-theme="xp"] .admin-shell .page-tabs button {
-  min-width: 0; height: 21px; padding: 0 8px; margin-bottom: -1px;
+  min-width: 0; height: 24px; padding: 0 10px; margin-bottom: -1px;
   border: 1px solid #919B9C; border-bottom: none; border-radius: 3px 3px 0 0;
   background: linear-gradient(180deg, #FFFFFF, #ECEBE5); box-shadow: none;
 }
-:root[data-theme="xp"] .admin-shell .page-tabs button.active { height: 23px; background: #FCFCFE; box-shadow: inset 0 2px 0 #FFC73C; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .page-tabs button.active { height: 26px; background: #FCFCFE; box-shadow: inset 0 2px 0 #FFC73C; font-weight: 400; }
 :root[data-theme="xp"] .admin-shell .page-tabs button:hover { box-shadow: inset 0 2px 0 #FFC73C; }
 
 /* ── Chips / counts: plain text in parentheses feel ── */
 :root[data-theme="xp"] .admin-shell .db-count,
 :root[data-theme="xp"] .admin-shell .day-count,
 :root[data-theme="xp"] .admin-shell .badge,
-:root[data-theme="xp"] .admin-shell .uik-badge { background: transparent; border: none; border-radius: 0; padding: 0; color: inherit; font-size: 11px; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .uik-badge { background: transparent; border: none; border-radius: 0; padding: 0; color: inherit; font-size: 13px; font-weight: 400; }
 :root[data-theme="xp"] .admin-shell .db-card-header .db-count { color: #FFFFFF; }
 
 /* ── Rail: a Luna window floating on Bliss ── */
@@ -211,15 +211,15 @@
   padding: 0 7px 7px; backdrop-filter: none; box-shadow: 2px 2px 3px rgba(0,0,0,0.35);
 }
 :root[data-theme="xp"] .admin-shell .admin-rail-head {
-  height: 30px; margin: 0 -10px 7px; padding: 0 8px; border-radius: 8px 8px 0 0;
+  height: 33px; margin: 0 -10px 7px; padding: 0 8px; border-radius: 8px 8px 0 0;
   background: var(--xp-caption); color: #FFFFFF; display: flex; align-items: center; gap: 6px;
 }
-:root[data-theme="xp"] .admin-shell .admin-rail-word, :root[data-theme="xp"] .admin-shell .admin-rail-word span { color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .admin-shell .admin-rail-word, :root[data-theme="xp"] .admin-shell .admin-rail-word span { color: #FFFFFF; font: 700 15px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
 :root[data-theme="xp"] .admin-shell .admin-rail-mark { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFFFFF, #6FC46F 40%, #2E8A2B); border: none; color: #FFFFFF; font-size: 10px; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link,
 :root[data-theme="xp"] .admin-shell .admin-sub-link {
-  height: 21px; padding: 0 6px; border-radius: 0; gap: 7px;
-  color: #000000; font-size: 11px; font-weight: 400; text-shadow: none;
+  height: 24px; padding: 0 6px; border-radius: 0; gap: 7px;
+  color: #000000; font-size: 13px; font-weight: 400; text-shadow: none;
 }
 :root[data-theme="xp"] .admin-shell .admin-rail-link i, :root[data-theme="xp"] .admin-shell .admin-sub-link i { color: var(--xp-sel); width: 16px; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link:hover,
@@ -229,13 +229,13 @@
 :root[data-theme="xp"] .admin-shell .admin-sub-link.active { background: var(--xp-sel); color: #FFFFFF; box-shadow: none; }
 :root[data-theme="xp"] .admin-shell .admin-rail-link.active i { color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .admin-pop-divider { border-color: var(--xp-face-dark); }
-:root[data-theme="xp"] .admin-shell .admin-topbar { height: 30px; background: var(--xp-caption); color: #FFFFFF; border-bottom: none; backdrop-filter: none; padding: 0 8px; }
-:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo, :root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo span { color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .admin-shell .admin-topbar { height: 33px; background: var(--xp-caption); color: #FFFFFF; border-bottom: none; backdrop-filter: none; padding: 0 8px; }
+:root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo, :root[data-theme="xp"] .admin-shell .admin-topbar .admin-logo span { color: #FFFFFF; font: 700 15px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
 :root[data-theme="xp"] .admin-shell .admin-rail-reopen { border-radius: 3px; }
 
 /* ── Calendar: a month control ── */
 :root[data-theme="xp"] .admin-shell .calendar-grid-react { gap: 0; border: 1px solid var(--xp-edit-border); background: #FFFFFF; }
-:root[data-theme="xp"] .admin-shell .calendar-day-name { font-size: 11px; letter-spacing: 0; text-transform: none; color: #000000; border-bottom: 1px solid var(--xp-face-dark); background: var(--xp-face); padding: 2px 0; }
+:root[data-theme="xp"] .admin-shell .calendar-day-name { font-size: 13px; letter-spacing: 0; text-transform: none; color: #000000; border-bottom: 1px solid var(--xp-face-dark); background: var(--xp-face); padding: 2px 0; }
 :root[data-theme="xp"] .admin-shell .calendar-cell { border: none; border-right: 1px solid var(--xp-groupbox); border-bottom: 1px solid var(--xp-groupbox); border-radius: 0; background: #FFFFFF; min-height: 64px; padding: 2px 4px; transition: none; }
 :root[data-theme="xp"] .admin-shell .calendar-cell:hover { background: var(--xp-menu); transform: none; box-shadow: none; }
 :root[data-theme="xp"] .admin-shell .calendar-cell.today { background: #FFFFFF; outline: 2px solid var(--xp-sel); outline-offset: -2px; }
@@ -247,13 +247,13 @@
 /* ── Chat panel & FAB ── */
 :root[data-theme="xp"] .admin-shell .chat-fab, :root[data-theme="xp"] .admin-shell .admin-mobile-fab { border-radius: 3px; background: var(--xp-caption); border: 1px solid var(--xp-frame); box-shadow: 2px 2px 3px rgba(0,0,0,0.35); }
 :root[data-theme="xp"] .chat-panel { border-radius: 8px 8px 0 0; border: 3px solid var(--xp-frame); border-top: none; background: var(--xp-face); }
-:root[data-theme="xp"] .chat-header { height: 30px; background: var(--xp-caption); color: #FFFFFF; font: 700 13px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
-:root[data-theme="xp"] .chat-msg { border-radius: 0; font-size: 11px; }
+:root[data-theme="xp"] .chat-header { height: 30px; background: var(--xp-caption); color: #FFFFFF; font: 700 15px var(--font-display); text-shadow: 1px 1px 0 #0A1F5C; }
+:root[data-theme="xp"] .chat-msg { border-radius: 0; font-size: 13px; }
 :root[data-theme="xp"] .chat-msg.user { background: var(--xp-sel); color: #FFFFFF; }
 :root[data-theme="xp"] .chat-msg.assistant { background: #FFFFFF; border: 1px solid var(--xp-groupbox); }
 
 /* ── Toasts: balloon tips ── */
-:root[data-theme="xp"] .toast { background: #FFFFE1; color: #000000; border: 1px solid #000000; border-radius: 6px; box-shadow: 2px 2px 3px rgba(0,0,0,0.35); font-size: 11px; }
+:root[data-theme="xp"] .toast { background: #FFFFE1; color: #000000; border: 1px solid #000000; border-radius: 6px; box-shadow: 2px 2px 3px rgba(0,0,0,0.35); font-size: 13px; }
 
 /* ── Scrollbars ── */
 :root[data-theme="xp"] ::-webkit-scrollbar { width: 17px; height: 17px; }
@@ -286,7 +286,7 @@
 :root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header,
 :root[data-theme="xp"] .admin-shell .admin-main .combined-page > .combined-page-header {
   display: flex; align-items: center; justify-content: space-between; gap: 7px; flex-wrap: wrap;
-  min-height: 30px; margin: 0 -14px 0; padding: 0 6px 0 8px;
+  min-height: 33px; margin: 0 -14px 0; padding: 0 6px 0 8px;
   background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header h1,
@@ -294,8 +294,8 @@
 :root[data-theme="xp"] .admin-shell .admin-main .module-page > .module-header h1 i,
 :root[data-theme="xp"] .admin-shell .combined-page-title i { color: #FFFFFF; }
 :root[data-theme="xp"] .admin-shell .combined-page-header .page-tabs { border-bottom: none; }
-:root[data-theme="xp"] .admin-shell .combined-page-header .page-tabs button { margin-bottom: 0; border-bottom: 1px solid #919B9C; border-radius: 3px; height: 21px; }
-:root[data-theme="xp"] .admin-shell .combined-page-header .btn { height: 21px; min-width: 0; }
+:root[data-theme="xp"] .admin-shell .combined-page-header .page-tabs button { margin-bottom: 0; border-bottom: 1px solid #919B9C; border-radius: 3px; height: 24px; }
+:root[data-theme="xp"] .admin-shell .combined-page-header .btn { height: 24px; min-width: 0; }
 
 /* Cards nested inside a page window → group boxes */
 :root[data-theme="xp"] .admin-shell .module-page .db-card,
@@ -315,7 +315,7 @@
 :root[data-theme="xp"] .admin-shell .combined-page .db-card .db-card-header {
   height: auto; min-height: 0; margin: -17px 0 7px; padding: 0 3px; width: max-content; max-width: 100%;
   background: var(--xp-face); color: #000000; border-radius: 0; text-shadow: none;
-  font: 400 11px/1.2 var(--font-body);
+  font: 400 13px/1.2 var(--font-body);
 }
 :root[data-theme="xp"] .admin-shell .module-page .db-card .db-card-header,
 :root[data-theme="xp"] .admin-shell .combined-page .db-card .db-card-header { width: auto; max-width: none; margin: -17px 0 7px; display: flex; }
@@ -343,10 +343,10 @@
 :root[data-theme="xp"] .admin-shell .ai-briefing-card { padding-top: 0; }
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child {
   display: flex; align-items: center; justify-content: space-between; gap: 7px; flex-wrap: wrap;
-  min-height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  min-height: 33px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
   background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
 }
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .ai-briefing-title,
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-eyebrow,
-:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-date { color: #FFFFFF; text-shadow: 1px 1px 0 #0A1F5C; margin: 0; font: 700 13px var(--font-display); }
-:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 21px; min-width: 0; }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-date { color: #FFFFFF; text-shadow: 1px 1px 0 #0A1F5C; margin: 0; font: 700 15px var(--font-display); }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 24px; min-width: 0; }

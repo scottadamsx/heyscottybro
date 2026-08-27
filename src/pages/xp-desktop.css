@@ -17,7 +17,7 @@
 
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
-  font-family: var(--xp-font); font-size: 11px; color: var(--xp-ink);
+  font-family: var(--xp-font); font-size: 13px; color: var(--xp-ink);
   background: var(--xp-bliss);
   -webkit-font-smoothing: auto;
   overflow: hidden;
@@ -36,7 +36,7 @@
 .xpd-icon {
   width: 100px; padding: 6px 4px; border: 1px solid transparent; background: transparent;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  color: var(--xp-white); font: inherit; font-size: 11px; text-shadow: 1px 1px 2px rgba(0,0,0,0.85);
+  color: var(--xp-white); font: inherit; font-size: 13px; text-shadow: 1px 1px 2px rgba(0,0,0,0.85);
   cursor: default; border-radius: 2px;
 }
 .xpd-icon:hover, .xpd-icon:focus-visible { background: rgba(49,106,197,0.45); border-color: rgba(255,255,255,0.45); outline: none; }
@@ -62,16 +62,16 @@
 .xpd-win.featured { grid-column: span 1; }
 @keyframes xpd-open { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
 .xpd-title {
-  display: flex; align-items: center; gap: 6px; height: 30px; margin: 0 -3px; padding: 0 5px 0 8px;
+  display: flex; align-items: center; gap: 6px; height: 33px; margin: 0 -3px; padding: 0 5px 0 8px;
   background: var(--xp-title-inactive); color: var(--xp-white);
-  font: 700 13px "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px 0 #0A1F5C;
+  font: 700 15px "Trebuchet MS", Tahoma, sans-serif; text-shadow: 1px 1px 0 #0A1F5C;
   user-select: none;
 }
 .xpd-win.active .xpd-title { background: var(--xp-title); }
 .xpd-title > span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xpd-title-btns { display: flex; gap: 2px; }
 .xpd-title-btns button {
-  width: 21px; height: 21px; border-radius: 3px; border: 1px solid var(--xp-white);
+  width: 23px; height: 23px; border-radius: 3px; border: 1px solid var(--xp-white);
   background: radial-gradient(circle at 90% 90%, #4E8AFB, #2160D6 60%, #1B52C2); color: var(--xp-white);
   font-size: 10px; display: grid; place-items: center; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
 }
@@ -79,19 +79,19 @@
 .xpd-title-btns button:hover { filter: brightness(1.12); }
 .xpd-title-btns button:focus-visible { outline: 2px solid var(--xp-gold); outline-offset: 1px; }
 .xpd-body { background: var(--xp-white); margin: 0; padding: 11px; }
-.xpd-body p { margin: 0 0 7px; line-height: 1.4; font-size: 11px; color: var(--xp-ink); }
+.xpd-body p { margin: 0 0 7px; line-height: 1.4; font-size: 13px; color: var(--xp-ink); }
 .xpd-shot { display: block; width: 100%; height: 150px; object-fit: cover; border: 1px solid var(--xp-input-line); margin-bottom: 7px; }
-.xpd-kicker { font-size: 11px; color: var(--xp-sel); font-weight: 700; margin-bottom: 7px; }
+.xpd-kicker { font-size: 13px; color: var(--xp-sel); font-weight: 700; margin-bottom: 7px; }
 .xpd-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 7px 0 11px; padding: 0; }
 .xpd-facts div { border: 1px solid #D0D0BF; border-radius: 3px; padding: 5px 7px; }
-.xpd-facts dt { font-size: 11px; color: var(--xp-ink-soft); }
-.xpd-facts dd { margin: 1px 0 0; font-weight: 700; font-size: 11px; }
+.xpd-facts dt { font-size: 12px; color: var(--xp-ink-soft); }
+.xpd-facts dd { margin: 1px 0 0; font-weight: 700; font-size: 13px; }
 .xpd-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .xpd-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 23px; min-width: 75px; padding: 0 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 27px; min-width: 88px; padding: 0 14px;
   background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 86%, #D8D0C4 100%); color: var(--xp-ink); border: 1px solid #003C74; border-radius: 3px;
   box-shadow: inset -1px 1px #FFFFFF, inset 1px 1px #FFFFFF, inset -2px -2px #D8D0C4;
-  font: inherit; font-size: 11px; text-decoration: none; cursor: pointer;
+  font: inherit; font-size: 13px; text-decoration: none; cursor: pointer;
 }
 .xpd-btn.primary { box-shadow: inset -1px 1px #CEE7FF, inset 1px 2px #98B8EA, inset -2px 2px #BCD4F6, inset 2px -2px #89ADE4; }
 .xpd-btn:hover { box-shadow: inset -1px 1px #FFF0CF, inset 1px 2px #FDD889, inset -2px 2px #FBC761, inset 2px -2px #E5A01A; }
@@ -101,7 +101,7 @@
 
 /* ── Taskbar ── */
 .xpd-taskbar {
-  height: 30px; flex-shrink: 0; display: flex; align-items: stretch; gap: 6px;
+  height: 34px; flex-shrink: 0; display: flex; align-items: stretch; gap: 6px;
   background: linear-gradient(180deg, #245EDC 0%, #3F8CF3 8%, #245EDC 40%, #1E52C6 90%, #1941A5 100%);
   border-top: 1px solid #0A3FB8; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
   padding-right: 4px; position: relative; z-index: 5;
@@ -120,7 +120,7 @@
 .xpd-task {
   display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; max-width: 180px; min-width: 0;
   border: 1px solid #1941A5; border-radius: 3px; background: linear-gradient(180deg, #3C81F3, #2A6BE0); color: var(--xp-white);
-  font: inherit; font-size: 11px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer;
+  font: inherit; font-size: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer;
 }
 .xpd-task span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xpd-task.active { background: linear-gradient(180deg, #1B4FBF, #2A66D8); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.45); font-weight: 700; }
@@ -153,7 +153,7 @@
 .xpd-sm-col button:hover, .xpd-sm-col a:hover, .xpd-sm-col button:focus-visible, .xpd-sm-col a:focus-visible { background: var(--xp-sel); color: var(--xp-white); outline: none; }
 .xpd-sm-col button:hover i, .xpd-sm-col a:hover i { color: var(--xp-white); }
 .xpd-sm-col a.admin { margin-top: auto; border-top: 1px solid var(--xp-face-dark); padding-top: 8px; }
-.xpd-sm-foot { padding: 6px 10px; background: var(--xp-blue-deep); color: var(--xp-white); font-size: 11px; }
+.xpd-sm-foot { padding: 6px 10px; background: var(--xp-blue-deep); color: var(--xp-white); font-size: 13px; }
 
 /* ── Phone: icons become a row, windows stack ── */
 @media (max-width: 720px) {
