@@ -5,9 +5,8 @@
    here as a custom property. Components reference tokens; they do not write
    literals. `index.css` holds component rules only and is loaded after this.
 
-   Three theme scopes, all on <html> via data-theme (see theme.js): light
-   (default, Apple-esque), dark (Apple dark), xp (Windows XP Luna). Same token
-   names in every scope, so one component works under all three.
+  Theme scopes live on <html> via data-theme (see theme.js). Same token names
+  in every scope, so one component works across every theme.
 
    Named `globals.css` deliberately: devrules/validate-ui.mjs resolves the
    global stylesheet by that exact basename, and while this project called it
@@ -22,11 +21,11 @@
 @font-face { font-family: "Pixelated MS Sans Serif"; src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
 
 /* ═══ Theme scopes ═══════════════════════════════════════════════════════════
-   <html data-theme="light|dark|xp"> is set before first paint (src/utils/theme.js,
+  <html data-theme="..."> is set before first paint (src/utils/theme.js,
    applied in main.jsx). Same token NAMES in every scope; only values change.
-   light = the default: an Apple-esque paper-and-hairline look.
-   dark  = Apple dark (near-black canvas, elevated greys).
-   xp    = Windows XP "Luna" — bliss-blue chrome, bevels, Tahoma.
+  light = the default: an Apple-esque paper-and-hairline look.
+  dark, xp, apple-retro, ios-retro, minecraft, backyard, never86, arcade are
+  optional packs.
    The admin shell no longer carries its own palette; it inherits from here.
    ═════════════════════════════════════════════════════════════════════════ */
 
@@ -246,6 +245,303 @@
   --titlebar-text: #FFFFFF;
   --chrome-blur: none;
   --chrome-bg: #ECE9D8;
+}
+
+:root[data-theme="apple-retro"] {
+  color-scheme: light;
+  --bg-base: #D8D4C7;
+  --bg-surface: #ECE8DC;
+  --bg-card: #F4F1E6;
+  --bg-raised: #E1DCCD;
+  --bg-hover: #D5CFBE;
+  --canvas-bg: linear-gradient(180deg, #E4E0D2 0%, #D8D4C7 100%);
+  --canvas-dot: rgba(30, 30, 30, 0.05);
+
+  --border-subtle: rgba(33, 33, 33, 0.2);
+  --border-primary: rgba(22, 22, 22, 0.35);
+  --border-accent: rgba(60, 98, 170, 0.5);
+  --line: rgba(22, 22, 22, 0.2);
+
+  --text-primary: #171717;
+  --text-secondary: #47423A;
+  --text-muted: #6A645A;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #3D63AA;
+  --accent-deep: #2D4A83;
+  --accent-light: #5B83D0;
+  --accent-bg: rgba(61, 99, 170, 0.14);
+  --accent-glow: rgba(61, 99, 170, 0.28);
+  --cyan: #4A7FA8;
+  --green: #3E7A44;
+  --red: #AF453B;
+  --red-deep: #84352E;
+  --orange: #A56A2A;
+
+  --success-bg: rgba(62, 122, 68, 0.16);
+  --danger-bg: rgba(175, 69, 59, 0.15);
+  --warn-bg: rgba(165, 106, 42, 0.16);
+  --info-bg: rgba(61, 99, 170, 0.14);
+
+  --overlay: rgba(40, 34, 26, 0.45);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 1px 1px rgba(0, 0, 0, 0.06);
+  --shadow-floating: 0 12px 22px rgba(53, 45, 36, 0.24);
+  --shadow-modal: 0 20px 42px rgba(40, 32, 23, 0.32);
+
+  --grad-card: linear-gradient(180deg, #F8F4E9, #EFEBDD);
+  --grad-accent: linear-gradient(180deg, #6B90D4 0%, #3D63AA 70%, #2E4B85 100%);
+  --chrome-bg: rgba(236, 232, 220, 0.84);
+
+  --font-body: "Geneva", "Lucida Grande", "Chicago", "Trebuchet MS", sans-serif;
+  --font-display: "Charcoal", "Geneva", "Trebuchet MS", sans-serif;
+  --font-mono: "Monaco", "SF Mono", Menlo, monospace;
+}
+
+:root[data-theme="ios-retro"] {
+  color-scheme: light;
+  --bg-base: #DCE7F4;
+  --bg-surface: #F6FAFF;
+  --bg-card: #FFFFFF;
+  --bg-raised: #E8F0FB;
+  --bg-hover: #D7E6F8;
+  --canvas-bg: linear-gradient(180deg, #A9C6E7 0%, #CEDDF0 38%, #DCE7F4 100%);
+  --canvas-dot: rgba(255, 255, 255, 0.18);
+
+  --border-subtle: rgba(44, 72, 112, 0.2);
+  --border-primary: rgba(44, 72, 112, 0.32);
+  --border-accent: rgba(41, 122, 222, 0.5);
+  --line: rgba(44, 72, 112, 0.2);
+
+  --text-primary: #102744;
+  --text-secondary: #355376;
+  --text-muted: #5A7593;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #2A7CDE;
+  --accent-deep: #1F63B4;
+  --accent-light: #5AA1F2;
+  --accent-bg: rgba(42, 124, 222, 0.16);
+  --accent-glow: rgba(42, 124, 222, 0.3);
+  --cyan: #47A7D9;
+  --green: #31A06A;
+  --red: #D4514F;
+  --red-deep: #A53D3C;
+  --orange: #D58D43;
+
+  --success-bg: rgba(49, 160, 106, 0.16);
+  --danger-bg: rgba(212, 81, 79, 0.16);
+  --warn-bg: rgba(213, 141, 67, 0.2);
+  --info-bg: rgba(42, 124, 222, 0.14);
+
+  --overlay: rgba(14, 26, 46, 0.46);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 2px 4px rgba(28, 56, 92, 0.1);
+  --shadow-floating: 0 14px 28px rgba(25, 52, 84, 0.2);
+  --shadow-modal: 0 24px 56px rgba(15, 32, 56, 0.3);
+
+  --grad-card: linear-gradient(180deg, #FFFFFF 0%, #F2F7FE 100%);
+  --grad-accent: linear-gradient(180deg, #8FC1FF 0%, #3D86E8 55%, #2A68C4 100%);
+  --chrome-bg: rgba(234, 242, 252, 0.84);
+
+  --font-body: "Helvetica Neue", "Arial", sans-serif;
+  --font-display: "Helvetica Neue", "Arial", sans-serif;
+  --font-mono: "Courier New", monospace;
+}
+
+:root[data-theme="minecraft"] {
+  color-scheme: dark;
+  --bg-base: #2B2F22;
+  --bg-surface: #343B29;
+  --bg-card: #3E462F;
+  --bg-raised: #4A5437;
+  --bg-hover: #566242;
+  --canvas-bg: linear-gradient(180deg, #4D6B3A 0%, #2D3E23 100%);
+  --canvas-dot: rgba(0, 0, 0, 0.12);
+
+  --border-subtle: rgba(16, 20, 12, 0.45);
+  --border-primary: rgba(10, 14, 8, 0.64);
+  --border-accent: rgba(144, 197, 73, 0.55);
+  --line: rgba(11, 16, 8, 0.45);
+
+  --text-primary: #EAF1D3;
+  --text-secondary: #C3D09D;
+  --text-muted: #99A97B;
+  --text-on-accent: #102007;
+
+  --accent: #90C549;
+  --accent-deep: #6FA037;
+  --accent-light: #B6DF74;
+  --accent-bg: rgba(144, 197, 73, 0.2);
+  --accent-glow: rgba(144, 197, 73, 0.35);
+  --cyan: #6AB39B;
+  --green: #8CCB50;
+  --red: #C85A47;
+  --red-deep: #9A4233;
+  --orange: #CC8F45;
+
+  --success-bg: rgba(140, 203, 80, 0.2);
+  --danger-bg: rgba(200, 90, 71, 0.2);
+  --warn-bg: rgba(204, 143, 69, 0.2);
+  --info-bg: rgba(106, 179, 155, 0.2);
+
+  --overlay: rgba(8, 12, 5, 0.58);
+  --shadow-card: 0 2px 0 rgba(255, 255, 255, 0.06) inset, 0 0 0 1px rgba(0, 0, 0, 0.22);
+  --shadow-floating: 0 14px 28px rgba(5, 8, 3, 0.5);
+  --shadow-modal: 0 28px 60px rgba(5, 8, 3, 0.68);
+
+  --grad-card: linear-gradient(180deg, #445036, #3A432E);
+  --grad-accent: linear-gradient(180deg, #C0E57F 0%, #86BC41 60%, #6D9E37 100%);
+  --chrome-bg: rgba(49, 55, 40, 0.86);
+
+  --font-body: "Trebuchet MS", "Verdana", sans-serif;
+  --font-display: "Trebuchet MS", "Verdana", sans-serif;
+  --font-mono: "Lucida Console", "Consolas", monospace;
+}
+
+:root[data-theme="backyard"] {
+  color-scheme: light;
+  --bg-base: #E8F2DF;
+  --bg-surface: #F5FAEF;
+  --bg-card: #FFFFFF;
+  --bg-raised: #EAF4E2;
+  --bg-hover: #DAECCC;
+  --canvas-bg: radial-gradient(circle at 10% 8%, #CDE8FF 0%, #B9DCF8 24%, #9FD091 56%, #87B872 100%);
+  --canvas-dot: rgba(62, 91, 50, 0.08);
+
+  --border-subtle: rgba(57, 90, 46, 0.17);
+  --border-primary: rgba(47, 77, 38, 0.3);
+  --border-accent: rgba(47, 129, 73, 0.45);
+  --line: rgba(57, 90, 46, 0.17);
+
+  --text-primary: #17311A;
+  --text-secondary: #3E5A42;
+  --text-muted: #5D7862;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #2F8C56;
+  --accent-deep: #256C43;
+  --accent-light: #54A875;
+  --accent-bg: rgba(47, 140, 86, 0.14);
+  --accent-glow: rgba(47, 140, 86, 0.28);
+  --cyan: #3E9BB1;
+  --green: #3C9E45;
+  --red: #BB4E3B;
+  --red-deep: #8A392C;
+  --orange: #BF7A32;
+
+  --success-bg: rgba(60, 158, 69, 0.16);
+  --danger-bg: rgba(187, 78, 59, 0.15);
+  --warn-bg: rgba(191, 122, 50, 0.18);
+  --info-bg: rgba(62, 155, 177, 0.14);
+
+  --overlay: rgba(20, 40, 22, 0.4);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 2px 6px rgba(42, 78, 34, 0.08);
+  --shadow-floating: 0 14px 28px rgba(28, 57, 24, 0.2);
+  --shadow-modal: 0 24px 56px rgba(20, 44, 19, 0.28);
+
+  --grad-card: linear-gradient(180deg, #FFFFFF 0%, #F1F8EA 100%);
+  --grad-accent: linear-gradient(180deg, #6DC48F 0%, #2F8C56 62%, #236A42 100%);
+  --chrome-bg: rgba(236, 247, 228, 0.84);
+
+  --font-body: "Hanken Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-display: "Archivo", "Hanken Grotesk", "Segoe UI", sans-serif;
+}
+
+:root[data-theme="never86"] {
+  color-scheme: dark;
+  --bg-base: #120E12;
+  --bg-surface: #1B141A;
+  --bg-card: #241A23;
+  --bg-raised: #2E2130;
+  --bg-hover: #3C2B3E;
+  --canvas-bg: radial-gradient(circle at 15% 0%, #2B1625 0%, #150E14 44%, #0E0A0F 100%);
+  --canvas-dot: rgba(255, 80, 110, 0.07);
+
+  --border-subtle: rgba(255, 122, 146, 0.15);
+  --border-primary: rgba(255, 122, 146, 0.24);
+  --border-accent: rgba(255, 90, 122, 0.48);
+  --line: rgba(255, 122, 146, 0.15);
+
+  --text-primary: #FFE8EF;
+  --text-secondary: #E1B7C5;
+  --text-muted: #B68A9A;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #FF4E72;
+  --accent-deep: #CF3659;
+  --accent-light: #FF7B98;
+  --accent-bg: rgba(255, 78, 114, 0.2);
+  --accent-glow: rgba(255, 78, 114, 0.36);
+  --cyan: #59D1DF;
+  --green: #52C18A;
+  --red: #FF5460;
+  --red-deep: #C73842;
+  --orange: #E8924A;
+
+  --success-bg: rgba(82, 193, 138, 0.18);
+  --danger-bg: rgba(255, 84, 96, 0.2);
+  --warn-bg: rgba(232, 146, 74, 0.2);
+  --info-bg: rgba(89, 209, 223, 0.18);
+
+  --overlay: rgba(6, 3, 8, 0.68);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 0 0 1px rgba(255, 100, 130, 0.08);
+  --shadow-floating: 0 16px 34px rgba(0, 0, 0, 0.56), 0 0 24px rgba(255, 78, 114, 0.14);
+  --shadow-modal: 0 36px 84px rgba(0, 0, 0, 0.72), 0 0 40px rgba(255, 78, 114, 0.16);
+
+  --grad-card: linear-gradient(180deg, #2A1D2A 0%, #211822 100%);
+  --grad-accent: linear-gradient(180deg, #FF9AB0 0%, #FF4E72 58%, #CF3659 100%);
+  --chrome-bg: rgba(30, 20, 30, 0.84);
+
+  --font-body: "Archivo", "Segoe UI", sans-serif;
+  --font-display: "Archivo", "Avenir Next", sans-serif;
+}
+
+:root[data-theme="arcade"] {
+  color-scheme: dark;
+  --bg-base: #110A21;
+  --bg-surface: #1A0F31;
+  --bg-card: #231243;
+  --bg-raised: #30195B;
+  --bg-hover: #3A2272;
+  --canvas-bg: radial-gradient(circle at 15% 10%, #3A1D67 0%, #170D2E 42%, #0E0720 100%);
+  --canvas-dot: rgba(0, 255, 255, 0.08);
+
+  --border-subtle: rgba(105, 83, 179, 0.35);
+  --border-primary: rgba(132, 110, 211, 0.5);
+  --border-accent: rgba(0, 227, 255, 0.55);
+  --line: rgba(105, 83, 179, 0.35);
+
+  --text-primary: #F5EFFF;
+  --text-secondary: #D4C7F2;
+  --text-muted: #A99DC8;
+  --text-on-accent: #0A0420;
+
+  --accent: #00D6FF;
+  --accent-deep: #00A7D0;
+  --accent-light: #69EEFF;
+  --accent-bg: rgba(0, 214, 255, 0.2);
+  --accent-glow: rgba(0, 214, 255, 0.42);
+  --cyan: #41F4FF;
+  --green: #6DE866;
+  --red: #FF5CC8;
+  --red-deep: #D945A7;
+  --orange: #FFB347;
+
+  --success-bg: rgba(109, 232, 102, 0.2);
+  --danger-bg: rgba(255, 92, 200, 0.2);
+  --warn-bg: rgba(255, 179, 71, 0.24);
+  --info-bg: rgba(0, 214, 255, 0.2);
+
+  --overlay: rgba(6, 4, 18, 0.68);
+  --shadow-card: 0 0 0 1px rgba(145, 114, 255, 0.18), 0 0 24px rgba(0, 214, 255, 0.1);
+  --shadow-floating: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 36px rgba(0, 214, 255, 0.16);
+  --shadow-modal: 0 34px 74px rgba(0, 0, 0, 0.74), 0 0 48px rgba(255, 92, 200, 0.14);
+
+  --grad-card: linear-gradient(180deg, #2A1550 0%, #1D103A 100%);
+  --grad-accent: linear-gradient(180deg, #74F0FF 0%, #00D6FF 62%, #00A6CE 100%);
+  --chrome-bg: rgba(28, 14, 50, 0.86);
+
+  --font-body: "Hanken Grotesk", "Segoe UI", sans-serif;
+  --font-display: "Archivo", "Hanken Grotesk", sans-serif;
 }
 
 html { background: var(--bg-base); }

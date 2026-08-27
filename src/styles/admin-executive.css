@@ -786,13 +786,19 @@
 
 /* ── Theme picker (Settings › Theme) ── */
 .admin-shell .theme-picker {
-  display: inline-flex; gap: 4px; padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px;
+  padding: 6px;
+  width: min(100%, 940px);
   background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
 }
 .admin-shell .theme-picker-opt {
-  height: 32px; padding: 0 12px; border: none; border-radius: var(--radius-sm);
+  min-height: 36px;
+  padding: 6px 10px;
+  border: none; border-radius: var(--radius-sm);
   background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.8rem; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 .admin-shell .theme-picker-opt:hover { color: var(--text-primary); }
@@ -802,6 +808,12 @@
 /* Settings rows inside one card get a hairline between them */
 .admin-shell .settings-row + .settings-row { border-top: 1px solid var(--border-subtle); margin-top: 1rem; padding-top: 1rem; }
 .admin-shell .theme-picker-opt { white-space: nowrap; }
+@media (max-width: 640px) {
+  .admin-shell .theme-picker {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
 /* The admin wordmark uses the action colour, not the public site's flag red */
 .admin-shell .admin-logo span { color: var(--accent); }
 
