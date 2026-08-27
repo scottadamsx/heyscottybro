@@ -93,3 +93,5 @@
 :root[data-theme="xp"] .admin-shell.xp-desktop .admin-rail { z-index: 4 !important; }
 .xpw { z-index: 10; } /* inline z-index from the manager overrides this; floor keeps windows above the rail */
 .xp-taskbar { z-index: 900; }
+/* The area is its own stacking context; it must sit above the rail (4) and below the taskbar (900) */
+.xp-desktop-area { z-index: 5; }
