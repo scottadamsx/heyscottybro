@@ -95,3 +95,6 @@
 .xp-taskbar { z-index: 900; }
 /* The area is its own stacking context; it must sit above the rail (4) and below the taskbar (900) */
 .xp-desktop-area { z-index: 5; }
+/* Empty desktop passes clicks through to the rail; only windows catch them */
+.xp-desktop-area { pointer-events: none; }
+.xp-desktop-area .xpw { pointer-events: auto; }
