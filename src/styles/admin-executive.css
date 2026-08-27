@@ -805,7 +805,7 @@
 
 /* ── Density: Apple-compact inside the admin (light/dark). XP keeps its own scale. ── */
 :root[data-density="compact"]:not([data-theme="xp"]) { font-size: 14px; }
-:root[data-density="compact"]:not([data-theme="xp"]) .admin-main { padding: 1.1rem 1.5rem; max-width: 1280px; }
+:root[data-density="compact"]:not([data-theme="xp"]) .admin-main { padding: 1.1rem 1.75rem 1.1rem 1.5rem; max-width: 1280px; }
 :root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .db-card,
 :root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .form-card,
 :root[data-density="compact"]:not([data-theme="xp"]) .admin-shell .uik-card { padding: 0.9rem 1rem; }

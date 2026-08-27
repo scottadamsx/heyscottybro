@@ -34,7 +34,7 @@
 :root[data-theme="xp"] .admin-shell .admin-main > * { max-width: none; }
 
 /* ── Layout metrics: dialog margin 11 · group gap 11 · related 7 ── */
-:root[data-theme="xp"] .admin-main { padding: 11px; max-width: none; }
+:root[data-theme="xp"] .admin-main { padding: 11px 22px 11px 11px; max-width: none; }
 :root[data-theme="xp"] .db-grid { gap: 11px; }
 :root[data-theme="xp"] .module-page { gap: 11px; }
 :root[data-theme="xp"] .tasks-layout { gap: 11px; }

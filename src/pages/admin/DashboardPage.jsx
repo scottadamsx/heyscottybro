@@ -25,6 +25,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ reminders: [], journal: [], config: { categories: [], recurringBills: [], incomeSources: [] }, events: [], projects: [], initiatives: [], transactions: [] });
   const [agentActions, setAgentActions] = useState([]);
+  const [allActions, setAllActions] = useState(false);
+  const ACTIONS_SHOWN = 6;
   const [school, setSchool] = useState({ courses: [], grades: [] });
   const [pulse, setPulse] = useState({ openBugs: null, unreadInbox: null });
   const [aiText, setAiText] = useState("");
@@ -401,7 +403,7 @@ export default function DashboardPage() {
         <Item className="db-card col-6">
           <h3 className="db-card-title">Frodo&apos;s recent actions</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
-            {agentActions.map((a) => {
+            {(allActions ? agentActions : agentActions.slice(0, ACTIONS_SHOWN)).map((a) => {
               const tool = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
               const isErr = a.status === "error";
               return (
@@ -425,6 +427,11 @@ export default function DashboardPage() {
               );
             })}
           </div>
+          {agentActions.length > ACTIONS_SHOWN && (
+            <button type="button" className="dashboard-expand" onClick={() => setAllActions((v) => !v)}>
+              {allActions ? "Show fewer" : `Show all ${agentActions.length}`}
+            </button>
+          )}
         </Item>
       )}
 
