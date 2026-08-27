@@ -20,7 +20,6 @@ const MENUS = [
         heading: "Client sites",
         items: [
           { title: "eliquinn.space", desc: "Architecture portfolio — built for Eli Quinn", icon: "fa-compass-drafting", href: "https://eliquinn.space" },
-          { title: "Our First Two Months", desc: "A little web gift", icon: "fa-heart", href: "https://ourfirsttwomonths.vercel.app" },
         ],
       },
     ],

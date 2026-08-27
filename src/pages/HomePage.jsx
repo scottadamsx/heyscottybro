@@ -87,11 +87,42 @@ function LinkOut({ href, to, className, children }) {
   return null;
 }
 
-function XpWindow({ w, active, onFocus, onClose, onMin }) {
+const GEOM_KEY = "xpd-geom-v1";
+function readGeom() { try { return JSON.parse(localStorage.getItem(GEOM_KEY)) || {}; } catch { return {}; } }
+function writeGeom(g) { try { localStorage.setItem(GEOM_KEY, JSON.stringify(g)); } catch { /* private mode */ } }
+/** Cascade default: featured windows side by side, others stepped down-right. */
+function defaultGeom(id, index, areaW) {
+  const featuredIdx = FEATURED.findIndex((f) => f.id === id);
+  const w = Math.min(380, Math.max(300, Math.floor((areaW - 40) / 3)));
+  if (featuredIdx >= 0) return { x: featuredIdx * (w + 12), y: 0, w, h: null };
+  return { x: 40 + (index % 6) * 28, y: 40 + (index % 6) * 28, w: 360, h: null };
+}
+
+function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }) {
   const featured = !!w.body;
+  const ref = useRef(null);
+  const drag = useRef(null);
+
+  const startDrag = (e, mode) => {
+    if (!floating) return;
+    if (e.button !== 0) return;
+    const r = ref.current.getBoundingClientRect();
+    drag.current = { mode, sx: e.clientX, sy: e.clientY, x: geom.x, y: geom.y, w: r.width, h: r.height };
+    const move = (ev) => {
+      const d = drag.current; if (!d) return;
+      const dx = ev.clientX - d.sx, dy = ev.clientY - d.sy;
+      if (d.mode === "move") onGeom({ ...geom, x: Math.max(0, d.x + dx), y: Math.max(0, d.y + dy) });
+      else onGeom({ ...geom, w: Math.max(260, d.w + dx), h: Math.max(120, d.h + dy) });
+    };
+    const up = () => { drag.current = null; window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+    e.preventDefault();
+  };
+
+  const style = floating ? { left: geom.x, top: geom.y, width: geom.w, height: geom.h || undefined } : undefined;
   return (
-    <section className={`xpd-win${active ? " active" : ""}${featured ? " featured" : ""}`} onMouseDown={onFocus} aria-label={w.title}>
-      <header className="xpd-title">
+    <section ref={ref} style={style} className={`xpd-win${active ? " active" : ""}${featured ? " featured" : ""}${floating ? " floating" : ""}`} onPointerDown={onFocus} aria-label={w.title}>
+      <header className="xpd-title" onPointerDown={(e) => startDrag(e, "move")} onDoubleClick={() => floating && onGeom({ ...geom, w: 380, h: null })}>
         <i className={`fa-solid ${w.icon}`} />
         <span>{w.title}</span>
         <div className="xpd-title-btns">
@@ -100,6 +131,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin }) {
         </div>
       </header>
       <div className="xpd-body">
+        {floating && <span className="xpd-resize" onPointerDown={(e) => startDrag(e, "resize")} aria-hidden="true" />}
         {w.img && <img className="xpd-shot" src={w.img} alt="" loading="lazy" />}
         {w.kicker && <div className="xpd-kicker">{w.kicker}</div>}
         {w.tag && !w.kicker && <div className="xpd-kicker">{w.tag}</div>}
@@ -124,6 +156,15 @@ export default function HomePage() {
   const [minimized, setMinimized] = useState([]);
   const [startOpen, setStartOpen] = useState(false);
   const startRef = useRef(null);
+  const areaRef = useRef(null);
+  const [geoms, setGeoms] = useState(readGeom);
+  const [floating, setFloating] = useState(() => typeof window !== "undefined" && window.innerWidth > 720);
+  useEffect(() => {
+    const onResize = () => setFloating(window.innerWidth > 720);
+    window.addEventListener("resize", onResize); return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const geomFor = (id, index) => geoms[id] || defaultGeom(id, index, areaRef.current?.clientWidth || 1000);
+  const setGeom = (id, g) => setGeoms((prev) => { const next = { ...prev, [id]: g }; writeGeom(next); return next; });
 
   useEffect(() => {
     document.title = "heyScottyBro — Scott Adams";
@@ -153,13 +194,14 @@ export default function HomePage() {
         </nav>
 
         {/* Windows */}
-        <div className="xpd-windows">
+        <div className={`xpd-windows${floating ? " floating" : ""}`} ref={areaRef}>
           {visible.length === 0 && (
             <div className="xpd-empty">Nothing open. Double-click an icon, or hit <b>start</b>.</div>
           )}
           {visible.map((id) => {
             const w = byId(id);
-            return w && <XpWindow key={id} w={w} active={id === top} onFocus={() => focus(id)} onClose={() => close(id)} onMin={() => minimize(id)} />;
+            const index = ALL.findIndex((x) => x.id === id);
+            return w && <XpWindow key={id} w={w} active={id === top} onFocus={() => focus(id)} onClose={() => close(id)} onMin={() => minimize(id)} geom={geomFor(id, index)} onGeom={(g) => setGeom(id, g)} floating={floating} />;
           })}
         </div>
       </main>

@@ -172,3 +172,13 @@
   .xpd-sm-col.right a.admin { margin-top: 0; border-top: none; padding-top: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .xpd-win, .xpd-startmenu { animation: none; } }
+
+/* ── Floating windows (desktop): drag by caption, resize by corner ── */
+.xpd-windows.floating { display: block; position: relative; min-height: 100%; }
+.xpd-win.floating { position: absolute; display: flex; flex-direction: column; min-width: 260px; max-width: calc(100% - 4px); }
+.xpd-win.floating .xpd-title { cursor: move; }
+.xpd-win.floating .xpd-body { flex: 1; overflow: auto; position: relative; }
+.xpd-resize {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; z-index: 2;
+  background: linear-gradient(135deg, transparent 50%, var(--xp-face-dark) 50%, var(--xp-face-dark) 60%, transparent 60%, transparent 75%, var(--xp-face-dark) 75%, var(--xp-face-dark) 85%, transparent 85%);
+}
