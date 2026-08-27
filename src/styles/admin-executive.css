@@ -830,3 +830,8 @@
 .admin-shell .tasks-form-panel, .admin-shell .db-card:has(.picker-pop), .admin-shell .form-card:has(.picker-pop) { overflow: visible; }
 .admin-shell .tmp-pop { left: auto; right: 0; min-width: 260px; }
 .admin-shell .picker-pop { z-index: 80; }
+
+/* ── Plan › Work ── */
+.admin-shell .worklog-min { width: 72px; flex: 0 0 auto; }
+.admin-shell .worklog-project { color: var(--accent); font-weight: 600; }
+.admin-shell .worklog-notes { margin-top: 2px; color: var(--text-secondary); white-space: pre-wrap; }

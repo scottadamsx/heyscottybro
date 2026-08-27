@@ -4,7 +4,6 @@ import NutritionPage from "./NutritionPage";
 import RecipesPage from "./RecipesPage";
 import GymTracker from "../../components/tools/GymTracker";
 import AccountabilityPage from "./AccountabilityPage";
-import DatePlannerPage from "./DatePlannerPage";
 import WeedTrackerPage from "./WeedTrackerPage";
 import ArcadePage from "./ArcadePage";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
@@ -23,7 +22,6 @@ export default function LifePage() {
     { key: "recipes", label: "Recipes", icon: "fa-utensils" },
     { key: "fitness", label: "Fitness", icon: "fa-dumbbell" },
     { key: "habits",  label: "Habits",  icon: "fa-fire" },
-    { key: "dates",   label: "Dates",   icon: "fa-heart" },
     { key: "arcade",  label: "Arcade",  icon: "fa-gamepad" },
     ...(!hideSmoke ? [{ key: "smoke", label: "Smoke", icon: "fa-leaf" }] : []),
   ];
@@ -45,7 +43,6 @@ export default function LifePage() {
         {tab === "recipes" && <RecipesPage />}
         {tab === "fitness" && <GymTracker />}
         {tab === "habits"  && <AccountabilityPage />}
-        {tab === "dates"   && <DatePlannerPage />}
         {tab === "arcade"  && <ArcadePage />}
         {tab === "smoke"   && <WeedTrackerPage />}
       </div>

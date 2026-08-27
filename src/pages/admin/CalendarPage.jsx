@@ -6,7 +6,6 @@ import {
   loadJournal,
 } from "../../api/plannerApi";
 import { loadWorkouts } from "../../api/workoutsApi";
-import { loadDateCompleted } from "../../api/datePlannerApi";
 import { loadAccountability } from "../../api/accountabilityApi";
 import { expandReminders, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
@@ -32,7 +31,6 @@ export default function CalendarPage() {
   // Everything-that-happened-that-day sources for the robust day view.
   const [journal, setJournal] = useState([]);
   const [workouts, setWorkouts] = useState([]);
-  const [datesDone, setDatesDone] = useState([]);
   const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
   const [selectedDate, setSelectedDate] = useState("");
@@ -74,7 +72,7 @@ export default function CalendarPage() {
   const [taskRecur, setTaskRecur] = useState("none");
 
   const load = async () => {
-    const [r, e, t, p, et, j, w, dc, acc] = await Promise.all([
+    const [r, e, t, p, et, j, w, acc] = await Promise.all([
       loadReminders().catch(() => []),
       loadEvents().catch(() => []),
       loadTransactions().catch(() => []),
@@ -82,7 +80,6 @@ export default function CalendarPage() {
       loadEventTypes().catch(() => []),
       loadJournal().catch(() => []),
       loadWorkouts().catch(() => []),
-      loadDateCompleted().catch(() => []),
       loadAccountability().catch(() => ({ trackers: [], logs: [] })),
     ]);
     setReminders(r);
@@ -92,7 +89,6 @@ export default function CalendarPage() {
     setEventTypes(et);
     setJournal(j);
     setWorkouts(w);
-    setDatesDone(dc);
     setHabits(acc?.trackers ? acc : { trackers: [], logs: [] });
   };
 
@@ -234,7 +230,6 @@ export default function CalendarPage() {
         .filter((h) => h.count > 0)
     : [];
   const dayWorkouts = selectedDate ? workouts.filter((w) => w.date === selectedDate) : [];
-  const dayDates = selectedDate ? datesDone.filter((d) => d.done_on === selectedDate) : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
@@ -578,24 +573,6 @@ export default function CalendarPage() {
                 </div>
               )}
 
-              {/* Dates */}
-              {dayDates.length > 0 && (
-                <div className="day-section">
-                  <div className="day-section-head">
-                    <span><i className="fa-solid fa-heart" /> Dates</span>
-                    <span className="day-count">{dayDates.length}</span>
-                  </div>
-                  {dayDates.map((d) => (
-                    <div className="day-item" key={d.id}>
-                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
-                      <div className="day-item-body">
-                        <div className="day-item-title">{d.title}</div>
-                        {(d.memory || d.note) && <div className="day-item-sub">{d.memory || d.note}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Add */}

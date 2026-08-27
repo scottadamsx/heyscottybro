@@ -31,6 +31,7 @@ import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
+import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./workLogApi";
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus } from "./plannerApi";
 import { planReminderRows } from "../utils/recurrence";
@@ -274,6 +275,22 @@ const COLLECTIONS = {
       notes: { type: "string", long: true, updateOnly: true },
     },
     load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
+  },
+  work_log: {
+    table: "work_log",
+    description: "Daily work log (Plan › Work): what Scott did, notes, and the project it was for",
+    dateField: "date",
+    searchFields: ["task", "notes"],
+    defaultFields: ["id", "date", "task", "project_id", "minutes"],
+    fields: {
+      date: { type: "date", required: true },
+      task: { type: "string", required: true },
+      notes: { type: "string", long: true },
+      project_id: { type: "string" },
+      minutes: { type: "number" },
+    },
+    load: loadWorkLog, create: createWorkLog, update: updateWorkLog, remove: deleteWorkLog,
+    echoFields: ["id", "date", "task", "project_id", "minutes"],
   },
   courses: {
     table: "courses",

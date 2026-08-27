@@ -8,11 +8,13 @@ import CalendarPage from "./CalendarPage";
 import RemindersPage from "./RemindersPage";
 import JournalPage from "./JournalPage";
 import ProjectsPage from "./ProjectsPage";
+import WorkLogPage from "./WorkLogPage";
 
 const TABS = [
   { key: "overview",  label: "Overview",  icon: "fa-calendar-days" },
   { key: "journal",   label: "Journal",   icon: "fa-book" },
   { key: "projects",  label: "Projects",  icon: "fa-folder-open" },
+  { key: "work",      label: "Work",      icon: "fa-briefcase" },
 ];
 
 export default function PlannerPage() {
@@ -87,6 +89,9 @@ export default function PlannerPage() {
         <div className="combined-embed">
           <ProjectsPage />
         </div>
+      )}
+      {tab === "work" && (
+        <div className="combined-embed"><WorkLogPage /></div>
       )}
     </div>
   );
