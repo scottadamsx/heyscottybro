@@ -7,7 +7,7 @@
  * independent of the admin theme picker).
  */
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./xp-desktop.css";
 
 /* ── Featured (open on boot) ─────────────────────────────── */
@@ -102,6 +102,14 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
   const featured = !!w.body;
   const ref = useRef(null);
   const drag = useRef(null);
+  const navigate = useNavigate();
+  // The whole window is the link: click anywhere in the body to go there.
+  // Buttons, links and the resize grip keep their own behaviour.
+  const go = (e) => {
+    if (e.target.closest("a, button, .xpd-resize")) return;
+    if (w.to) navigate(w.to);
+    else if (w.href) window.open(w.href, w.href.startsWith("mailto:") ? "_self" : "_blank", "noopener");
+  };
 
   const startDrag = (e, mode) => {
     if (!floating) return;
@@ -130,7 +138,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
           <button type="button" className="close" onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
         </div>
       </header>
-      <div className="xpd-body">
+      <div className={`xpd-body${w.href || w.to ? " linked" : ""}`} onClick={go} role={w.href || w.to ? "link" : undefined} tabIndex={w.href || w.to ? 0 : undefined} onKeyDown={(e) => { if (e.key === "Enter" && (w.href || w.to)) go(e); }}>
         {floating && <span className="xpd-resize" onPointerDown={(e) => startDrag(e, "resize")} aria-hidden="true" />}
         {w.img && <img className="xpd-shot" src={w.img} alt="" loading="lazy" />}
         {w.kicker && <div className="xpd-kicker">{w.kicker}</div>}

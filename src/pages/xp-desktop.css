@@ -182,3 +182,7 @@
   position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; z-index: 2;
   background: linear-gradient(135deg, transparent 50%, var(--xp-face-dark) 50%, var(--xp-face-dark) 60%, transparent 60%, transparent 75%, var(--xp-face-dark) 75%, var(--xp-face-dark) 85%, transparent 85%);
 }
+
+.xpd-body.linked { cursor: pointer; }
+.xpd-body.linked:hover { background: #FBFBF7; }
+.xpd-body.linked:focus-visible { outline: 1px dotted var(--xp-ink); outline-offset: -4px; }
