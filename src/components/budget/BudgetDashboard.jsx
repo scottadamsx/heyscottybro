@@ -287,7 +287,7 @@ export default function BudgetDashboard({ config, transactions, startingBalance,
                 </div>
                 <span className="bud-mono" style={{ fontSize: 14, marginRight: 12, textDecoration: b.paid ? "line-through" : "none", color: b.paid ? "var(--text-muted)" : undefined }}>{formatMoney(b.amount)}</span>
                 {b.paid
-                  ? <button className="btn bud-btn-xs" style={{ color: "var(--green)", background: "var(--success-bg)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">✓ Paid</button>
+                  ? <button className="btn bud-btn-xs" style={{ color: "var(--green)", background: "var(--success-bg)", border: "none" }} onClick={(e) => { e.stopPropagation(); onUnpayBill?.(b.matchedTxId); }} title="Undo">Paid</button>
                   : b.autoPay
                     ? <span style={{ fontSize: 11, color: "var(--green)", background: "var(--success-bg)", borderRadius: 4, padding: "2px 6px" }}>Auto</span>
                     : <button className="btn bud-btn-sm" onClick={(e) => { e.stopPropagation(); onPayBill(b); }}>Pay now</button>}

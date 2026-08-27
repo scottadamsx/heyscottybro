@@ -4084,7 +4084,7 @@ input, textarea, select { font-family: inherit; }
 .wt-taper-reduced { color: var(--orange); font-size: 0.75rem; font-weight: 500; }
 .wt-note { font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0 0; line-height: 1.5; }
 
-/* Maria's reservoir */
+/* partner's reservoir */
 .wt-reservoir { display: flex; gap: 1rem; align-items: stretch; }
 .wt-tank { width: 60px; flex-shrink: 0; border: 2px solid var(--border-primary); border-radius: 13px; position: relative; overflow: hidden; background: linear-gradient(180deg, var(--bg-raised), var(--bg-hover)); min-height: 160px; }
 .wt-tank-fill { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 0 0 10px 10px; background: linear-gradient(180deg, var(--tank-glow, var(--accent-light)), var(--tank-color, var(--accent))); box-shadow: 0 0 22px var(--tank-color, var(--accent)); transition: height 0.55s cubic-bezier(.2,.7,.2,1); }
@@ -4439,7 +4439,7 @@ input, textarea, select { font-family: inherit; }
 .wt-type-chip.joint { color: #e8915b; border-color: rgba(232,145,91,0.4); background: rgba(232,145,91,0.08); } /* theme-fixed */
 .wt-type-chip.pen   { color: #b68bd6; border-color: rgba(182,139,214,0.4); background: rgba(182,139,214,0.08); } /* theme-fixed */
 
-/* Inline joint logger (Maria) */
+/* Inline joint logger (partner) */
 .wt-joint-inline {
   display: flex;
   flex-direction: column;
