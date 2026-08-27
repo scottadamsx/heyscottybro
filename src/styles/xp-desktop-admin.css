@@ -87,3 +87,9 @@
 .xpw-page .module-page > .module-header h1, .xpw-page .combined-page > .combined-page-header .combined-page-title { display: none; }
 .xpw-page .module-page > .module-header, .xpw-page .combined-page > .combined-page-header { justify-content: flex-end; }
 .xpw-page .module-page > .module-header:empty { display: none; }
+
+/* Windows may slide over the menu rail; the rail sits behind them like any other desktop item */
+.xp-desktop-area { right: 0 !important; }
+:root[data-theme="xp"] .admin-shell.xp-desktop .admin-rail { z-index: 4; }
+.xpw { z-index: 10; } /* inline z-index from the manager overrides this; floor keeps windows above the rail */
+.xp-taskbar { z-index: 900; }
