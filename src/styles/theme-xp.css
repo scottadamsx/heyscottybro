@@ -34,7 +34,8 @@
 :root[data-theme="xp"] .admin-shell .admin-main > * { max-width: none; }
 
 /* ── Layout metrics: dialog margin 11 · group gap 11 · related 7 ── */
-:root[data-theme="xp"] .admin-main { padding: 11px 22px 11px 11px; max-width: none; }
+:root[data-theme="xp"] .admin-main { padding: 11px; max-width: none; margin-right: calc(var(--rail-w) + 22px) !important; }
+:root[data-theme="xp"] .admin-shell.menu-hidden .admin-main { margin-right: 0 !important; }
 :root[data-theme="xp"] .db-grid { gap: 11px; }
 :root[data-theme="xp"] .module-page { gap: 11px; }
 :root[data-theme="xp"] .tasks-layout { gap: 11px; }
@@ -337,3 +338,15 @@
 :root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header { background: transparent; color: #000000; margin: 0; padding: 0; min-height: 0; border-radius: 0; }
 :root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header h1,
 :root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header h1 { color: #000000; text-shadow: none; }
+
+/* Morning Brief is a window too: its header row becomes the caption */
+:root[data-theme="xp"] .admin-shell .ai-briefing-card { padding-top: 0; }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child {
+  display: flex; align-items: center; justify-content: space-between; gap: 7px; flex-wrap: wrap;
+  min-height: 30px; margin: 0 -14px 11px; padding: 0 6px 0 8px;
+  background: var(--xp-caption); color: #FFFFFF; border-radius: 8px 8px 0 0;
+}
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .ai-briefing-title,
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-eyebrow,
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-date { color: #FFFFFF; text-shadow: 1px 1px 0 #0A1F5C; margin: 0; font: 700 13px var(--font-display); }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 21px; min-width: 0; }
