@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import PopoverPortal from "./PopoverPortal";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"];
@@ -25,6 +26,7 @@ const sameDay = (a, b) =>
 export default function DatePicker({ value, onChange, placeholder = "Select date" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const popRef = useRef(null);
   const selected = parse(value);
   const today = new Date();
   const [view, setView] = useState(() => selected || today);
@@ -32,7 +34,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
   useEffect(() => {
     if (!open) return;
     setView(selected || today);
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDoc = (e) => { if (ref.current?.contains(e.target) || popRef.current?.contains(e.target)) return; setOpen(false); };
     const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -74,7 +76,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         )}
       </button>
 
-      {open && (
+      <PopoverPortal anchorRef={ref} popRef={popRef} open={open}>
         <div className="picker-pop dtp-pop">
           <div className="dtp-head">
             <button type="button" className="dtp-nav" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Previous month">
@@ -109,7 +111,7 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
             <button type="button" className="dtp-foot-btn" onClick={() => { onChange(""); setOpen(false); }}>Clear</button>
           </div>
         </div>
-      )}
+      </PopoverPortal>
     </div>
   );
 }

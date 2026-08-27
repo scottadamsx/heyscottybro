@@ -2189,10 +2189,7 @@ input, textarea, select { font-family: inherit; }
 .picker-clear:hover { color: var(--red); }
 
 .picker-pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 60;
+  position: relative;
   background: var(--bg-surface);
   border: 1px solid var(--border-primary);
   border-radius: 14px;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import PopoverPortal from "./PopoverPortal";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
@@ -21,7 +22,7 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onDoc = (e) => { if (ref.current?.contains(e.target) || popRef.current?.contains(e.target)) return; setOpen(false); };
     const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
@@ -65,8 +66,8 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
         )}
       </button>
 
-      {open && (
-        <div className="picker-pop tmp-pop" ref={popRef}>
+      <PopoverPortal anchorRef={ref} popRef={popRef} open={open}>
+        <div className="picker-pop tmp-pop">
           <div className="tmp-presets">
             {PRESETS.map((p) => (
               <button type="button" key={p} className={`tmp-preset${value === p ? " sel" : ""}`} onClick={() => { onChange(p); setOpen(false); }}>
@@ -97,7 +98,7 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
             </div>
           </div>
         </div>
-      )}
+      </PopoverPortal>
     </div>
   );
 }

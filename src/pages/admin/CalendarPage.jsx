@@ -468,7 +468,20 @@ export default function CalendarPage() {
                 </div>
                 {dayTasks.length === 0 && dayDone.length === 0 && <p className="day-empty">No tasks due.</p>}
 
-                {dayTasks.map((t) => (
+                {(() => {
+                  // Group under the project so a day reads "NEVER86 → 3 tasks", not a flat pile.
+                  const groups = [];
+                  for (const t of dayTasks) {
+                    const key = t.project_id ? String(t.project_id) : "";
+                    let g = groups.find((x) => x.key === key);
+                    if (!g) { g = { key, name: key ? (projects.find((p) => String(p.id) === key)?.name || "Project") : "", color: key ? projectColor(key) : null, items: [] }; groups.push(g); }
+                    g.items.push(t);
+                  }
+                  groups.sort((a, b) => (a.key === "" ? 1 : b.key === "" ? -1 : a.name.localeCompare(b.name)));
+                  return groups.map((g) => (
+                    <div className="day-group" key={g.key || "none"}>
+                      {g.name && <div className="day-group-title"><span className="day-item-dot" style={{ background: g.color || "var(--accent)" }} />{g.name}</div>}
+                      {g.items.map((t) => (
                   <div className="day-item" key={`${t.id}-${t.date}`}>
                     <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
                     <div className="day-item-body">
@@ -479,7 +492,10 @@ export default function CalendarPage() {
                     </div>
                     <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
                   </div>
-                ))}
+                      ))}
+                    </div>
+                  ));
+                })()}
 
                 {dayDone.map((t) => (
                   <div className="day-item done" key={`done-${t.id}`}>

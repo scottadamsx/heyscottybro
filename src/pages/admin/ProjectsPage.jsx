@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   loadProjects, newProject, deleteProject,
   loadInitiatives, newInitiative, deleteInitiative,
   loadEventTypes, newEventType, deleteEventType, updateEventType,
-  loadReminders, loadEvents, newReminder,
+  loadReminders, loadEvents, newReminder, completeReminder, updateReminder, deleteReminder,
 } from "../../api/plannerApi";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
@@ -30,6 +30,42 @@ export default function ProjectsPage() {
   const [initiatives, setInitiatives] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
   const [projectTasks, setProjectTasks] = useState([]);
+  const [projectDone, setProjectDone] = useState([]);
+  const [showDone, setShowDone] = useState(false);
+  // Complete / undo / delete straight from the project — optimistic, with the
+  // server result reconciled (a failed call puts the row back).
+  const markDone = async (t) => {
+    setProjectTasks((prev) => prev.filter((x) => x.id !== t.id));
+    setProjectDone((prev) => [{ ...t, completed: true, completed_date: new Date().toISOString().slice(0, 10) }, ...prev]);
+    try { await completeReminder(t.id); } catch (e) { setProjectTasks((prev) => [...prev, t]); setProjectDone((prev) => prev.filter((x) => x.id !== t.id)); alert("Couldn't complete: " + e.message); }
+  };
+  const undoDone = async (t) => {
+    setProjectDone((prev) => prev.filter((x) => x.id !== t.id));
+    setProjectTasks((prev) => [...prev, { ...t, completed: false, completed_date: null }]);
+    try { await updateReminder(t.id, { completed: false, completed_date: null }); } catch (e) { alert("Couldn't undo: " + e.message); }
+  };
+  const removeTask = async (t) => {
+    if (!window.confirm(`Delete "${t.name}"?`)) return;
+    setProjectTasks((prev) => prev.filter((x) => x.id !== t.id));
+    setProjectDone((prev) => prev.filter((x) => x.id !== t.id));
+    try { await deleteReminder(t.id); } catch (e) { alert("Couldn't delete: " + e.message); }
+  };
+  const TaskRow = ({ t, done }) => (
+    <div className={`db-list-item${done ? " done" : ""}`} key={t.id}>
+      {!done
+        ? <button type="button" className="day-check" onClick={() => markDone(t)} title="Mark complete" aria-label={`Complete ${t.name}`}><i className="fa-regular fa-circle" /></button>
+        : <span className="day-check done" aria-hidden="true"><i className="fa-solid fa-circle-check" /></span>}
+      <div className="db-list-item-content">
+        <Link className="db-list-item-title" to={`/admin/tasks/${t.id}`} style={{ textDecoration: done ? "line-through" : "none" }}>{t.name}</Link>
+        <div className="db-list-item-subtitle">
+          {done ? `Completed${t.completed_date ? " · " + formatDisplayDate(t.completed_date) : ""}` : t.date ? formatDisplayDate(t.date) : "No due date"}
+          {t.time ? ` · ${String(t.time).slice(0, 5)}` : ""}{t.recurrence && t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}
+        </div>
+      </div>
+      {done && <button type="button" className="btn-mini" onClick={() => undoDone(t)} title="Undo"><i className="fa-solid fa-rotate-left" /> Undo</button>}
+      <button type="button" className="icon-x sm" onClick={() => removeTask(t)} aria-label={`Delete ${t.name}`}><i className="fa-solid fa-xmark" /></button>
+    </div>
+  );
   const [projectEvents, setProjectEvents] = useState([]);
 
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -61,6 +97,7 @@ export default function ProjectsPage() {
     ]);
     setInitiatives(inits);
     setProjectTasks(reminders.filter(r => String(r.project_id) === String(projectId) && !r.completed));
+    setProjectDone(reminders.filter(r => String(r.project_id) === String(projectId) && r.completed).sort((a, b) => String(b.completed_date || "").localeCompare(String(a.completed_date || ""))));
     setProjectEvents(events.filter(e => String(e.project_id) === String(projectId)));
   };
 
@@ -304,28 +341,22 @@ export default function ProjectsPage() {
               return (
                 <>
                   <div className="db-list">
-                    {dated.map(t => (
-                      <div className="db-list-item" key={t.id}>
-                        <div className="db-list-item-content">
-                          <div className="db-list-item-title">{t.name}</div>
-                          <div className="db-list-item-subtitle">{formatDisplayDate(t.date)}{t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
-                        </div>
-                      </div>
-                    ))}
+                    {dated.sort((a, b) => a.date.localeCompare(b.date)).map(t => <TaskRow t={t} key={t.id} />)}
                   </div>
                   {undated.length > 0 && (
                     <>
                       <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.75rem 0 0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>No due date</p>
                       <div className="db-list">
-                        {undated.map(t => (
-                          <div className="db-list-item" key={t.id}>
-                            <div className="db-list-item-content">
-                              <div className="db-list-item-title">{t.name}</div>
-                              {t.recurrence !== "none" && <div className="db-list-item-subtitle">{t.recurrence}</div>}
-                            </div>
-                          </div>
-                        ))}
+                        {undated.map(t => <TaskRow t={t} key={t.id} />)}
                       </div>
+                    </>
+                  )}
+                  {projectDone.length > 0 && (
+                    <>
+                      <button type="button" className="dashboard-expand" onClick={() => setShowDone((v) => !v)}>
+                        {showDone ? "Hide completed" : `Completed (${projectDone.length})`}
+                      </button>
+                      {showDone && <div className="db-list">{projectDone.map(t => <TaskRow t={t} done key={t.id} />)}</div>}
                     </>
                   )}
                 </>

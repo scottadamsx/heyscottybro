@@ -828,8 +828,7 @@
 
 /* ── Pickers must escape their card; the time picker anchors to the right edge ── */
 .admin-shell .tasks-form-panel, .admin-shell .db-card:has(.picker-pop), .admin-shell .form-card:has(.picker-pop) { overflow: visible; }
-.admin-shell .tmp-pop { left: auto; right: 0; min-width: 260px; }
-.admin-shell .picker-pop { z-index: 80; }
+.admin-shell .tmp-pop { min-width: 260px; }
 
 /* ── Plan › Work ── */
 .admin-shell .worklog-min { width: 72px; flex: 0 0 auto; }
@@ -843,3 +842,8 @@
 .admin-shell .day-time-row input[type="time"] { flex: 1; min-width: 0; }
 
 .admin-shell .day-span-note { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Day sheet: tasks grouped by project */
+.admin-shell .day-group + .day-group { margin-top: 6px; }
+.admin-shell .day-group-title { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin: 4px 0 2px; }
+:root[data-theme="xp"] .admin-shell .day-group-title { text-transform: none; letter-spacing: 0; font: 700 11px var(--font-pixel); color: #000000; }

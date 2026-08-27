@@ -422,3 +422,27 @@
 :root[data-theme="xp"] .admin-shell .day-add-trigger { width: auto; }
 :root[data-theme="xp"] .admin-shell .day-time-row { display: flex; align-items: center; gap: 7px; }
 :root[data-theme="xp"] .admin-shell .day-time-row label { font-size: 11px; }
+
+/* ── Pickers (date / time popovers): a Luna dropdown, not a rounded sheet ── */
+:root[data-theme="xp"] .picker-pop {
+  background: #FFFFFF; border: 1px solid #7F9DB9; border-radius: 0; box-shadow: 2px 2px 3px rgba(0,0,0,0.35);
+  padding: 7px; font-family: var(--font-pixel); font-size: 11px; animation: none;
+}
+:root[data-theme="xp"] .dtp-head { margin-bottom: 4px; }
+:root[data-theme="xp"] .dtp-month { font: 700 13px var(--font-display); }
+:root[data-theme="xp"] .dtp-nav, :root[data-theme="xp"] .dtp-foot-btn {
+  height: 21px; min-width: 21px; padding: 0 8px; border: 1px solid #003C74; border-radius: 3px; background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 86%, #D8D0C4 100%);
+  color: #000000; font: 400 11px var(--font-pixel); box-shadow: inset -1px 1px #FFFFFF, inset 1px 1px #FFFFFF, inset -2px -2px #D8D0C4;
+}
+:root[data-theme="xp"] .dtp-nav:hover, :root[data-theme="xp"] .dtp-foot-btn:hover { background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 86%, #D8D0C4 100%); box-shadow: var(--xp-btn-hover); color: #000000; }
+:root[data-theme="xp"] .dtp-grid { gap: 0; border: 1px solid #ACA899; }
+:root[data-theme="xp"] .dtp-dow { font-size: 11px; color: #000000; background: #ECE9D8; border-bottom: 1px solid #ACA899; border-radius: 0; }
+:root[data-theme="xp"] .dtp-day { border-radius: 0; height: 22px; font-size: 11px; }
+:root[data-theme="xp"] .dtp-day:hover { background: #E3E1D3; }
+:root[data-theme="xp"] .dtp-day.today { color: #000000; box-shadow: inset 0 0 0 1px #316AC5; font-weight: 400; }
+:root[data-theme="xp"] .dtp-day.sel { background: #316AC5; color: #FFFFFF; font-weight: 400; }
+:root[data-theme="xp"] .dtp-foot { border-top: 1px solid #ACA899; margin-top: 7px; padding-top: 7px; gap: 7px; }
+:root[data-theme="xp"] .tmp-preset { border: 1px solid #7F9DB9; border-radius: 0; font-size: 11px; height: 21px; }
+:root[data-theme="xp"] .tmp-preset.sel { background: #316AC5; color: #FFFFFF; border-color: #316AC5; }
+:root[data-theme="xp"] .picker-trigger { border-radius: 0; border: 1px solid #7F9DB9; background: #FFFFFF; height: 25px; font-family: var(--font-pixel); font-size: 13px; }
+:root[data-theme="xp"] .picker-lead { color: #316AC5; }
