@@ -136,10 +136,10 @@ export default function TaskDetailPage() {
     <div className="module-page">
       {dialog}
 
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-        <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)", width: "fit-content" }} onClick={() => navigate(-1)}>
-          ← Back
-        </button>
+      {/* Page header: becomes the window caption in XP; Back sits in it like a toolbar button */}
+      <div className="module-header">
+        <h1><i className="fa-solid fa-list-check" /> Task</h1>
+        <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate(-1)}><i className="fa-solid fa-arrow-left" /> Back</button>
       </div>
 
       {/* ── Header ── */}
