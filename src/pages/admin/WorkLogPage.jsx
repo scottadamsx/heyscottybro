@@ -58,7 +58,7 @@ export default function WorkLogPage() {
 
   return (
     <div className="module-page">
-      <div className="module-header"><h1>Work</h1></div>
+      <div className="module-header"><h1><i className="fa-solid fa-briefcase" /> Work log</h1></div>
       {error && <p className="error-message">{error}</p>}
 
       <form className="form-card" onSubmit={submit}>

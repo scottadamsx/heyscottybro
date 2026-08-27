@@ -28,6 +28,7 @@ const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
 const DashboardPage      = lazy(() => import("./pages/admin/DashboardPage.jsx"));
 const PlannerPage        = lazy(() => import("./pages/admin/PlannerPage.jsx"));
 const RemindersPage      = lazy(() => import("./pages/admin/RemindersPage.jsx"));
+const WorkLogPage        = lazy(() => import("./pages/admin/WorkLogPage.jsx"));
 const TaskDetailPage     = lazy(() => import("./pages/admin/TaskDetailPage.jsx"));
 const SchoolPage         = lazy(() => import("./pages/admin/SchoolPage.jsx"));
 const LifePage           = lazy(() => import("./pages/admin/LifePage.jsx"));
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="today"     element={Lazy(<DashboardPage />)} />
           <Route path="planner"   element={Lazy(<PlannerPage />)} />
           <Route path="reminders" element={Lazy(<RemindersPage />)} />
+          <Route path="work"      element={Lazy(<WorkLogPage />)} />
           <Route path="tasks/:id" element={Lazy(<TaskDetailPage />)} />
           <Route path="finance"   element={Lazy(<BudgetPage />)} />
           <Route path="school"    element={Lazy(<SchoolPage />)} />

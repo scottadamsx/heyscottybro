@@ -13,6 +13,7 @@ import CommandPalette from "../../components/CommandPalette";
 const NAV_ITEMS = [
   { to: "/admin/planner",   icon: "fa-calendar-check",  label: "Plan" },
   { to: "/admin/reminders", icon: "fa-bell",            label: "Reminders" },
+  { to: "/admin/work",      icon: "fa-briefcase",       label: "Work" },
   { to: "/admin/finance",  icon: "fa-wallet",           label: "Money" },
   { to: "/admin/school",   icon: "fa-graduation-cap",   label: "School" },
   { to: "/admin/life",     icon: "fa-heart-pulse",      label: "Life" },
