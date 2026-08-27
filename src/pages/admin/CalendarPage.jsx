@@ -13,6 +13,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import DocLinks from "../../components/docs/DocLinks";
 import DatePicker from "../../components/DatePicker";
+import TimePicker from "../../components/TimePicker";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -649,9 +650,9 @@ export default function CalendarPage() {
                   <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
                   <div className="day-time-row">
                     <label htmlFor="ev-start">Start</label>
-                    <input id="ev-start" type="time" value={startTime} onChange={(e) => { const v = e.target.value; setStartTime(v); if (v && endAuto) setEndTime(plusHour(v)); }} />
+                    <TimePicker value={startTime} onChange={(v) => { setStartTime(v); if (v && endAuto) setEndTime(plusHour(v)); }} placeholder="Start" />
                     <label htmlFor="ev-end">End</label>
-                    <input id="ev-end" type="time" value={endTime} onChange={(e) => { setEndTime(e.target.value); setEndAuto(false); }} />
+                    <TimePicker value={endTime} onChange={(v) => { setEndTime(v); setEndAuto(false); }} placeholder="End" />
                     {startTime && <button type="button" className="btn-mini" onClick={() => { setStartTime(""); setEndTime(""); setEndAuto(true); }}>All day</button>}
                   </div>
                   <div className="day-time-row">
