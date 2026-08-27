@@ -90,8 +90,9 @@ export default function DashboardPage() {
 
   const upcomingEvents = data.events
     .filter(e => e.date >= todayStr)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     .slice(0, 5);
+  const evTime = (e) => e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";
 
   const activeTasks = data.reminders.filter((r) => !r.completed).length;
   const lastEntry = data.journal.length ? data.journal[data.journal.length - 1] : null;
@@ -317,7 +318,7 @@ export default function DashboardPage() {
               <div className="db-list-item" key={e.id}>
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{e.title}</div>
-                  <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{e.description ? ` — ${e.description}` : ""}</div>
+                  <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{evTime(e)}{e.description ? ` — ${e.description}` : ""}</div>
                 </div>
               </div>
             ))}

@@ -105,10 +105,12 @@ const COLLECTIONS = {
     description: "Calendar events (recurring supported; event_type_id auto-creates dependency tasks)",
     dateField: "date",
     searchFields: ["title", "description"],
-    defaultFields: ["id", "title", "date", "recurrence", "recur_until", "project_id", "event_type_id"],
+    defaultFields: ["id", "title", "date", "start_time", "end_time", "recurrence", "recur_until", "project_id", "event_type_id"],
     fields: {
       title: { type: "string", required: true },
       date: { type: "date", required: true },
+      start_time: { type: "string", description: "HH:MM 24h — when it starts. Omit for all-day." },
+      end_time: { type: "string", description: "HH:MM 24h — when it ends" },
       description: { type: "string", long: true },
       project_id: { type: "string" },
       event_type_id: { type: "string" },
@@ -117,6 +119,7 @@ const COLLECTIONS = {
       recur_times: { type: "number" },
     },
     load: loadEvents, create: newEvent, update: updateEvent, remove: deleteEvent,
+    echoFields: ["id", "title", "date", "start_time", "end_time", "recurrence", "project_id"],
   },
   projects: {
     table: "projects",

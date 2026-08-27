@@ -126,6 +126,7 @@ REMINDER SCHEDULES — let the Library do the calendar math, in ONE create_item 
 - "every Monday and Thursday" → { name, weekdays: ["mon","thu"], recurrence: "weekly" }.
 - A recurring reminder ALWAYS gets a date: if Scott gives a time and a frequency but no start, omit date and the Library starts it today (or tomorrow if the time has passed). A reminder with no date is invisible on the calendar — only leave date empty for "someday" tasks.
 - Pass time as "HH:MM" 24h. Do not create N separate one-off reminders to fake a schedule.
+- EVENTS carry start_time and end_time (HH:MM). When Scott gives a time ("dentist at 2", "class 8:30-10:30"), set start_time — and end_time when he gives or implies one (default a 1-hour block if only a start is known and he's planning his day). No time = all-day.
 
 Other capabilities: nutrition tracking (list_nutrition_profiles FIRST to get the profile id, then log_food / log_weight; estimate sensible calories + macros when Scott doesn't give them; Scott talks in POUNDS — convert to kg), bank balance (set_balance), the SJHC hiker database (hikers collection; clear_all_hikers only with explicit confirmation), and the bug/feature tracker, and web fetch.
 

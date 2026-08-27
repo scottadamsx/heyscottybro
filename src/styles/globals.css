@@ -17,6 +17,10 @@
    checker is the bonus. See ledger DR-009.
    ───────────────────────────────────────────────────────────────────────── */
 
+/* Pixelated MS Sans Serif — the bitmap UI face for the XP theme (public/fonts, MIT). */
+@font-face { font-family: "Pixelated MS Sans Serif"; src: url("/fonts/ms_sans_serif.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Pixelated MS Sans Serif"; src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
 /* ═══ Theme scopes ═══════════════════════════════════════════════════════════
    <html data-theme="light|dark|xp"> is set before first paint (src/utils/theme.js,
    applied in main.jsx). Same token NAMES in every scope; only values change.

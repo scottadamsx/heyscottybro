@@ -65,6 +65,10 @@ export default function CalendarPage() {
   // event form
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const fmtTime = (t) => { if (!t) return ""; const [h, m] = String(t).split(":").map(Number); const ap = h >= 12 ? "PM" : "AM"; return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ap}`; };
+  const timeRange = (e) => e.start_time ? `${fmtTime(e.start_time)}${e.end_time ? ` – ${fmtTime(e.end_time)}` : ""}` : "All day";
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedEventType, setSelectedEventType] = useState("");
   // task form
@@ -207,7 +211,7 @@ export default function CalendarPage() {
   // Derived day data — auto-refreshes after load(). Filters applied.
   const byProject = (item) => !filterProject || String(item.project_id) === filterProject;
   const dayEvents = selectedDate && filterKind !== "tasks"
-    ? expandReminders(events.filter(byProject), selectedDate, selectedDate)
+    ? expandReminders(events.filter(byProject), selectedDate, selectedDate).sort((a, b) => String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     : [];
   const dayTasks = selectedDate && filterKind !== "events"
     ? expandReminders(reminders.filter((r) => !r.completed && byProject(r)), selectedDate, selectedDate)
@@ -244,11 +248,15 @@ export default function CalendarPage() {
       project_id: selectedProject || null,
       event_type_id: selectedEventType || null,
       recurrence: "none",
+      start_time: startTime || null,
+      end_time: endTime || null,
     };
     setEvents((prev) => [...prev, optimistic]);
-    setTitle(""); setDescription(""); setSelectedEventType("");
+    setTitle(""); setDescription(""); setSelectedEventType(""); setStartTime(""); setEndTime("");
     try {
       await newEvent({
+        start_time: optimistic.start_time,
+        end_time: optimistic.end_time,
         title: optimistic.title,
         description: optimistic.description,
         date: selectedDate,
@@ -417,7 +425,7 @@ export default function CalendarPage() {
               <button className="day-nav" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" /></button>
               <div className="day-modal-titles">
                 <div className="day-modal-dow">{longDate.split(",")[0]}</div>
-                <div className="day-modal-date">{longDate.split(", ").slice(1).join(", ") || longDate}</div>
+                <div className="day-modal-date" data-dow={longDate.split(",")[0]}>{longDate.split(", ").slice(1).join(", ") || longDate}</div>
               </div>
               <button className="day-nav" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" /></button>
               <button className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
@@ -434,6 +442,7 @@ export default function CalendarPage() {
                 {dayEvents.map((e) => (
                   <div className="day-item" key={e.id}>
                     <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
+                    <span className="day-item-time">{timeRange(e)}</span>
                     <div className="day-item-body">
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
@@ -595,6 +604,13 @@ export default function CalendarPage() {
               {addMode === "event" ? (
                 <div className="day-add-form">
                   <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <div className="day-time-row">
+                    <label htmlFor="ev-start">Start</label>
+                    <input id="ev-start" type="time" value={startTime} onChange={(e) => { setStartTime(e.target.value); if (e.target.value && !endTime) { const [h, m] = e.target.value.split(":").map(Number); setEndTime(`${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`); } }} />
+                    <label htmlFor="ev-end">End</label>
+                    <input id="ev-end" type="time" value={endTime} min={startTime || undefined} onChange={(e) => setEndTime(e.target.value)} />
+                    {startTime && <button type="button" className="btn-mini" onClick={() => { setStartTime(""); setEndTime(""); }}>All day</button>}
+                  </div>
                   <textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} style={{ resize: "vertical" }} />
                   {eventTypes.length > 0 && (
                     <select value={selectedEventType} onChange={(e) => setSelectedEventType(e.target.value)}>

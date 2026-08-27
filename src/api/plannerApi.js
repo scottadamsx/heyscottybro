@@ -198,8 +198,10 @@ export async function loadEvents() {
   );
 }
 
-export async function newEvent({ title, description, date, project_id, event_type_id, recurrence, recur_until, recur_times }) {
+export async function newEvent({ title, description, date, project_id, event_type_id, recurrence, recur_until, recur_times, start_time, end_time }) {
   const row = { title, description, date };
+  if (start_time) row.start_time = start_time;
+  if (end_time) row.end_time = end_time;
   if (project_id) row.project_id = project_id;
   if (event_type_id) row.event_type_id = event_type_id;
   // Recurrence keys are only sent when set, so inserts keep working on
@@ -218,7 +220,7 @@ export async function newEvent({ title, description, date, project_id, event_typ
 export async function updateEvent(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times"].forEach((k) => {
+  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times", "start_time", "end_time"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);

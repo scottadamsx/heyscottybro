@@ -45,8 +45,11 @@ export function buildBrief({
   // ── Agenda: today's + tomorrow's events ──
   const agenda = events
     .filter((e) => e.date === todayStr || e.date === addDaysStr(todayStr, 1))
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((e) => ({ text: `${e.date === todayStr ? "Today" : "Tomorrow"}: ${e.title}`, to: "/admin/planner" }));
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
+    .map((e) => {
+      const t = e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";
+      return { text: `${e.date === todayStr ? "Today" : "Tomorrow"}: ${e.title}${t}`, to: "/admin/planner" };
+    });
 
   // ── Money pulse ──
   const money = [];

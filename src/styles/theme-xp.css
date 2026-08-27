@@ -350,3 +350,75 @@
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-eyebrow,
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .brief-date { color: #FFFFFF; text-shadow: 1px 1px 0 #0A1F5C; margin: 0; font: 700 15px var(--font-display); }
 :root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 24px; min-width: 0; }
+
+/* ── Pixel UI face: controls, labels, captions text use the bitmap font at
+   its native 11px (2× on Retina = crisp). Body copy stays Tahoma 13px so
+   paragraphs remain readable. ── */
+:root[data-theme="xp"] { --font-pixel: "Pixelated MS Sans Serif", Tahoma, sans-serif; }
+:root[data-theme="xp"] .admin-shell .btn,
+:root[data-theme="xp"] .admin-shell button.btn-sm,
+:root[data-theme="xp"] .admin-shell .btn-secondary-sm,
+:root[data-theme="xp"] .admin-shell .btn-mini,
+:root[data-theme="xp"] .admin-shell .page-tabs button,
+:root[data-theme="xp"] .admin-shell .planner-switch button,
+:root[data-theme="xp"] .admin-shell .theme-picker-opt,
+:root[data-theme="xp"] .admin-shell .day-seg button,
+:root[data-theme="xp"] .admin-shell .admin-rail-link,
+:root[data-theme="xp"] .admin-shell .admin-sub-link,
+:root[data-theme="xp"] .admin-shell label,
+:root[data-theme="xp"] .admin-shell .db-card-title,
+:root[data-theme="xp"] .admin-shell .day-section-head,
+:root[data-theme="xp"] .admin-shell .day-add-label,
+:root[data-theme="xp"] .admin-shell .section-label-sm,
+:root[data-theme="xp"] .admin-shell .stat-label,
+:root[data-theme="xp"] .admin-shell .db-subhead,
+:root[data-theme="xp"] .admin-shell input,
+:root[data-theme="xp"] .admin-shell select,
+:root[data-theme="xp"] .admin-shell textarea { font-family: var(--font-pixel); font-size: 11px; -webkit-font-smoothing: none; image-rendering: pixelated; }
+:root[data-theme="xp"] .admin-shell .db-card-title,
+:root[data-theme="xp"] .admin-shell .db-card-header .db-card-title { font-family: var(--font-display); font-size: 15px; }
+:root[data-theme="xp"] .admin-shell input, :root[data-theme="xp"] .admin-shell select, :root[data-theme="xp"] .admin-shell textarea { font-size: 13px; }
+:root[data-theme="xp"] .admin-shell .btn { font-size: 11px; }
+
+/* ── Day sheet as a Luna window: caption left, nav + close as real buttons,
+   white client list, 'Add to this day' as a group box with a tab strip. ── */
+:root[data-theme="xp"] .admin-shell .day-modal { padding: 0; max-width: 520px; background: var(--xp-face); }
+:root[data-theme="xp"] .admin-shell .day-modal-head { gap: 6px; padding: 0 4px 0 8px; margin: 0; height: 33px; border-radius: 8px 8px 0 0; }
+:root[data-theme="xp"] .admin-shell .day-modal-titles { text-align: left; order: -1; }
+:root[data-theme="xp"] .admin-shell .day-modal-dow { display: none; }
+:root[data-theme="xp"] .admin-shell .day-modal-date { font: 700 15px var(--font-display); color: #FFFFFF; text-shadow: 1px 1px 0 #0A1F5C; margin: 0; white-space: nowrap; }
+:root[data-theme="xp"] .admin-shell .day-modal-date::before { content: attr(data-dow) " "; }
+:root[data-theme="xp"] .admin-shell .day-nav {
+  width: 21px; height: 21px; min-width: 0; padding: 0; border-radius: 3px; font-size: 9px;
+  border: 1px solid #FFFFFF; color: #FFFFFF; background: radial-gradient(circle at 90% 90%, #4E8AFB, #2160D6 60%, #1B52C2); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+:root[data-theme="xp"] .admin-shell .day-modal-head .icon-x {
+  width: 21px; height: 21px; border-radius: 3px; border: 1px solid #FFFFFF; color: #FFFFFF; font-size: 11px;
+  background: radial-gradient(circle at 90% 90%, #E8846C, #D1462B 60%, #B83A20); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+}
+:root[data-theme="xp"] .admin-shell .day-modal-body { margin: 11px 11px 0; padding: 7px; background: #FFFFFF; border: 1px solid var(--xp-edit-border); gap: 11px; }
+:root[data-theme="xp"] .admin-shell .day-section-head { font-size: 11px; color: #000000; margin-bottom: 4px; }
+:root[data-theme="xp"] .admin-shell .day-section-head i { color: var(--xp-sel); }
+:root[data-theme="xp"] .admin-shell .day-count { color: var(--text-secondary); }
+:root[data-theme="xp"] .admin-shell .day-empty { color: var(--text-secondary); font-size: 13px; margin: 0 0 0 4px; }
+:root[data-theme="xp"] .admin-shell .day-item { background: transparent; border-radius: 0; padding: 3px 4px; margin: 0; gap: 7px; }
+:root[data-theme="xp"] .admin-shell .day-item + .day-item { border-top: 1px dotted var(--xp-groupbox); }
+:root[data-theme="xp"] .admin-shell .day-item:hover { background: var(--xp-sel); color: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .day-item:hover .day-item-sub, :root[data-theme="xp"] .admin-shell .day-item:hover .day-item-time { color: #FFFFFF; }
+:root[data-theme="xp"] .admin-shell .day-item-title { font-size: 13px; font-weight: 400; }
+:root[data-theme="xp"] .admin-shell .day-item-time { font-family: var(--font-pixel); font-size: 11px; min-width: 84px; color: var(--text-secondary); }
+:root[data-theme="xp"] .admin-shell .day-add { margin: 11px; padding: 11px; border: 1px solid var(--xp-groupbox); border-radius: 3px; background: transparent; position: relative; }
+:root[data-theme="xp"] .admin-shell .day-add-top { margin: -19px 0 7px; }
+:root[data-theme="xp"] .admin-shell .day-add-label { background: var(--xp-face); padding: 0 3px; color: #000000; font-size: 11px; }
+:root[data-theme="xp"] .admin-shell .day-add-top .icon-x { width: 21px; height: 21px; background: var(--xp-face); }
+:root[data-theme="xp"] .admin-shell .day-seg { gap: 0; padding: 0; margin: 0 0 7px; background: transparent; border-radius: 0; border-bottom: 1px solid #919B9C; align-items: flex-end; }
+:root[data-theme="xp"] .admin-shell .day-seg button {
+  flex: 0 0 auto; height: 24px; padding: 0 10px; margin-bottom: -1px; border: 1px solid #919B9C; border-bottom: none; border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #FFFFFF, #ECEBE5); color: #000000; box-shadow: none;
+}
+:root[data-theme="xp"] .admin-shell .day-seg button.active { height: 26px; background: #FCFCFE; box-shadow: inset 0 2px 0 #FFC73C; }
+:root[data-theme="xp"] .admin-shell .day-add-form { gap: 7px; }
+:root[data-theme="xp"] .admin-shell .day-add-form .btn { align-self: flex-end; width: auto; }
+:root[data-theme="xp"] .admin-shell .day-add-trigger { width: auto; }
+:root[data-theme="xp"] .admin-shell .day-time-row { display: flex; align-items: center; gap: 7px; }
+:root[data-theme="xp"] .admin-shell .day-time-row label { font-size: 11px; }

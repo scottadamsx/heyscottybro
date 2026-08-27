@@ -835,3 +835,9 @@
 .admin-shell .worklog-min { width: 72px; flex: 0 0 auto; }
 .admin-shell .worklog-project { color: var(--accent); font-weight: 600; }
 .admin-shell .worklog-notes { margin-top: 2px; color: var(--text-secondary); white-space: pre-wrap; }
+
+/* Event times in the day sheet */
+.admin-shell .day-item-time { flex-shrink: 0; min-width: 96px; font-size: 0.78rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.admin-shell .day-time-row { display: flex; align-items: center; gap: 8px; }
+.admin-shell .day-time-row label { font-size: 0.78rem; color: var(--text-secondary); }
+.admin-shell .day-time-row input[type="time"] { flex: 1; min-width: 0; }
