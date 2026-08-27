@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
-import { expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
+import { expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import { loadCourses } from "../../api/coursesApi";
@@ -92,7 +92,7 @@ export default function DashboardPage() {
     .filter(e => e.date >= todayStr || (e.end_date && e.end_date >= todayStr))
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     .slice(0, 5);
-  const evTime = (e) => e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";
+  const evTime = (e) => e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
 
   const activeTasks = data.reminders.filter((r) => !r.completed).length;
   const lastEntry = data.journal.length ? data.journal[data.journal.length - 1] : null;
@@ -214,7 +214,7 @@ export default function DashboardPage() {
             >
               <div className="db-list-item-content">
                 <div className="db-list-item-title">{r.name}</div>
-                <div className="db-list-item-subtitle">{r.time ? r.time : "Today"}</div>
+                <div className="db-list-item-subtitle">{r.time ? formatTime12(r.time) : "Today"}</div>
               </div>
               <i className="fa-solid fa-chevron-right db-list-item-chevron" />
             </div>
@@ -315,11 +315,12 @@ export default function DashboardPage() {
           <h3 className="db-card-title">Upcoming Events</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
             {upcomingEvents.map(e => (
-              <div className="db-list-item" key={e.id}>
+              <div className="db-list-item db-list-item--clickable" key={e.id} role="button" tabIndex={0} onClick={() => navigate(`/admin/planner?date=${e.date}`)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); navigate(`/admin/planner?date=${e.date}`); } }}>
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{e.title}</div>
                   <div className="db-list-item-subtitle">{formatDisplayDate(e.date)}{e.end_date && e.end_date > e.date ? " – " + formatDisplayDate(e.end_date) : ""}{evTime(e)}{e.description ? ` — ${e.description}` : ""}</div>
                 </div>
+                <i className="fa-solid fa-chevron-right db-list-item-chevron" />
               </div>
             ))}
           </div>
@@ -332,7 +333,7 @@ export default function DashboardPage() {
           <h3 className="db-card-title">Active Projects</h3>
           <div className="db-list" style={{ marginTop: "0.5rem" }}>
             {data.projects.map(p => (
-              <div className="db-list-item" key={p.id}>
+              <div className="db-list-item db-list-item--clickable" key={p.id} role="button" tabIndex={0} onClick={() => navigate(`/admin/planner?tab=projects&id=${p.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); navigate(`/admin/planner?tab=projects&id=${p.id}`); } }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
                   <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: p.color, flexShrink: 0 }} />
                   <div className="db-list-item-content">

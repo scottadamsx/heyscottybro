@@ -354,7 +354,7 @@
 /* ── Pixel UI face: controls, labels, captions text use the bitmap font at
    its native 11px (2× on Retina = crisp). Body copy stays Tahoma 13px so
    paragraphs remain readable. ── */
-:root[data-theme="xp"] { --font-pixel: "Pixelated MS Sans Serif", Tahoma, sans-serif; }
+:root[data-theme="xp"] { --font-pixel: Tahoma, "Pixelated MS Sans Serif", "Trebuchet MS", sans-serif; }
 :root[data-theme="xp"] .admin-shell .btn,
 :root[data-theme="xp"] .admin-shell button.btn-sm,
 :root[data-theme="xp"] .admin-shell .btn-secondary-sm,
@@ -374,11 +374,11 @@
 :root[data-theme="xp"] .admin-shell .db-subhead,
 :root[data-theme="xp"] .admin-shell input,
 :root[data-theme="xp"] .admin-shell select,
-:root[data-theme="xp"] .admin-shell textarea { font-family: var(--font-pixel); font-size: 11px; -webkit-font-smoothing: none; image-rendering: pixelated; }
+:root[data-theme="xp"] .admin-shell textarea { font-family: var(--font-pixel); font-size: 13px; }
 :root[data-theme="xp"] .admin-shell .db-card-title,
 :root[data-theme="xp"] .admin-shell .db-card-header .db-card-title { font-family: var(--font-display); font-size: 15px; }
 :root[data-theme="xp"] .admin-shell input, :root[data-theme="xp"] .admin-shell select, :root[data-theme="xp"] .admin-shell textarea { font-size: 13px; }
-:root[data-theme="xp"] .admin-shell .btn { font-size: 11px; }
+:root[data-theme="xp"] .admin-shell .btn { font-size: 13px; }
 
 /* ── Day sheet as a Luna window: caption left, nav + close as real buttons,
    white client list, 'Add to this day' as a group box with a tab strip. ── */
@@ -461,3 +461,11 @@
 :root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header .btn,
 :root[data-theme="xp"] .admin-shell .combined-embed .module-page > .module-header .btn,
 :root[data-theme="xp"] .admin-shell .planner-panel .module-page > .module-header button { height: 23px; align-self: center; min-width: 88px; }
+
+/* Morning Brief caption: date line readable, buttons caption-sized with a margin */
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .ai-briefing-date { color: #DCE6FF; font: 400 11px var(--font-pixel); text-shadow: none; letter-spacing: 0; }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .ai-briefing-title { font: 700 15px var(--font-display); }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child button,
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child .btn { height: 21px; min-width: 0; padding: 0 8px; font-size: 11px; margin: 0; }
+:root[data-theme="xp"] .admin-shell .ai-briefing-card > :first-child > div:last-child { gap: 6px; padding-right: 2px; }
+:root[data-theme="xp"] .admin-shell .db-list-item--clickable { cursor: pointer; }

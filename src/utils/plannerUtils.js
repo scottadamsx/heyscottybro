@@ -167,3 +167,11 @@ export function expandEvents(events, startDate, endDate) {
   }
   return out;
 }
+
+/** "19:00:00" / "19:00" → "7:00 PM". Empty in → empty out. */
+export function formatTime12(t) {
+  if (!t) return "";
+  const [h, m] = String(t).split(":").map(Number);
+  if (Number.isNaN(h)) return String(t);
+  return `${h % 12 || 12}:${String(m || 0).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}

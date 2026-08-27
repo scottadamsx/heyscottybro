@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
 import { loadAccountability, saveAccountability } from "../api/accountabilityApi";
 
@@ -10,6 +10,7 @@ function genId() {
 function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
 
 export default function AccountabilitySummary() {
+  const navigate = useNavigate();
   // Source of truth is Supabase (accountability_state) — the SAME store the
   // Hearth/Accountability page reads. This card used to read localStorage only,
   // so on any device/session where the mirror was empty it showed "No trackers
@@ -77,7 +78,7 @@ export default function AccountabilitySummary() {
             const done = t.mode === "check" && c > 0;
             return (
               <div className="db-list-item" key={t.id}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0 }}>
+                <div className="db-list-item--clickable" role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0, flex: 1, cursor: "pointer" }} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
                                     <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
                     <div className="db-list-item-subtitle">{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</div>

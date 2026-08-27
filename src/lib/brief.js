@@ -10,7 +10,7 @@
  *
  * buildBrief(inputs) -> { date, sections: [{key,title,icon,items:[{text,to?,tone?}]}], toMarkdown() }
  */
-import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders } from "../utils/plannerUtils";
+import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders, formatTime12 } from "../utils/plannerUtils";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -37,7 +37,7 @@ export function buildBrief({
   const anytime = undatedReminders(active);
   const priorities = [
     ...overdue.map((r) => ({ text: `OVERDUE (${r.date}): ${r.name}`, to: `/admin/tasks/${r.id}`, tone: "bad" })),
-    ...dueToday.map((r) => ({ text: `Today: ${r.name}${r.time ? ` · ${r.time}` : ""}`, to: `/admin/tasks/${r.id}` })),
+    ...dueToday.map((r) => ({ text: `Today: ${r.name}${r.time ? ` · ${formatTime12(r.time)}` : ""}`, to: `/admin/tasks/${r.id}` })),
     ...soonDeadlines.map((r) => ({ text: `Deadline ${dayLabel(r.date)}: ${r.name}`, to: "/admin/school", tone: "warn" })),
     ...anytime.map((r) => ({ text: `Anytime: ${r.name}`, to: `/admin/tasks/${r.id}`, tone: "muted" })),
   ];
@@ -46,7 +46,7 @@ export function buildBrief({
   const agenda = expandEvents(events, todayStr, addDaysStr(todayStr, 1))
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99")))
     .map((e) => {
-      const t = e.start_time ? ` · ${String(e.start_time).slice(0, 5)}${e.end_time ? `–${String(e.end_time).slice(0, 5)}` : ""}` : "";
+      const t = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
       return { text: `${e.date === todayStr ? "Today" : "Tomorrow"}: ${e.title}${t}`, to: "/admin/planner" };
     });
 
