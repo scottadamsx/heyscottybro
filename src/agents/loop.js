@@ -40,19 +40,30 @@ export async function callClaude(payload, headers) {
 }
 
 /**
- * A user turn we can safely restart history from: any user message that is
- * NOT a tool_result batch — a plain string, or a content array that carries a
- * text/image block. Restarting on a tool_result turn would orphan the tool
- * calls from the assistant turn we just dropped.
+ * A user turn we can safely restart history from: a user message with ZERO
+ * tool_result blocks — a plain string, or a content array of text/image blocks.
+ * A turn that carries even one tool_result is NOT restartable: it answers a
+ * tool_use in the assistant turn before it, and starting there would orphan
+ * that result (the API rejects it). `[handoff]` / `[system]` text riding on a
+ * tool_result turn doesn't make it clean — the text is appended to a results
+ * batch, and the batch still needs its assistant turn.
  */
 export function isRestartableUserTurn(m) {
   if (!m || m.role !== "user") return false;
   if (typeof m.content === "string") return true;
-  if (!Array.isArray(m.content)) return false;
-  return m.content.some((b) => b && b.type !== "tool_result");
+  if (!Array.isArray(m.content) || m.content.length === 0) return false;
+  return !m.content.some((b) => b && b.type === "tool_result");
 }
 
-/** Trim history to a character budget, keeping turn boundaries sane. */
+/**
+ * Trim history to a character budget, keeping turn boundaries sane.
+ *
+ * The result ALWAYS starts on a restartable user turn (or is the untouched
+ * input). After the budget-driven cut we look for the first clean user turn at
+ * or after the cut; if the tail is nothing but tool exchanges, we fall BACK to
+ * the last clean user turn before the cut (over budget is recoverable — a
+ * history that opens with an assistant turn or an orphan tool_result is not).
+ */
 export function trimHistory(msgs, budget = 100000) {
   const size = (m) => JSON.stringify(m).length;
   let total = msgs.reduce((s, m) => s + size(m), 0);
@@ -62,13 +73,19 @@ export function trimHistory(msgs, budget = 100000) {
     start++;
   }
   if (start === 0) return msgs;
-  // Advance to the next clean user turn. Previously this only accepted
-  // string-content user messages, so a history of tool exchanges (arrays) let
-  // the scan walk to the end and wipe everything but the last message. If no
-  // clean turn exists, keep the budget-computed slice rather than collapsing.
-  let aligned = start;
-  while (aligned < msgs.length - 1 && !isRestartableUserTurn(msgs[aligned])) aligned++;
-  if (aligned >= msgs.length - 1 || !isRestartableUserTurn(msgs[aligned])) aligned = start;
+  // Prefer the first clean user turn at/after the cut, excluding the very last
+  // message (a history that is only the trailing turn is useless).
+  let aligned = -1;
+  for (let i = start; i < msgs.length - 1; i++) {
+    if (isRestartableUserTurn(msgs[i])) { aligned = i; break; }
+  }
+  // None after the cut: walk back to the last clean user turn before it.
+  if (aligned < 0) {
+    for (let i = start - 1; i >= 0; i--) {
+      if (isRestartableUserTurn(msgs[i])) { aligned = i; break; }
+    }
+  }
+  if (aligned <= 0) return msgs; // only the first message is clean, or none: keep everything
   return msgs.slice(aligned);
 }
 

@@ -10,9 +10,8 @@
  *
  * buildBrief(inputs) -> { date, sections: [{key,title,icon,items:[{text,to?,tone?}]}], toMarkdown() }
  */
-import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders, formatTime12 } from "../utils/plannerUtils";
+import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders, formatTime12, nextOccurrence, addDaysStr } from "../utils/plannerUtils";
 
-const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 
 export function buildBrief({
@@ -24,8 +23,12 @@ export function buildBrief({
   const active = reminders.filter((r) => !r.completed);
 
   // ── Priorities: overdue first, then today, then school deadlines ≤3 days ──
+  // Overdue = the next pending occurrence is in the past. For a recurring task
+  // that is the first occurrence after the last one ticked off, so a missed
+  // weekly task surfaces here instead of silently rolling forward.
   const overdue = active
-    .filter((r) => r.date && r.date < todayStr && r.recurrence === "none")
+    .map((r) => ({ ...r, date: nextOccurrence(r, todayStr) }))
+    .filter((r) => r.date && r.date < todayStr)
     .sort((a, b) => a.date.localeCompare(b.date));
   const dueToday = remindersForDay(active, todayStr);
   const soonDeadlines = deadlines.filter((r) => {

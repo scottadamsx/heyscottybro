@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
-import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
+import { formatDisplayDate, toDateStr, nextOccurrence } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
@@ -41,21 +41,33 @@ export default function RemindersPage() {
   // correct if the tab is left open past midnight.
   const todayStr = toDateStr(new Date());
 
+  // Loads are allSettled so one failing source can't blank the other; every
+  // failure is named in a banner with a Retry (QF-3 — no silent empty list).
+  const LOAD_SOURCES = [
+    ["tasks", loadReminders, setList],
+    ["projects", loadProjects, setProjects],
+  ];
+  const [loadErrors, setLoadErrors] = useState([]);
   const load = async () => {
-    const [reminders, projs] = await Promise.all([
-      loadReminders().catch(() => []),
-      loadProjects().catch(() => []),
-    ]);
-    setList(reminders);
-    setProjects(projs);
+    const results = await Promise.allSettled(LOAD_SOURCES.map(([, fn]) => fn()));
+    const failed = [];
+    results.forEach((res, i) => {
+      const [name, , set] = LOAD_SOURCES[i];
+      if (res.status === "fulfilled") set(res.value);
+      else { console.error(`[tasks] failed to load ${name}`, res.reason); failed.push(`${name} (${res.reason?.message || res.reason})`); }
+    });
+    setLoadErrors(failed);
   };
 
   useEffect(() => { load(); }, []);
 
   // Refresh when Frodo creates/updates/deletes reminders from the ChatBot
   useEffect(() => onDataChange("reminders", load), []);
+  useEffect(() => onDataChange("projects", load), []);
 
   const showEndOptions = form.recurrence !== "none";
+  // A recurring task with no date has no occurrences — nothing to repeat.
+  const needsDate = form.recurrence !== "none" && !form.date;
 
   const filtered = useMemo(() => {
     if (filter === "all") return list;
@@ -63,14 +75,30 @@ export default function RemindersPage() {
     return list.filter(r => String(r.project_id) === String(filter));
   }, [list, filter]);
 
-  const active = useMemo(() => filtered.filter((r) => !r.completed && r.date), [filtered]);
+  // Active rows carry `next`: the pending occurrence (one-time = its date;
+  // recurring = the first occurrence after the last one ticked off). Lists
+  // sort and flag overdue by it, so a missed weekly task shows its missed date.
+  const active = useMemo(() => filtered
+    .filter((r) => !r.completed && r.date)
+    .map((r) => ({ ...r, next: nextOccurrence(r, todayStr) }))
+    .sort((a, b) => String(a.next || a.date).localeCompare(String(b.next || b.date))), [filtered, todayStr]);
   const noDate = useMemo(() => filtered.filter((r) => !r.completed && !r.date), [filtered]);
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
 
-  const handleComplete = async (id) => {
-    const completedDate = toDateStr(new Date());
-    setList((prev) => prev.map((r) => r.id === id ? { ...r, completed: true, completed_date: completedDate } : r));
-    try { await completeReminder(id); } catch { await load(); }
+  const handleComplete = async (r) => {
+    const recurring = r.recurrence && r.recurrence !== "none";
+    const occurrence = recurring ? (r.next || todayStr) : todayStr;
+    // Optimistic: one-time → done; recurring → that occurrence done, series stays.
+    setList((prev) => prev.map((x) => x.id === r.id
+      ? (recurring ? { ...x, completed_date: occurrence } : { ...x, completed: true, completed_date: occurrence })
+      : x));
+    try {
+      const patch = await completeReminder(r.id, occurrence);
+      setList((prev) => prev.map((x) => x.id === r.id ? { ...x, ...patch } : x));
+    } catch (err) {
+      addToast(`Couldn't complete task: ${err?.message || "unknown error"}`, "error");
+      await load();
+    }
   };
 
   const handleUncomplete = async (id) => {
@@ -135,6 +163,7 @@ export default function RemindersPage() {
 
   const addReminder = async (e) => {
     e.preventDefault();
+    if (needsDate) return; // submit is disabled; belt-and-braces for Enter-to-submit
     if (editing) return saveEdit(e);
     if (!form.name) return;
     const tempId = `temp-${Date.now()}`;
@@ -169,7 +198,11 @@ export default function RemindersPage() {
       >
         <strong>{r.name}</strong>
         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {r.date && <span style={r.date < todayStr ? { color: "var(--danger, var(--red))" } : undefined}>{formatDisplayDate(r.date)}</span>}
+          {r.date && (
+            <span className={r.next && r.next < todayStr ? "task-overdue" : undefined}>
+              {r.next && r.next < todayStr ? "Overdue · " : ""}{formatDisplayDate(r.next || r.date)}
+            </span>
+          )}
           {r.time && <span>· {String(r.time).slice(0, 5)}</span>}
           {r.show_on_calendar === false && <span>· off calendar</span>}
           {r.recurrence !== "none" && <span>· {r.recurrence}</span>}
@@ -184,7 +217,7 @@ export default function RemindersPage() {
         <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
           <i className="fa-solid fa-pen" /> Edit
         </button>
-        <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r.id)}>
+        <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r)}>
           Done
         </button>
         <button type="button" className="btn-sm btn-delete" onClick={() => handleDelete(r.id)}>
@@ -197,6 +230,13 @@ export default function RemindersPage() {
   return (
     <div className="module-page">
       {dialog}
+      {loadErrors.length > 0 && (
+        <p className="error-message" role="alert">
+          Couldn't load {loadErrors.join(", ")}
+          {" — "}
+          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
+        </p>
+      )}
       <div className="module-header">
         <h1>Tasks &amp; Reminders</h1>
         <button className="btn" onClick={() => (showForm ? closeForm() : setShowForm(true))}>
@@ -224,7 +264,15 @@ export default function RemindersPage() {
                 required
               />
 
-              <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}>
+              <select
+                value={form.recurrence}
+                aria-label="Repeats"
+                onChange={(e) => {
+                  const recurrence = e.target.value;
+                  setForm({ ...form, recurrence });
+                  if (recurrence !== "none") setShowDateTime(true); // a repeat needs a start date
+                }}
+              >
                 <option value="none">One-time</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -236,12 +284,13 @@ export default function RemindersPage() {
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
 
-              {showDateTime && (
+              {(showDateTime || needsDate) && (
                 <div className="form-row">
                   <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
                   <TimePicker value={form.time} onChange={(v) => setForm({ ...form, time: v })} />
                 </div>
               )}
+              {needsDate && <p className="field-hint" role="status">A repeating task needs a start date — pick the first occurrence.</p>}
 
               {showDescription && (
                 <textarea
@@ -295,7 +344,7 @@ export default function RemindersPage() {
               </label>
 
               <div className="form-actions">
-                <button className="btn" type="submit" disabled={saving}>{editing ? (saving ? "Saving…" : "Save changes") : "Add Task"}</button>
+                <button className="btn" type="submit" disabled={saving || needsDate} title={needsDate ? "Pick a start date for the repeat" : undefined}>{editing ? (saving ? "Saving…" : "Save changes") : "Add Task"}</button>
                 {editing && <button className="btn btn-secondary-sm" type="button" onClick={closeForm}>Cancel</button>}
               </div>
             </form>

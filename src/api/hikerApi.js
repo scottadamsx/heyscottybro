@@ -13,8 +13,12 @@ export async function loadMembers(search = "") {
     .eq("user_id", userId)
     .order("last", { ascending: true });
 
-  if (search.trim()) {
-    query = query.or(`first.ilike.%${search}%,last.ilike.%${search}%,email.ilike.%${search}%`);
+  // The search term is interpolated into a PostgREST filter expression, where
+  // `,` `(` `)` `.` and quotes are syntax. Strip them (and the ilike wildcards)
+  // rather than let a typed comma turn into a filter injection / 400.
+  const term = search.replace(/[,()"'\\%_.]/g, " ").replace(/\s+/g, " ").trim();
+  if (term) {
+    query = query.or(`first.ilike.%${term}%,last.ilike.%${term}%,email.ilike.%${term}%`);
   }
 
   const { data, error } = await query;
@@ -279,7 +283,7 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
   // Log the import
   const { data: importRow, error: importErr } = await supabase.from("hiker_imports").insert({
     user_id: userId, filename,
-    imported_at: toDateStr(new Date()),
+    imported_at: new Date().toISOString(), // QF-4: a real timestamp, not a date string
     hike_name: hikeName || filename,
     hike_date: hikeDate || toDateStr(new Date()),
     first_timers: firstTimers, returning_count: returning, total: firstTimers + returning,

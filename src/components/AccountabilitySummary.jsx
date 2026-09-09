@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
-import { loadAccountability, saveAccountability } from "../api/accountabilityApi";
+import { loadAccountability, updateAccountability } from "../api/accountabilityApi";
+import { onDataChange } from "../utils/dataEvents";
 import { useToast } from "../contexts/ToastContext";
 
 function genId() {
@@ -14,32 +15,21 @@ export default function AccountabilitySummary() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   // Source of truth is Supabase (accountability_state) — the SAME store the
-  // Hearth/Accountability page reads. This card used to read localStorage only,
-  // so on any device/session where the mirror was empty it showed "No trackers
-  // yet" while the page (Supabase-backed) showed them. Load through the shared
-  // API so the two surfaces can never disagree.
+  // Habits page reads, through the same versioned write path. This card never
+  // auto-saves a snapshot: each tap is one updateAccountability() mutation
+  // against the fresh blob, and both surfaces re-load on any write.
   const [data, setData] = useState({ trackers: [], logs: [] });
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
-  useEffect(() => {
-    let alive = true;
-    loadAccountability()
-      .then((d) => { if (alive) { setData(d); setReady(true); } })
-      .catch((err) => { if (alive) addToast(err?.message || "Couldn't load accountability.", "error"); });
-    return () => { alive = false; };
-  }, [addToast]);
-
-  // Debounced write-through so a quick "Mark done" tap persists to Supabase
-  // (and the localStorage mirror) without a write per render.
-  const saveTimer = useRef(null);
-  useEffect(() => {
-    if (!ready) return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      saveAccountability(data).catch((err) => addToast(err?.message || "Couldn't save accountability.", "error"));
-    }, 500);
-    return () => clearTimeout(saveTimer.current);
-  }, [data, ready, addToast]);
+  const load = useCallback(() => {
+    return loadAccountability()
+      .then((d) => { if (mounted.current) { setData(d); setLoadError(null); setReady(true); } })
+      .catch((err) => { if (mounted.current) { setLoadError(err?.message || "Couldn't load accountability."); setReady(true); } });
+  }, []);
+  useEffect(() => { load(); return onDataChange("accountability", load); }, [load]);
 
   // Computed per render (not module-level) so it stays correct past midnight.
   const todayStr = toDateStr(new Date());
@@ -54,16 +44,19 @@ export default function AccountabilitySummary() {
     while (d && set.has(d)) { s++; d = addDays(d, -1); }
     return s;
   };
-  const logToday = (t) => {
-    setData((cur) => {
-      const next = { trackers: (cur.trackers || []).map((x) => ({ ...x })), logs: (cur.logs || []).map((x) => ({ ...x })) };
-      if (t.mode === "check") {
-        const todays = next.logs.filter((l) => l.trackerId === t.id && l.date === todayStr);
-        if (todays.length) { next.logs = next.logs.filter((l) => l.id !== todays[0].id); return next; }
-      }
-      next.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
-      return next;
-    });
+  // Check trackers toggle: turning OFF removes every same-day log. Decided
+  // against the fresh blob inside the mutator, not this card's snapshot.
+  const logToday = async (t) => {
+    try {
+      const next = await updateAccountability((d) => {
+        const sameDay = (l) => l.trackerId === t.id && l.date === todayStr;
+        if (t.mode === "check" && d.logs.some(sameDay)) { d.logs = d.logs.filter((l) => !sameDay(l)); return; }
+        d.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
+      });
+      if (mounted.current) setData(next);
+    } catch (err) {
+      addToast(err?.message || "Couldn't save accountability.", "error");
+    }
   };
 
   return (
@@ -75,6 +68,11 @@ export default function AccountabilitySummary() {
 
       {!ready ? (
         <p className="no-entries">Loading…</p>
+      ) : loadError ? (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn-sm" onClick={() => { setReady(false); load(); }}>Retry</button>
+        </div>
       ) : trackers.length === 0 ? (
         <p className="no-entries">No trackers yet. <Link to="/admin/accountability" style={{ color: "var(--accent)" }}>Add one</Link> to track gym days, habits or tallies.</p>
       ) : (

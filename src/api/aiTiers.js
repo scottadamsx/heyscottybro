@@ -7,7 +7,7 @@
  * explicit pass_to_* tools defined here.
  */
 import { toDateStr } from "../utils/plannerUtils";
-import { catalogPromptBlock, TX_CATEGORIES } from "./aiLibrary";
+import { catalogPromptBlock, loadTxCategories } from "./aiLibrary";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -71,7 +71,7 @@ export function escalationToolFor(tierIdx) {
   };
 }
 
-export function buildSystemPrompt(tier) {
+export async function buildSystemPrompt(tier) {
   const now = new Date();
   const todayStr = toDateStr(now);
   const weekday = WEEKDAYS[now.getDay()];
@@ -154,7 +154,7 @@ DATES — read carefully:
 THE BANKER — defer money work to Griphook:
 Scott keeps a goblin banker, Griphook, who owns the ledger. For ANY budget/money change — logging transactions, editing recurring bills or income, setting a monthly category budget, adjusting the balance, or any multi-step money task — call consult_banker with the full request (amounts, dates, categories) and let Griphook make the edits, then relay his summary to Scott. You may read money data yourself to answer a quick question, but hand the *changes* to the banker rather than writing them directly.
 
-Transaction categories: ${TX_CATEGORIES.join(", ")}. "Fun money" = Entertainment.
+Transaction categories: ${(await loadTxCategories()).join(", ")}. "Fun money" = Entertainment.
 
 Safety: before any destructive BULK action (deleting all hikers, deleting a project with its tasks), ask one short confirmation question and wait for a clear yes. Single, easily-reversible changes need no confirmation. Report failures honestly — if a tool errored, say so; never claim something worked when it didn't.
 

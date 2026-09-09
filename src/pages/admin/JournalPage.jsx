@@ -19,9 +19,20 @@ export default function JournalPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null); // a failed load is NOT "no entries yet"
+  const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => setEntries(await loadJournal());
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    try { setEntries(await loadJournal()); setLoadError(null); }
+    catch (err) {
+      console.error("[journal] load failed", err);
+      setLoadError(`Couldn't load journal entries: ${err?.message || err}`);
+      addToast(`Couldn't load journal entries: ${err?.message || err}`, "error");
+    }
+    setReady(true);
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const handleDelete = async (e) => {
     if (!await confirm(`Delete "${e.title}"? This can't be undone.`, { title: "Delete entry", confirmLabel: "Delete" })) return;
@@ -32,8 +43,8 @@ export default function JournalPage() {
       next.delete("id");
       setParams(next);
       addToast("Entry deleted.", "success");
-    } catch {
-      addToast("Couldn't delete entry.", "error");
+    } catch (err) {
+      addToast(`Couldn't delete entry: ${err?.message || "unknown error"}`, "error");
     }
   };
 
@@ -62,14 +73,20 @@ export default function JournalPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!entry.trim()) return;
-    await newJournalEntry({ title: title.trim() || todayLong, entry: entry.trim(), date: toDateStr(new Date()) });
-    setTitle("");
-    setEntry("");
-    await load();
-    const next = new URLSearchParams(params);
-    next.delete("new");
-    setParams(next);
+    if (!entry.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await newJournalEntry({ title: title.trim() || todayLong, entry: entry.trim(), date: toDateStr(new Date()) });
+      // Only clear the draft once the save has actually succeeded.
+      setTitle("");
+      setEntry("");
+      await load();
+      const next = new URLSearchParams(params);
+      next.delete("new");
+      setParams(next);
+    } catch (err) {
+      addToast(`Couldn't save entry: ${err?.message || "unknown error"}`, "error");
+    } finally { setSubmitting(false); }
   };
 
   const selectedEntry = entries.find((e) => String(e.id) === String(selectedId));
@@ -107,8 +124,15 @@ export default function JournalPage() {
             required
             autoFocus
           />
-          <button className="btn" type="submit">Save Entry</button>
+          <button className="btn" type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Entry"}</button>
         </form>
+      )}
+
+      {loadError && (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn btn-sm" onClick={() => { setReady(false); load(); }}>Retry</button>
+        </div>
       )}
 
       {/* Single entry view */}
@@ -146,8 +170,10 @@ export default function JournalPage() {
         </div>
       )}
 
-      {/* Entries list — always shown */}
-      {sortedEntries.length === 0 ? (
+      {/* Entries list — always shown once loaded (a load error is rendered above, never as "no entries") */}
+      {!ready ? (
+        <p className="no-entries">Loading…</p>
+      ) : loadError ? null : sortedEntries.length === 0 ? (
         <p className="no-entries">No journal entries yet. Start writing!</p>
       ) : (
         <div className="journal-list">

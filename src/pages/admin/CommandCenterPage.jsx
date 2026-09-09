@@ -5,6 +5,7 @@ import { loadBrain } from "../../api/brainApi";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { renderMarkdown } from "../../utils/markdown";
 import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../hooks/useConfirm";
 import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
 import { toDateStr } from "../../utils/plannerUtils";
 import AulePanel from "./AulePanel";
@@ -18,13 +19,14 @@ const todayStr = () => toDateStr(new Date());
 
 export default function CommandCenterPage() {
   const { addToast } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   // The agent runtime lives ABOVE the router (AgentRuntimeProvider), so agents
   // keep running and the Aulë socket stays alive when you leave this page.
   // This page is just a view onto that state.
   const {
     selectedId, setSelectedId, view, setView,
     threads, busy, statuses, inputs,
-    setInputFor, sendTo, runOverseer, actions, refreshActions,
+    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions,
     aule,
   } = useAgentRuntime();
 
@@ -141,6 +143,24 @@ export default function CommandCenterPage() {
     setShots([]);
   };
 
+  // Wipe this agent's thread — state and the stored agent_sessions row. Asks
+  // first (it's not undoable), and reports a storage failure instead of
+  // pretending the thread is gone.
+  const doClearThread = async () => {
+    if (!selected || selBusy) return;
+    const ok = await confirm(
+      `Clear the whole conversation with ${selected.name}? ${selected.name} will forget everything discussed so far. This can't be undone.`,
+      { title: "Clear thread", confirmLabel: "Clear" },
+    );
+    if (!ok) return;
+    try {
+      await clearThread(selected.id);
+      addToast(`Cleared ${selected.name}'s thread.`, "success");
+    } catch (e) {
+      addToast(e?.message || `Couldn't clear ${selected.name}'s thread.`, "error");
+    }
+  };
+
   return (
     <div className="module-page cmd-page">
       <div className="module-header">
@@ -211,7 +231,12 @@ export default function CommandCenterPage() {
                   <div className="cmd-card-name">{selected.name}</div>
                   <div className="cmd-card-title">{selected.title} · <span className="cmd-model">{selected.model}</span></div>
                 </div>
-                {selBusy && <span className="cmd-chip-working"><i className="fa-solid fa-spinner fa-spin" /> working</span>}
+                {selected.kind === "api" && thread.display.length > 0 && (
+                  <button type="button" className="btn-mini muted" style={{ marginLeft: "auto" }} onClick={doClearThread} disabled={selBusy} title={`Clear the conversation with ${selected.name}`}>
+                    <i className="fa-solid fa-rotate-left" /> Clear thread
+                  </button>
+                )}
+                {selBusy && <span className="cmd-chip-working" style={thread.display.length > 0 ? { marginLeft: 0 } : undefined}><i className="fa-solid fa-spinner fa-spin" /> working</span>}
               </div>
 
               <div className="cmd-tabs">
@@ -380,6 +405,8 @@ export default function CommandCenterPage() {
           </div>
         </div>
       )}
+
+      {confirmDialog}
 
       {/* PDF viewer — agents' work rendered as a real, downloadable document */}
       {pdfDoc && (

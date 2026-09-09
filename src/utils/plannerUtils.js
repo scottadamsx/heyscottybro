@@ -37,6 +37,15 @@ export function formatDisplayDate(isoDate) {
   }
 }
 
+/**
+ * Recurring-task completion model (per occurrence):
+ *  - `recurrence === "none"`: `completed: true` is the marker; `completed_date`
+ *    is informational.
+ *  - recurring rows: `completed` stays false while the series is alive and
+ *    `completed_date` is the LAST occurrence that was ticked off. Occurrences
+ *    on or before it are done; the first one after it is the next pending one.
+ *    `completed: true` on a recurring row means the whole series is finished.
+ */
 export function expandReminders(reminders, startDate, endDate) {
   const start = parseDate(startDate);
   const end = parseDate(endDate);
@@ -57,6 +66,10 @@ export function expandReminders(reminders, startDate, endDate) {
       return;
     }
 
+    // Per-occurrence completion: anything on/before completed_date is done.
+    const doneThrough = r.completed_date ? parseDate(r.completed_date) : null;
+    const pending = (d) => d >= start && (!doneThrough || d > doneThrough);
+
     // recur_times limits the TOTAL number of occurrences from the series
     // start — so every occurrence must be counted, even ones before the
     // viewing window, or a "repeat 3×" series would show 3 fresh occurrences
@@ -70,7 +83,7 @@ export function expandReminders(reminders, startDate, endDate) {
       while (cur <= effectiveEnd) {
         if (r.recur_times && count >= r.recur_times) break;
         count++;
-        if (cur >= start) expanded.push({ ...r, date: toDateStr(cur) });
+        if (pending(cur)) expanded.push({ ...r, date: toDateStr(cur) });
         cur.setDate(cur.getDate() + 1);
       }
       return;
@@ -82,7 +95,7 @@ export function expandReminders(reminders, startDate, endDate) {
       while (cur <= effectiveEnd) {
         if (r.recur_times && count >= r.recur_times) break;
         count++;
-        if (cur >= start) expanded.push({ ...r, date: toDateStr(cur) });
+        if (pending(cur)) expanded.push({ ...r, date: toDateStr(cur) });
         cur.setDate(cur.getDate() + 7);
       }
       return;
@@ -99,7 +112,7 @@ export function expandReminders(reminders, startDate, endDate) {
         const candidate = new Date(y, m, day);
         if (candidate > effectiveEnd) break;
         count++;
-        if (candidate >= start) expanded.push({ ...r, date: toDateStr(candidate) });
+        if (pending(candidate)) expanded.push({ ...r, date: toDateStr(candidate) });
       }
     }
   });
@@ -118,6 +131,38 @@ export function expandReminders(reminders, startDate, endDate) {
 
   deduped.sort((a, b) => a.date.localeCompare(b.date));
   return deduped;
+}
+
+/** "YYYY-MM-DD" + n days → "YYYY-MM-DD" (local calendar arithmetic). */
+export function addDaysStr(str, n) {
+  const d = parseDate(str);
+  d.setDate(d.getDate() + n);
+  return toDateStr(d);
+}
+
+/**
+ * The first pending occurrence of a reminder, as "YYYY-MM-DD", or null when
+ * there is none (done, dateless, or the series is exhausted).
+ *
+ *  - one-time: its date (null once completed)
+ *  - recurring: the first occurrence after `completed_date` (or the start date
+ *    when nothing has been ticked off yet). This may be BEFORE `todayStr` — that
+ *    is a missed occurrence, and callers treat `next < todayStr` as overdue.
+ */
+export function nextOccurrence(reminder, todayStr = toDateStr(new Date())) {
+  if (!reminder || reminder.completed || !reminder.date) return null;
+  const recur = reminder.recurrence || "none";
+  if (recur === "none") return reminder.date;
+  // Search from the day after the last completed occurrence (or the series
+  // start). A live daily/weekly/monthly series always has an occurrence within
+  // one period of that point, so a 45-day window past max(start, today) is
+  // enough; an empty result means the series is exhausted.
+  const from = reminder.completed_date && reminder.completed_date >= reminder.date
+    ? addDaysStr(reminder.completed_date, 1)
+    : reminder.date;
+  const to = addDaysStr(from > todayStr ? from : todayStr, 45);
+  const [first] = expandReminders([reminder], from, to);
+  return first ? first.date : null;
 }
 
 /**

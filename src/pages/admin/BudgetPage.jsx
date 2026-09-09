@@ -67,69 +67,105 @@ export default function BudgetPage() {
   });
   const [periodOffset, setPeriodOffset] = useState(0);
 
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  // Raw setters are for data that came FROM the server. The wrapped setters
+  // below (handed to children) mark the config dirty, which is the only thing
+  // that arms the autosave — a load never saves (that is how every bill once
+  // got wiped: failed load → defaults → autosave → reconcile deleted the rows).
+  const [config, setConfigRaw] = useState(DEFAULT_CONFIG);
   const [transactions, setTxState] = useState([]);
-  const [simulations, setSimulations] = useState([]);
-  const [startingBalance, setStartingBalance] = useState(0);
+  const [simulations, setSimulationsRaw] = useState([]);
+  const [startingBalance, setStartingBalanceRaw] = useState(0);
+  const [loadError, setLoadError] = useState(null);
+  const dirtyRef = useRef(false);
+  const setConfig = useCallback((u) => { dirtyRef.current = true; setConfigRaw(u); }, []);
+  const setSimulations = useCallback((u) => { dirtyRef.current = true; setSimulationsRaw(u); }, []);
+  const setStartingBalance = useCallback((u) => { dirtyRef.current = true; setStartingBalanceRaw(u); }, []);
 
   // Mirror of transactions for the reconciler (avoids stale closures).
   const txRef = useRef([]);
   useEffect(() => { txRef.current = transactions; }, [transactions]);
 
-  // Load config (single row) + transactions (standalone table) together.
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const cfg = await loadBudgetConfig().catch(() => null);
-      if (cfg && alive) {
-        setConfig(apiToPage(cfg));
-        setSimulations(cfg.simulations ?? []);
-        setStartingBalance(cfg.startingBalance ?? 0);
-      }
-      let rows = (await loadTransactions().catch(() => [])).map(uiShape);
+  const applyServerConfig = useCallback((cfg) => {
+    dirtyRef.current = false;
+    setConfigRaw(apiToPage(cfg));
+    setSimulationsRaw(cfg.simulations ?? []);
+    setStartingBalanceRaw(cfg.startingBalance ?? 0);
+  }, []);
 
-      // One-time migration: lift any transactions that only ever lived in the
-      // old config blob into the table, so nothing the UI saved before is lost.
-      const legacy = cfg?.transactions ?? [];
-      if (legacy.length) {
-        const seen = new Set(rows.map((r) => `${r.date}|${r.description}|${r.amount}`));
-        for (const t of legacy) {
-          const key = `${t.date}|${t.description}|${Math.abs(Number(t.amount) || 0)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
+  // Load config (single row) + transactions (standalone table) together.
+  // A failed config load is an error state, never a default config.
+  const aliveRef = useRef(true);
+  useEffect(() => () => { aliveRef.current = false; }, []);
+  const loadAll = useCallback(async () => {
+    setLoadError(null);
+    let cfg;
+    try {
+      cfg = await loadBudgetConfig();
+    } catch (err) {
+      console.error("[budget] config load failed", err);
+      if (aliveRef.current) setLoadError(err?.message || String(err));
+      return;
+    }
+    if (!aliveRef.current) return;
+    applyServerConfig(cfg);
+    let rows;
+    try {
+      rows = (await loadTransactions()).map(uiShape);
+    } catch (err) {
+      console.error("[budget] transactions load failed", err);
+      if (aliveRef.current) setLoadError(err?.message || String(err));
+      return;
+    }
+
+    // One-time migration: lift any transactions that only ever lived in the
+    // old config blob into the table, so nothing the UI saved before is lost.
+    const legacy = cfg?.transactions ?? [];
+    if (legacy.length) {
+      const seen = new Set(rows.map((r) => `${r.date}|${r.description}|${r.amount}`));
+      for (const t of legacy) {
+        const key = `${t.date}|${t.description}|${Math.abs(Number(t.amount) || 0)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        try {
           const saved = await newTransaction({
             description: t.description, amount: Math.abs(Number(t.amount) || 0),
             type: t.type, category: t.category, date: t.date, notes: t.notes || "",
-          }).catch(() => null);
+          });
           if (saved?.id) rows.push(uiShape(saved));
+        } catch (err) {
+          addToast(`Couldn't migrate legacy transaction "${t.description}": ${err?.message || err}`, "error");
         }
       }
-      if (alive) { setTxState(rows); setReady(true); }
-    })();
-    return () => { alive = false; };
-  }, []);
+    }
+    if (aliveRef.current) { setTxState(rows); setReady(true); }
+  }, [addToast, applyServerConfig]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   // Re-pull config + transactions from the server. Used after Griphook (the
   // banker agent) makes ledger changes, so the page reflects them immediately.
   const reload = useCallback(async () => {
-    const cfg = await loadBudgetConfig().catch(() => null);
-    if (cfg) {
-      setConfig(apiToPage(cfg));
-      setSimulations(cfg.simulations ?? []);
-      setStartingBalance(cfg.startingBalance ?? 0);
+    try {
+      const cfg = await loadBudgetConfig();
+      applyServerConfig(cfg);
+      const rows = (await loadTransactions()).map(uiShape);
+      setTxState(rows);
+    } catch (err) {
+      console.error("[budget] reload failed", err);
+      addToast(`Couldn't refresh budget: ${err?.message || err}`, "error");
     }
-    const rows = (await loadTransactions().catch(() => [])).map(uiShape);
-    setTxState(rows);
-  }, []);
+  }, [addToast, applyServerConfig]);
 
   // Debounced save of config (NOT transactions — those persist immediately to
-  // their own table via the reconciler below).
+  // their own table via the reconciler below). Dirty-gated: runs only after a
+  // user-initiated change, never on a load. Because every save here follows a
+  // real edit, an empty bills/income list is the user's intent (they deleted
+  // the last one), so the reconciler is told it may clear the table.
   const saveTimer = useRef(null);
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !dirtyRef.current) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveBudgetConfig(pageToApi(config, simulations, startingBalance)).catch((err) => {
+      saveBudgetConfig(pageToApi(config, simulations, startingBalance), { allowEmpty: true }).catch((err) => {
         console.warn("[budget] config save failed", err);
         addToast(`Budget settings didn't save: ${err?.message || err}`, "error");
       });
@@ -249,6 +285,18 @@ export default function BudgetPage() {
     setStartingBalance(0);
   };
 
+  if (loadError) {
+    return (
+      <div className="combined-page">
+        <p className="error-message" role="alert">
+          Couldn't load your budget: {loadError}
+          {" — "}
+          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={loadAll}>Retry</button>
+        </p>
+        <p className="no-entries">Nothing has been changed. Your bills, income and settings are untouched on the server.</p>
+      </div>
+    );
+  }
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
 
   return (

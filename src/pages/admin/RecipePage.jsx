@@ -99,7 +99,9 @@ export default function RecipePage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { confirm, dialog } = useConfirm();
-  const [recipe, setRecipe] = useState(undefined); // undefined = loading, null = missing
+  const [recipe, setRecipe] = useState(undefined); // undefined = loading, null = genuinely missing
+  const [loadError, setLoadError] = useState(null); // a network/API failure is NOT "not found"
+  const [reloadKey, setReloadKey] = useState(0);
   const [profiles, setProfiles] = useState([]);
   const [logging, setLogging] = useState(false);
   const [profileId, setProfileId] = useState(localStorage.getItem("nutritionActiveProfile") || "");
@@ -109,13 +111,31 @@ export default function RecipePage() {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    getRecipe(id).then(setRecipe).catch(() => setRecipe(null));
+    setRecipe(undefined); setLoadError(null);
+    getRecipe(id)
+      .then(setRecipe)
+      .catch((err) => {
+        // PostgREST PGRST116 = .single() matched 0 rows → the recipe really isn't there.
+        if (err?.code === "PGRST116") { setRecipe(null); return; }
+        console.error("[recipe] load failed", err);
+        setLoadError(`Couldn't load this recipe: ${err?.message || err}`);
+        addToast(`Couldn't load this recipe: ${err?.message || err}`, "error");
+      });
     loadProfiles().then((ps) => {
       setProfiles(ps);
       setProfileId((cur) => (ps.some((p) => p.id === cur) ? cur : ps[0]?.id || ""));
-    }).catch(() => {});
-  }, [id]);
+    }).catch((err) => addToast(`Couldn't load nutrition profiles: ${err?.message || err}`, "error"));
+  }, [id, reloadKey, addToast]);
 
+  if (loadError) return (
+    <div className="module-page">
+      <div className="load-error" role="alert">
+        <p className="load-error-msg">{loadError}</p>
+        <button type="button" className="btn btn-sm" onClick={() => setReloadKey((k) => k + 1)}>Retry</button>
+      </div>
+      <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate("/admin/life?tab=recipes")}>Back to recipes</button>
+    </div>
+  );
   if (recipe === undefined) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading recipe…</p></div>;
   if (recipe === null) return (
     <div className="module-page">
@@ -129,15 +149,19 @@ export default function RecipePage() {
   const totalMin = (recipe.prep_minutes || 0) + (recipe.cook_minutes || 0);
 
   const toggleFav = async () => {
-    const updated = await updateRecipe(recipe.id, { favorite: !recipe.favorite });
-    setRecipe(updated);
+    try {
+      const updated = await updateRecipe(recipe.id, { favorite: !recipe.favorite });
+      setRecipe(updated);
+    } catch (e) { addToast(`Couldn't update favourite: ${e.message}`, "error"); }
   };
 
   const onDelete = async () => {
     if (!await confirm(`Delete "${recipe.title}"?`, { title: "Delete recipe", confirmLabel: "Delete" })) return;
-    await deleteRecipe(recipe.id);
-    addToast("Recipe deleted.", "success");
-    navigate("/admin/life?tab=recipes");
+    try {
+      await deleteRecipe(recipe.id);
+      addToast("Recipe deleted.", "success");
+      navigate("/admin/life?tab=recipes");
+    } catch (e) { addToast(`Couldn't delete recipe: ${e.message}`, "error"); }
   };
 
   const logIt = async () => {

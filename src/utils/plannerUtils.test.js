@@ -2,7 +2,7 @@
 // Run with: node src/utils/plannerUtils.test.js
 // (No test framework — plain assertions, same style as budgetProjection.test.js.)
 
-import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange, expandEvents } from "./plannerUtils.js";
+import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange, expandEvents, nextOccurrence, addDaysStr } from "./plannerUtils.js";
 
 let passed = 0;
 let failed = 0;
@@ -147,6 +147,58 @@ test("expandEvents spreads a multi-day event across its span and numbers the day
   if (days[3].date !== "2026-08-31") throw new Error("last August day wrong");
   const single = expandEvents([{ id: "s", title: "x", date: "2026-08-10", recurrence: "none" }], "2026-08-01", "2026-08-31");
   if (single.length !== 1 || single[0].span_day) throw new Error("single-day event should not be spanned");
+});
+
+// ── Per-occurrence completion of recurring tasks ──
+
+test("completing one weekly occurrence keeps the future ones", () => {
+  // Weekly from Jun 1; the Jun 8 occurrence was ticked off.
+  const r = [{ id: "1", name: "x", date: "2026-06-01", recurrence: "weekly", completed: false, completed_date: "2026-06-08" }];
+  const june = datesOf(expandReminders(r, "2026-06-01", "2026-06-30"));
+  assert(june.join(",") === "2026-06-15,2026-06-22,2026-06-29", `got ${june.join(",")}`);
+  // Occurrences on/before completed_date are done; the series is NOT dead.
+  assert(!june.includes("2026-06-01") && !june.includes("2026-06-08"), "done occurrences hidden");
+});
+
+test("completed occurrences still count toward recur_times", () => {
+  const r = [{ id: "1", name: "x", date: "2026-06-01", recurrence: "weekly", recur_times: 3, completed_date: "2026-06-08" }];
+  const rest = datesOf(expandReminders(r, "2026-06-01", "2026-07-31"));
+  assert(rest.join(",") === "2026-06-15", `only the 3rd occurrence remains, got ${rest.join(",")}`);
+});
+
+test("nextOccurrence: one-time is its date, null once completed or undated", () => {
+  assert(nextOccurrence({ date: "2026-06-10", recurrence: "none" }, "2026-06-01") === "2026-06-10", "one-time date");
+  assert(nextOccurrence({ date: "2026-06-10", recurrence: "none", completed: true }, "2026-06-01") === null, "completed");
+  assert(nextOccurrence({ date: null, recurrence: "weekly" }, "2026-06-01") === null, "undated");
+});
+
+test("nextOccurrence: recurring = first occurrence after completed_date", () => {
+  const weekly = { date: "2026-06-01", recurrence: "weekly", completed_date: "2026-06-08" };
+  assert(nextOccurrence(weekly, "2026-06-09") === "2026-06-15", `weekly next, got ${nextOccurrence(weekly, "2026-06-09")}`);
+  const fresh = { date: "2026-06-01", recurrence: "monthly" };
+  assert(nextOccurrence(fresh, "2026-05-01") === "2026-06-01", "never completed → series start");
+  const monthly = { date: "2026-01-31", recurrence: "monthly", completed_date: "2026-01-31" };
+  assert(nextOccurrence(monthly, "2026-02-10") === "2026-02-28", `monthly clamps, got ${nextOccurrence(monthly, "2026-02-10")}`);
+});
+
+test("nextOccurrence: a missed occurrence is in the past (overdue), not rolled forward", () => {
+  // Weekly from Jun 1, last done Jun 8. Today is Jun 20 → Jun 15 was missed.
+  const r = { date: "2026-06-01", recurrence: "weekly", completed_date: "2026-06-08" };
+  const next = nextOccurrence(r, "2026-06-20");
+  assert(next === "2026-06-15", `missed occurrence surfaces, got ${next}`);
+  assert(next < "2026-06-20", "and it is overdue");
+});
+
+test("nextOccurrence: exhausted series returns null", () => {
+  const capped = { date: "2026-06-01", recurrence: "weekly", recur_times: 2, completed_date: "2026-06-08" };
+  assert(nextOccurrence(capped, "2026-06-09") === null, "recur_times reached");
+  const until = { date: "2026-06-01", recurrence: "daily", recur_until: "2026-06-03", completed_date: "2026-06-03" };
+  assert(nextOccurrence(until, "2026-06-01") === null, "recur_until reached");
+});
+
+test("addDaysStr does local calendar arithmetic across month ends", () => {
+  assert(addDaysStr("2026-01-31", 1) === "2026-02-01", "Jan 31 + 1");
+  assert(addDaysStr("2026-03-01", -1) === "2026-02-28", "Mar 1 - 1");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

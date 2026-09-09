@@ -31,28 +31,36 @@ export default function SchoolPage() {
   const [reminders, setReminders] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [open, setOpen] = useState(null);           // expanded course id
   const [courseForm, setCourseForm] = useState(null); // null | {…} (modal)
   const [deadlineFor, setDeadlineFor] = useState(null); // course object (modal)
   const [showImport, setShowImport] = useState(false);
   const [dl, setDl] = useState({ name: "", date: toDateStr(new Date()) });
 
+  // ONE grades fetch for the whole page: the header stats, the course cards
+  // and each course's GradeTracker all read `grades`, and GradeTracker calls
+  // back here after every write so nothing goes stale.
   const refresh = async () => {
     try {
-      const [c, g, r, brain] = await Promise.all([loadCourses(), loadGrades(), loadReminders(), loadBrain().catch(() => ({ nodes: [] }))]);
+      // Follow-up (brainApi owner): loadBrain() pulls the ENTIRE brain to filter
+      // source === "school" here — a source-filtered loader would cut that down.
+      const [c, g, r, brain] = await Promise.all([loadCourses(), loadGrades(), loadReminders(), loadBrain().catch((e) => { addToast(`Announcements unavailable: ${e.message}`, "error"); return { nodes: [] }; })]);
       setCourses(c); setGrades(g); setReminders(r);
       // Imported school documents live in the Brain with source "school" —
       // surface them HERE so an announcement is never invisible after import.
       setAnnouncements((brain.nodes || [])
         .filter((n) => n.source === "school")
         .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))));
-    } catch (e) { addToast(e.message, "error"); }
+      setLoadError(null);
+    } catch (e) { setLoadError(e.message); addToast(e.message, "error"); }
     setReady(true);
   };
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
   const courseGrades = (c) => grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code));
-  const courseStats = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, gradeStats(courseGrades(c))])), [courses, grades]);
+  const gradesByCourse = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, courseGrades(c)])), [courses, grades]); // eslint-disable-line react-hooks/exhaustive-deps
+  const courseStats = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, gradeStats(gradesByCourse[c.id] || [])])), [courses, gradesByCourse]);
 
   // Deadlines = incomplete course-tagged reminders, soonest first.
   const deadlines = useMemo(() =>
@@ -110,7 +118,7 @@ export default function SchoolPage() {
         L.push(`## ${c.code} — ${c.name}`);
         if (c.instructor) L.push(`- Instructor: ${c.instructor}`);
         L.push(`- Current: ${fmtPct(st.currentPct)} · Projected final: ${fmtPct(st.projectedFinal)}${c.target_grade ? ` · Target: ${c.target_grade}%` : ""}`);
-        const cg = courseGrades(c);
+        const cg = gradesByCourse[c.id] || [];
         if (cg.length) {
           L.push("", "| Assessment | Score | Weight |", "|---|---|---|");
           cg.forEach((g) => L.push(`| ${g.name} | ${g.earned != null ? `${g.earned}/${g.max}` : "—"} | ${g.weight || 0}% |`));
@@ -128,6 +136,17 @@ export default function SchoolPage() {
   };
 
   if (!ready) return <div className="module-page"><p className="no-entries">Loading school…</p></div>;
+  if (loadError) {
+    return (
+      <div className="module-page">
+        <PageHeader icon="fa-graduation-cap" title="School" />
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn btn-sm" onClick={() => { setReady(false); refresh(); }}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="module-page">
@@ -177,8 +196,9 @@ export default function SchoolPage() {
                 <span className="school-course-name">{c.name}</span>
                 <span className="school-course-meta">
                   {c.instructor && <>{c.instructor} · </>}
-                  Current {fmtPct(st.currentPct)} · Projected {fmtPct(st.projectedFinal)}
+                  Current {fmtPct(st.currentPct)} · Projected {fmtPct(st.projectedFinal)}{st.projectionClamped ? "*" : ""}
                   {c.target_grade != null && <> · Target {c.target_grade}%</>}
+                  {st.notes?.length > 0 && <> · <span title={st.notes.join("; ")}>{st.notes.length} note{st.notes.length === 1 ? "" : "s"}</span></>}
                 </span>
               </span>
               <span className="school-course-side">
@@ -206,7 +226,7 @@ export default function SchoolPage() {
                     ))}
                   </div>
                 )}
-                <GradeTracker courseId={c.id} courseCode={c.code} />
+                <GradeTracker courseId={c.id} courseCode={c.code} rows={gradesByCourse[c.id] || []} onChanged={refresh} />
               </div>
             )}
           </Card>

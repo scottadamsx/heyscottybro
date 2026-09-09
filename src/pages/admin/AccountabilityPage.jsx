@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
-import { loadAccountability, saveAccountability } from "../../api/accountabilityApi";
+import { loadAccountability, updateAccountability } from "../../api/accountabilityApi";
+import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -59,6 +60,7 @@ export default function AccountabilityPage() {
   const [params] = useSearchParams();
   const [data, setData] = useState({ trackers: [], logs: [] });
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const { trackers, logs } = data;
   const { addToast } = useToast();
   const { confirm, dialog } = useConfirm();
@@ -70,28 +72,26 @@ export default function AccountabilityPage() {
   // Deep link from Today: /admin/life?tab=habits&id=<tracker> opens that tracker.
   useEffect(() => { const id = params.get("id"); if (id) setDetailId(id); }, [params]);
 
-  const todayStr = toDateStr(new Date());
-
-  // Load from Supabase (with localStorage fallback) on mount.
+  // "Today" is state, refreshed when the tab comes back into view, so a page
+  // left open overnight doesn't keep logging against yesterday.
+  const [todayStr, setTodayStr] = useState(() => toDateStr(new Date()));
   useEffect(() => {
-    let alive = true;
-    loadAccountability()
-      .then((d) => { if (alive) { setData(d); setReady(true); } })
-      .catch((err) => { if (alive) { setReady(true); addToast(err?.message || "Couldn't load habits", "error"); } });
-    return () => { alive = false; };
+    const refresh = () => { if (document.visibilityState === "visible") setTodayStr(toDateStr(new Date())); };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
-  // Debounced save so rapid logging collapses into one write.
-  const saveTimer = useRef(null);
-  useEffect(() => {
-    if (!ready) return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      try { await saveAccountability(data); }
-      catch (err) { addToast(err?.message || "Couldn't save accountability", "error"); }
-    }, 500);
-    return () => clearTimeout(saveTimer.current);
-  }, [data, ready, addToast]);
+  // Load from Supabase; re-load whenever any surface (Today card, an agent)
+  // writes the blob. Nothing is ever auto-saved from here — every user action
+  // is its own versioned write via updateAccountability().
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
+  const load = useCallback(() => {
+    return loadAccountability()
+      .then((d) => { if (mounted.current) { setData(d); setLoadError(null); setReady(true); } })
+      .catch((err) => { if (mounted.current) { setLoadError(err?.message || "Couldn't load habits"); setReady(true); } });
+  }, []);
+  useEffect(() => { load(); return onDataChange("accountability", load); }, [load]);
 
   useEffect(() => {
     const f = params.get("focus");
@@ -100,45 +100,59 @@ export default function AccountabilityPage() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [params]);
 
-  const update = (fn) => setData((d) => fn({ trackers: d.trackers.map((t) => ({ ...t })), logs: d.logs.map((l) => ({ ...l })) }));
+  // One versioned write per user action. The mutator runs against the FRESH
+  // blob (not this page's snapshot), so a log added from the Today card or by an
+  // agent a second ago is never overwritten. Errors surface; nothing is retried
+  // silently.
+  const mutate = async (fn) => {
+    try {
+      const next = await updateAccountability(fn);
+      if (mounted.current) setData(next);
+      return true;
+    } catch (err) {
+      addToast(err?.message || "Couldn't save habits", "error");
+      return false;
+    }
+  };
 
-  const addTracker = (e) => {
+  const addTracker = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    update((d) => { d.trackers.push({ id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr }); return d; });
+    const tracker = { id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr };
+    if (!await mutate((d) => { d.trackers.push(tracker); })) return;
     setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
     setShowAdd(false);
   };
   const deleteTracker = async (id) => {
     if (!await confirm("Delete this tracker and its history?", { title: "Delete tracker", confirmLabel: "Delete" })) return;
-    update((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); return d; });
+    if (!await mutate((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); })) return;
     if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
   };
-  const logOn = (trackerId, date) => update((d) => { d.logs.push({ id: genId(), trackerId, date, at: Date.now() }); return d; });
-  const deleteLog = (id) => update((d) => { d.logs = d.logs.filter((l) => l.id !== id); return d; });
-  // Edits go through the same blob write as logging: update() mutates a copy,
-  // the debounced effect above persists it (localStorage mirror + Supabase).
-  const saveTrackerEdit = (e, id) => {
+  const logOn = (trackerId, date) => mutate((d) => { d.logs.push({ id: genId(), trackerId, date, at: Date.now() }); });
+  const deleteLog = (id) => mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
+  const saveTrackerEdit = async (e, id) => {
     e.preventDefault();
     if (!trackerEdit?.name.trim()) return;
     const patch = { name: trackerEdit.name.trim(), mode: trackerEdit.mode, color: trackerEdit.color };
-    update((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); return d; });
+    if (!await mutate((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); })) return;
     setTrackerEdit(null);
   };
 
   const countOn = (t, date) => (logsByTracker[t.id] || []).filter((l) => l.date === date).length;
-  // Checkbox trackers = once/day (toggle). Counter trackers = increment each tap.
-  const logToday = (t) => {
-    if (t.mode === "check") {
-      const todays = (logsByTracker[t.id] || []).filter((l) => l.date === todayStr);
-      if (todays.length) { deleteLog(todays[0].id); return; }
-    }
-    logOn(t.id, todayStr);
-  };
+  // Checkbox trackers = once/day: toggling OFF removes every log for that day
+  // (a check tracker that was converted from a counter can hold several).
+  // Counter trackers increment each tap. Decided against the fresh blob.
+  const logToday = (t) => mutate((d) => {
+    const sameDay = (l) => l.trackerId === t.id && l.date === todayStr;
+    if (t.mode === "check" && d.logs.some(sameDay)) { d.logs = d.logs.filter((l) => !sameDay(l)); return; }
+    d.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
+  });
   const logPast = (t, date) => {
-    if (!date) return;
-    if (t.mode === "check" && (logsByTracker[t.id] || []).some((l) => l.date === date)) return;
-    logOn(t.id, date);
+    if (!date || date > todayStr) return;
+    mutate((d) => {
+      if (t.mode === "check" && d.logs.some((l) => l.trackerId === t.id && l.date === date)) return;
+      d.logs.push({ id: genId(), trackerId: t.id, date, at: Date.now() });
+    });
   };
 
   const logsByTracker = useMemo(() => {
@@ -281,7 +295,7 @@ export default function AccountabilityPage() {
                 </button>
               );
             })()}
-            <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" />
+            <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" max={todayStr} />
           </div>
           {st.recent.length > 0 && (
             <div className="acc-recent" style={{ marginTop: "0.75rem" }}>
@@ -299,6 +313,20 @@ export default function AccountabilityPage() {
   };
 
   if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
+
+  // A failed load is an error, not "no trackers" — never render an empty state
+  // (or accept new writes) over data we couldn't read.
+  if (loadError) {
+    return (
+      <div className="module-page">
+        <div className="module-header"><h1>Accountability</h1></div>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn btn-sm" onClick={() => { setReady(false); load(); }}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   if (detailId) {
     const t = trackers.find((x) => x.id === detailId);
@@ -383,7 +411,7 @@ export default function AccountabilityPage() {
                     </button>
                   );
                 })()}
-                <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" />
+                <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" max={todayStr} />
               </div>
 
               {st.recent.length > 0 && (

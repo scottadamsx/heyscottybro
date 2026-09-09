@@ -570,3 +570,29 @@ html { background: var(--bg-base); }
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Load-failure state (QF-3) ────────────────────────────────────────────────
+   A page that could not read its data shows THIS, never an empty state. Colour
+   is not the only signal: role="alert" + the message + a Retry control. */
+.load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--text-primary);
+  margin-block: var(--space-sm);
+}
+.load-error-msg { margin: 0; font-size: 0.875rem; line-height: 1.45; font-weight: 500; }
+
+/* Inline data-quality note under a metric (grade weights, unweighted rows…). */
+.metric-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.metric-note::before { content: "Note: "; font-weight: 600; }

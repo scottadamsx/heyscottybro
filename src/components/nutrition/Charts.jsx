@@ -130,8 +130,11 @@ export function MacroRing({ protein = 0, carbs = 0, fat = 0, size = 132 }) {
           offset += dash;
           return el;
         })}
+        {/* 4/4/9 kcal per gram of P/C/F — this is what the macros ADD UP to,
+            which legitimately differs from the logged kcal shown beside it
+            (fibre, alcohol, rounding, entries logged without macros). */}
         <text x="50%" y="46%" textAnchor="middle" className="macro-ring-cal">{Math.round(total / 1)}</text>
-        <text x="50%" y="62%" textAnchor="middle" className="macro-ring-lbl">kcal</text>
+        <text x="50%" y="62%" textAnchor="middle" className="macro-ring-lbl">kcal from macros</text>
       </svg>
       <div className="macro-legend">
         <span><i className="dot" style={{ background: "var(--green)" }} /> P {Math.round(protein)}g</span>

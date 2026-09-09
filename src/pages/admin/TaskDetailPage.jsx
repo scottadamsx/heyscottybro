@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
-import { formatDisplayDate, toDateStr , formatTime12 } from "../../utils/plannerUtils";
+import { formatDisplayDate, toDateStr, formatTime12, nextOccurrence } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
@@ -33,17 +33,29 @@ export default function TaskDetailPage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  // "Failed to load" and "not found" are different states: a failed load must
+  // never render as "this task may have been deleted" (QF-3).
+  const [loadError, setLoadError] = useState(null);
 
   const todayStr = toDateStr(new Date());
 
   const load = async () => {
-    const [reminders, projs] = await Promise.all([
-      loadReminders().catch(() => []),
-      loadProjects().catch(() => []),
-    ]);
-    const found = reminders.find((r) => String(r.id) === String(id)) || null;
-    setTask(found);
-    setProjects(projs);
+    setLoadError(null);
+    const [remRes, projRes] = await Promise.allSettled([loadReminders(), loadProjects()]);
+    if (remRes.status === "rejected") {
+      console.error("[task] failed to load tasks", remRes.reason);
+      setLoadError(remRes.reason?.message || String(remRes.reason));
+      setLoading(false);
+      return;
+    }
+    if (projRes.status === "rejected") {
+      // The task itself still renders; the project link just can't resolve.
+      console.error("[task] failed to load projects", projRes.reason);
+      setLoadError(`projects: ${projRes.reason?.message || projRes.reason}`);
+    } else {
+      setProjects(projRes.value);
+    }
+    setTask(remRes.value.find((r) => String(r.id) === String(id)) || null);
     setLoading(false);
   };
 
@@ -62,6 +74,7 @@ export default function TaskDetailPage() {
   const saveEdit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
+    if (form.recurrence !== "none" && !form.date) return; // submit is disabled; guard Enter-to-submit
     setSaving(true);
     const fields = {
       name: form.name.trim(),
@@ -88,9 +101,18 @@ export default function TaskDetailPage() {
   };
 
   const handleComplete = async () => {
-    const completed_date = toDateStr(new Date());
-    setTask((prev) => ({ ...prev, completed: true, completed_date }));
-    try { await completeReminder(id); } catch { await load(); }
+    const recurring = task.recurrence && task.recurrence !== "none";
+    // Recurring: tick off the pending occurrence (which may be a missed one),
+    // not "today" — the series then shows its next date.
+    const occurrence = recurring ? (nextOccurrence(task, todayStr) || todayStr) : todayStr;
+    setTask((prev) => (recurring ? { ...prev, completed_date: occurrence } : { ...prev, completed: true, completed_date: occurrence }));
+    try {
+      const patch = await completeReminder(id, occurrence);
+      setTask((prev) => ({ ...prev, ...patch }));
+    } catch (err) {
+      setLoadError(`Couldn't complete: ${err?.message || err}`);
+      await load();
+    }
   };
 
   const handleReopen = async () => {
@@ -116,6 +138,22 @@ export default function TaskDetailPage() {
     );
   }
 
+  if (!task && loadError) {
+    return (
+      <div className="module-page">
+        <div className="module-header">
+          <h1>Couldn't load task</h1>
+          <button className="btn btn-sm" onClick={() => navigate("/admin/planner")}>← Back to tasks</button>
+        </div>
+        <p className="error-message" role="alert">
+          {loadError}
+          {" — "}
+          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={() => { setLoading(true); load(); }}>Retry</button>
+        </p>
+      </div>
+    );
+  }
+
   if (!task) {
     return (
       <div className="module-page">
@@ -123,18 +161,28 @@ export default function TaskDetailPage() {
           <h1>Task not found</h1>
           <button className="btn btn-sm" onClick={() => navigate("/admin/planner")}>← Back to tasks</button>
         </div>
-        <p className="no-entries">This task may have been deleted.</p>
+        <p className="no-entries">No task with this id — it may have been deleted.</p>
       </div>
     );
   }
 
-  const overdue = !task.completed && task.date && task.date < todayStr;
-  const dueToday = !task.completed && task.date === todayStr;
+  const isRecurring = task.recurrence && task.recurrence !== "none";
+  const next = nextOccurrence(task, todayStr); // one-time: its date; recurring: pending occurrence
+  const overdue = !task.completed && next && next < todayStr;
+  const dueToday = !task.completed && next === todayStr;
   const showEndOptions = editing && form && form.recurrence !== "none";
+  const editNeedsDate = editing && form && form.recurrence !== "none" && !form.date;
 
   return (
     <div className="module-page">
       {dialog}
+      {loadError && (
+        <p className="error-message" role="alert">
+          {loadError}
+          {" — "}
+          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
+        </p>
+      )}
 
       {/* Page header: becomes the window caption in XP; Back sits in it like a toolbar button */}
       <div className="module-header">
@@ -177,11 +225,20 @@ export default function TaskDetailPage() {
           <div className="db-card">
             <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Details</h3>
             <dl className="task-detail-grid">
-              <dt>Due date</dt>
-              <dd style={overdue ? { color: "var(--red)" } : undefined}>
-                {task.date ? formatDisplayDate(task.date) : "No due date"}
+              <dt>{isRecurring ? "Next due" : "Due date"}</dt>
+              <dd className={overdue ? "task-overdue" : undefined}>
+                {!task.date ? "No due date"
+                  : isRecurring ? (next ? formatDisplayDate(next) : "Series finished")
+                  : formatDisplayDate(task.date)}
                 {task.time ? ` · ${formatTime12(task.time)}` : ""}
+                {overdue ? " · overdue" : ""}
               </dd>
+              {isRecurring && (
+                <>
+                  <dt>Started</dt>
+                  <dd>{formatDisplayDate(task.date)}{task.completed_date ? ` · last done ${formatDisplayDate(task.completed_date)}` : ""}</dd>
+                </>
+              )}
 
               <dt>Repeats</dt>
               <dd>
@@ -260,6 +317,7 @@ export default function TaskDetailPage() {
             <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} placeholder="Due date" />
             <TimePicker value={form.time} onChange={(v) => setForm({ ...form, time: v })} />
           </div>
+          {editNeedsDate && <p className="field-hint" role="status">A repeating task needs a start date — pick the first occurrence.</p>}
 
           <textarea
             placeholder="Description (optional)"
@@ -302,7 +360,7 @@ export default function TaskDetailPage() {
           </label>
 
           <div className="budget-widget-actions">
-            <button className="btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+            <button className="btn" type="submit" disabled={saving || editNeedsDate} title={editNeedsDate ? "Pick a start date for the repeat" : undefined}>{saving ? "Saving…" : "Save changes"}</button>
             <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={cancelEdit}>Cancel</button>
           </div>
         </form>

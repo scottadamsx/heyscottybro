@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-import { GRAM_PRESETS, TAPER_INTERVAL, TAPER_STEP, FLOWER_THC_PCT, DAY, genId, toDateStr, today, timeAgo, taperDays, taperedCapG } from "../../utils/weedCalc";
+import { GRAM_PRESETS, TAPER_INTERVAL, TAPER_STEP, TAPER_FLOOR_G, FLOWER_THC_PCT, DAY, genId, toDateStr, today, timeAgo, taperDays, taperedCapG, daysToTaperFloor } from "../../utils/weedCalc";
 
 export default function ScottyView({ state, onUpdate }) {
   const [logModal, setLogModal] = useState(false);
@@ -17,6 +17,8 @@ export default function ScottyView({ state, onUpdate }) {
   const nextReduction = s.taperEnabled && s.taperStart
     ? TAPER_INTERVAL - (daysElapsed % TAPER_INTERVAL)
     : null;
+  // Counts down from the CURRENT tapered cap, so it moves as reductions land.
+  const daysToGoal = daysToTaperFloor(effectiveCap, s);
 
   const todayLogs = useMemo(() => s.logs.filter(l => toDateStr(l.ts) === today()), [s.logs]);
   const todayTotal = useMemo(() => todayLogs.reduce((a, l) => a + (l.grams || 0), 0), [todayLogs]);
@@ -173,8 +175,8 @@ export default function ScottyView({ state, onUpdate }) {
               <strong>{nextReduction === 1 ? "tomorrow" : `in ${nextReduction} days`}</strong>
             </div>
             <div className="wt-taper-row">
-              <span>Goal (in {Math.ceil(state.sharedDailyCapG / TAPER_STEP) * TAPER_INTERVAL}d)</span>
-              <strong>0.1g/day</strong>
+              <span>{daysToGoal === 0 ? "Goal reached" : `Goal (in ${daysToGoal}d)`}</span>
+              <strong>{TAPER_FLOOR_G}g/day</strong>
             </div>
             <button className="wt-ghost-btn" style={{ marginTop: "0.5rem" }}
               onClick={async () => { if (await confirm("Reset taper timer?", { title: "Reset taper", confirmLabel: "Reset" })) onUpdate(d => { d.scott.taperStart = null; }); }}>

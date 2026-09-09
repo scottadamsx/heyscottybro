@@ -82,7 +82,7 @@ export const AGENTS = [
     tagline: "Your everyday planner assistant",
     thinking: "Frodo is on it…",
     tools: (TOOLS) => TOOLS,
-    buildPrompt: () => buildSystemPrompt(TIERS[0]),
+    buildPrompt: () => buildSystemPrompt(TIERS[0]), // async — runAgent awaits it
   },
   {
     id: "banker", name: BANKER.name, title: "Finance Agent", emoji: BANKER.emoji, icon: BANKER.icon,

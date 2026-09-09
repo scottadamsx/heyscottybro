@@ -19,6 +19,7 @@ export default function GroceryPage() {
 
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null); // a failed load is NOT "no receipts"
 
   // New-receipt workflow
   const [file, setFile] = useState(null);
@@ -34,7 +35,17 @@ export default function GroceryPage() {
   const [openItems, setOpenItems] = useState([]);
   const [openImg, setOpenImg] = useState("");
 
-  const refresh = () => { setLoading(true); loadReceipts().then(setReceipts).catch(() => {}).finally(() => setLoading(false)); };
+  const refresh = () => {
+    setLoading(true);
+    loadReceipts()
+      .then((rows) => { setReceipts(rows); setLoadError(null); })
+      .catch((err) => {
+        console.error("[grocery] load receipts failed", err);
+        setLoadError(`Couldn't load receipts: ${err?.message || err}`);
+        addToast(`Couldn't load receipts: ${err?.message || err}`, "error");
+      })
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { refresh(); }, []);
 
   const lineSum = draft ? draft.items.reduce((s, it) => s + (Number(it.total_price) || 0), 0) : 0;
@@ -269,7 +280,13 @@ export default function GroceryPage() {
       <div className="db-card">
         <h3 className="db-card-title"><i className="fa-solid fa-clock-rotate-left" /> Recent receipts</h3>
         {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
-        {!loading && receipts.length === 0 && <p className="no-entries">No receipts yet. Scan one above.</p>}
+        {!loading && loadError && (
+          <div className="load-error" role="alert">
+            <p className="load-error-msg">{loadError}</p>
+            <button type="button" className="btn btn-sm" onClick={refresh}>Retry</button>
+          </div>
+        )}
+        {!loading && !loadError && receipts.length === 0 && <p className="no-entries">No receipts yet. Scan one above.</p>}
         <div className="grocery-list">
           {receipts.map((r) => (
             <div className={`grocery-receipt${openId === r.id ? " open" : ""}`} key={r.id}>

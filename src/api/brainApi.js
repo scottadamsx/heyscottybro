@@ -47,10 +47,18 @@ export async function linkNodes(sourceSlug, targetSlug) {
   return { source_slug: sourceSlug, target_slug: targetSlug };
 }
 
+/** Node provenance value for everything that came from the markdown vault. */
+export const VAULT_SOURCE = "vault";
+
+const chunk = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
+
 /**
  * Sync the brain from the local Obsidian/markdown vault (dev only).
  * Reads /api/brain-vault (a Vite dev endpoint), then replaces this user's
- * nodes + links in Supabase with the parsed result.
+ * VAULT-SOURCED nodes + their outgoing links in Supabase with the parsed
+ * result. Nodes written by agents (source = agent id, e.g. "galadriel",
+ * "bilbo") or by hand are left alone — the old wholesale delete wiped every
+ * daily summary and research note on each sync.
  */
 export async function syncFromVault() {
   const res = await fetch("/api/brain-vault", { headers: { ...(await getAuthHeaders()) } });
@@ -58,22 +66,44 @@ export async function syncFromVault() {
   if (!res.ok || data?.error) throw new Error(data?.message || data?.error || `Vault sync failed (${res.status})`);
 
   const userId = await uid();
-  const nodes = (data.nodes || []).map((n) => ({ ...n, user_id: userId }));
+  // The parser stamps `source` with the file's relative path; normalise to the
+  // single provenance value so vault rows are identifiable on the next sync.
+  const nodes = (data.nodes || []).map((n) => ({ ...n, source: VAULT_SOURCE, user_id: userId }));
   const links = (data.links || []).map((l) => ({ ...l, user_id: userId }));
 
-  // Replace wholesale so deleted notes drop out of the graph too.
-  await supabase.from("brain_links").delete().eq("user_id", userId);
-  await supabase.from("brain_nodes").delete().eq("user_id", userId);
-  if (nodes.length) {
-    const { error } = await supabase.from("brain_nodes").insert(nodes);
-    if (error) throw error;
+  // 1. Which rows are currently vault-sourced? Legacy syncs stored the .md path
+  //    in `source`, so match those too — this is the one-time migration path.
+  const { data: existing, error: e0 } = await supabase.from("brain_nodes")
+    .select("slug, source").eq("user_id", userId)
+    .or(`source.eq.${VAULT_SOURCE},source.like.*.md`); // PostgREST: * is the LIKE wildcard
+  if (e0) throw new Error(`Vault sync: couldn't read existing vault nodes — ${e0.message}`);
+  const staleSlugs = (existing || []).map((n) => n.slug);
+
+  // 2. Drop the links the vault parser owns (those leaving a vault node), then
+  //    the vault nodes that no longer exist in the vault. Nodes that still exist
+  //    are upserted in place so agent links pointing AT them keep resolving.
+  const incoming = new Set(nodes.map((n) => n.slug));
+  const gone = staleSlugs.filter((s) => !incoming.has(s));
+  for (const slugs of chunk(staleSlugs, 200)) {
+    const { error } = await supabase.from("brain_links").delete().eq("user_id", userId).in("source_slug", slugs);
+    if (error) throw new Error(`Vault sync: couldn't clear old vault links — ${error.message}`);
   }
-  if (links.length) {
-    // de-dupe defensively against the unique constraint
-    const seen = new Set();
-    const rows = links.filter((l) => { const k = `${l.source_slug}|${l.target_slug}`; if (seen.has(k)) return false; seen.add(k); return true; });
-    const { error } = await supabase.from("brain_links").insert(rows);
-    if (error) throw error;
+  for (const slugs of chunk(gone, 200)) {
+    const { error } = await supabase.from("brain_nodes").delete().eq("user_id", userId).in("slug", slugs);
+    if (error) throw new Error(`Vault sync: couldn't remove deleted vault notes — ${error.message}`);
   }
-  return { nodes: nodes.length, links: links.length, vault: data.vault };
+
+  // 3. Upsert the vault set (unique on user_id,slug).
+  for (const rows of chunk(nodes, 200)) {
+    const { error } = await supabase.from("brain_nodes").upsert(rows, { onConflict: "user_id,slug" });
+    if (error) throw new Error(`Vault sync: couldn't write vault notes — ${error.message}`);
+  }
+  // de-dupe defensively against the unique constraint
+  const seen = new Set();
+  const linkRows = links.filter((l) => { const k = `${l.source_slug}|${l.target_slug}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  for (const rows of chunk(linkRows, 500)) {
+    const { error } = await supabase.from("brain_links").upsert(rows, { onConflict: "user_id,source_slug,target_slug", ignoreDuplicates: true });
+    if (error) throw new Error(`Vault sync: couldn't write vault links — ${error.message}`);
+  }
+  return { nodes: nodes.length, links: linkRows.length, removed: gone.length, vault: data.vault };
 }

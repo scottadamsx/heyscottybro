@@ -29,6 +29,13 @@ export default function NutritionPage() {
   const [activeId, setActiveId] = useState(() => localStorage.getItem(ACTIVE_KEY) || null);
   const [unit, setUnit] = useState(() => localStorage.getItem(UNIT_KEY) || "lb");
   const [loading, setLoading] = useState(true);
+  // Load failures are their own state (never rendered as "no profiles" /
+  // "nothing logged"); `reloadKey` re-runs the effects for Retry.
+  const [profilesError, setProfilesError] = useState(null);
+  const [dayError, setDayError] = useState(null);
+  const [rangeError, setRangeError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = () => setReloadKey((k) => k + 1);
 
   const [date, setDate] = useState(todayStr);
   const [dayLogs, setDayLogs] = useState([]);
@@ -42,16 +49,22 @@ export default function NutritionPage() {
 
   // initial profile load
   useEffect(() => {
+    setLoading(true);
     loadProfiles().then((ps) => {
       setProfiles(ps);
+      setProfilesError(null);
       setActiveId((cur) => {
         const valid = ps.some((p) => p.id === cur);
         const next = valid ? cur : (ps[0]?.id || null);
         if (next) localStorage.setItem(ACTIVE_KEY, next);
         return next;
       });
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    }).catch((err) => {
+      console.error("[nutrition] load profiles failed", err);
+      setProfilesError(`Couldn't load nutrition profiles: ${err?.message || err}`);
+      addToast(`Couldn't load nutrition profiles: ${err?.message || err}`, "error");
+    }).finally(() => setLoading(false));
+  }, [reloadKey, addToast]);
 
   const selectProfile = (id) => { setActiveId(id); localStorage.setItem(ACTIVE_KEY, id); setInsights(""); };
   const toggleUnit = () => setUnit((u) => { const n = u === "kg" ? "lb" : "kg"; localStorage.setItem(UNIT_KEY, n); return n; });
@@ -71,17 +84,28 @@ export default function NutritionPage() {
 
   // day logs
   useEffect(() => {
-    if (!activeId) { setDayLogs([]); return; }
-    loadFoodLogs(activeId, { from: date, to: date }).then(setDayLogs).catch(() => setDayLogs([]));
-  }, [activeId, date]);
+    if (!activeId) { setDayLogs([]); setDayError(null); return; }
+    loadFoodLogs(activeId, { from: date, to: date })
+      .then((rows) => { setDayLogs(rows); setDayError(null); })
+      .catch((err) => {
+        console.error("[nutrition] load day logs failed", err);
+        setDayError(`Couldn't load meals for ${date}: ${err?.message || err}`);
+        addToast(`Couldn't load meals: ${err?.message || err}`, "error");
+      });
+  }, [activeId, date, reloadKey, addToast]);
 
   // range logs + weights (for trends/weight)
   useEffect(() => {
-    if (!activeId) { setRangeLogs([]); setWeights([]); return; }
+    if (!activeId) { setRangeLogs([]); setWeights([]); setRangeError(null); return; }
     const from = addDaysStr(todayStr(), -29);
-    loadFoodLogs(activeId, { from, to: todayStr() }).then(setRangeLogs).catch(() => setRangeLogs([]));
-    loadWeightLogs(activeId).then(setWeights).catch(() => setWeights([]));
-  }, [activeId]);
+    Promise.all([loadFoodLogs(activeId, { from, to: todayStr() }), loadWeightLogs(activeId)])
+      .then(([logs, ws]) => { setRangeLogs(logs); setWeights(ws); setRangeError(null); })
+      .catch((err) => {
+        console.error("[nutrition] load trends failed", err);
+        setRangeError(`Couldn't load trends and weigh-ins: ${err?.message || err}`);
+        addToast(`Couldn't load trends: ${err?.message || err}`, "error");
+      });
+  }, [activeId, reloadKey, addToast]);
 
   const setView = (v) => { const n = new URLSearchParams(params); n.set("view", v); setParams(n); };
 
@@ -108,6 +132,25 @@ export default function NutritionPage() {
   };
 
   if (loading) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>;
+
+  if (profilesError) {
+    return (
+      <div className="module-page">
+        <div className="module-header"><h1>Nutrition</h1></div>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{profilesError}</p>
+          <button type="button" className="btn btn-sm" onClick={retry}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  const ErrorBlock = ({ msg }) => (
+    <div className="load-error" role="alert">
+      <p className="load-error-msg">{msg}</p>
+      <button type="button" className="btn btn-sm" onClick={retry}>Retry</button>
+    </div>
+  );
 
   return (
     <div className="module-page">
@@ -143,14 +186,16 @@ export default function NutritionPage() {
             ))}
           </div>
 
-          {view === "today" && (
+          {view === "today" && dayError && <ErrorBlock msg={dayError} />}
+          {view === "today" && !dayError && (
             <TodayView
               date={date} setDate={setDate} dayLogs={dayLogs} dayTotals={dayTotals}
               target={target} onRemove={removeLog} onLog={() => setShowLogger(true)}
             />
           )}
 
-          {view === "trends" && (
+          {(view === "trends" || view === "weight") && rangeError && <ErrorBlock msg={rangeError} />}
+          {view === "trends" && !rangeError && (
             <TrendsView
               active={active} rangeLogs={rangeLogs} weights={weights} unit={unit} target={target}
               tdeeVal={tdee(active, latestWeightKg)}
@@ -172,7 +217,7 @@ export default function NutritionPage() {
             />
           )}
 
-          {view === "weight" && (
+          {view === "weight" && !rangeError && (
             <WeightView
               active={active} weights={weights} unit={unit}
               onSaved={(w) => setWeights((prev) => {
@@ -211,7 +256,7 @@ function TodayView({ date, setDate, dayLogs, dayTotals, target, onRemove, onLog 
       <div className="nut-day-summary">
         <MacroRing protein={dayTotals.protein_g} carbs={dayTotals.carbs_g} fat={dayTotals.fat_g} />
         <div className="nut-day-stats">
-          <div className="nut-big-cal">{round(dayTotals.calories)}<span> kcal</span></div>
+          <div className="nut-big-cal">{round(dayTotals.calories)}<span> kcal logged</span></div>
           {target != null ? (
             <>
               <div className="nut-progress"><div className="nut-progress-fill" style={{ width: `${pct}%`, background: remaining < 0 ? "var(--danger,var(--red))" : undefined }} /></div>
@@ -274,10 +319,21 @@ function groupCaloriesByDay(logs) {
     .map(([d, v]) => ({ date: d, value: Math.round(v) }));
 }
 
+// The last 14 CALENDAR days, unlogged days as 0 — so the average is a true
+// daily average, not "average of the days you happened to log".
+function last14Days(logs) {
+  const byDay = new Map(groupCaloriesByDay(logs).map((d) => [d.date, d.value]));
+  const end = todayStr();
+  const days = [];
+  for (let i = 13; i >= 0; i--) { const ds = addDaysStr(end, -i); days.push({ date: ds, value: byDay.get(ds) || 0 }); }
+  return days;
+}
+
 function TrendsView({ active, rangeLogs, weights, unit, target, tdeeVal, insights, insightBusy, onInsights }) {
-  const days = groupCaloriesByDay(rangeLogs).slice(-14);
+  const days = last14Days(rangeLogs);
   const bars = days.map((d) => ({ label: prettyDate(d.date).split(" ").slice(1).join(" "), value: d.value }));
-  const avg = days.length ? round(days.reduce((a, b) => a + b.value, 0) / days.length) : 0;
+  const loggedDays = days.filter((d) => d.value > 0).length;
+  const avg = round(days.reduce((a, b) => a + b.value, 0) / days.length);
 
   const weightSeries = weights.map((w) => ({
     date: w.date,
@@ -289,7 +345,7 @@ function TrendsView({ active, rangeLogs, weights, unit, target, tdeeVal, insight
   return (
     <>
       <div className="nut-card">
-        <div className="nut-card-head"><h3>Calories — last 14 days</h3><span className="nut-card-sub">avg {avg} kcal{target ? ` · target ${target}` : ""}</span></div>
+        <div className="nut-card-head"><h3>Calories — last 14 days</h3><span className="nut-card-sub">avg {avg} kcal/day over 14 days ({loggedDays} logged){target ? ` · target ${target}` : ""}</span></div>
         <CalorieBars data={bars} target={target} />
       </div>
 

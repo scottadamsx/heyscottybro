@@ -1,16 +1,19 @@
 /**
- * Planner API — Supabase calls with an automatic localStorage fallback.
+ * Planner API — Supabase calls, with localStorage ONLY in local mode.
  *
- * - Normal mode: talks to Supabase. If a call fails (offline / schema issue),
- *   it falls back to localStorage so the UI keeps working, and flips the
- *   connection status to "disconnected".
+ * - Normal mode: talks to Supabase. If a call fails it THROWS with context
+ *   ("Supabase <table.op>: <message>") and flips the connection status to
+ *   "disconnected". It never writes to localStorage as a fallback — that was
+ *   the origin of the vanishing-data incident (QF-3): data that looked saved
+ *   but lived only in one browser.
  * - Local mode (toggle in the dashboard, or VITE_LOCAL_DATA=1): every call uses
  *   localStorage consistently — handy for offline testing.
  */
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
-import { toDateStr } from "../utils/plannerUtils";
+import { toDateStr, nextOccurrence } from "../utils/plannerUtils";
 import { emitDataChange } from "../utils/dataEvents";
+import { uid, getUserId, genId } from "./_base";
 
 /* ── connection + mode state ─────────────────── */
 let _connected = null; // null = unknown, true, false
@@ -58,25 +61,29 @@ async function withRetry(fn, maxAttempts = 3) {
   }
 }
 
-/** Run a Supabase op with retry on network errors, falling back to localStorage on persistent failure. */
-async function op(remote, localFn) {
+/**
+ * Run a Supabase op (retrying network errors). `localFn` runs ONLY in local
+ * mode. A remote failure is rethrown with context — never swallowed, never
+ * redirected to localStorage (QF-3).
+ */
+async function op(remote, localFn, label = "call") {
   if (isLocalMode()) return localFn();
   try {
     const r = await withRetry(remote);
     setConnected(true);
     return r;
   } catch (err) {
-    // Loud, not silent: a fallback means this data is NOT on the server.
-    console.warn("[plannerApi] Supabase call failed — falling back to localStorage. This change will NOT persist across devices/refresh-from-server:", err?.message || err);
     setConnected(false);
-    return localFn();
+    const msg = err?.message || String(err);
+    console.error(`[plannerApi] Supabase ${label} failed:`, msg);
+    throw new Error(`Supabase ${label}: ${msg}`);
   }
 }
 
-async function uid() {
-  if (isLocalMode()) return "local-user";
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id;
+/** PostgREST / Postgres "that column doesn't exist" — schema cache (PGRST204) or 42703. */
+function isMissingColumn(err, column) {
+  const msg = String(err?.message || "");
+  return (err?.code === "PGRST204" || err?.code === "42703" || /column|schema cache/i.test(msg)) && msg.includes(column);
 }
 
 const byDateAsc = (k = "date") => (a, b) => String(a[k] || "").localeCompare(String(b[k] || ""));
@@ -91,10 +98,12 @@ export async function loadReminders() {
       return data ?? [];
     },
     () => local.list("reminders").slice().sort(byDateAsc()),
+    "reminders.select",
   );
 }
 
-export async function newReminder({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id }) {
+/** Normalise caller fields into a reminders row (no user_id). */
+function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id }) {
   const base = {
     name,
     date: date || null,
@@ -104,44 +113,97 @@ export async function newReminder({ name, date, time, description, recurrence, p
   };
   if (project_id) base.project_id = project_id;
   if (course_id) base.course_id = course_id;
+  if (event_id) base.event_id = event_id;
   if (recur_until) base.recur_until = recur_until;
   if (recur_times) base.recur_times = Number(recur_times);
   if (time) base.time = time;
   if (description) base.description = description;
+  return base;
+}
+
+/**
+ * Batch insert — ONE round trip, ONE "reminders" emit. Returns the saved rows
+ * in input order. Tolerates a DB that hasn't added `reminders.event_id` yet
+ * (retries without the link and logs loudly — run the 2026-09-06 migration).
+ */
+export async function newReminders(list) {
+  const rows = (list || []).map(reminderRow);
+  if (rows.length === 0) return [];
   const result = await op(
     async () => {
       const userId = await uid();
-      const { data, error } = await supabase.from("reminders").insert({ user_id: userId, ...base }).select().single();
+      const payload = rows.map((r) => ({ user_id: userId, ...r }));
+      let { data, error } = await supabase.from("reminders").insert(payload).select();
+      if (error && isMissingColumn(error, "event_id") && payload.some((r) => "event_id" in r)) {
+        console.error("[plannerApi] reminders.event_id column is missing — run supabase/migrations/2026-09-06-phase1.sql. Inserting WITHOUT the event link:", error.message);
+        const stripped = payload.map((r) => { const c = { ...r }; delete c.event_id; return c; });
+        ({ data, error } = await supabase.from("reminders").insert(stripped).select());
+      }
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
-    () => local.insert("reminders", { show_on_calendar: base.show_on_calendar !== false, ...base }),
+    () => rows.map((r) => local.insert("reminders", r)),
+    "reminders.insert",
   );
   emitDataChange("reminders");
   return result;
 }
 
-export async function completeReminder(id) {
-  // Local calendar day — toISOString() would give the UTC day, which is
-  // yesterday during AU mornings.
-  const completed_date = toDateStr(new Date());
-  await op(
-    async () => { const { error } = await supabase.from("reminders").update({ completed: true, completed_date }).eq("id", id); if (error) throw error; },
-    () => local.update("reminders", id, { completed: true, completed_date }),
+export async function newReminder(fields) {
+  const [row] = await newReminders([fields]);
+  return row;
+}
+
+/**
+ * Complete a task. One-time tasks flip `completed`. Recurring tasks are
+ * completed PER OCCURRENCE: `completed_date` advances to `occurrenceDate`
+ * (default today) and the series stays open until its last occurrence is done.
+ * Returns the patch that was applied ({ completed, completed_date }).
+ */
+export async function completeReminder(id, occurrenceDate) {
+  // Local calendar day — toISOString() would give the UTC day.
+  const today = toDateStr(new Date());
+  const patchFor = (row) => {
+    const recurring = row?.recurrence && row.recurrence !== "none";
+    if (!recurring) return { completed: true, completed_date: today };
+    const target = occurrenceDate || today;
+    const completed_date = row.completed_date && row.completed_date > target ? row.completed_date : target;
+    // No occurrence left after this one (recur_until / recur_times reached)? Close the series.
+    const next = nextOccurrence({ ...row, completed: false, completed_date }, today);
+    return { completed: next == null, completed_date };
+  };
+  const patch = await op(
+    async () => {
+      const { data: row, error } = await supabase.from("reminders").select("id, date, recurrence, completed_date, recur_until, recur_times").eq("id", id).single();
+      if (error) throw error;
+      const p = patchFor(row);
+      const { error: e2 } = await supabase.from("reminders").update(p).eq("id", id);
+      if (e2) throw e2;
+      return p;
+    },
+    () => {
+      const row = local.list("reminders").find((r) => String(r.id) === String(id));
+      const p = patchFor(row);
+      local.update("reminders", id, p);
+      return p;
+    },
+    "reminders.complete",
   );
   emitDataChange("reminders");
+  return patch;
 }
 
 export async function updateReminder(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed"].forEach((k) => {
+  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
   await op(
     async () => { const { error } = await supabase.from("reminders").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("reminders", id, patch),
+    "reminders.update",
   );
   emitDataChange("reminders");
 }
@@ -150,6 +212,7 @@ export async function deleteReminder(id) {
   await op(
     async () => { const { error } = await supabase.from("reminders").delete().eq("id", id); if (error) throw error; },
     () => local.remove("reminders", id),
+    "reminders.delete",
   );
   emitDataChange("reminders");
 }
@@ -164,30 +227,37 @@ export async function loadJournal() {
       return data ?? [];
     },
     () => local.list("journal").slice().sort(byDateAsc()),
+    "journal.select",
   );
 }
 
 export async function newJournalEntry({ title, entry, date }) {
-  return op(
+  await op(
     async () => { const userId = await uid(); const { error } = await supabase.from("journal").insert({ user_id: userId, title, entry, date }); if (error) throw error; },
     () => { local.insert("journal", { title, entry, date }); },
+    "journal.insert",
   );
+  emitDataChange("journal");
 }
 
 export async function updateJournalEntry(id, fields) {
   const patch = {};
   ["title", "entry", "date"].forEach((k) => { if (fields[k] !== undefined) patch[k] = fields[k]; });
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("journal").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("journal", id, patch),
+    "journal.update",
   );
+  emitDataChange("journal");
 }
 
 export async function deleteJournalEntry(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("journal").delete().eq("id", id); if (error) throw error; },
     () => local.remove("journal", id),
+    "journal.delete",
   );
+  emitDataChange("journal");
 }
 
 /* ── Events ──────────────────────────────────── */
@@ -200,6 +270,7 @@ export async function loadEvents() {
       return data ?? [];
     },
     () => local.list("events").slice().sort(byDateAsc()),
+    "events.select",
   );
 }
 
@@ -218,6 +289,7 @@ export async function newEvent({ title, description, date, end_date, project_id,
   const result = await op(
     async () => { const userId = await uid(); const { data, error } = await supabase.from("events").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
     () => local.insert("events", row),
+    "events.insert",
   );
   emitDataChange("events");
   return result;
@@ -233,15 +305,28 @@ export async function updateEvent(id, fields) {
   await op(
     async () => { const { error } = await supabase.from("events").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("events", id, patch),
+    "events.update",
   );
   emitDataChange("events");
 }
 
+/** Delete an event AND the tasks it generated (reminders.event_id). */
 export async function deleteEvent(id) {
   await op(
-    async () => { const { error } = await supabase.from("events").delete().eq("id", id); if (error) throw error; },
-    () => local.remove("events", id),
+    async () => {
+      const { error: rErr } = await supabase.from("reminders").delete().eq("event_id", id);
+      if (rErr && !isMissingColumn(rErr, "event_id")) throw rErr;
+      if (rErr) console.error("[plannerApi] reminders.event_id column is missing — linked tasks were NOT deleted. Run supabase/migrations/2026-09-06-phase1.sql.", rErr.message);
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
+    },
+    () => {
+      local.list("reminders").filter((r) => r.event_id != null && String(r.event_id) === String(id)).forEach((r) => local.remove("reminders", r.id));
+      local.remove("events", id);
+    },
+    "events.delete",
   );
+  emitDataChange("reminders");
   emitDataChange("events");
 }
 
@@ -270,6 +355,7 @@ export async function loadTransactions() {
       return data ?? [];
     },
     () => local.list("transactions").slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))),
+    "transactions.select",
   );
 }
 
@@ -290,6 +376,7 @@ export async function loadTransactionsPaginated(page = 0, pageSize = 50) {
       const all = local.list("transactions").slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
       return { rows: all.slice(from, to + 1), total: all.length, page, pageSize };
     },
+    "transactions.select",
   );
 }
 
@@ -310,44 +397,56 @@ export async function loadJournalPaginated(page = 0, pageSize = 20) {
       const all = local.list("journal").slice().sort(byDateAsc());
       return { rows: all.slice(from, to + 1), total: all.length, page, pageSize };
     },
+    "journal.select",
   );
 }
 
 export async function newTransaction(tx) {
   const row = signTx(tx);
-  return op(
+  const result = await op(
     async () => { const userId = await uid(); const { data, error } = await supabase.from("transactions").insert(signTx({ user_id: userId, ...tx })).select().single(); if (error) throw error; return data; },
     () => local.insert("transactions", row),
+    "transactions.insert",
   );
+  emitDataChange("transactions");
+  return result;
 }
 
 export async function updateTransaction(id, updates) {
   const patch = "type" in updates || "amount" in updates ? signTx(updates) : updates;
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("transactions").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("transactions", id, patch),
+    "transactions.update",
   );
+  emitDataChange("transactions");
 }
 
 export async function deleteTransaction(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("transactions").delete().eq("id", id); if (error) throw error; },
     () => local.remove("transactions", id),
+    "transactions.delete",
   );
+  emitDataChange("transactions");
 }
 
 export async function linkTransactionToRecurring(txId, recurringId) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("transactions").update({ fulfills_recurring_id: recurringId, fulfills_income_id: null }).eq("id", txId); if (error) throw error; },
     () => local.update("transactions", txId, { fulfills_recurring_id: recurringId, fulfills_income_id: null }),
+    "transactions.update",
   );
+  emitDataChange("transactions");
 }
 
 export async function linkTransactionToIncome(txId, incomeId) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("transactions").update({ fulfills_income_id: incomeId, fulfills_recurring_id: null }).eq("id", txId); if (error) throw error; },
     () => local.update("transactions", txId, { fulfills_income_id: incomeId, fulfills_recurring_id: null }),
+    "transactions.update",
   );
+  emitDataChange("transactions");
 }
 
 const DEFAULT_CONFIG = {
@@ -361,6 +460,12 @@ const DEFAULT_CONFIG = {
   transactions: [],
 };
 
+/**
+ * Load the budget config. THROWS on any failure — it never hands back defaults
+ * for a config that might exist (a default that gets autosaved is how every
+ * bill and income row got wiped once). Defaults appear only for a genuinely
+ * fresh account (no config row yet), which the DB tells us apart from an error.
+ */
 export async function loadBudgetConfig() {
   return op(
     async () => {
@@ -391,12 +496,25 @@ export async function loadBudgetConfig() {
         transactions: [],
       };
     },
-    () => local.singleton("budget_config") || { ...DEFAULT_CONFIG },
+    () => {
+      // Local mode only. No saved singleton = first run in this browser, which
+      // is a fresh account, not a failed load.
+      const saved = local.singleton("budget_config");
+      if (!saved) console.warn("[plannerApi] local mode: no budget_config saved yet — starting from defaults.");
+      return saved || { ...DEFAULT_CONFIG };
+    },
+    "budget_config.select",
   );
 }
 
-export async function saveBudgetConfig(config) {
-  return op(
+/**
+ * Save the budget settings + reconcile bill/income rows.
+ * `reconcile` REFUSES to delete every row when the incoming list is empty
+ * unless `{ allowEmpty: true }` is passed — an empty list is far more often a
+ * bug (default state, failed load) than an intent to clear the table.
+ */
+export async function saveBudgetConfig(config, { allowEmpty = false } = {}) {
+  await op(
     async () => {
       const userId = await uid();
       // 1) Settings live in the (single-row) config — bills/income/transactions
@@ -421,44 +539,82 @@ export async function saveBudgetConfig(config) {
           user_id: userId,
           data: { ...o },
         }));
-        if (rows.length) {
-          const { error: upErr } = await supabase.from(table).upsert(rows, { onConflict: "id" });
-          if (upErr) throw upErr;
+        if (rows.length === 0) {
+          if (!allowEmpty) {
+            console.error(`[plannerApi] saveBudgetConfig: refusing to delete every ${table} row — the incoming list is empty. Pass { allowEmpty: true } if clearing the table is intended.`);
+            return;
+          }
+          const { error: delErr } = await supabase.from(table).delete().eq("user_id", userId);
+          if (delErr) throw delErr;
+          return;
         }
+        const { error: upErr } = await supabase.from(table).upsert(rows, { onConflict: "id" });
+        if (upErr) throw upErr;
         const keep = rows.map((r) => `"${r.id}"`).join(",");
-        const del = supabase.from(table).delete().eq("user_id", userId);
-        const { error: delErr } = rows.length ? await del.not("id", "in", `(${keep})`) : await del;
+        const { error: delErr } = await supabase.from(table).delete().eq("user_id", userId).not("id", "in", `(${keep})`);
         if (delErr) throw delErr;
       };
       await reconcile("recurring_bills", config.recurringBills);
       await reconcile("income_sources", config.incomeSources);
     },
-    () => local.setSingleton("budget_config", {
-      categories: config.categories,
-      incomeSources: config.incomeSources,
-      recurringBills: config.recurringBills,
-      categoryBudgets: config.categoryBudgets ?? {},
-      savingsGoals: config.savingsGoals ?? [],
-      taxRate: config.taxRate ?? 0.18,
-      startingBalance: config.startingBalance ?? 0,
-      paySchedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
-      simulations: config.simulations ?? [],
-      transactions: [],
-    }),
+    () => {
+      const prev = local.singleton("budget_config") || {};
+      const keepIfRefused = (key) => {
+        const list = config[key];
+        if (Array.isArray(list) && list.length === 0 && !allowEmpty && (prev[key] || []).length > 0) {
+          console.error(`[plannerApi] saveBudgetConfig (local): refusing to clear ${key} — incoming list is empty. Pass { allowEmpty: true } if intended.`);
+          return prev[key];
+        }
+        return list;
+      };
+      local.setSingleton("budget_config", {
+        categories: config.categories,
+        incomeSources: keepIfRefused("incomeSources"),
+        recurringBills: keepIfRefused("recurringBills"),
+        categoryBudgets: config.categoryBudgets ?? {},
+        savingsGoals: config.savingsGoals ?? [],
+        taxRate: config.taxRate ?? 0.18,
+        startingBalance: config.startingBalance ?? 0,
+        paySchedule: config.paySchedule ?? DEFAULT_CONFIG.paySchedule,
+        simulations: config.simulations ?? [],
+        transactions: [],
+      });
+    },
+    "budget_config.upsert",
   );
+  emitDataChange("budget_config");
 }
 
-function genId(prefix = "id") {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+/**
+ * "Due on the 15th" → a concrete anchor date: this month's 15th, or next
+ * month's if that has already passed. Clamps to the last day of short months.
+ * Returns null for anything that isn't a day-of-month.
+ */
+export function startDateFromDueDay(dueDay, today = new Date()) {
+  const day = Number(dueDay);
+  if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+  const onMonth = (y, m) => new Date(y, m, Math.min(day, new Date(y, m + 1, 0).getDate()));
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let d = onMonth(today.getFullYear(), today.getMonth());
+  if (d < todayMidnight) d = onMonth(today.getFullYear(), today.getMonth() + 1);
+  return toDateStr(d);
+}
+
+function localBudgetPatch(mutate) {
+  const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG };
+  mutate(cfg);
+  local.setSingleton("budget_config", cfg);
 }
 
 export async function addIncomeSource(source) {
   const row = { id: genId("inc"), frequency: "monthly", ...source };
+  if (!row.startDate && row.dueDay != null) row.startDate = startDateFromDueDay(row.dueDay);
   await op(
     async () => { const userId = await uid(); const { error } = await supabase.from("income_sources").insert({ id: row.id, user_id: userId, data: row }); if (error) throw error; },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = [...(cfg.incomeSources || []), row]; local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.incomeSources = [...(cfg.incomeSources || []), row]; }),
+    "income_sources.insert",
   );
+  emitDataChange("budget_config");
   return row;
 }
 export async function updateIncomeSource(id, updates) {
@@ -469,21 +625,30 @@ export async function updateIncomeSource(id, updates) {
       const { error: e2 } = await supabase.from("income_sources").update({ data: { ...data.data, ...updates, id } }).eq("id", id);
       if (e2) throw e2;
     },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = (cfg.incomeSources || []).map((s2) => s2.id === id ? { ...s2, ...updates } : s2); local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.incomeSources = (cfg.incomeSources || []).map((s2) => s2.id === id ? { ...s2, ...updates } : s2); }),
+    "income_sources.update",
   );
+  emitDataChange("budget_config");
 }
 export async function deleteIncomeSource(id) {
   await op(
     async () => { const { error } = await supabase.from("income_sources").delete().eq("id", id); if (error) throw error; },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.incomeSources = (cfg.incomeSources || []).filter((s2) => s2.id !== id); local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.incomeSources = (cfg.incomeSources || []).filter((s2) => s2.id !== id); }),
+    "income_sources.delete",
   );
+  emitDataChange("budget_config");
 }
 export async function addRecurringBill(bill) {
   const row = { id: genId("rb"), frequency: "monthly", autoPay: false, ...bill };
+  // Agent-created bills usually say "due on the 15th" — give the scheduler a
+  // real anchor so the bill actually appears in upcoming lists.
+  if (!row.startDate && row.dueDay != null) row.startDate = startDateFromDueDay(row.dueDay);
   await op(
     async () => { const userId = await uid(); const { error } = await supabase.from("recurring_bills").insert({ id: row.id, user_id: userId, data: row }); if (error) throw error; },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = [...(cfg.recurringBills || []), row]; local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.recurringBills = [...(cfg.recurringBills || []), row]; }),
+    "recurring_bills.insert",
   );
+  emitDataChange("budget_config");
   return row;
 }
 export async function updateRecurringBill(id, updates) {
@@ -494,14 +659,18 @@ export async function updateRecurringBill(id, updates) {
       const { error: e2 } = await supabase.from("recurring_bills").update({ data: { ...data.data, ...updates, id } }).eq("id", id);
       if (e2) throw e2;
     },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = (cfg.recurringBills || []).map((b) => b.id === id ? { ...b, ...updates } : b); local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.recurringBills = (cfg.recurringBills || []).map((b) => b.id === id ? { ...b, ...updates } : b); }),
+    "recurring_bills.update",
   );
+  emitDataChange("budget_config");
 }
 export async function deleteRecurringBill(id) {
   await op(
     async () => { const { error } = await supabase.from("recurring_bills").delete().eq("id", id); if (error) throw error; },
-    async () => { const cfg = local.singleton("budget_config") || { ...DEFAULT_CONFIG }; cfg.recurringBills = (cfg.recurringBills || []).filter((b) => b.id !== id); local.setSingleton("budget_config", cfg); },
+    async () => localBudgetPatch((cfg) => { cfg.recurringBills = (cfg.recurringBills || []).filter((b) => b.id !== id); }),
+    "recurring_bills.delete",
   );
+  emitDataChange("budget_config");
 }
 export async function addIncome(income) { return addIncomeSource(income); }
 
@@ -515,30 +684,74 @@ export async function loadProjects() {
       return data ?? [];
     },
     () => local.list("projects"),
+    "projects.select",
   );
 }
 
 export async function newProject({ name, description, color, parent_id }) {
   const row = { name, description: description || "", color: color || "var(--accent)" };
   if (parent_id) row.parent_id = parent_id;
-  return op(
+  const result = await op(
     async () => { const userId = await uid(); const { data, error } = await supabase.from("projects").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
     () => local.insert("projects", row),
+    "projects.insert",
   );
+  emitDataChange("projects");
+  return result;
 }
 
 export async function updateProject(id, updates) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("projects").update(updates).eq("id", id); if (error) throw error; },
     () => local.update("projects", id, updates),
+    "projects.update",
   );
+  emitDataChange("projects");
 }
 
+/** The project plus every sub-project under it (any depth), root first. */
+function descendantIds(projects, rootId) {
+  const ids = [String(rootId)];
+  for (let i = 0; i < ids.length; i++) {
+    for (const p of projects) {
+      if (p.parent_id != null && String(p.parent_id) === ids[i] && !ids.includes(String(p.id))) ids.push(String(p.id));
+    }
+  }
+  return ids;
+}
+
+/**
+ * Delete a project, its sub-projects, and every task/event attached to any
+ * of them. The FK on reminders/events is ON DELETE SET NULL, so without this
+ * the tasks would survive as orphans.
+ */
 export async function deleteProject(id) {
-  return op(
-    async () => { const { error } = await supabase.from("projects").delete().eq("id", id); if (error) throw error; },
-    () => local.remove("projects", id),
+  await op(
+    async () => {
+      const userId = await uid();
+      const { data: all, error: pErr } = await supabase.from("projects").select("id, parent_id").eq("user_id", userId);
+      if (pErr) throw pErr;
+      const ids = descendantIds(all || [], id);
+      for (const table of ["reminders", "events"]) {
+        const { error } = await supabase.from(table).delete().in("project_id", ids);
+        if (error) throw error;
+      }
+      // Deepest first, so a DB without ON DELETE CASCADE on parent_id still works.
+      for (const pid of ids.slice().reverse()) {
+        const { error } = await supabase.from("projects").delete().eq("id", pid);
+        if (error) throw error;
+      }
+    },
+    () => {
+      const ids = descendantIds(local.list("projects"), id);
+      for (const table of ["reminders", "events", "initiatives"]) {
+        local.list(table).filter((r) => r.project_id != null && ids.includes(String(r.project_id))).forEach((r) => local.remove(table, r.id));
+      }
+      ids.slice().reverse().forEach((pid) => local.remove("projects", pid));
+    },
+    "projects.delete",
   );
+  ["reminders", "events", "initiatives", "projects"].forEach((c) => emitDataChange(c));
 }
 
 /* ── Event Types ─────────────────────────────── */
@@ -551,29 +764,37 @@ export async function loadEventTypes() {
       return data ?? [];
     },
     () => local.list("event_types"),
+    "event_types.select",
   );
 }
 
 export async function newEventType({ name, color, auto_tasks }) {
   const row = { name, color: color || "#22d3ee", auto_tasks: auto_tasks || [] };
-  return op(
+  const result = await op(
     async () => { const userId = await uid(); const { data, error } = await supabase.from("event_types").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
     () => local.insert("event_types", row),
+    "event_types.insert",
   );
+  emitDataChange("event_types");
+  return result;
 }
 
 export async function updateEventType(id, updates) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("event_types").update(updates).eq("id", id); if (error) throw error; },
     () => local.update("event_types", id, updates),
+    "event_types.update",
   );
+  emitDataChange("event_types");
 }
 
 export async function deleteEventType(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("event_types").delete().eq("id", id); if (error) throw error; },
     () => local.remove("event_types", id),
+    "event_types.delete",
   );
+  emitDataChange("event_types");
 }
 
 /* ── Initiatives ─────────────────────────────── */
@@ -588,31 +809,38 @@ export async function loadInitiatives(projectId) {
       return data ?? [];
     },
     () => local.list("initiatives").filter((i) => !projectId || String(i.project_id) === String(projectId)),
+    "initiatives.select",
   );
 }
 
 export async function newInitiative({ project_id, name, description, recurrence }) {
   const row = { project_id: project_id || null, name, description: description || "", recurrence: recurrence || "weekly", active: true };
-  return op(
+  await op(
     async () => { const userId = await uid(); const { error } = await supabase.from("initiatives").insert({ user_id: userId, ...row }); if (error) throw error; },
     () => { local.insert("initiatives", row); },
+    "initiatives.insert",
   );
+  emitDataChange("initiatives");
 }
 
 export async function updateInitiative(id, fields) {
   const patch = {};
   ["name", "description", "recurrence", "project_id", "active"].forEach((k) => { if (fields[k] !== undefined) patch[k] = fields[k]; });
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("initiatives").update(patch).eq("id", id); if (error) throw error; },
     () => local.update("initiatives", id, patch),
+    "initiatives.update",
   );
+  emitDataChange("initiatives");
 }
 
 export async function deleteInitiative(id) {
-  return op(
+  await op(
     async () => { const { error } = await supabase.from("initiatives").delete().eq("id", id); if (error) throw error; },
     () => local.remove("initiatives", id),
+    "initiatives.delete",
   );
+  emitDataChange("initiatives");
 }
 
 /* ── Auth ────────────────────────────────────── */
@@ -694,19 +922,19 @@ Write Scott a short, friendly, personalised morning briefing (3-5 sentences). Co
 }
 
 export async function loadAgentActions(limit = 20) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-  if (!userId) return [];
+  if (isLocalMode()) return [];
+  const userId = await getUserId();
+  if (!userId) return []; // signed out: nothing to show, not an error
   // Column is `agent_id` (Phase 0 renamed it from `tier`). Selecting the old
-  // name made PostgREST error, and the `if (error) return []` below turned that
-  // into a permanently empty "Frodo's recent actions" card.
+  // name made PostgREST error, and a swallowed error here once turned into a
+  // permanently empty "Frodo's recent actions" card — so it throws now.
   const { data, error } = await supabase
     .from("agent_actions")
     .select("id, agent_id, tool, collection, item_id, args, status, error, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) return [];
+  if (error) throw new Error(`Supabase agent_actions.select: ${error.message}`);
   return data || [];
 }
 

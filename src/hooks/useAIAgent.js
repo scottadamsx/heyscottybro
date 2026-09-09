@@ -201,7 +201,7 @@ export default function useAIAgent() {
         const data = await callClaude({
           model: tier.model,
           max_tokens: 4096,
-          system: [{ type: "text", text: buildSystemPrompt(tier), cache_control: { type: "ephemeral" } }],
+          system: [{ type: "text", text: await buildSystemPrompt(tier), cache_control: { type: "ephemeral" } }],
           tools: passTool ? [...TOOLS, passTool] : TOOLS,
           messages: withCacheMarkers(msgs),
         }, authHeaders);

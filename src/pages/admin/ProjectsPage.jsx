@@ -88,12 +88,12 @@ export default function ProjectsPage() {
     const time = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
     return range + time;
   };
-  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); setShowEventForm(false); await loadAll(); };
-  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); setEditingEvent(null); await loadAll(); };
+  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); setShowEventForm(false); await loadProjectDetail(selected); };
+  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); setEditingEvent(null); await loadProjectDetail(selected); };
   const removeEvent = async (e) => {
     if (!await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) return;
     setProjectEvents((prev) => prev.filter((x) => x.id !== e.id));
-    try { await deleteEvent(e.id); } catch (err) { addToast("Couldn't delete: " + err.message, "error"); loadAll(); }
+    try { await deleteEvent(e.id); } catch (err) { addToast("Couldn't delete: " + err.message, "error"); loadProjectDetail(selected); }
   };
 
   const [showProjectForm, setShowProjectForm] = useState(false);

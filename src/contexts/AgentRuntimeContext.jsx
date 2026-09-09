@@ -3,7 +3,7 @@ import { runAgent } from "../agents/runAgent";
 import { runOverseer as runOverseerAgent } from "../agents/overseer";
 import { getAuthHeaders } from "../utils/supabase";
 import { loadAgentActions } from "../api/plannerApi";
-import { loadAgentSessions, saveAgentSession, ccSessionKey } from "../api/agentSessionsApi";
+import { loadAgentSessions, saveAgentSession, clearAgentSession, ccSessionKey } from "../api/agentSessionsApi";
 import { useToast } from "./ToastContext";
 
 /**
@@ -127,11 +127,16 @@ export function AgentRuntimeProvider({ children }) {
       return { ...prev, [agent.id]: { convo, display: [...t.display, { role: "user", text: trimmed, images }] } };
     });
     setInputFor(agent.id, "");
+    // Last fully-completed tool exchange. If the run dies mid-loop AFTER tools
+    // ran, this is what we keep so the next turn knows what already changed
+    // (mirrors useAIAgent's `committed`).
+    let committed = null;
     try {
       const authHeaders = await getAuthHeaders();
       const { text: reply, history } = await runAgent({
         agent, messages: convo, authHeaders,
         onStatus: (s) => setStatusFor(agent.id, s),
+        onCommit: (h) => { committed = h; },
       });
       let saved;
       setThreads((prev) => {
@@ -142,25 +147,52 @@ export function AgentRuntimeProvider({ children }) {
       if (saved) persistThread(agent.id, saved);
       refreshActions();
     } catch (e) {
-      pushDisplay(agent.id, { role: "error", text: e.message || "Something went wrong." });
+      const msg = e.message || "Something went wrong.";
+      // Close with an assistant turn so roles still alternate on the next send.
+      const partial = committed
+        ? [...committed, { role: "assistant", content: [{ type: "text", text: `(turn interrupted: ${msg})` }] }]
+        : null;
+      let saved;
+      setThreads((prev) => {
+        const t = prev[agent.id] || { convo: [], display: [] };
+        saved = { convo: partial || t.convo, display: [...t.display, { role: "error", text: msg }] };
+        return { ...prev, [agent.id]: saved };
+      });
+      if (saved) persistThread(agent.id, saved);
+      if (partial) refreshActions();
     } finally {
       setBusyFor(agent.id, false);
       setStatusFor(agent.id, "");
     }
-  }, [setBusyFor, setInputFor, setStatusFor, pushDisplay, refreshActions, persistThread]);
+  }, [setBusyFor, setInputFor, setStatusFor, refreshActions, persistThread]);
+
+  /** Wipe one agent's thread (state + the agent_sessions row). Throws on a
+   *  storage failure so the caller can say so — never a silent no-op. */
+  const clearThread = useCallback(async (id) => {
+    if (busyRef.current[id]) throw new Error(`${id} is still working — wait for it to finish.`);
+    await clearAgentSession(ccSessionKey(id));
+    setThreads((prev) => { const next = { ...prev }; delete next[id]; return next; });
+  }, []);
 
   const runOverseer = useCallback(async () => {
     const id = "galadriel";
     if (busyRef.current[id]) return;
     setSelectedId(id);
     setBusyFor(id, true);
-    pushDisplay(id, { role: "user", text: "Run today's summary and file it into the Brain." });
+    pushDisplay(id, { role: "user", text: "Run yesterday's summary and file it into the Brain." });
     try {
       const authHeaders = await getAuthHeaders();
-      const { text } = await runOverseerAgent({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
-      pushDisplay(id, { role: "assistant", text });
-      setThreads((prev) => { if (prev[id]) persistThread(id, prev[id]); return prev; });
-      addToast("Galadriel filed today's summary into the Brain.", "success");
+      const { text, history } = await runOverseerAgent({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
+      // Compute the next thread inside the updater, persist OUTSIDE it — an
+      // updater must stay pure (React may run it twice).
+      let saved;
+      setThreads((prev) => {
+        const t = prev[id] || { convo: [], display: [] };
+        saved = { convo: history, display: [...t.display, { role: "assistant", text }] };
+        return { ...prev, [id]: saved };
+      });
+      if (saved) persistThread(id, saved);
+      addToast("Galadriel filed the daily summary into the Brain.", "success");
       refreshActions();
     } catch (e) {
       pushDisplay(id, { role: "error", text: e.message || "Run failed." });
@@ -273,7 +305,7 @@ export function AgentRuntimeProvider({ children }) {
     selectedId, setSelectedId, view, setView,
     // API agents
     threads, busy, statuses, inputs,
-    setInputFor, sendTo, runOverseer, actions, refreshActions,
+    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions,
     // local agent (Aulë)
     aule: {
       configured: auleConfigured,
@@ -282,7 +314,7 @@ export function AgentRuntimeProvider({ children }) {
     },
     auleConnect, auleTurnOn, aulePickRepo, auleSend, auleInterrupt,
   }), [
-    selectedId, view, threads, busy, statuses, inputs, setInputFor, sendTo, runOverseer,
+    selectedId, view, threads, busy, statuses, inputs, setInputFor, sendTo, clearThread, runOverseer,
     actions, refreshActions, auleConfigured, auleStatus, auleRepos, auleCwd, auleThread,
     auleBusy, auleStatusLine, auleStarting, auleRecent, auleConnect, auleTurnOn,
     aulePickRepo, auleSend, auleInterrupt,

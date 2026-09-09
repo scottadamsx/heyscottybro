@@ -1,13 +1,14 @@
-export const STORAGE_KEY = "weed_tracker_v3";
+export const WEED_SCHEMA = 1;
 export const DAY = 86400000;
 export const GRAM_PRESETS = [0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5];
 export const TAPER_INTERVAL = 3; // days between cap reductions
 export const TAPER_STEP = 0.2;   // grams per reduction
+export const TAPER_FLOOR_G = 0.1; // the cap never tapers below this
 export const FLOWER_THC_PCT = 30;
 
 export function freshState() {
   return {
-    activeProfile: "scott",
+    schema: WEED_SCHEMA,
     sharedDailyCapG: 1.5,
     penGramEquiv: 0.1,
     scott: {
@@ -15,34 +16,39 @@ export function freshState() {
       taperStart: null,
       logs: [],
     },
-    maria: {
-      cartridgeMg: 1000,
-      mgPerSec: 1.5,
-      hitSec: 6,
-      daysTarget: 14,
-      taperEnabled: true,
-      taperStart: null,
-      penStart: Date.now(),
-      logs: [],
-    },
   };
 }
 
-export function loadData() {
-  try {
-    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (d) {
-      const fresh = freshState();
-      return {
-        ...fresh, ...d,
-        sharedDailyCapG: d.sharedDailyCapG ?? d.scott?.dailyCapG ?? fresh.sharedDailyCapG,
-        penGramEquiv: d.penGramEquiv ?? fresh.penGramEquiv,
-        scott: { ...fresh.scott, ...(d.scott || {}) },
-        maria: { ...fresh.maria, ...(d.maria || {}) },
-      };
-    }
-  } catch { /* ignore */ }
-  return freshState();
+/**
+ * Validate + upgrade a stored blob. Throws on a shape this app does not
+ * understand (QF-3) instead of quietly resetting to a fresh tracker.
+ * Upgrades: legacy `scott.dailyCapG` → `sharedDailyCapG`; the retired
+ * `maria` profile and `activeProfile` switch are dropped.
+ */
+export function normalizeWeedState(d) {
+  if (d == null) return freshState();
+  if (typeof d !== "object" || Array.isArray(d)) {
+    throw new Error(`Unrecognised wind-down state: expected an object, got ${Array.isArray(d) ? "an array" : typeof d}`);
+  }
+  const schema = d.schema ?? 0;
+  if (schema !== 0 && schema !== WEED_SCHEMA) {
+    throw new Error(`Unrecognised wind-down schema ${schema} (this app understands schema ${WEED_SCHEMA}) — refusing to load so nothing is overwritten`);
+  }
+  if (d.scott != null && (typeof d.scott !== "object" || (d.scott.logs != null && !Array.isArray(d.scott.logs)))) {
+    throw new Error("Unrecognised wind-down state: profile logs are not an array — refusing to load so nothing is overwritten");
+  }
+  const fresh = freshState();
+  const scott = d.scott || {};
+  return {
+    schema: WEED_SCHEMA,
+    sharedDailyCapG: Number(d.sharedDailyCapG ?? scott.dailyCapG ?? fresh.sharedDailyCapG),
+    penGramEquiv: Number(d.penGramEquiv ?? fresh.penGramEquiv),
+    scott: {
+      taperEnabled: scott.taperEnabled ?? fresh.scott.taperEnabled,
+      taperStart: scott.taperStart ?? null,
+      logs: Array.isArray(scott.logs) ? scott.logs : [],
+    },
+  };
 }
 
 export function genId() {
@@ -71,13 +77,18 @@ export function taperDays(taperStart) {
 export function taperedCapG(capG, profile) {
   if (!profile.taperEnabled || !profile.taperStart) return capG;
   const intervals = Math.floor(taperDays(profile.taperStart) / TAPER_INTERVAL);
-  return Math.max(0.1, +(capG - intervals * TAPER_STEP).toFixed(2));
+  return Math.max(TAPER_FLOOR_G, +(capG - intervals * TAPER_STEP).toFixed(2));
 }
 
-export function gramsOf(logs, conv) {
-  return logs.reduce((a, l) => {
-    if (l.grams != null) return a + (Number(l.grams) || 0);
-    if (l.type === "hit" || !l.type) return a + conv;
-    return a;
-  }, 0);
+/**
+ * Days from now until the taper reaches TAPER_FLOOR_G, given the CURRENT
+ * tapered cap (so the figure counts down as reductions land — QF-6).
+ * null when no taper is running; 0 once the floor is reached.
+ */
+export function daysToTaperFloor(effectiveCapG, profile) {
+  if (!profile.taperEnabled || !profile.taperStart) return null;
+  const stepsLeft = Math.max(0, Math.ceil((effectiveCapG - TAPER_FLOOR_G) / TAPER_STEP - 1e-9));
+  if (stepsLeft === 0) return 0;
+  const untilNext = TAPER_INTERVAL - (taperDays(profile.taperStart) % TAPER_INTERVAL);
+  return untilNext + (stepsLeft - 1) * TAPER_INTERVAL;
 }
