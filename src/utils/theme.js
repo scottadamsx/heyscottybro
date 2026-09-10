@@ -17,6 +17,8 @@ export const THEMES = [
   { id: "backyard", label: "My Backyard", hint: "Sky, grass, cedar, and patio tones", icon: "fa-solid fa-tree" },
   { id: "never86", label: "Never86", hint: "Midnight black + warning red mission mode", icon: "fa-solid fa-triangle-exclamation" },
   { id: "arcade", label: "Arcade Neon", hint: "CRT glow and electric candy accents", icon: "fa-solid fa-gamepad" },
+  { id: "mario", label: "Mushroom Kingdom", hint: "Sky blue, coin gold, and chunky rounded panels", icon: "fa-solid fa-coins" },
+  { id: "ps3", label: "XMB", hint: "Deep navy, wave-glow horizon, cool blue highlight", icon: "fa-solid fa-play" },
 ];
 export const DEFAULT_THEME = "light";
 const THEME_COLOR = {
@@ -29,6 +31,8 @@ const THEME_COLOR = {
   backyard: "#A9D3F4",
   never86: "#140D11",
   arcade: "#100822",
+  mario: "#7EC8F2",
+  ps3: "#0A1729",
 };
 
 export function isTheme(id) { return THEMES.some((t) => t.id === id); }

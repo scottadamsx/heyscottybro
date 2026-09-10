@@ -544,6 +544,126 @@
   --font-display: "Archivo", "Hanken Grotesk", sans-serif;
 }
 
+/* An original theme in the spirit of a Nintendo DS Mario game's menu — bright
+   Mushroom Kingdom sky, coin gold, pipe green, chunky rounded "block" panels
+   with a flat offset shadow instead of a soft blur. Not a reproduction of any
+   copyrighted Nintendo artwork, logo, or character — colours and shapes only,
+   same as this app's Minecraft/arcade packs. */
+:root[data-theme="mario"] {
+  color-scheme: light;
+  --bg-base: #7EC8F2;
+  --bg-surface: #FFFDF5;
+  --bg-card: #FFFFFF;
+  --bg-raised: #FFF3C4;
+  --bg-hover: #FFE9A8;
+  --canvas-bg:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 9%),
+    radial-gradient(circle at 82% 12%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 8%),
+    radial-gradient(circle at 65% 28%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 7%),
+    linear-gradient(180deg, #4FB6F5 0%, #7EC8F2 45%, #A9DCF7 100%);
+  --canvas-dot: rgba(255,255,255,0.3);
+
+  --border-subtle: rgba(94,54,20,0.2);
+  --border-primary: rgba(94,54,20,0.36);
+  --border-accent: rgba(229,37,33,0.55);
+  --line: rgba(94,54,20,0.2);
+
+  --text-primary: #3A2210;
+  --text-secondary: #7A4A22;
+  --text-muted: #A07C55;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #E52521;
+  --accent-deep: #B81E1A;
+  --accent-light: #FF5A46;
+  --accent-bg: rgba(229,37,33,0.12);
+  --accent-glow: rgba(229,37,33,0.35);
+  --cyan: #049CD8;
+  --green: #43B047;
+  --red: #E52521;
+  --red-deep: #B81E1A;
+  --orange: #F7A81B;
+
+  --success-bg: rgba(67,176,71,0.18);
+  --danger-bg: rgba(229,37,33,0.14);
+  --warn-bg: rgba(247,168,27,0.2);
+  --info-bg: rgba(4,156,216,0.14);
+
+  --overlay: rgba(30,15,5,0.45);
+  --shadow-card: 0 3px 0 rgba(94,54,20,0.3), 0 1px 2px rgba(20,10,5,0.15);
+  --shadow-floating: 0 6px 0 rgba(94,54,20,0.32), 0 16px 30px rgba(20,10,5,0.24);
+  --shadow-modal: 0 10px 0 rgba(94,54,20,0.36), 0 32px 64px rgba(20,10,5,0.34);
+
+  --grad-card: linear-gradient(180deg, #FFFDF5 0%, #FFF3C4 100%);
+  --grad-accent: linear-gradient(180deg, #FF6B54 0%, #E52521 58%, #B81E1A 100%);
+  --chrome-bg: rgba(255,253,245,0.92);
+
+  --font-body: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-display: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-mono: "Lucida Console", Consolas, monospace;
+  --letter-spacing-body: 0;
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --radius-xl: 34px;
+}
+
+/* An original theme in the spirit of the PlayStation 3's XMB (XrossMediaBar)
+   menu — the deep-space navy, the soft wave-glow horizon, the cool blue
+   highlight, clean minimal type. Not a reproduction of Sony's proprietary
+   font or any copyrighted artwork — colours, glow and shape only. */
+:root[data-theme="ps3"] {
+  color-scheme: dark;
+  --bg-base: #060B14;
+  --bg-surface: #0A121F;
+  --bg-card: #101A2C;
+  --bg-raised: #16233A;
+  --bg-hover: #1D2E4A;
+  --canvas-bg: radial-gradient(ellipse 90% 60% at 50% 28%, #1E4576 0%, #123157 32%, #0A1729 62%, #050810 100%);
+  --canvas-dot: rgba(120,190,255,0.06);
+
+  --border-subtle: rgba(140,190,255,0.14);
+  --border-primary: rgba(140,190,255,0.26);
+  --border-accent: rgba(80,170,255,0.55);
+  --line: rgba(140,190,255,0.14);
+
+  --text-primary: #EAF3FF;
+  --text-secondary: #A9C4E8;
+  --text-muted: #6F87AC;
+  --text-on-accent: #FFFFFF;
+
+  --accent: #3AA0FF;
+  --accent-deep: #1D6CB8;
+  --accent-light: #6FC0FF;
+  --accent-bg: rgba(58,160,255,0.14);
+  --accent-glow: rgba(58,160,255,0.42);
+  --cyan: #4FD8E8;
+  --green: #4E9F5C;
+  --red: #D0413B;
+  --red-deep: #A32F2A;
+  --orange: #E0973D;
+
+  --success-bg: rgba(78,159,92,0.18);
+  --danger-bg: rgba(208,65,59,0.18);
+  --warn-bg: rgba(224,151,61,0.2);
+  --info-bg: rgba(58,160,255,0.16);
+
+  --overlay: rgba(2,5,10,0.65);
+  --shadow-card: 0 0 0 1px rgba(80,170,255,0.14), 0 4px 14px rgba(0,0,0,0.4);
+  --shadow-floating: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(58,160,255,0.16);
+  --shadow-modal: 0 40px 90px rgba(0,0,0,0.75), 0 0 50px rgba(58,160,255,0.2);
+
+  --grad-card: linear-gradient(180deg, #16233A 0%, #101A2C 100%);
+  --grad-accent: linear-gradient(180deg, #6FC0FF 0%, #3AA0FF 55%, #1D6CB8 100%);
+  --chrome-bg: rgba(10,18,31,0.82);
+
+  --font-body: "Geist", "Century Gothic", "Segoe UI", sans-serif;
+  --font-display: "Geist", "Century Gothic", "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", Consolas, monospace;
+  --letter-spacing-body: 0.01em;
+}
+
 html { background: var(--bg-base); }
 
 /* The admin shell inherits the active theme; the only thing it still owns is
