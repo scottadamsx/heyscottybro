@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
+import JournalPage from "./JournalPage";
 import NutritionPage from "./NutritionPage";
 import RecipesPage from "./RecipesPage";
 import GymTracker from "../../components/tools/GymTracker";
@@ -9,15 +10,17 @@ import ArcadePage from "./ArcadePage";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
 
 /**
- * LIFE — health & happiness in one space: Food (nutrition), Recipes, Fitness
- * (gym log, promoted out of the old Tools junk drawer), Habits, and the
- * optional Smoke tracker. Answers: "am I healthy and happy?"
+ * LIFE — health & happiness in one space: Journal (moved here from Plan —
+ * Plan is calendar/reminders/events/work only), Food (nutrition), Recipes,
+ * Fitness (gym log, promoted out of the old Tools junk drawer), Habits, and
+ * the optional Smoke tracker. Answers: "am I healthy and happy?"
  */
 export default function LifePage() {
   const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
   const [params, setParams] = useSearchParams();
 
   const TABS = [
+    { key: "journal", label: "Journal", icon: "fa-book" },
     { key: "food",    label: "Food",    icon: "fa-apple-whole" },
     { key: "recipes", label: "Recipes", icon: "fa-utensils" },
     { key: "fitness", label: "Fitness", icon: "fa-dumbbell" },
@@ -39,6 +42,7 @@ export default function LifePage() {
         <PageTabs tabs={TABS} active={tab} onChange={setTab} />
       </div>
       <div className="combined-embed">
+        {tab === "journal" && <JournalPage />}
         {tab === "food"    && <NutritionPage />}
         {tab === "recipes" && <RecipesPage />}
         {tab === "fitness" && <GymTracker />}

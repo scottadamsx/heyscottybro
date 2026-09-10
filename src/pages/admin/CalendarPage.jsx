@@ -572,7 +572,7 @@ export default function CalendarPage() {
                     <span className="day-count">{dayJournal.length}</span>
                   </div>
                   {dayJournal.map((j) => (
-                    <button type="button" className="day-item day-item--clickable day-journal" key={j.id} onClick={() => navigate("/admin/planner?tab=journal")} title="Open in Journal">
+                    <button type="button" className="day-item day-item--clickable day-journal" key={j.id} onClick={() => navigate("/admin/life?tab=journal")} title="Open in Journal">
                       <span className="day-item-dot" style={{ background: "var(--accent)" }} />
                       <div className="day-item-body">
                         {j.title && <div className="day-item-title">{j.title}</div>}

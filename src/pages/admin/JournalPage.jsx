@@ -101,7 +101,7 @@ export default function JournalPage() {
       <div className="module-header">
         <h1>Journal</h1>
         <button className="btn btn-sm" onClick={() => {
-          // Preserve other params (e.g. tab=journal when embedded in Planner)
+          // Preserve other params (e.g. tab=journal when embedded in Life)
           const next = new URLSearchParams(params);
           next.set("new", "1");
           next.delete("id");
@@ -185,7 +185,7 @@ export default function JournalPage() {
               key={e.id}
               className={`journal-list-item${String(e.id) === String(selectedId) ? " active" : ""}`}
               onClick={() => {
-                // Preserve other params (e.g. tab=journal when embedded in Planner)
+                // Preserve other params (e.g. tab=journal when embedded in Life)
                 const next = new URLSearchParams(params);
                 next.set("id", String(e.id));
                 next.delete("new");

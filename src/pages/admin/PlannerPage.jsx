@@ -6,13 +6,12 @@ import { useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import CalendarPage from "./CalendarPage";
 import RemindersPage from "./RemindersPage";
-import JournalPage from "./JournalPage";
 import ProjectsPage from "./ProjectsPage";
 import WorkLogPage from "./WorkLogPage";
 
+// Journal lives in Life now (Scott: Plan is calendar/reminders/events/work).
 const TABS = [
   { key: "overview",  label: "Overview",  icon: "fa-calendar-days" },
-  { key: "journal",   label: "Journal",   icon: "fa-book" },
   { key: "projects",  label: "Projects",  icon: "fa-folder-open" },
   { key: "work",      label: "Work",      icon: "fa-briefcase" },
 ];
@@ -76,12 +75,6 @@ export default function PlannerPage() {
           <div className="planner-panel planner-tasks" data-label="Tasks">
             <RemindersPage />
           </div>
-        </div>
-      )}
-
-      {tab === "journal" && (
-        <div className="combined-embed">
-          <JournalPage />
         </div>
       )}
 
