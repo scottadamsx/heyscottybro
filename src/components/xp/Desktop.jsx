@@ -39,11 +39,24 @@ const writeStore = (v) => { try { localStorage.setItem(STORE, JSON.stringify(v))
 
 let nextId = 1;
 const CASCADE = 28;
+// The rail sits BEHIND windows (by design — like any other desktop item), but
+// a window should open clear of it, not directly on top of it. Full expanded
+// rail width regardless of actual collapse state: a little extra clearance
+// when it's collapsed/hidden beats recomputing from --rail-w on every open.
+const RAIL_CLEAR = 208;
 
 export function DesktopProvider({ children, initialPath, onFocusPath }) {
   const [wins, setWins] = useState(() => {
     const saved = readStore();
-    if (saved?.wins?.length) { nextId = (saved.nextId || saved.wins.length) + 1; return saved.wins; }
+    if (saved?.wins?.length) {
+      nextId = (saved.nextId || saved.wins.length) + 1;
+      // One-time migration (2026-09-10, rail moved right → left): a window
+      // saved from before that move sits at its old x, now on top of the
+      // rail instead of clear of it. Nudge anything left of the new
+      // clearance forward; leave anything a user has deliberately dragged
+      // further right alone.
+      return saved.wins.map((w) => (w.x < RAIL_CLEAR ? { ...w, x: RAIL_CLEAR + 24 } : w));
+    }
     return [];
   });
   const areaRef = useRef(null);
@@ -59,10 +72,11 @@ export function DesktopProvider({ children, initialPath, onFocusPath }) {
   const defaultGeom = (index) => {
     const area = areaRef.current;
     const W = area?.clientWidth || 1200, H = area?.clientHeight || 800;
-    const w = Math.min(W - 16, Math.min(980, Math.max(560, Math.round(W * 0.72))));
+    const usableW = Math.max(560, W - RAIL_CLEAR);
+    const w = Math.min(usableW - 16, Math.min(980, Math.max(560, Math.round(usableW * 0.72))));
     const h = Math.min(H - 16, Math.min(760, Math.max(420, Math.round(H * 0.8))));
     const off = (index % 8) * CASCADE;
-    return { x: 24 + off, y: 16 + off, w, h };
+    return { x: RAIL_CLEAR + 24 + off, y: 16 + off, w, h };
   };
 
   const focus = useCallback((id) => setWins((ws) => ws.map((w) => (w.id === id ? { ...w, z: ++zTop.current, min: false } : w))), []);
