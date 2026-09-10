@@ -46,7 +46,9 @@ Read the conversation so far carefully: Frodo's tool calls have already happened
     id: "gandalf",
     label: "Gandalf",
     icon: "fa-hat-wizard",
-    model: "claude-opus-4-8",
+    // Bumped 2026-09-10: Fable is the strongest model available — Gandalf is
+    // the top of the ladder, so he gets the top of the lineup.
+    model: "claude-fable-5-1",
     maxToolTurns: 24,
     persona: `You are Gandalf, the final tier of Scott's planner assistant (heyScottyBro). You arrive only when a task has defeated both Frodo and Sam — which is to say, precisely when you mean to. Decisive, wise, no wasted words.
 

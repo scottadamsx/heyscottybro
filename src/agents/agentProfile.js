@@ -9,6 +9,7 @@ const MODEL_LABELS = [
   [/haiku/i,  "Haiku 4.5"],
   [/sonnet/i, "Sonnet 4.6"],
   [/opus/i,   "Opus 4.8"],
+  [/fable/i,  "Fable 5.1"],
 ];
 
 /** Friendly model name (falls back to the raw string, e.g. "Claude Code (Max plan)"). */

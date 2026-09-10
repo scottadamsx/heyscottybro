@@ -4,8 +4,11 @@
  * agents call him through the `consult_archivist` tool when they need context
  * they don't already have, instead of running many query calls themselves; he
  * searches, synthesises, and reports back with sources. He runs the SAME shared
- * agent loop as Griphook the banker, on a cheap/fast model (Haiku) — exactly the
- * "spawn a subagent with the cheaper model" pattern Anthropic recommends.
+ * agent loop as Griphook the banker.
+ *
+ * Model bumped 2026-09-10 (Haiku → Opus): Bilbo is the sole Brain writer and
+ * does cross-collection synthesis for every other agent's lookups — both are
+ * jobs where a weak model's mistakes are expensive and hard to notice.
  *
  * Two callers:
  *  - Any agent via the `consult_archivist` tool (they delegate lookups to him).
@@ -20,7 +23,7 @@ export const ARCHIVIST = {
   name: "Bilbo",
   emoji: "",
   icon: "fa-book-bookmark",
-  model: "claude-haiku-4-5-20251001",
+  model: "claude-opus-4-8",
   tagline: "Finds anything across your data + Brain",
 };
 

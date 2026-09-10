@@ -102,8 +102,11 @@ export async function getSupabaseUser(req) {
 
 // Only the models this app actually uses may pass through the proxy, so a
 // leaked endpoint can't be used to run expensive models on our key.
-// Frodo (haiku) → Sam (sonnet) → Gandalf (opus) escalation ladder.
-const ALLOWED_MODELS = new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-8"]);
+// Frodo (sonnet) → Sam (sonnet) → Gandalf (fable) escalation ladder; Bilbo
+// the archivist and Griphook the banker run as their own specialist tiers
+// (opus and sonnet respectively). Haiku is kept allowed for anything that
+// still explicitly opts into it.
+const ALLOWED_MODELS = new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-8", "claude-fable-5-1"]);
 const MAX_TOKENS_CAP = 4096;
 
 /**
