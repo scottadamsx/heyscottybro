@@ -18,15 +18,25 @@ export default function ChatBot({ onOpenChange } = {}) {
   const [expanded, setExpanded] = useState(false);
   const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
   const [dragOver, setDragOver] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory, hydrating, saveError } = useAIAgent();
   const { addToast } = useToast();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const wasLoadingRef = useRef(loading);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
   useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
   useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
+
+  // Closed the panel while Frodo was still working ("exit")? Badge the fab
+  // the moment he finishes, instead of the reply just sitting there unseen.
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading && !open) setHasUnread(true);
+    wasLoadingRef.current = loading;
+  }, [loading, open]);
+  useEffect(() => { if (open) setHasUnread(false); }, [open]);
 
   const autoGrow = () => {
     const el = textareaRef.current;
@@ -109,8 +119,10 @@ export default function ChatBot({ onOpenChange } = {}) {
 
   return (
     <>
-      <button className={`chat-fab ${open ? "open" : ""}`} onClick={() => setOpen((v) => !v)} aria-label={open ? "Close assistant" : "Open assistant"}>
+      <button className={`chat-fab ${open ? "open" : ""}`} onClick={() => setOpen((v) => !v)} aria-label={open ? "Close assistant" : hasUnread ? "Open assistant — Frodo has a reply for you" : "Open assistant"}>
         <i className={`fa-solid ${open ? "fa-xmark" : "fa-comment-dots"}`} />
+        {/* Purely decorative — the state is already in the button's aria-label above. */}
+        {hasUnread && !open && <span className="chat-fab-badge" aria-hidden="true" />}
       </button>
 
       {open && (
