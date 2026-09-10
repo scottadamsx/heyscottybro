@@ -82,10 +82,19 @@
 .admin-shell.xp-desktop .admin-rail { bottom: 45px; }
 .admin-shell.xp-desktop .chat-fab { bottom: 46px; }
 
-/* Keep rail actions clear; chat controls dock beside the rail, not on top of it. */
+/* Keep rail actions clear of the taskbar. */
 .admin-shell.xp-desktop .admin-rail { padding-bottom: 72px; }
-.admin-shell.xp-desktop .chat-fab { right: calc(var(--rail-w) + 12px); }
-.admin-shell.xp-desktop .chat-panel { right: calc(var(--rail-w) + 12px); bottom: 86px; }
+/* The rail is on the left now, so chat no longer needs to dodge it on the
+   right — but keep XP's chat as the floating "rises from the taskbar" popup
+   (matching the Luna chrome theme-xp.css applies) rather than the full-height
+   docked panel used everywhere else; a full-height dock would clash with
+   that rounded-top/flush-bottom shape. */
+.admin-shell.xp-desktop .chat-panel {
+  top: auto; left: auto; right: 1rem; bottom: 86px;
+  width: min(380px, calc(100vw - 2rem));
+  max-width: min(380px, calc(100vw - 2rem));
+  max-height: 60vh;
+}
 
 /* Rail clears the taskbar; the page's own title is redundant under a caption (its buttons stay) */
 :root[data-theme="xp"] .admin-shell.xp-desktop .admin-rail { bottom: 45px; }

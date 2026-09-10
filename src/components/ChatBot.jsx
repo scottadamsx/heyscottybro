@@ -10,7 +10,10 @@ import { useToast } from "../contexts/ToastContext";
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 
 
-export default function ChatBot() {
+// Docked full-height on the right (≥641px, see index.css) instead of a small
+// floating popover — `onOpenChange` lets AdminLayout reserve that space from
+// the page content instead of Frodo just overlapping it.
+export default function ChatBot({ onOpenChange } = {}) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
@@ -23,6 +26,7 @@ export default function ChatBot() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
   useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
 
   const autoGrow = () => {
     const el = textareaRef.current;
@@ -122,6 +126,9 @@ export default function ChatBot() {
               </button>
               <button type="button" className="btn-mini muted" onClick={clearHistory} title="Clear conversation">
                 <i className="fa-solid fa-rotate-left" /> Clear
+              </button>
+              <button type="button" className="btn-mini muted" onClick={() => setOpen(false)} title="Close" aria-label="Close assistant">
+                <i className="fa-solid fa-xmark" />
               </button>
             </div>
           </div>

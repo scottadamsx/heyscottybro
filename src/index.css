@@ -1064,7 +1064,7 @@ input, textarea, select { font-family: inherit; }
 /* ── Main nav rail (far right; expands to labels) ── */
 .admin-rail {
   position: fixed;
-  top: 0; right: 0; bottom: 0;
+  top: 0; left: 0; bottom: 0;
   z-index: 110;
   width: var(--rail-w);
   display: flex;
@@ -1075,14 +1075,14 @@ input, textarea, select { font-family: inherit; }
   background: color-mix(in srgb, var(--bg-surface) 85%, transparent);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
   overflow: hidden;
   transition: width 0.22s cubic-bezier(.2,.8,.2,1), transform 0.24s cubic-bezier(.2,.8,.2,1), opacity 0.18s;
 }
 .admin-rail::after {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; left: 0;
+  top: 0; bottom: 0; right: 0;
   width: 3px;
   background: linear-gradient(180deg,
     var(--red-flag) 0 60%, var(--pure-black) 60% 80%,
@@ -1323,10 +1323,10 @@ input, textarea, select { font-family: inherit; }
 }
 
 .admin-main {
-  margin-right: calc(var(--rail-w) + var(--subbar-w));
+  margin-left: calc(var(--rail-w) + var(--subbar-w));
   padding: 1.75rem 2.25rem;
   max-width: 1100px;
-  transition: margin-right 0.24s cubic-bezier(.2,.8,.2,1);
+  transition: margin-left 0.24s cubic-bezier(.2,.8,.2,1), margin-right 0.24s cubic-bezier(.2,.8,.2,1);
 }
 
 /* ── View toggles ──
@@ -1338,21 +1338,27 @@ input, textarea, select { font-family: inherit; }
   opacity: 0;
   pointer-events: none;
 }
-.admin-shell.sub-hidden .admin-main { margin-right: var(--rail-w); }
+.admin-shell.sub-hidden .admin-main { margin-left: var(--rail-w); }
 
 .admin-shell.menu-hidden .admin-subbar,
 .admin-shell.menu-hidden .admin-rail {
-  transform: translateX(100%);
+  transform: translateX(-100%);
   opacity: 0;
   pointer-events: none;
 }
-.admin-shell.menu-hidden .admin-main { margin-right: 0; max-width: 1200px; }
+.admin-shell.menu-hidden .admin-main { margin-left: 0; max-width: 1200px; }
 
-/* floating burger (visible only in fully-hidden mode) */
+/* Frodo docked right (≥641px, open): reserve the space instead of overlapping content. */
+@media (min-width: 641px) {
+  .admin-shell.chat-open .admin-main { margin-right: 380px; }
+}
+
+/* floating burger (visible only in fully-hidden mode) — sits on the rail's
+   edge, which is now the left. */
 .admin-rail-reopen {
   position: fixed;
   top: 1rem;
-  right: 1rem;
+  left: 1rem;
   z-index: 130;
   width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
@@ -1373,7 +1379,7 @@ input, textarea, select { font-family: inherit; }
 .admin-rail-pop {
   position: fixed;
   top: 4rem;
-  right: 1rem;
+  left: 1rem;
   z-index: 125;
   width: 230px;
   display: flex;
@@ -3500,6 +3506,9 @@ input, textarea, select { font-family: inherit; }
 }
 .chat-fab:hover { background: var(--accent-deep); transform: scale(1.06); }
 .chat-fab.open { background: var(--bg-raised); box-shadow: var(--shadow-floating); }
+/* Once the panel is open it's a docked sidebar with its own close button —
+   the floating trigger would just sit awkwardly on top of it. */
+.chat-fab.open { display: none; }
 
 @media (min-width: 641px) {
   .chat-fab { bottom: 1.5rem; }
@@ -3521,8 +3530,27 @@ input, textarea, select { font-family: inherit; }
   overflow: hidden;
   animation: chat-slide-in 0.18s ease;
 }
+/* ≥641px: Frodo docks full-height on the right, in the nav rail's old slot,
+   instead of floating over the bottom-right corner. */
 @media (min-width: 641px) {
-  .chat-panel { bottom: 5rem; max-height: 70vh; }
+  .chat-panel {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 380px;
+    max-width: 380px;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-modal);
+    animation: chat-slide-in-right 0.2s cubic-bezier(.2,.8,.2,1);
+  }
+}
+@keyframes chat-slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes chat-slide-in {
   from { opacity: 0; transform: translateY(12px) scale(0.97); }

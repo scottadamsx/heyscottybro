@@ -49,6 +49,7 @@ export default function AdminLayout() {
     () => localStorage.getItem("adminRailCollapsed") === "1"
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -82,7 +83,7 @@ export default function AdminLayout() {
   const popClass   = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
 
   // The contextual sub-sidebar was removed (Phase 0) — sub-hidden is permanent.
-  const shellClass = (hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden") + (desktopMode ? " xp-desktop" : "");
+  const shellClass = (hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden") + (desktopMode ? " xp-desktop" : "") + (chatOpen ? " chat-open" : "");
 
   const shell = (
     <div className={shellClass}>
@@ -188,7 +189,7 @@ export default function AdminLayout() {
         </main>
       )}
 
-      <ChatBot />
+      <ChatBot onOpenChange={setChatOpen} />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
 
       {/* Mobile FAB + sheet */}
