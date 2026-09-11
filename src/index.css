@@ -5050,6 +5050,9 @@ input, textarea, select { font-family: inherit; }
   flex-shrink: 0;
 }
 .combined-page-title i { margin-right: 0.5rem; color: var(--accent); }
+/* Holds the tab strip + quick actions + export; wraps the same way on mobile
+   the header itself does. */
+.combined-page-toolbar { display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap; flex: 1; }
 
 /* ── Tab strip ── */
 .page-tabs {
@@ -5082,6 +5085,43 @@ input, textarea, select { font-family: inherit; }
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
+
+/* ── Quick actions: a page's own "+ New X" pills, shown next to its tabs.
+   Each page passes a different set (PageActions), so this row changes with
+   the page instead of being one fixed toolbar. ── */
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.page-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 6px 18px -10px var(--accent-glow);
+}
+.page-action-btn i { font-size: 0.75rem; }
+.page-action-btn:hover { background: var(--accent-deep); transform: translateY(-1px); }
+.page-action-btn:active { transform: translateY(0); }
+.page-action-btn.tone-secondary {
+  background: none;
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+  box-shadow: none;
+}
+.page-action-btn.tone-secondary:hover { color: var(--text-primary); background: var(--bg-hover); }
 
 /* ── Embedded page: strip the module-page wrapper styles ── */
 .combined-embed {
