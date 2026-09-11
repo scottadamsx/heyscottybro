@@ -48,7 +48,7 @@ export default function GymTracker() {
         sets: Number(form.sets) || 1,
         notes: form.notes.trim(),
       });
-      setForm((f) => ({ ...EMPTY(), date: f.date, exercise: f.exercise })); // keep date+exercise for fast repeat sets
+      setForm((f) => ({ ...EMPTY(), date: f.date })); // keep the date (logging several exercises same day); clear everything else
       refresh();
     } catch (e) { addToast(e.message, "error"); }
   };
@@ -103,8 +103,8 @@ export default function GymTracker() {
           <div className="gym-log">
             {recent.map((w) => (
               <div className="gym-log-row" key={w.id}>
-                <span className="gym-log-date">{formatDisplayDate(w.date).split(",")[0]}</span>
                 <span className="gym-log-ex">{w.exercise}</span>
+                <span className="gym-log-date">{formatDisplayDate(w.date).split(",")[0]}</span>
                 <span className="gym-log-detail">{w.weight} lb · {w.reps}×{w.sets}</span>
                 <button className="btn-mini danger" onClick={() => remove(w.id)}><i className="fa-solid fa-xmark" /></button>
               </div>
