@@ -7,6 +7,9 @@ import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
+import { loadAccountability, logHabitDone } from "../../api/accountabilityApi";
+import { dueHabits } from "../../utils/habitSchedule";
+import DueHabitReminders from "../../components/DueHabitReminders";
 
 const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
 const toForm = (r) => ({
@@ -30,6 +33,8 @@ export default function RemindersPage() {
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
   const [list, setList] = useState([]);
+  const [habits, setHabits] = useState(null);
+  const [habitSaving, setHabitSaving] = useState(null);
   const [editing, setEditing] = useState(null); // reminder id being edited (same form panel, prefilled)
   const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -39,13 +44,20 @@ export default function RemindersPage() {
   const [showDateTime, setShowDateTime] = useState(false);
   // Computed per render (not module-level) so overdue highlighting stays
   // correct if the tab is left open past midnight.
-  const todayStr = toDateStr(new Date());
+  const [todayStr, setTodayStr] = useState(() => toDateStr(new Date()));
+  useEffect(() => {
+    const refresh = () => setTodayStr(toDateStr(new Date()));
+    const timer = window.setInterval(refresh, 30_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
+  }, []);
 
   // Loads are allSettled so one failing source can't blank the other; every
   // failure is named in a banner with a Retry (QF-3 — no silent empty list).
   const LOAD_SOURCES = [
     ["tasks", loadReminders, setList],
     ["projects", loadProjects, setProjects],
+    ["habits", loadAccountability, setHabits],
   ];
   const [loadErrors, setLoadErrors] = useState([]);
   const load = async () => {
@@ -64,6 +76,19 @@ export default function RemindersPage() {
   // Refresh when Frodo creates/updates/deletes reminders from the ChatBot
   useEffect(() => onDataChange("reminders", load), []);
   useEffect(() => onDataChange("projects", load), []);
+  useEffect(() => onDataChange("accountability", load), []);
+
+  const habitRows = useMemo(() => habits ? dueHabits(habits, todayStr) : [], [habits, todayStr]);
+  const completeHabit = async (tracker) => {
+    if (habitSaving) return;
+    setHabitSaving(tracker.id);
+    try {
+      setHabits(await logHabitDone(tracker, todayStr));
+      addToast(`${tracker.name} completed.`, "success");
+    } catch (err) {
+      addToast(`Couldn't complete habit: ${err?.message || "unknown error"}`, "error");
+    } finally { setHabitSaving(null); }
+  };
 
   const showEndOptions = form.recurrence !== "none";
   // A recurring task with no date has no occurrences — nothing to repeat.
@@ -353,6 +378,10 @@ export default function RemindersPage() {
 
         {/* Right: task list */}
         <div className="tasks-list">
+          {filter === "all" && !loadErrors.some((error) => error.startsWith("habits (")) && (habits
+            ? <DueHabitReminders rows={habitRows} busyId={habitSaving} onDone={completeHabit}
+                onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
+            : <p className="field-hint" role="status">Loading due habits…</p>)}
           <div className="db-card">
             <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Active ({active.length})</h3>
             {active.length === 0 && <p className="no-entries">No active tasks. All clear.</p>}

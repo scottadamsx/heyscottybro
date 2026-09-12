@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone } from "../../api/accountabilityApi";
+import { habitScheduleForm, scheduleFromForm, habitScheduleLabel } from "../../utils/habitSchedule";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -56,6 +57,28 @@ function monthLabels(weeks) {
   return labels;
 }
 
+
+function ScheduleFields({ value, onChange }) {
+  return <fieldset className="form-card">
+    <legend>Reminder schedule</legend>
+    <div className="form-row">
+      <label>Repeat
+        <select value={value.reminder} onChange={(e) => onChange({ ...value, reminder: e.target.value })}>
+          <option value="none">No reminder</option>
+          <option value="daily">Daily</option>
+          <option value="interval">Custom interval</option>
+        </select>
+      </label>
+      {value.reminder === "interval" && <>
+        <label>Every <input type="number" min="1" max="365" step="1" required value={value.every} onChange={(e) => onChange({ ...value, every: e.target.value })} /></label>
+        <label>Unit <select value={value.unit} onChange={(e) => onChange({ ...value, unit: e.target.value })}><option value="days">Days</option><option value="weeks">Weeks</option></select></label>
+      </>}
+      {value.reminder !== "none" && <label>First due date <input type="date" required value={value.startDate} onChange={(e) => onChange({ ...value, startDate: e.target.value })} /></label>}
+    </div>
+    <p className="acc-hist-note">When due, this habit appears in Reminders until done. Each completion starts the next interval. Missed days stay as one reminder.</p>
+  </fieldset>;
+}
+
 export default function AccountabilityPage() {
   const [params] = useSearchParams();
   const [data, setData] = useState({ trackers: [], logs: [] });
@@ -66,7 +89,7 @@ export default function AccountabilityPage() {
   const { confirm, dialog } = useConfirm();
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", emoji: "", color: "#4f7cff", mode: "count" }); // theme-fixed: user colour (default tracker colour)
+  const [form, setForm] = useState(() => ({ name: "", emoji: "", color: "#4f7cff", mode: "count", ...habitScheduleForm({ mode: "count" }, toDateStr(new Date())) })); // theme-fixed: user colour (default tracker colour)
   const [detailId, setDetailId] = useState(null);
   const [trackerEdit, setTrackerEdit] = useState(null); // { name, mode, color } for the tracker open in detail view
   // Deep link from Today: /admin/life?tab=habits&id=<tracker> opens that tracker.
@@ -118,9 +141,12 @@ export default function AccountabilityPage() {
   const addTracker = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    const tracker = { id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr };
+    let schedule;
+    try { schedule = scheduleFromForm(form); }
+    catch (err) { addToast(err.message, "error"); return; }
+    const tracker = { schedule, id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr };
     if (!await mutate((d) => { d.trackers.push(tracker); })) return;
-    setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode }); // theme-fixed: user colour (default tracker colour)
+    setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode, ...habitScheduleForm({ mode: form.mode }, todayStr) }); // theme-fixed: user colour (default tracker colour)
     setShowAdd(false);
   };
   const deleteTracker = async (id) => {
@@ -138,7 +164,10 @@ export default function AccountabilityPage() {
   const saveTrackerEdit = async (e, id) => {
     e.preventDefault();
     if (!trackerEdit?.name.trim()) return;
-    const patch = { name: trackerEdit.name.trim(), mode: trackerEdit.mode, color: trackerEdit.color };
+    let schedule;
+    try { schedule = scheduleFromForm(trackerEdit); }
+    catch (err) { addToast(err.message, "error"); return; }
+    const patch = { schedule, name: trackerEdit.name.trim(), mode: trackerEdit.mode, color: trackerEdit.color };
     if (!await mutate((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); })) return;
     setTrackerEdit(null);
   };
@@ -211,7 +240,7 @@ export default function AccountabilityPage() {
           </div>
           {!trackerEdit && (
             <div className="header-actions">
-              <button type="button" className="btn-mini" onClick={() => setTrackerEdit({ name: t.name || "", mode: t.mode || "count", color: t.color || COLORS[0] })} title="Edit tracker">
+              <button type="button" className="btn-mini" onClick={() => setTrackerEdit({ name: t.name || "", mode: t.mode || "count", color: t.color || COLORS[0], ...habitScheduleForm(t, todayStr) })} title="Edit tracker">
                 <i className="fa-solid fa-pen" /> Edit
               </button>
               <button type="button" className="icon-x sm" onClick={() => { deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
@@ -244,6 +273,7 @@ export default function AccountabilityPage() {
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
               {trackerEdit.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done. Existing extra logs on a day are kept."}
             </p>
+            <ScheduleFields value={trackerEdit} onChange={setTrackerEdit} />
             <div className="form-actions">
               <button className="btn" type="submit">Save changes</button>
               <button className="btn btn-secondary-sm" type="button" onClick={() => setTrackerEdit(null)}>Cancel</button>
@@ -251,6 +281,7 @@ export default function AccountabilityPage() {
           </form>
         )}
 
+        <p className="acc-hist-note">{habitScheduleLabel(t)}</p>
         <div className="acc-detail-stats">
           <div className="acc-stat-pill"><b>{st.total}</b><span>total</span></div>
           <div className="acc-stat-pill"><b>{st.weekCount}</b><span>this week</span></div>
@@ -364,16 +395,17 @@ export default function AccountabilityPage() {
             ))}
           </div>
           <div className="day-seg" style={{ maxWidth: 320 }}>
-            <button type="button" className={form.mode === "count" ? "active" : ""} onClick={() => setForm({ ...form, mode: "count" })}>
+            <button type="button" className={form.mode === "count" ? "active" : ""} onClick={() => setForm({ ...form, mode: "count", ...(form.reminder === "interval" ? {} : { reminder: "none" }) })}>
               <i className="fa-solid fa-hashtag" /> Counter
             </button>
-            <button type="button" className={form.mode === "check" ? "active" : ""} onClick={() => setForm({ ...form, mode: "check" })}>
+            <button type="button" className={form.mode === "check" ? "active" : ""} onClick={() => setForm({ ...form, mode: "check", ...(form.reminder === "interval" ? {} : { reminder: "daily" }) })}>
               <i className="fa-solid fa-check" /> Once a day
             </button>
           </div>
           <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
             {form.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done."}
           </p>
+          <ScheduleFields value={form} onChange={setForm} />
           <button className="btn" type="submit" style={{ width: "fit-content" }}>Create tracker</button>
         </form>
       )}
@@ -393,6 +425,7 @@ export default function AccountabilityPage() {
                 <button className="icon-x sm" onClick={(e) => { e.stopPropagation(); deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
               </div>
 
+              <p className="acc-hist-note">{habitScheduleLabel(t)}</p>
               <div className="acc-stats">
                 <div className="acc-big"><b>{st.total}</b><span>total</span></div>
                 <div className="acc-sub"><b>{st.weekCount}</b><span>this week</span></div>

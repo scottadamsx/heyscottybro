@@ -10,6 +10,7 @@
  * QF-3: the blob is schema-versioned, load/save failures throw with context,
  * and an unrecognised shape is an error, never coerced to "no trackers".
  */
+import { validateHabitSchedule } from "../utils/habitSchedule";
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
@@ -43,6 +44,9 @@ export function normalize(d) {
   if (!Array.isArray(d.trackers) || !Array.isArray(d.logs)) {
     throw new Error("Unrecognised accountability state: trackers/logs are not arrays — refusing to load so nothing is overwritten");
   }
+  for (const tracker of d.trackers) {
+    if (tracker.schedule !== undefined) validateHabitSchedule(tracker.schedule);
+  }
   return {
     schema: ACCOUNTABILITY_SCHEMA,
     version: Number.isInteger(d.version) && d.version >= 0 ? d.version : 0,
@@ -54,7 +58,7 @@ export function normalize(d) {
 function clone(state) {
   return {
     ...state,
-    trackers: state.trackers.map((t) => ({ ...t })),
+    trackers: state.trackers.map((t) => ({ ...t, ...(t.schedule === undefined ? {} : { schedule: { ...t.schedule } }) })),
     logs: state.logs.map((l) => ({ ...l })),
   };
 }
