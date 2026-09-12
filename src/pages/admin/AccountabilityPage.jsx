@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
-import { loadAccountability, updateAccountability } from "../../api/accountabilityApi";
+import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone } from "../../api/accountabilityApi";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -128,7 +128,12 @@ export default function AccountabilityPage() {
     if (!await mutate((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); })) return;
     if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
   };
-  const logOn = (trackerId, date) => mutate((d) => { d.logs.push({ id: genId(), trackerId, date, at: Date.now() }); });
+  const logOn = async (trackerId, date) => {
+    const t = data.trackers.find((x) => x.id === trackerId);
+    if (!t) return;
+    try { const next = await logHabitDone(t, date); if (mounted.current) setData(next); }
+    catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
+  };
   const deleteLog = (id) => mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
   const saveTrackerEdit = async (e, id) => {
     e.preventDefault();
@@ -142,17 +147,22 @@ export default function AccountabilityPage() {
   // Checkbox trackers = once/day: toggling OFF removes every log for that day
   // (a check tracker that was converted from a counter can hold several).
   // Counter trackers increment each tap. Decided against the fresh blob.
-  const logToday = (t) => mutate((d) => {
-    const sameDay = (l) => l.trackerId === t.id && l.date === todayStr;
-    if (t.mode === "check" && d.logs.some(sameDay)) { d.logs = d.logs.filter((l) => !sameDay(l)); return; }
-    d.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
-  });
-  const logPast = (t, date) => {
+  const logToday = async (t) => {
+    const already = (logsByTracker[t.id] || []).some((l) => l.date === todayStr);
+    try {
+      const next = t.mode === "check" && already ? await unlogHabitDone(t, todayStr) : await logHabitDone(t, todayStr);
+      if (mounted.current) setData(next);
+    } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
+  };
+  const logPast = async (t, date) => {
     if (!date || date > todayStr) return;
-    mutate((d) => {
-      if (t.mode === "check" && d.logs.some((l) => l.trackerId === t.id && l.date === date)) return;
-      d.logs.push({ id: genId(), trackerId: t.id, date, at: Date.now() });
-    });
+    // Matches the old behaviour: a check-mode tracker already logged that
+    // past day is a no-op here (logToday is the only toggle-off path).
+    if (t.mode === "check" && (logsByTracker[t.id] || []).some((l) => l.date === date)) return;
+    try {
+      const next = await logHabitDone(t, date);
+      if (mounted.current) setData(next);
+    } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
 
   const logsByTracker = useMemo(() => {

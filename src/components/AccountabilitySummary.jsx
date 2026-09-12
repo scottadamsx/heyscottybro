@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
-import { loadAccountability, updateAccountability } from "../api/accountabilityApi";
+import { loadAccountability, logHabitDone, unlogHabitDone } from "../api/accountabilityApi";
 import { onDataChange } from "../utils/dataEvents";
 import { useToast } from "../contexts/ToastContext";
 
-function genId() {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
-  return `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
 function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
 
 export default function AccountabilitySummary() {
@@ -47,12 +43,9 @@ export default function AccountabilitySummary() {
   // Check trackers toggle: turning OFF removes every same-day log. Decided
   // against the fresh blob inside the mutator, not this card's snapshot.
   const logToday = async (t) => {
+    const already = logs.some((l) => l.trackerId === t.id && l.date === todayStr);
     try {
-      const next = await updateAccountability((d) => {
-        const sameDay = (l) => l.trackerId === t.id && l.date === todayStr;
-        if (t.mode === "check" && d.logs.some(sameDay)) { d.logs = d.logs.filter((l) => !sameDay(l)); return; }
-        d.logs.push({ id: genId(), trackerId: t.id, date: todayStr, at: Date.now() });
-      });
+      const next = t.mode === "check" && already ? await unlogHabitDone(t, todayStr) : await logHabitDone(t, todayStr);
       if (mounted.current) setData(next);
     } catch (err) {
       addToast(err?.message || "Couldn't save accountability.", "error");

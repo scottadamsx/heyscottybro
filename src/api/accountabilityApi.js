@@ -13,6 +13,7 @@
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
+import { loadWorkLog, createWorkLog, deleteWorkLog } from "./workLogApi";
 
 export const ACCOUNTABILITY_SCHEMA = 1;
 const TABLE = "accountability_state";
@@ -180,4 +181,62 @@ export async function saveAccountability(data) {
   writeLocal(saved);
   emitDataChange("accountability");
   return { ok: true, state: saved };
+}
+
+/**
+ * Habits ↔ Work log — a habit marked done that day also shows up in Plan →
+ * Work, so "what did I actually do today" isn't split across two pages that
+ * never talk to each other. Best-effort and one-way: a failure here never
+ * fails the habit log itself, and it never overwrites a work_log row the
+ * user edited by hand (deleteLog / the tracker's own edit form don't call
+ * this — only the two canonical log/unlog paths below do).
+ */
+const habitWorkLogTag = (trackerId) => `habit:${trackerId}`;
+
+async function mirrorHabitToWorkLog(tracker, date) {
+  try {
+    const tag = habitWorkLogTag(tracker.id);
+    const rows = await loadWorkLog();
+    // Idempotent per (tracker, date): a counter tracker tapped 8x today
+    // shouldn't create 8 identical work log rows.
+    if (rows.some((r) => r.date === date && r.notes === tag)) return;
+    await createWorkLog({ date, task: tracker.name, notes: tag });
+  } catch (err) {
+    console.error("[accountability] couldn't mirror habit to work log", err);
+  }
+}
+
+async function unmirrorHabitFromWorkLog(tracker, date) {
+  try {
+    const tag = habitWorkLogTag(tracker.id);
+    const rows = await loadWorkLog();
+    await Promise.all(rows.filter((r) => r.date === date && r.notes === tag).map((r) => deleteWorkLog(r.id)));
+  } catch (err) {
+    console.error("[accountability] couldn't remove habit's work log mirror", err);
+  }
+}
+
+/**
+ * THE canonical "mark this habit done for this day" write — used by the
+ * Habits page, the Today card, and log_habit (agents), so the work log
+ * mirror can never drift out of sync with one surface forgetting to call it.
+ * Check-mode trackers already logged that day are a no-op (call
+ * unlogHabitDone to toggle off instead).
+ */
+export async function logHabitDone(tracker, date) {
+  const next = await updateAccountability((d) => {
+    if (tracker.mode === "check" && d.logs.some((l) => l.trackerId === tracker.id && l.date === date)) return;
+    d.logs.push({ id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() });
+  });
+  await mirrorHabitToWorkLog(tracker, date);
+  return next;
+}
+
+/** Undo every log for one habit/day (a check-mode toggle-off) and its mirror. */
+export async function unlogHabitDone(tracker, date) {
+  const next = await updateAccountability((d) => {
+    d.logs = d.logs.filter((l) => !(l.trackerId === tracker.id && l.date === date));
+  });
+  await unmirrorHabitFromWorkLog(tracker, date);
+  return next;
 }
