@@ -1464,6 +1464,8 @@ input, textarea, select { font-family: inherit; }
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .db-card-header {
@@ -1479,11 +1481,20 @@ input, textarea, select { font-family: inherit; }
   color: var(--text-primary);
 }
 
+/* Dashboard row cards share a capped height instead of the grid stretching a
+   short card (Quick Stats, a handful of tiles) to match a tall sibling
+   (Tasks & Reminders, an open-ended list) and leaving dead space inside it.
+   align-items:start lets each card size to its own (capped) content instead;
+   a card whose content is genuinely longer scrolls in its .db-card-scroll
+   region (title/header stays put) rather than growing the row. */
 .db-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 1rem;
+  align-items: start;
 }
+.db-card:not(.ai-briefing-card) { max-height: 420px; overflow-y: auto; }
+.db-card-scroll { overflow-y: auto; min-height: 0; flex: 1; }
 
 .col-4 { grid-column: span 4; }
 .col-6 { grid-column: span 6; }

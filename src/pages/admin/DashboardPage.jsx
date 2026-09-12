@@ -196,89 +196,91 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Today — every same-day reminder, so the count matches the full list */}
-        <div className="db-subhead">
-          <span>Today</span>
-          <span className="db-count">{todayItems.length}</span>
-        </div>
-        <div className="db-list">
-          {todayItems.length === 0 && <p className="no-entries">Nothing due today.</p>}
-          {todayItems.map((r) => (
-            <div
-              className="db-list-item db-list-item--clickable"
-              key={`${r.id}-${r.date}`}
-              role="button"
-              tabIndex={0}
-              onClick={() => openTask(r.id)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
-            >
-              <div className="db-list-item-content">
-                <div className="db-list-item-title">{r.name}</div>
-                <div className="db-list-item-subtitle">{r.time ? formatTime12(r.time) : "Today"}</div>
+        <div className="db-card-scroll">
+          {/* Today — every same-day reminder, so the count matches the full list */}
+          <div className="db-subhead">
+            <span>Today</span>
+            <span className="db-count">{todayItems.length}</span>
+          </div>
+          <div className="db-list">
+            {todayItems.length === 0 && <p className="no-entries">Nothing due today.</p>}
+            {todayItems.map((r) => (
+              <div
+                className="db-list-item db-list-item--clickable"
+                key={`${r.id}-${r.date}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => openTask(r.id)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+              >
+                <div className="db-list-item-content">
+                  <div className="db-list-item-title">{r.name}</div>
+                  <div className="db-list-item-subtitle">{r.time ? formatTime12(r.time) : "Today"}</div>
+                </div>
+                <i className="fa-solid fa-chevron-right db-list-item-chevron" />
               </div>
-              <i className="fa-solid fa-chevron-right db-list-item-chevron" />
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {/* Upcoming — next 30 days after today */}
+          {nextFew.length > 0 && (
+            <>
+              <div className="db-subhead">
+                <span>Upcoming</span>
+              </div>
+              <div className="db-list">
+                {nextFew.map((r) => (
+                  <div
+                    className="db-list-item db-list-item--clickable"
+                    key={`${r.id}-${r.date}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openTask(r.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+                  >
+                    <div className="db-list-item-content">
+                      <div className="db-list-item-title">{r.name}</div>
+                      <div className="db-list-item-subtitle">{formatDisplayDate(r.date)}</div>
+                    </div>
+                    <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Anytime — active tasks with no due date */}
+          {anytimeItems.length > 0 && (
+            <>
+              <div className="db-subhead">
+                <span>Anytime</span>
+                <span className="db-count">{anytimeItems.length}</span>
+              </div>
+              <div className="db-list">
+                {anytimeItems.map((r) => (
+                  <div
+                    className="db-list-item db-list-item--clickable"
+                    key={r.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openTask(r.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+                  >
+                    <div className="db-list-item-content">
+                      <div className="db-list-item-title">{r.name}</div>
+                      <div className="db-list-item-subtitle">No due date</div>
+                    </div>
+                    <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {todayItems.length === 0 && nextFew.length === 0 && anytimeItems.length === 0 && (
+            <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear.</p>
+          )}
         </div>
-
-        {/* Upcoming — next 30 days after today */}
-        {nextFew.length > 0 && (
-          <>
-            <div className="db-subhead">
-              <span>Upcoming</span>
-            </div>
-            <div className="db-list">
-              {nextFew.map((r) => (
-                <div
-                  className="db-list-item db-list-item--clickable"
-                  key={`${r.id}-${r.date}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openTask(r.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
-                >
-                  <div className="db-list-item-content">
-                    <div className="db-list-item-title">{r.name}</div>
-                    <div className="db-list-item-subtitle">{formatDisplayDate(r.date)}</div>
-                  </div>
-                  <i className="fa-solid fa-chevron-right db-list-item-chevron" />
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Anytime — active tasks with no due date */}
-        {anytimeItems.length > 0 && (
-          <>
-            <div className="db-subhead">
-              <span>Anytime</span>
-              <span className="db-count">{anytimeItems.length}</span>
-            </div>
-            <div className="db-list">
-              {anytimeItems.map((r) => (
-                <div
-                  className="db-list-item db-list-item--clickable"
-                  key={r.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openTask(r.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
-                >
-                  <div className="db-list-item-content">
-                    <div className="db-list-item-title">{r.name}</div>
-                    <div className="db-list-item-subtitle">No due date</div>
-                  </div>
-                  <i className="fa-solid fa-chevron-right db-list-item-chevron" />
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {todayItems.length === 0 && nextFew.length === 0 && anytimeItems.length === 0 && (
-          <p className="no-entries" style={{ marginTop: "0.4rem" }}>Nothing coming up — you&apos;re clear.</p>
-        )}
         {upcomingAll.length > 4 && (
           <button className="dashboard-expand" onClick={() => setShowWeek(true)}>
             +{upcomingAll.length - 4} more · view the week
@@ -313,7 +315,7 @@ export default function DashboardPage() {
       {upcomingEvents.length > 0 && (
         <Item className="db-card col-6">
           <h3 className="db-card-title">Upcoming Events</h3>
-          <div className="db-list" style={{ marginTop: "0.5rem" }}>
+          <div className="db-list db-card-scroll" style={{ marginTop: "0.5rem" }}>
             {upcomingEvents.map(e => (
               <div className="db-list-item db-list-item--clickable" key={e.id} role="button" tabIndex={0} onClick={() => navigate(`/admin/planner?date=${e.date}`)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); navigate(`/admin/planner?date=${e.date}`); } }}>
                 <div className="db-list-item-content">
@@ -331,7 +333,7 @@ export default function DashboardPage() {
       {data.projects.length > 0 && (
         <Item className={`db-card ${upcomingEvents.length > 0 ? "col-6" : "col-12"}`}>
           <h3 className="db-card-title">Active Projects</h3>
-          <div className="db-list" style={{ marginTop: "0.5rem" }}>
+          <div className="db-list db-card-scroll" style={{ marginTop: "0.5rem" }}>
             {data.projects.map(p => (
               <div className="db-list-item db-list-item--clickable" key={p.id} role="button" tabIndex={0} onClick={() => navigate(`/admin/planner?tab=projects&id=${p.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); navigate(`/admin/planner?tab=projects&id=${p.id}`); } }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
@@ -385,7 +387,7 @@ export default function DashboardPage() {
       <Item className="db-card col-6">
         <h3 className="db-card-title">Upcoming bills</h3>
         {upcomingBills.length === 0 && <p className="no-entries">No upcoming bills. Add recurring bills in <Link to="/admin/finance?tab=bills">Money → Bills &amp; Income</Link>.</p>}
-        <div className="db-list" style={{ marginTop: "0.5rem" }}>
+        <div className="db-list db-card-scroll" style={{ marginTop: "0.5rem" }}>
           {upcomingBills.map((b) => (
             <div className="db-list-item" key={`${b.id}-${b.due}`}>
               <div className="db-list-item-content">
@@ -404,7 +406,7 @@ export default function DashboardPage() {
       {agentActions.length > 0 && (
         <Item className="db-card col-6">
           <h3 className="db-card-title">Frodo&apos;s recent actions</h3>
-          <div className="db-list" style={{ marginTop: "0.5rem" }}>
+          <div className="db-list db-card-scroll" style={{ marginTop: "0.5rem" }}>
             {(allActions ? agentActions : agentActions.slice(0, ACTIONS_SHOWN)).map((a) => {
               const tool = a.collection ? `${a.tool} → ${a.collection}` : a.tool;
               const isErr = a.status === "error";
