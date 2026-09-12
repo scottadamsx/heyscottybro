@@ -10,6 +10,7 @@ const PREFIX = "setting:";
 // Setting keys live here so they can't drift between callers.
 export const HIDE_SMOKE_TRACKER = "hideSmokeTracker";
 export const THEME = "theme";
+export const HIDDEN_PAGES = "hiddenPages";
 
 const listeners = new Set();
 
@@ -59,4 +60,21 @@ export function useSetting(key, fallback = false) {
     () => getSetting(key, fallback),
     () => fallback
   );
+}
+
+/** Hidden pages: a set of nav `to` paths removed from the rail, the mobile
+ * menu, and the command palette (data is kept — same soft-hide as
+ * HIDE_SMOKE_TRACKER, just generalised to any top-level space). */
+function parseHiddenPages(raw) {
+  try { const v = JSON.parse(raw); return Array.isArray(v) ? v : []; }
+  catch { return []; }
+}
+export function getHiddenPages() { return parseHiddenPages(getStringSetting(HIDDEN_PAGES, "[]")); }
+export function setHiddenPages(list) { setStringSetting(HIDDEN_PAGES, JSON.stringify(list)); }
+export function toggleHiddenPage(to, hidden) {
+  const cur = getHiddenPages();
+  setHiddenPages(hidden ? [...new Set([...cur, to])] : cur.filter((p) => p !== to));
+}
+export function useHiddenPages() {
+  return parseHiddenPages(useStringSetting(HIDDEN_PAGES, "[]"));
 }

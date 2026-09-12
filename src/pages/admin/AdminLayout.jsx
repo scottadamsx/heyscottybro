@@ -7,6 +7,7 @@ import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 import { useTheme } from "../../utils/theme";
+import { useHiddenPages } from "../../utils/settings";
 import { DesktopProvider, DesktopArea, Taskbar, useDesktop } from "../../components/xp/Desktop";
 
 /** In desktop mode a rail link opens/focuses a window instead of swapping the page. */
@@ -23,7 +24,9 @@ function RailLink({ to, className, title, children, end, onClick, style }) {
 // The Seven Spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
 // Reminders sits beside Plan: the dedicated Tasks & Reminders surface, restored
 // as its own page after the Phase-2 overhaul had folded it into the redirect.
-const NAV_ITEMS = [
+// Exported so Settings can build the "hide this page" list from the same
+// source of truth instead of a second, driftable copy.
+export const NAV_ITEMS = [
   { to: "/admin/planner",   icon: "fa-calendar-check",  label: "Plan" },
   { to: "/admin/reminders", icon: "fa-bell",            label: "Reminders" },
   { to: "/admin/work",      icon: "fa-briefcase",       label: "Work" },
@@ -53,8 +56,11 @@ export default function AdminLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // NAV_ITEMS is flat; smoke filtering happens inside HealthPage
-  const navItems = NAV_ITEMS;
+  // Smoke Tracker's own hide toggle filters inside LifePage; whole-space
+  // hiding (Settings › Hidden pages) filters the rail itself here — hiding
+  // is soft (the page still opens by URL, it's just off the nav).
+  const hiddenPages = useHiddenPages();
+  const navItems = NAV_ITEMS.filter((item) => !hiddenPages.includes(item.to));
 
   // Compact density only inside the admin (the public landing keeps its own scale).
   useEffect(() => {

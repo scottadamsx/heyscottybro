@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDesktop } from "./xp/Desktop";
-import { HIDE_SMOKE_TRACKER, useSetting } from "../utils/settings";
+import { HIDE_SMOKE_TRACKER, useSetting, useHiddenPages } from "../utils/settings";
 
 const COMMANDS = [
   { label: "Today",           to: "/admin/today",                    icon: "fa-house",            section: "Home" },
@@ -50,12 +50,16 @@ export default function CommandPalette({ onClose }) {
   const listRef = useRef(null);
   const navigate = useNavigate();
   const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
+  const hiddenPages = useHiddenPages();
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const commands = useMemo(
-    () => COMMANDS.filter((c) => !(hideSmoke && c.smokeOnly)),
-    [hideSmoke]
+    () => COMMANDS.filter((c) =>
+      !(hideSmoke && c.smokeOnly) &&
+      !hiddenPages.some((base) => c.to === base || c.to.startsWith(`${base}?`))
+    ),
+    [hideSmoke, hiddenPages]
   );
 
   const results = useMemo(() => {
