@@ -5,6 +5,9 @@ import DatePicker from "../../components/DatePicker";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
+import { loadDraft, saveDraft, clearDraft, JOURNAL_NEW_DRAFT, journalEditDraft } from "../../utils/drafts";
+
+const savedTime = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export default function JournalPage() {
   const [params, setParams] = useSearchParams();
@@ -12,8 +15,19 @@ export default function JournalPage() {
   const isNew = params.get("new") === "1";
 
   const [entries, setEntries] = useState([]);
-  const [title, setTitle] = useState("");
-  const [entry, setEntry] = useState("");
+  // The compose form is write-through cached (utils/drafts) so clicking another
+  // entry, switching Life tabs or reloading never loses what's been typed.
+  const [restoredDraft, setRestoredDraft] = useState(() => loadDraft(JOURNAL_NEW_DRAFT));
+  const [compose, setCompose] = useState(() => restoredDraft?.fields ?? {});
+  const [draftFailed, setDraftFailed] = useState(false);
+  const title = compose.title || "";
+  const entry = compose.entry || "";
+  const hasDraft = Boolean(title.trim() || entry.trim());
+  const updateCompose = (patch) => {
+    const next = { ...compose, ...patch };
+    setCompose(next);
+    setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next));
+  };
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
   const [editing, setEditing] = useState(false);
@@ -32,12 +46,13 @@ export default function JournalPage() {
     }
     setReady(true);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { load(); }, []);
 
   const handleDelete = async (e) => {
     if (!await confirm(`Delete "${e.title}"? This can't be undone.`, { title: "Delete entry", confirmLabel: "Delete" })) return;
     try {
       await deleteJournalEntry(e.id);
+      clearDraft(journalEditDraft(e.id));
       await load();
       const next = new URLSearchParams(params);
       next.delete("id");
@@ -50,8 +65,30 @@ export default function JournalPage() {
 
   const todayLong = formatDisplayDate(toDateStr(new Date()));
 
-  const startEdit = (e) => { setEditForm({ title: e.title || "", entry: e.entry || "", date: e.date || toDateStr(new Date()) }); setEditing(true); };
-  const cancelEdit = () => { setEditing(false); setEditForm(null); };
+  const entryFields = (e) => ({ title: e.title || "", entry: e.entry || "", date: e.date || toDateStr(new Date()) });
+  // Edits are cached per entry too; leaving an entry mid-edit keeps the draft
+  // (the Edit button becomes "Resume edits"). Only Cancel or a save clears it.
+  const startEdit = (e) => { setEditForm(loadDraft(journalEditDraft(e.id))?.fields ?? entryFields(e)); setEditing(true); };
+  const updateEdit = (patch) => {
+    const next = { ...editForm, ...patch };
+    setEditForm(next);
+    setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next));
+  };
+  const closeEdit = () => { setEditing(false); setEditForm(null); };
+  const cancelEdit = async () => {
+    const orig = entryFields(selectedEntry);
+    const dirty = ["title", "entry", "date"].some((k) => editForm[k] !== orig[k]);
+    if (dirty && !await confirm("Discard your unsaved changes to this entry?", { title: "Discard changes", confirmLabel: "Discard" })) return;
+    clearDraft(journalEditDraft(selectedEntry.id));
+    closeEdit();
+  };
+  const discardDraft = async () => {
+    if (!await confirm("Discard this draft? The text will be gone for good.", { title: "Discard draft", confirmLabel: "Discard" })) return;
+    clearDraft(JOURNAL_NEW_DRAFT);
+    setCompose({});
+    setDraftFailed(false);
+    setRestoredDraft(null);
+  };
   const saveEdit = async (ev) => {
     ev.preventDefault();
     if (!selectedEntry || !editForm.entry.trim()) return;
@@ -63,6 +100,7 @@ export default function JournalPage() {
     setEditing(false);
     try {
       await updateJournalEntry(prev.id, fields);
+      clearDraft(journalEditDraft(prev.id));
       addToast("Entry updated.", "success");
     } catch (err) {
       setEntries((list) => list.map((x) => x.id === prev.id ? prev : x));
@@ -78,8 +116,10 @@ export default function JournalPage() {
     try {
       await newJournalEntry({ title: title.trim() || todayLong, entry: entry.trim(), date: toDateStr(new Date()) });
       // Only clear the draft once the save has actually succeeded.
-      setTitle("");
-      setEntry("");
+      clearDraft(JOURNAL_NEW_DRAFT);
+      setCompose({});
+      setDraftFailed(false);
+      setRestoredDraft(null);
       await load();
       const next = new URLSearchParams(params);
       next.delete("new");
@@ -93,39 +133,65 @@ export default function JournalPage() {
   const showForm = isNew || (!selectedId && !selectedEntry);
   const showEntry = selectedEntry && !isNew;
 
+  const hasEditDraft = showEntry && !editing && loadDraft(journalEditDraft(selectedEntry.id)) !== null;
+
   // Sort entries newest first for the list
   const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+
+  const openCompose = () => {
+    // Preserve other params (e.g. tab=journal when embedded in Life)
+    const next = new URLSearchParams(params);
+    next.set("new", "1");
+    next.delete("id");
+    setParams(next);
+  };
+  const draftFailedMsg = "Couldn't auto-save this draft — browser storage is full or blocked. Save it before leaving this page.";
 
   return (
     <div className="module-page">
       <div className="module-header">
         <h1>Journal</h1>
-        <button className="btn btn-sm" onClick={() => {
-          // Preserve other params (e.g. tab=journal when embedded in Life)
-          const next = new URLSearchParams(params);
-          next.set("new", "1");
-          next.delete("id");
-          setParams(next);
-        }}>
-          <i className="fa-solid fa-plus" /> New Entry
+        <button className="btn btn-sm" onClick={openCompose}>
+          <i className={`fa-solid ${hasDraft ? "fa-pen-to-square" : "fa-plus"}`} aria-hidden="true" /> {hasDraft ? "Resume Draft" : "New Entry"}
         </button>
       </div>
 
-      {/* Compose form */}
+      {/* Compose form — every keystroke is cached as a draft */}
       {showForm && (
         <form className="form-card" onSubmit={submit} style={{ marginBottom: "var(--space-lg)" }}>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Title (defaults to "${todayLong}")`} />
+          <input value={title} onChange={(e) => updateCompose({ title: e.target.value })} placeholder={`Title (defaults to "${todayLong}")`} aria-label="Title" />
           <textarea
             value={entry}
-            onChange={(e) => setEntry(e.target.value)}
+            onChange={(e) => updateCompose({ entry: e.target.value })}
             rows={8}
             placeholder="Write your thoughts..."
             style={{ resize: "vertical" }}
+            aria-label="Entry"
             required
             autoFocus
           />
-          <button className="btn" type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Entry"}</button>
+          {draftFailed ? (
+            <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>
+          ) : hasDraft ? (
+            <p className="draft-status" role="status">
+              <i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Draft auto-saved on this device
+              {restoredDraft?.savedAt ? ` · restored from ${savedTime(restoredDraft.savedAt)}` : ""}
+            </p>
+          ) : null}
+          <div className="form-actions">
+            <button className="btn" type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Entry"}</button>
+            {hasDraft && <button className="btn btn-secondary-sm" type="button" onClick={discardDraft}>Discard draft</button>}
+          </div>
         </form>
+      )}
+
+      {/* Draft reminder while reading other entries — the text is never just hidden */}
+      {!showForm && hasDraft && (
+        <div className="draft-banner" role="status">
+          <i className="fa-solid fa-pen-to-square" aria-hidden="true" />
+          <span className="draft-banner-preview"><strong>Unsaved draft:</strong> {title.trim() || entry.trim()}</span>
+          <button type="button" className="btn btn-sm" onClick={openCompose}>Continue writing</button>
+        </div>
       )}
 
       {loadError && (
@@ -143,8 +209,8 @@ export default function JournalPage() {
             <div className="header-actions">
               <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
               {!editing && (
-                <button type="button" className="btn-mini" onClick={() => startEdit(selectedEntry)} title="Edit entry">
-                  <i className="fa-solid fa-pen" /> Edit
+                <button type="button" className="btn-mini" onClick={() => startEdit(selectedEntry)} title={hasEditDraft ? "You have unsaved edits to this entry" : "Edit entry"}>
+                  <i className="fa-solid fa-pen" aria-hidden="true" /> {hasEditDraft ? "Resume edits" : "Edit"}
                 </button>
               )}
               <button className="btn-sm btn-delete" onClick={() => handleDelete(selectedEntry)} title="Delete entry" style={{ fontSize: 12, padding: "4px 10px" }}>
@@ -155,10 +221,11 @@ export default function JournalPage() {
           {editing && editForm ? (
             <form className="form-card" onSubmit={saveEdit}>
               <div className="form-row">
-                <input className="field-grow" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Title" aria-label="Title" />
-                <DatePicker value={editForm.date} onChange={(v) => setEditForm({ ...editForm, date: v })} placeholder="Date" />
+                <input className="field-grow" value={editForm.title} onChange={(e) => updateEdit({ title: e.target.value })} placeholder="Title" aria-label="Title" />
+                <DatePicker value={editForm.date} onChange={(v) => updateEdit({ date: v })} placeholder="Date" />
               </div>
-              <textarea className="edit-body" value={editForm.entry} onChange={(e) => setEditForm({ ...editForm, entry: e.target.value })} rows={8} required aria-label="Entry" />
+              <textarea className="edit-body" value={editForm.entry} onChange={(e) => updateEdit({ entry: e.target.value })} rows={8} required aria-label="Entry" />
+              {draftFailed && <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>}
               <div className="form-actions">
                 <button className="btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
                 <button className="btn btn-secondary-sm" type="button" onClick={cancelEdit}>Cancel</button>
@@ -190,7 +257,7 @@ export default function JournalPage() {
                 next.set("id", String(e.id));
                 next.delete("new");
                 setParams(next);
-                cancelEdit();
+                closeEdit(); // any in-progress edit stays cached as a draft
               }}
             >
               <div className="journal-list-title">{e.title}</div>
