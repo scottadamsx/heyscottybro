@@ -13,24 +13,27 @@ import "./brain.css";
 // SSR guard is needed; we just code-split it.)
 const ForceGraph3D = lazy(() => import("react-force-graph-3d"));
 
-// Node colours by type. CSS vars are resolved to concrete values at runtime
-// because WebGL can't read `var(--x)`.
+// Node colours by type — the chart palette (globals.css), so the graph follows
+// the theme. CSS vars are resolved to concrete values at runtime because WebGL
+// can't read `var(--x)`; the stage, link and "centre node" colours likewise.
 const TYPE_COLOR = {
-  root: "var(--accent)", projects: "var(--green)", checkpoints: "var(--orange)",
-  procedures: "#14b8a6", note: "var(--accent)",
+  root: "var(--coral)", projects: "var(--teal)", checkpoints: "var(--amber)",
+  procedures: "var(--sky)", note: "var(--umber)",
 };
-const FALLBACK = "#94a3b8";
+const CHROME_COLOR = { bg: "var(--bg-raised)", link: "var(--text-muted)", centre: "var(--text-primary)", fallback: "var(--text-muted)" };
+const FALLBACK = "gray"; /* theme-fixed: WebGL needs a concrete colour if a token is ever missing */
 
 function resolveColors() {
   const cs = typeof window !== "undefined" ? getComputedStyle(document.documentElement) : null;
+  const read = (v) => (cs ? cs.getPropertyValue(v.slice(4, -1)).trim() : "") || FALLBACK;
   const out = {};
-  for (const [k, v] of Object.entries(TYPE_COLOR)) {
-    out[k] = cs && v.startsWith("var(")
-      ? (cs.getPropertyValue(v.slice(4, -1)).trim() || FALLBACK)
-      : v;
-  }
+  for (const [k, v] of Object.entries(TYPE_COLOR)) out[k] = read(v);
+  const chrome = {};
+  for (const [k, v] of Object.entries(CHROME_COLOR)) chrome[k] = read(v);
+  out.__chrome = chrome;
   return out;
 }
+const typeColor = (colors, t) => colors[t] || colors.__chrome?.fallback || FALLBACK;
 
 const isMobileNow = () =>
   typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
@@ -60,8 +63,15 @@ export default function BrainPage() {
   }, []);
   useEffect(() => { fetchBrain(); }, [fetchBrain]);
 
-  // Re-resolve theme colours after mount (covers the live "preview theme" path).
-  useEffect(() => { setColors(resolveColors()); }, []);
+  // Re-resolve theme colours after mount, and again whenever the theme flips
+  // (<html data-theme> changes), so the WebGL graph repaints with the page.
+  useEffect(() => {
+    setColors(resolveColors());
+    if (typeof MutationObserver === "undefined") return undefined;
+    const mo = new MutationObserver(() => setColors(resolveColors()));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => mo.disconnect();
+  }, []);
 
   // Keep the canvas sized to its container — graph re-fits as the side panel
   // opens/closes or the viewport changes.
@@ -123,36 +133,37 @@ export default function BrainPage() {
     fgRef.current?.zoomToFit(500, 40);
   }, []);
 
-  const nodeColor = useCallback((n) => colors[n.type] || FALLBACK, [colors]);
+  const nodeColor = useCallback((n) => typeColor(colors, n.type), [colors]);
+  const chrome = colors.__chrome || {};
 
   return (
     <div className="module-page brain-page">
       <div className="module-header">
-        <h1><i className="fa-solid fa-brain" /> Brain</h1>
+        <h1>Brain</h1>
         {tab === "graph" && (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-sm btn-secondary-sm" onClick={fetchBrain} disabled={status === "loading"}>
-              <i className={`fa-solid ${status === "loading" ? "fa-spinner fa-spin" : "fa-rotate-right"}`} /> Refresh
+          <div className="header-actions">
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchBrain} disabled={status === "loading"}>
+              <i className={`fa-solid ${status === "loading" ? "fa-spinner fa-spin" : "fa-rotate-right"}`} aria-hidden="true" /> Refresh
             </button>
-            <button className="btn btn-sm" onClick={handleSync} disabled={syncing}>
-              <i className={`fa-solid ${syncing ? "fa-spinner fa-spin" : "fa-cloud-arrow-down"}`} /> {syncing ? "Syncing…" : "Sync from vault"}
+            <button type="button" className="btn btn-sm" onClick={handleSync} disabled={syncing}>
+              <i className={`fa-solid ${syncing ? "fa-spinner fa-spin" : "fa-cloud-arrow-down"}`} aria-hidden="true" /> {syncing ? "Syncing…" : "Sync from vault"}
             </button>
           </div>
         )}
       </div>
 
-      <div className="brain-tabs">
-        <button type="button" className={`brain-tab${tab === "graph" ? " active" : ""}`} onClick={() => setTab("graph")}>
-          <i className="fa-solid fa-diagram-project" /> Graph
+      <div className="segmented brain-tabs" role="group" aria-label="Brain view">
+        <button type="button" className={`segmented-opt${tab === "graph" ? " active" : ""}`} aria-pressed={tab === "graph"} onClick={() => setTab("graph")}>
+          <i className="fa-solid fa-diagram-project" aria-hidden="true" /> Graph
         </button>
-        <button type="button" className={`brain-tab${tab === "folders" ? " active" : ""}`} onClick={() => setTab("folders")}>
-          <i className="fa-solid fa-folder-tree" /> Folders
+        <button type="button" className={`segmented-opt${tab === "folders" ? " active" : ""}`} aria-pressed={tab === "folders"} onClick={() => setTab("folders")}>
+          <i className="fa-solid fa-folder-tree" aria-hidden="true" /> Folders
         </button>
-        <button type="button" className={`brain-tab${tab === "memory" ? " active" : ""}`} onClick={() => setTab("memory")}>
-          <i className="fa-solid fa-lightbulb" /> Memory
+        <button type="button" className={`segmented-opt${tab === "memory" ? " active" : ""}`} aria-pressed={tab === "memory"} onClick={() => setTab("memory")}>
+          <i className="fa-solid fa-lightbulb" aria-hidden="true" /> Memory
         </button>
-        <button type="button" className={`brain-tab${tab === "tools" ? " active" : ""}`} onClick={() => setTab("tools")}>
-          <i className="fa-solid fa-toolbox" /> Agent Tools
+        <button type="button" className={`segmented-opt${tab === "tools" ? " active" : ""}`} aria-pressed={tab === "tools"} onClick={() => setTab("tools")}>
+          <i className="fa-solid fa-toolbox" aria-hidden="true" /> Agent tools
         </button>
       </div>
 
@@ -162,7 +173,7 @@ export default function BrainPage() {
 
       {tab === "folders" && (
         data.nodes.length === 0
-          ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Your brain is empty — sync from your vault first (on the Graph tab).</p>
+          ? <p className="no-entries">Your brain is empty — sync from your vault first (on the Graph tab).</p>
           : <FolderTree nodes={data.nodes} onSelect={setFolderNode} />
       )}
 
@@ -177,9 +188,13 @@ export default function BrainPage() {
         />
       )}
 
-      {tab === "graph" && status === "error" && <p style={{ color: "var(--red)", fontSize: 13 }}>{error}</p>}
+      {tab === "graph" && status === "error" && (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{error}</p>
+        </div>
+      )}
       {tab === "graph" && status === "ready" && graph.nodes.length === 0 && (
-        <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+        <p className="no-entries">
           Your brain is empty. Run the app locally (<code>npm run dev</code>) and click <strong>Sync from vault</strong> to import your Obsidian / Claude memory notes.
         </p>
       )}
@@ -187,13 +202,13 @@ export default function BrainPage() {
       {tab === "graph" && graph.nodes.length > 0 && (
         <div className={`brain-layout${selected ? " with-panel" : ""}`}>
           <div className="brain-stage" ref={wrapRef}>
-            <Suspense fallback={<div className="brain-loading"><i className="fa-solid fa-spinner fa-spin" /> Loading 3D engine…</div>}>
+            <Suspense fallback={<div className="brain-loading"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading 3D engine…</div>}>
               <ForceGraph3D
                 ref={fgRef}
                 width={dims.w}
                 height={dims.h}
                 graphData={graph}
-                backgroundColor="#0b1020"
+                backgroundColor={chrome.bg || FALLBACK}
                 showNavInfo={false}
                 nodeLabel="title"
                 nodeColor={nodeColor}
@@ -201,7 +216,7 @@ export default function BrainPage() {
                 nodeVal={(n) => 1 + Math.min(12, n.deg)}
                 nodeOpacity={0.92}
                 nodeResolution={mobile || big ? 8 : 16}
-                linkColor={() => "rgba(255,255,255,0.16)"}
+                linkColor={() => chrome.link || FALLBACK}
                 linkWidth={0.4}
                 linkOpacity={0.5}
                 enableNodeDrag={false}
@@ -218,27 +233,27 @@ export default function BrainPage() {
               <span>{graph.nodes.length} notes · {graph.links.length} links · drag to orbit · pinch to zoom · tap a node</span>
               <span className="brain-legend-types">
                 {Object.keys(TYPE_COLOR).map((t) => (
-                  <span key={t}><i className="fa-solid fa-circle" style={{ color: colors[t], fontSize: 8, marginRight: 3 }} />{t}</span>
+                  <span key={t} className="brain-legend-type"><span className="brain-legend-dot" style={{ background: typeColor(colors, t) }} aria-hidden="true" />{t}</span>
                 ))}
               </span>
             </div>
           </div>
 
           {selected && (
-            <aside className="brain-panel">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{selected.title}</h3>
-                <button onClick={() => setSelected(null)} className="icon-x" aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+            <aside className="brain-panel" aria-label={`Note: ${selected.title}`}>
+              <div className="brain-panel-head">
+                <h3 className="db-card-title brain-panel-title">{selected.title}</h3>
+                <button type="button" onClick={() => setSelected(null)} className="icon-x" aria-label="Close note"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0 10px" }}>
-                <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 99, background: (colors[selected.type] || FALLBACK) + "22", color: colors[selected.type] || FALLBACK, textTransform: "uppercase", letterSpacing: "0.04em" }}>{selected.type}</span>
-                {(selected.tags || []).map((t) => <span key={t} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 99, background: "var(--bg-raised)", color: "var(--text-muted)" }}>#{t}</span>)}
+              <div className="brain-pills">
+                <span className="brain-type-pill"><span className="brain-type-dot" style={{ background: typeColor(colors, selected.type) }} aria-hidden="true" />{selected.type}</span>
+                {(selected.tags || []).map((t) => <span key={t} className="brain-tag">#{t}</span>)}
               </div>
-              <div style={{ marginBottom: 10 }}>
+              <div>
                 <CopyId id={docId(selected.title, selected.slug)} />
               </div>
-              {selected.source && <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10, fontFamily: "monospace", wordBreak: "break-all" }}>{selected.source}</div>}
-              <div className="chat-md" style={{ fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }} dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body || "*(empty note)*") }} />
+              {selected.source && <div className="brain-source">{selected.source}</div>}
+              <div className="chat-md brain-panel-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body || "*(empty note)*") }} />
             </aside>
           )}
         </div>
@@ -272,9 +287,10 @@ function AgentTools({ query, setQuery }) {
           What each agent can do — native capabilities, the tools/APIs on its belt, and the skills you've given it.
         </p>
         <div className="brain-tools-search">
-          <i className="fa-solid fa-magnifying-glass" />
+          <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
           <input
             type="search"
+            aria-label="Search agents or tools"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search agents or tools…"
@@ -282,7 +298,7 @@ function AgentTools({ query, setQuery }) {
         </div>
       </div>
 
-      {matches.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No agent or tool matches “{query}”.</p>}
+      {matches.length === 0 && <p className="no-entries">No agent or tool matches “{query}”.</p>}
 
       <div className="brain-tools-grid">
         {matches.map(({ agent, tools }) => {
@@ -290,9 +306,9 @@ function AgentTools({ query, setQuery }) {
           // When the agent itself matched (not its tools), still show its full belt.
           const list = q && shown.length === 0 ? tools : shown;
           return (
-            <div key={agent.id} className="brain-agent-card" style={{ "--agent": agent.color }}>
+            <div key={agent.id} className="brain-agent-card">
               <div className="brain-agent-head">
-                <span className="brain-agent-avatar" style={{ background: agent.color }}>
+                <span className="brain-agent-avatar" style={{ background: agent.color }} aria-hidden="true">
                   <i className={`fa-solid ${agent.icon}`} />
                 </span>
                 <div className="brain-agent-id">
@@ -303,12 +319,12 @@ function AgentTools({ query, setQuery }) {
               {agent.tagline && <p className="brain-agent-tagline">{agent.tagline}</p>}
 
               {agent.kind === "local" ? (
-                <p className="brain-agent-note"><i className="fa-solid fa-terminal" /> Runs real Claude Code on your Mac — full file-system &amp; shell access, not the app toolbelt.</p>
+                <p className="brain-agent-note"><i className="fa-solid fa-terminal" aria-hidden="true" /> Runs real Claude Code on your Mac — full file-system &amp; shell access, not the app toolbelt.</p>
               ) : list.length === 0 ? (
                 <p className="brain-agent-note">No tools — replies from knowledge only.</p>
               ) : (
                 <>
-                  <div className="brain-agent-tools-h"><i className="fa-solid fa-toolbox" /> {tools.length} tool{tools.length === 1 ? "" : "s"}</div>
+                  <div className="brain-agent-tools-h"><i className="fa-solid fa-toolbox" aria-hidden="true" /> {tools.length} tool{tools.length === 1 ? "" : "s"}</div>
                   <ul className="brain-tool-list">
                     {list.map((t) => (
                       <li key={t.name} className="brain-tool">
@@ -378,19 +394,19 @@ function FolderTree({ nodes, onSelect }) {
           const isOpen = open.has(childPath);
           return (
             <div key={childPath}>
-              <button className="brain-folder-row" style={{ paddingLeft: depth * 14 + 8 }} onClick={() => toggle(childPath)}>
-                <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} brain-folder-caret`} />
-                <i className={`fa-solid ${isOpen ? "fa-folder-open" : "fa-folder"}`} style={{ color: "var(--orange)" }} />
+              <button type="button" className="brain-folder-row brain-tree-indent" style={{ "--depth": depth }} aria-expanded={isOpen} onClick={() => toggle(childPath)}>
+                <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} brain-folder-caret`} aria-hidden="true" />
+                <i className={`fa-solid ${isOpen ? "fa-folder-open" : "fa-folder"} brain-folder-icon`} aria-hidden="true" />
                 <span className="brain-folder-name">{name}</span>
-                <span className="brain-folder-count">{countNotes(folder.folders[name])}</span>
+                <span className="db-count brain-folder-count">{countNotes(folder.folders[name])}</span>
               </button>
               {isOpen && renderFolder(folder.folders[name], childPath, depth + 1)}
             </div>
           );
         })}
         {notes.map((n) => (
-          <button key={n.slug} className="brain-note-row" style={{ paddingLeft: depth * 14 + 26 }} onClick={() => onSelect(n)} title="Open 3D lookup">
-            <i className="fa-solid fa-note-sticky" />
+          <button key={n.slug} type="button" className="brain-note-row brain-tree-indent" style={{ "--depth": depth }} onClick={() => onSelect(n)} title="Open 3D lookup">
+            <i className="fa-solid fa-note-sticky" aria-hidden="true" />
             <span className="brain-folder-name">{noteLabel(n)}</span>
           </button>
         ))}
@@ -400,16 +416,16 @@ function FolderTree({ nodes, onSelect }) {
 
   return (
     <div className="brain-folders">
-      <div className="brain-tools-search" style={{ marginBottom: 12 }}>
-        <i className="fa-solid fa-magnifying-glass" />
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search notes…" />
+      <div className="brain-tools-search">
+        <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+        <input type="search" aria-label="Search notes" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search notes…" />
       </div>
       {flat
         ? (flat.length === 0
-            ? <p style={{ color: "var(--text-muted)", fontSize: 13 }}>No notes match “{q}”.</p>
+            ? <p className="no-entries">No notes match “{q}”.</p>
             : flat.map((n) => (
-              <button key={n.slug} className="brain-note-row" style={{ paddingLeft: 8 }} onClick={() => onSelect(n)} title="Open 3D lookup">
-                <i className="fa-solid fa-note-sticky" />
+              <button key={n.slug} type="button" className="brain-note-row" onClick={() => onSelect(n)} title="Open 3D lookup">
+                <i className="fa-solid fa-note-sticky" aria-hidden="true" />
                 <span className="brain-folder-name">{noteLabel(n)}</span>
                 <span className="brain-folder-path">{n.slug}</span>
               </button>
@@ -452,39 +468,39 @@ function NodeGraphModal({ node, data, colors, mobile, onClose, onOpenInGraph }) 
 
   return (
     <div className="brain-modal-backdrop" onClick={onClose}>
-      <div className="brain-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="brain-modal" role="dialog" aria-modal="true" aria-labelledby="brain-modal-title" onClick={(e) => e.stopPropagation()}>
         <div className="brain-modal-head">
-          <div style={{ minWidth: 0 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{center.title || center.slug}</h3>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
-              {center.type && <span className="reader-pill" style={{ background: colors[center.type] || FALLBACK }}>{center.type}</span>}
-              {(center.tags || []).slice(0, 5).map((t) => <span key={t} className="reader-tag">#{t}</span>)}
+          <div className="brain-modal-id">
+            <h3 id="brain-modal-title" className="db-card-title brain-modal-title">{center.title || center.slug}</h3>
+            <div className="brain-pills">
+              {center.type && <span className="brain-type-pill"><span className="brain-type-dot" style={{ background: typeColor(colors, center.type) }} aria-hidden="true" />{center.type}</span>}
+              {(center.tags || []).slice(0, 5).map((t) => <span key={t} className="brain-tag">#{t}</span>)}
               <CopyId id={docId(center.title, center.slug)} />
             </div>
           </div>
-          <button onClick={onClose} className="icon-x" aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+          <button type="button" onClick={onClose} className="icon-x" aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </div>
 
         <div className="brain-modal-stage" style={{ height: H }}>
           {neighbourCount === 0 ? (
-            <div className="brain-loading" style={{ height: "100%" }}>
-              <span><i className="fa-solid fa-circle-nodes" style={{ marginRight: 6 }} />No connections yet — this note stands alone in the graph.</span>
+            <div className="brain-loading is-static">
+              <span><i className="fa-solid fa-circle-nodes brain-lone-icon" aria-hidden="true" />No connections yet — this note stands alone in the graph.</span>
             </div>
           ) : (
-            <Suspense fallback={<div className="brain-loading" style={{ height: "100%" }}><i className="fa-solid fa-spinner fa-spin" /> Loading 3D…</div>}>
+            <Suspense fallback={<div className="brain-loading is-static"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading 3D…</div>}>
               <ForceGraph3D
                 ref={fgRef}
                 width={W}
                 height={H}
                 graphData={sub}
-                backgroundColor="#0b1020"
+                backgroundColor={colors.__chrome?.bg || FALLBACK}
                 showNavInfo={false}
                 nodeLabel="title"
-                nodeColor={(n) => (n.slug === center.slug ? "#ffffff" : (colors[n.type] || FALLBACK))}
+                nodeColor={(n) => (n.slug === center.slug ? (colors.__chrome?.centre || FALLBACK) : typeColor(colors, n.type))}
                 nodeVal={(n) => (n.slug === center.slug ? 10 : 3)}
                 nodeOpacity={0.95}
                 nodeResolution={12}
-                linkColor={() => "rgba(255,255,255,0.28)"}
+                linkColor={() => colors.__chrome?.link || FALLBACK}
                 linkWidth={0.6}
                 enableNodeDrag={false}
                 onNodeClick={(n) => { if (n.slug !== center.slug) setCenter(n); }}
@@ -497,12 +513,12 @@ function NodeGraphModal({ node, data, colors, mobile, onClose, onOpenInGraph }) 
 
         <div className="brain-modal-foot">
           <span className="brain-modal-hint">{neighbourCount} connection{neighbourCount === 1 ? "" : "s"} · tap a node to explore</span>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="brain-modal-actions">
             <a className="btn btn-sm btn-secondary-sm" href={`/admin/read/${String(center.slug).split("/").map(encodeURIComponent).join("/")}`}>
-              <i className="fa-solid fa-book-open" /> Open note
+              <i className="fa-solid fa-book-open" aria-hidden="true" /> Open note
             </a>
-            <button className="btn btn-sm" onClick={() => onOpenInGraph(center)}>
-              <i className="fa-solid fa-diagram-project" /> Show in full graph
+            <button type="button" className="btn btn-sm" onClick={() => onOpenInGraph(center)}>
+              <i className="fa-solid fa-diagram-project" aria-hidden="true" /> Show in full graph
             </button>
           </div>
         </div>

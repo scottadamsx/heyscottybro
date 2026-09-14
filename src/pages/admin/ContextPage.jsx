@@ -52,7 +52,8 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-const BY_COLOR = { scott: "var(--orange)", frodo: "var(--accent)", manual: "var(--text-muted)" };
+// Who saved a fact → a tone class (.ctx-item-by.by-*, brain.css); the name is always shown too.
+const BY_TONE = { scott: "by-scott", frodo: "by-frodo", manual: "by-manual" };
 const BY_LABEL = { scott: "Scott", frodo: "Frodo", manual: "Manual" };
 
 export default function ContextPage() {
@@ -181,7 +182,6 @@ export default function ContextPage() {
     });
   }, [items, search, filterBy]);
 
-  const verdictColor = { idle: "var(--text-muted)", keep: "var(--accent)", maybe: "var(--orange)" };
   const bys = [...new Set(items.map(i => i.by))];
 
   return (
@@ -190,27 +190,30 @@ export default function ContextPage() {
       <div className="module-header">
         <h1>Context</h1>
         <span className="module-header-sub">{items.length} saved fact{items.length !== 1 ? "s" : ""}</span>
-        <button className="btn btn-sm" style={{ marginLeft: "auto" }} onClick={runSync} disabled={syncing}>
-          {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" /> Sync local facts</>}
+        <button type="button" className="btn btn-sm btn-secondary-sm ctx-header-actions" onClick={runSync} disabled={syncing}>
+          {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Sync local facts</>}
         </button>
       </div>
 
-      {error && <p className="error-message" style={{ marginBottom: "0.75rem" }}>{error}</p>}
+      {error && <div className="load-error" role="alert"><p className="load-error-msg">{error}</p></div>}
       {loading && <SkeletonList rows={5} />}
 
       {/* Add */}
-      <div className="ctx-add-card">
-        <div className="ctx-add-title">Add a fact</div>
-        <div className="ctx-add-sub">Type it however you like — Frodo rewrites it into a clean fact when you save.</div>
+      <section className="db-card ctx-add-card">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Add a fact</h3>
+          <p className="ctx-add-sub">Type it however you like — Frodo rewrites it into a clean fact when you save.</p>
+        </div>
         <textarea
           className="ctx-textarea"
+          aria-label="New fact"
           rows={3}
           placeholder={`e.g. "remember that Scott is allergic to shellfish" or "Scott prefers morning workouts"`}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
         />
-        <div className="ctx-verdict" style={{ color: verdictColor[verdict.kind] }}>
+        <div className={`ctx-verdict is-${verdict.kind}`} aria-live="polite">
           {verdict.kind === "idle" && <span>Start typing…</span>}
           {verdict.kind === "keep" && <><strong>Worth keeping</strong> — {verdict.why}</>}
           {verdict.kind === "maybe" && <><strong>Looks like chatter</strong> — save it anyway if it matters</>}
@@ -223,25 +226,24 @@ export default function ContextPage() {
             ))}
           </div>
         )}
-        <div style={{ display: "flex", gap: "0.625rem", flexWrap: "wrap" }}>
-          <button className="btn" onClick={save} disabled={verdict.kind === "idle" || saving}>
+        <div className="ctx-add-actions">
+          <button type="button" className="btn btn-sm" onClick={save} disabled={verdict.kind === "idle" || saving}>
             {saving
-              ? <><i className="fa-solid fa-spinner fa-spin" /> Refining…</>
-              : verdict.kind === "keep" ? <><i className="fa-solid fa-brain" /> Save to context</> : <><i className="fa-solid fa-plus" /> Save anyway</>}
+              ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Refining…</>
+              : verdict.kind === "keep" ? <><i className="fa-solid fa-brain" aria-hidden="true" /> Save to context</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Save anyway</>}
           </button>
-          {input && !saving && <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setInput("")}>Clear</button>}
+          {input && !saving && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setInput("")}>Clear</button>}
         </div>
-      </div>
+      </section>
 
       {/* Filters */}
       {items.length > 0 && (
         <div className="ctx-filters">
-          <input className="ctx-search" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
-          <div className="ctx-filter-chips">
-            <button className={`ctx-filter-btn${filterBy === "all" ? " active" : ""}`} onClick={() => setFilterBy("all")}>All</button>
+          <input className="ctx-search" type="search" aria-label="Search facts" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="ctx-filter-chips" role="group" aria-label="Saved by">
+            <button type="button" className={`chip${filterBy === "all" ? " active" : ""}`} aria-pressed={filterBy === "all"} onClick={() => setFilterBy("all")}>All</button>
             {bys.map(b => (
-              <button key={b} className={`ctx-filter-btn${filterBy === b ? " active" : ""}`}
-                style={filterBy === b ? { borderColor: BY_COLOR[b] || BY_COLOR.manual, color: BY_COLOR[b] || BY_COLOR.manual } : undefined}
+              <button key={b} type="button" className={`chip${filterBy === b ? " active" : ""}`} aria-pressed={filterBy === b}
                 onClick={() => setFilterBy(b)}>
                 {BY_LABEL[b] || b}
               </button>
@@ -261,42 +263,43 @@ export default function ContextPage() {
             <div key={item.id} className="ctx-item">
               <div className="ctx-item-text">{item.text}</div>
               {(item.tags || []).length > 0 && (
-                <div className="ctx-chips" style={{ marginTop: "0.4rem" }}>
+                <div className="ctx-chips">
                   {item.tags.map(tag => (
                     <span key={tag} className={`ctx-chip${tag === "Scott" ? " person" : ""}`}>#{tag}</span>
                   ))}
                 </div>
               )}
               {editingId === item.id ? (
-                <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                <div className="ctx-edit">
                   <input
-                    className="ctx-search"
-                    style={{ width: "100%" }}
+                    aria-label="How should Frodo rewrite this fact?"
                     placeholder={`e.g. "update to say he quit smoking" or "fix the typo"`}
                     value={editInstruction}
                     onChange={(e) => setEditInstruction(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") saveEdit(item); if (e.key === "Escape") setEditingId(null); }}
                     autoFocus
                   />
-                  <div style={{ display: "flex", gap: "0.4rem" }}>
-                    <button className="btn-tiny-blue" onClick={() => saveEdit(item)} disabled={!editInstruction.trim() || editSaving}>
-                      {editSaving ? <><i className="fa-solid fa-spinner fa-spin" /> Rewriting…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> Rewrite</>}
+                  <div className="ctx-edit-actions">
+                    <button type="button" className="btn-mini accent" onClick={() => saveEdit(item)} disabled={!editInstruction.trim() || editSaving}>
+                      {editSaving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Rewriting…</> : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Rewrite</>}
                     </button>
-                    <button className="btn-tiny-blue" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setEditingId(null)}>Cancel</button>
+                    <button type="button" className="btn-mini" onClick={() => setEditingId(null)}>Cancel</button>
                   </div>
                 </div>
               ) : null}
               <div className="ctx-item-meta">
-                <span className="ctx-item-by" style={{ color: BY_COLOR[item.by] || BY_COLOR.manual }}>
-                  <span className="ctx-dot" style={{ background: BY_COLOR[item.by] || BY_COLOR.manual }} />
+                <span className={`ctx-item-by ${BY_TONE[item.by] || BY_TONE.manual}`}>
+                  <span className="ctx-dot" aria-hidden="true" />
                   {BY_LABEL[item.by] || item.by}
                 </span>
                 <span className="ctx-item-time">{timeAgo(item.ts)}</span>
                 {item.why && item.why !== "saved manually" && (
                   <span className="ctx-item-why">{item.why}</span>
                 )}
-                <button className="ctx-del-btn" style={{ marginLeft: editingId === item.id ? 0 : "auto" }} onClick={() => startEdit(item)} title="Edit with Frodo"><i className="fa-solid fa-pen" /></button>
-                <button className="ctx-del-btn" onClick={() => remove(item)} title="Delete"><i className="fa-solid fa-xmark" /></button>
+                <span className="ctx-item-actions">
+                  <button type="button" className="icon-x sm" onClick={() => startEdit(item)} title="Edit with Frodo" aria-label="Edit with Frodo"><i className="fa-solid fa-pen" aria-hidden="true" /></button>
+                  <button type="button" className="icon-x sm ctx-del" onClick={() => remove(item)} title="Delete" aria-label="Delete fact"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                </span>
               </div>
             </div>
           ))}

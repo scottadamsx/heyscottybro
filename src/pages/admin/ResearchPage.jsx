@@ -6,14 +6,15 @@ import {
   RESEARCH_STATUSES,
 } from "../../api/researchApi";
 import DocLinks from "../../components/docs/DocLinks";
+import { Badge } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./research.css";
 
 const STATUS_META = {
-  open:        { label: "Open",        icon: "fa-circle-dot",   cls: "open" },
-  in_progress: { label: "In progress", icon: "fa-spinner",      cls: "progress" },
-  delivered:   { label: "Delivered",   icon: "fa-circle-check", cls: "delivered" },
-  archived:    { label: "Archived",    icon: "fa-box-archive",  cls: "archived" },
+  open:        { label: "Open",        icon: "fa-circle-dot",   cls: "open",      tone: "accent" },
+  in_progress: { label: "In progress", icon: "fa-spinner",      cls: "progress",  tone: "warn" },
+  delivered:   { label: "Delivered",   icon: "fa-circle-check", cls: "delivered", tone: "good" },
+  archived:    { label: "Archived",    icon: "fa-box-archive",  cls: "archived",  tone: "default" },
 };
 
 export default function ResearchPage() {
@@ -68,8 +69,8 @@ export default function ResearchPage() {
     <div className="module-page research-page">
       {dialog}
       <div className="module-header">
-        <h1><i className="fa-solid fa-magnifying-glass-chart" /> Research</h1>
-        <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>{openCount} open</span>
+        <h1>Research</h1>
+        <span className="research-count">{openCount} open</span>
         <label className="research-archived-toggle">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
@@ -77,21 +78,21 @@ export default function ResearchPage() {
 
       {/* New request */}
       <form className="db-card research-new" onSubmit={add}>
-        <h3 className="db-card-title"><i className="fa-solid fa-plus" /> New research request</h3>
-        <input className="research-title-input" placeholder="What do you want researched?" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea placeholder="Details, questions, sources to use… (optional)" value={details} onChange={(e) => setDetails(e.target.value)} rows={3} />
+        <h3 className="db-card-title">New research request</h3>
+        <input className="research-title-input" aria-label="What do you want researched?" placeholder="What do you want researched?" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <textarea aria-label="Details" placeholder="Details, questions, sources to use… (optional)" value={details} onChange={(e) => setDetails(e.target.value)} rows={3} />
         <div className="research-new-foot">
-          <select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+          <select aria-label="Assign to" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
             <option value="">Unassigned</option>
             {AGENTS.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.title}</option>)}
           </select>
           <button className="btn btn-sm" type="submit" disabled={adding || !title.trim()}>
-            {adding ? <><i className="fa-solid fa-spinner fa-spin" /> Creating…</> : <><i className="fa-solid fa-flask" /> Create request</>}
+            {adding ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Creating…</> : <><i className="fa-solid fa-flask" aria-hidden="true" /> Create request</>}
           </button>
         </div>
       </form>
 
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
+      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
       {!loading && visible.length === 0 && <p className="no-entries">No research requests yet. Create one above, then attach deliverable docs from your Brain as they’re ready.</p>}
 
       <div className="research-list">
@@ -100,20 +101,20 @@ export default function ResearchPage() {
           return (
             <div className={`db-card research-card ${meta.cls}`} key={r.id}>
               <div className="research-card-head">
-                <span className={`research-status ${meta.cls}`}><i className={`fa-solid ${meta.icon}`} /> {meta.label}</span>
-                <strong className="research-card-title">{r.title}</strong>
-                {r.assignee && <span className="research-assignee"><i className="fa-solid fa-user-astronaut" /> {agentName(r.assignee)}</span>}
-                {r.unread_count > 0 && <span className="research-unread">{r.unread_count} unread</span>}
+                <h3 className="db-card-title research-card-title">{r.title}</h3>
+                <Badge tone={meta.tone} icon={meta.icon}>{meta.label}</Badge>
+                {r.unread_count > 0 && <Badge tone="accent">{r.unread_count} unread</Badge>}
+                {r.assignee && <span className="research-assignee"><i className="fa-solid fa-user-astronaut" aria-hidden="true" /> {agentName(r.assignee)}</span>}
               </div>
               {r.details && <p className="research-details">{r.details}</p>}
 
               <DocLinks entityType="research" entityId={r.id} title="Deliverables" />
 
               <div className="research-card-foot">
-                <select value={r.status} onChange={(e) => setStatus(r, e.target.value)} className="research-status-select">
+                <select aria-label="Status" value={r.status} onChange={(e) => setStatus(r, e.target.value)} className="research-status-select">
                   {RESEARCH_STATUSES.map((s) => <option key={s} value={s}>{STATUS_META[s]?.label || s}</option>)}
                 </select>
-                <button className="btn-mini" onClick={() => remove(r)} title="Delete"><i className="fa-solid fa-trash" /></button>
+                <button type="button" className="btn-mini danger" onClick={() => remove(r)} title="Delete" aria-label={`Delete ${r.title}`}><i className="fa-solid fa-trash" aria-hidden="true" /></button>
               </div>
             </div>
           );

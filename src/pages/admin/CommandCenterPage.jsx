@@ -164,9 +164,9 @@ export default function CommandCenterPage() {
   return (
     <div className="module-page cmd-page">
       <div className="module-header">
-        <h1><i className="fa-solid fa-satellite-dish" /> Command Center</h1>
-        <button className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel}>
-          <i className={`fa-solid ${busy.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} /> Run daily summary
+        <h1>Command Center</h1>
+        <button type="button" className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel}>
+          <i className={`fa-solid ${busy.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" /> Run daily summary
         </button>
       </div>
 
@@ -189,25 +189,30 @@ export default function CommandCenterPage() {
           const foot = isLocal
             ? (isBusy ? "working…" : recent || (offline ? "off" : "online"))
             : (isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—");
+          const state = isBusy ? "working" : offline ? "off" : "idle";
+          const stateLabel = state === "working" ? "Working" : state === "off" ? "Offline" : "Idle";
           return (
             <button
+              type="button"
               key={a.id}
               className={`cmd-card${selectedId === a.id ? " selected" : ""}${offline ? " offline" : ""}`}
-              style={{ "--agent": a.color }}
+              aria-pressed={selectedId === a.id}
               onClick={() => setSelectedId(a.id)}
             >
               <div className="cmd-card-top">
-                <span className="cmd-avatar" style={{ background: a.color }}>
+                <span className="cmd-avatar" style={{ background: a.color }} aria-hidden="true">
                   <i className={`fa-solid ${a.icon}`} />
                 </span>
-                <span className={`cmd-status ${isBusy ? "working" : offline ? "off" : "idle"}`} />
+                <span className={`cmd-status ${state}`} title={stateLabel}>
+                  <span className="visually-hidden">{stateLabel}</span>
+                </span>
               </div>
               <div className="cmd-card-name">{a.name}</div>
               <div className="cmd-card-title">{a.title}</div>
               <div className="cmd-card-tagline">{isLocal && recent ? recent : a.tagline}</div>
               <div className="cmd-card-meta">
-                <span><i className="fa-solid fa-microchip" /> {modelLabel(a.model)}</span>
-                {a.kind !== "local" && <span><i className="fa-solid fa-toolbox" /> {resolveTools(a).length} tools</span>}
+                <span><i className="fa-solid fa-microchip" aria-hidden="true" /> {modelLabel(a.model)}</span>
+                {a.kind !== "local" && <span><i className="fa-solid fa-toolbox" aria-hidden="true" /> {resolveTools(a).length} tools</span>}
               </div>
               <div className="cmd-card-foot">
                 <span className={`cmd-badge ${a.kind}`}>{a.kind === "local" ? "Max plan" : "API"}</span>
@@ -220,31 +225,40 @@ export default function CommandCenterPage() {
 
       <div className="cmd-lower">
         {/* Chat / work panel */}
-        <section className="db-card cmd-chat" ref={chatRef}>
-          {!selected && <p className="no-entries">Pick an agent above to start working with it — or open its Profile to see its connector, protocol, tools and documents.</p>}
+        <section className={`db-card cmd-chat${selected ? "" : " is-empty"}`} ref={chatRef}>
+          {!selected && (
+            <div className="empty-state">
+              <i className="fa-solid fa-satellite-dish empty-state-icon" aria-hidden="true" />
+              <p className="empty-state-desc">Pick an agent above to start working with it — or open its Profile to see its connector, protocol, tools and documents.</p>
+            </div>
+          )}
 
           {selected && (
             <>
-              <div className="cmd-chat-head">
-                <span className="cmd-avatar sm" style={{ background: selected.color }}><i className={`fa-solid ${selected.icon}`} /></span>
-                <div>
-                  <div className="cmd-card-name">{selected.name}</div>
-                  <div className="cmd-card-title">{selected.title} · <span className="cmd-model">{selected.model}</span></div>
+              <div className="db-card-header cmd-chat-head">
+                <span className="cmd-avatar sm" style={{ background: selected.color }} aria-hidden="true"><i className={`fa-solid ${selected.icon}`} /></span>
+                <div className="cmd-chat-id">
+                  <h3 className="db-card-title">{selected.name}</h3>
+                  <div className="cmd-chat-sub">{selected.title} · <span className="cmd-model">{selected.model}</span></div>
                 </div>
-                {selected.kind === "api" && thread.display.length > 0 && (
-                  <button type="button" className="btn-mini muted" style={{ marginLeft: "auto" }} onClick={doClearThread} disabled={selBusy} title={`Clear the conversation with ${selected.name}`}>
-                    <i className="fa-solid fa-rotate-left" /> Clear thread
-                  </button>
+                {((selected.kind === "api" && thread.display.length > 0) || selBusy) && (
+                  <div className="cmd-chat-actions">
+                    {selected.kind === "api" && thread.display.length > 0 && (
+                      <button type="button" className="btn-mini muted" onClick={doClearThread} disabled={selBusy} title={`Clear the conversation with ${selected.name}`}>
+                        <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Clear thread
+                      </button>
+                    )}
+                    {selBusy && <span className="cmd-chip-working"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> working</span>}
+                  </div>
                 )}
-                {selBusy && <span className="cmd-chip-working" style={thread.display.length > 0 ? { marginLeft: 0 } : undefined}><i className="fa-solid fa-spinner fa-spin" /> working</span>}
               </div>
 
-              <div className="cmd-tabs">
-                <button type="button" className={`cmd-tab${view === "work" ? " active" : ""}`} onClick={() => setView("work")}>
-                  <i className={`fa-solid ${selected.kind === "local" ? "fa-plug" : "fa-comments"}`} /> {selected.kind === "local" ? "Status" : "Work"}
+              <div className="segmented cmd-tabs" role="group" aria-label={`${selected.name} view`}>
+                <button type="button" className={`segmented-opt${view === "work" ? " active" : ""}`} aria-pressed={view === "work"} onClick={() => setView("work")}>
+                  <i className={`fa-solid ${selected.kind === "local" ? "fa-plug" : "fa-comments"}`} aria-hidden="true" /> {selected.kind === "local" ? "Status" : "Work"}
                 </button>
-                <button type="button" className={`cmd-tab${view === "profile" ? " active" : ""}`} onClick={() => setView("profile")}>
-                  <i className="fa-solid fa-id-card" /> Profile
+                <button type="button" className={`segmented-opt${view === "profile" ? " active" : ""}`} aria-pressed={view === "profile"} onClick={() => setView("profile")}>
+                  <i className="fa-solid fa-id-card" aria-hidden="true" /> Profile
                 </button>
               </div>
 
@@ -252,7 +266,7 @@ export default function CommandCenterPage() {
                 <>
                   <AgentProfile agent={selected} docs={selectedDocs} onOpenDoc={setViewerDoc} />
                   <div className="cmd-deliverables">
-                    <h4 className="cmd-deliverables-title"><i className="fa-solid fa-paperclip" /> Deliverables &amp; research</h4>
+                    <h4 className="cmd-deliverables-title"><i className="fa-solid fa-paperclip" aria-hidden="true" /> Deliverables &amp; research</h4>
                     <DocLinks entityType="agent" entityId={selected.id} title="Linked documents" />
                   </div>
                 </>
@@ -277,20 +291,21 @@ export default function CommandCenterPage() {
                           <>
                             <button
                               type="button"
-                              className="cmd-msg-expand"
-                              style={{ right: 30 }}
+                              className="cmd-msg-expand is-pdf"
                               title="View as PDF"
+                              aria-label="View reply as PDF"
                               onClick={() => openAsPdf(`${selected.name} · ${selected.title}`, m.text, selected.tagline)}
                             >
-                              <i className="fa-solid fa-file-pdf" />
+                              <i className="fa-solid fa-file-pdf" aria-hidden="true" />
                             </button>
                             <button
                               type="button"
                               className="cmd-msg-expand"
                               title="Open in viewer"
+                              aria-label="Open reply in viewer"
                               onClick={() => setViewerDoc({ title: `${selected.name} · ${selected.title}`, body: m.text })}
                             >
-                              <i className="fa-solid fa-up-right-and-down-left-from-center" />
+                              <i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" />
                             </button>
                             <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
                           </>
@@ -311,7 +326,7 @@ export default function CommandCenterPage() {
                         )}
                       </div>
                     ))}
-                    {selBusy && selStatus && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" /> {selStatus}</div>}
+                    {selBusy && selStatus && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> {selStatus}</div>}
                   </div>
 
                   {shots.length > 0 && (
@@ -319,7 +334,7 @@ export default function CommandCenterPage() {
                       {shots.map((s) => (
                         <div key={s.id} className="cmd-shot">
                           <img src={s.dataUrl} alt="attachment" />
-                          <button type="button" className="cmd-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                          <button type="button" className="cmd-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove image"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                         </div>
                       ))}
                     </div>
@@ -336,21 +351,22 @@ export default function CommandCenterPage() {
                       type="file"
                       accept="image/*"
                       multiple
-                      style={{ display: "none" }}
+                      hidden
                       onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }}
                     />
-                    <button type="button" className="btn btn-sm cmd-attach" onClick={() => fileInputRef.current?.click()} disabled={selBusy} title="Attach image" aria-label="Attach image">
-                      <i className="fa-solid fa-paperclip" />
+                    <button type="button" className="btn-secondary-sm cmd-icon-btn" onClick={() => fileInputRef.current?.click()} disabled={selBusy} title="Attach image" aria-label="Attach image">
+                      <i className="fa-solid fa-paperclip" aria-hidden="true" />
                     </button>
                     <input
+                      aria-label={`Message ${selected.name}`}
                       placeholder={selBusy ? `${selected.name} is working…` : dragOver ? "Drop image to attach…" : `Message ${selected.name}…`}
                       value={draft}
                       onChange={(e) => setInputFor(selected.id, e.target.value)}
                       onPaste={onPaste}
                       disabled={selBusy}
                     />
-                    <button className="btn btn-sm" type="submit" disabled={selBusy || (!draft.trim() && shots.length === 0)}>
-                      <i className="fa-solid fa-paper-plane" />
+                    <button className="btn cmd-icon-btn" type="submit" disabled={selBusy || (!draft.trim() && shots.length === 0)} aria-label="Send">
+                      <i className="fa-solid fa-paper-plane" aria-hidden="true" />
                     </button>
                   </form>
                 </>
@@ -362,8 +378,8 @@ export default function CommandCenterPage() {
         {/* Activity feed */}
         <section className="db-card cmd-feed">
           <div className="db-card-header">
-            <h3 className="db-card-title"><i className="fa-solid fa-wave-square" /> Activity</h3>
-            <button className="btn-mini" onClick={refreshActions} title="Refresh"><i className="fa-solid fa-rotate-right" /></button>
+            <h3 className="db-card-title">Activity</h3>
+            <button type="button" className="btn-mini" onClick={refreshActions} title="Refresh" aria-label="Refresh activity"><i className="fa-solid fa-rotate-right" aria-hidden="true" /></button>
           </div>
           {actions.length === 0 && <p className="no-entries">No agent activity yet.</p>}
           <div className="cmd-feed-list">
@@ -372,10 +388,13 @@ export default function CommandCenterPage() {
               const isErr = a.status === "error";
               return (
                 <div key={a.id} className="cmd-feed-item">
-                  <span className="cmd-feed-dot" style={{ background: agent?.color || "var(--text-muted)" }} />
+                  <span className="cmd-feed-dot" style={{ background: agent?.color || "var(--text-muted)" }} aria-hidden="true" />
                   <div className="cmd-feed-body">
-                    <div className="cmd-feed-title" style={isErr ? { color: "var(--red)" } : undefined}>{describeAction(a)}</div>
-                    <div className="cmd-feed-meta">{agent?.name || a.agent_id} · {actionTime(a.created_at)}</div>
+                    <div className="cmd-feed-title">{describeAction(a)}</div>
+                    <div className="cmd-feed-meta">
+                      {agent?.name || a.agent_id} · {actionTime(a.created_at)}
+                      {isErr && <> · <span className="cmd-feed-err">failed</span></>}
+                    </div>
                   </div>
                 </div>
               );
@@ -387,18 +406,18 @@ export default function CommandCenterPage() {
       {/* Markdown viewer — agents present their work (filed docs + any reply) */}
       {viewerDoc && (
         <div className="cmd-viewer-backdrop" onClick={() => setViewerDoc(null)}>
-          <div className="cmd-viewer" onClick={(e) => e.stopPropagation()}>
+          <div className="cmd-viewer" role="dialog" aria-modal="true" aria-label={viewerDoc.title || viewerDoc.slug || "Document"} onClick={(e) => e.stopPropagation()}>
             <div className="cmd-viewer-head">
-              <h3 className="db-card-title"><i className="fa-solid fa-file-lines" /> {viewerDoc.title || viewerDoc.slug || "Document"}</h3>
+              <h3 className="db-card-title">{viewerDoc.title || viewerDoc.slug || "Document"}</h3>
               <div className="cmd-viewer-actions">
-                <button className="btn-mini" title="View as PDF" onClick={() => { openAsPdf(viewerDoc.title || viewerDoc.slug, viewerDoc.body); setViewerDoc(null); }}>
-                  <i className="fa-solid fa-file-pdf" />
+                <button type="button" className="btn-mini" title="View as PDF" aria-label="View as PDF" onClick={() => { openAsPdf(viewerDoc.title || viewerDoc.slug, viewerDoc.body); setViewerDoc(null); }}>
+                  <i className="fa-solid fa-file-pdf" aria-hidden="true" />
                 </button>
-                <button className="btn-mini" title="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
-                  <i className="fa-solid fa-copy" />
+                <button type="button" className="btn-mini" title="Copy markdown" aria-label="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
+                  <i className="fa-solid fa-copy" aria-hidden="true" />
                 </button>
-                {viewerDoc.slug && <a className="btn-mini" href="/admin/mission?tab=brain" title="Open in Brain"><i className="fa-solid fa-diagram-project" /></a>}
-                <button className="btn-mini" onClick={() => setViewerDoc(null)} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+                {viewerDoc.slug && <a className="btn-mini" href="/admin/mission?tab=brain" title="Open in Brain" aria-label="Open in Brain"><i className="fa-solid fa-diagram-project" aria-hidden="true" /></a>}
+                <button type="button" className="btn-mini" onClick={() => setViewerDoc(null)} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
             </div>
             <div className="cmd-viewer-body chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(viewerDoc.body || "*(empty document)*") }} />
@@ -431,7 +450,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
   return (
     <div className="cmd-profile">
       <div className="cmd-prof-block">
-        <div className="cmd-prof-h"><i className="fa-solid fa-plug" /> Connector</div>
+        <div className="cmd-prof-h"><i className="fa-solid fa-plug" aria-hidden="true" /> Connector</div>
         <div className="cmd-prof-rows">
           <div className="cmd-prof-row"><span>Model</span><b>{conn.modelLabel}</b></div>
           <div className="cmd-prof-row"><span>Transport</span><b>{conn.transport}</b></div>
@@ -440,7 +459,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
       </div>
 
       <div className="cmd-prof-block">
-        <div className="cmd-prof-h"><i className="fa-solid fa-diagram-project" /> Protocol</div>
+        <div className="cmd-prof-h"><i className="fa-solid fa-diagram-project" aria-hidden="true" /> Protocol</div>
         <div className="cmd-prof-rows">
           {protocol.map((f) => (
             <div key={f.label} className="cmd-prof-row"><span>{f.label}</span><b>{f.value}</b></div>
@@ -450,7 +469,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
 
       <div className="cmd-prof-block">
         <div className="cmd-prof-h">
-          <i className="fa-solid fa-toolbox" /> Tools <span className="cmd-prof-count">{tools.length}</span>
+          <i className="fa-solid fa-toolbox" aria-hidden="true" /> Tools <span className="db-count cmd-prof-count">{tools.length}</span>
         </div>
         {tools.length === 0 ? (
           <p className="cmd-prof-note">
@@ -472,7 +491,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
 
       <div className="cmd-prof-block">
         <div className="cmd-prof-h">
-          <i className="fa-solid fa-file-lines" /> Documents <span className="cmd-prof-count">{docs.length}</span>
+          <i className="fa-solid fa-file-lines" aria-hidden="true" /> Documents <span className="db-count cmd-prof-count">{docs.length}</span>
         </div>
         {docs.length === 0 ? (
           <p className="cmd-prof-note">Nothing filed into the Brain yet.</p>
@@ -480,7 +499,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
           <div className="cmd-doc-list">
             {docs.map((d) => (
               <button key={d.id || d.slug} type="button" className="cmd-doc" title={`Open “${d.title || d.slug}”`} onClick={() => onOpenDoc(d)}>
-                <span className="cmd-doc-title"><i className="fa-solid fa-note-sticky" /> {d.title || d.slug}</span>
+                <span className="cmd-doc-title"><i className="fa-solid fa-note-sticky" aria-hidden="true" /> {d.title || d.slug}</span>
                 <span className="cmd-doc-meta">
                   {(d.type || "note")}{d.updated_at ? ` · ${new Date(d.updated_at).toLocaleDateString()}` : ""}
                 </span>

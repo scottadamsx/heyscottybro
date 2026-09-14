@@ -31,17 +31,17 @@ export default function AulePanel({ agent, onOpenDoc }) {
     return (
       <div className="cmd-local">
         <p className="cmd-offline-note">
-          <i className="fa-solid fa-plug-circle-xmark" /> {agent.name} is offline.
+          <i className="fa-solid fa-plug-circle-xmark" aria-hidden="true" /> {agent.name} is offline.
           {" "}Make sure Claude Code is logged in (Max), and that <code>AULE_TOKEN</code> /
           {" "}<code>VITE_AULE_TOKEN</code> / <code>VITE_AULE_URL</code> are set in <code>.env</code>.
           {" "}Then turn him on below — or run <code>npm run agents</code> yourself.
         </p>
         <div className="aule-actions">
-          <button className="btn btn-sm" onClick={auleTurnOn} disabled={starting}>
-            <i className={`fa-solid ${starting ? "fa-spinner fa-spin" : "fa-power-off"}`} /> {starting ? "Starting Aulë…" : "Turn on Aulë"}
+          <button type="button" className="btn btn-sm" onClick={auleTurnOn} disabled={starting}>
+            <i className={`fa-solid ${starting ? "fa-spinner fa-spin" : "fa-power-off"}`} aria-hidden="true" /> {starting ? "Starting Aulë…" : "Turn on Aulë"}
           </button>
-          <button className="btn btn-sm btn-secondary-sm" onClick={auleConnect} disabled={starting}>
-            <i className="fa-solid fa-rotate-right" /> Reconnect
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={auleConnect} disabled={starting}>
+            <i className="fa-solid fa-rotate-right" aria-hidden="true" /> Reconnect
           </button>
         </div>
       </div>
@@ -51,26 +51,26 @@ export default function AulePanel({ agent, onOpenDoc }) {
   return (
     <div className="aule">
       <div className="aule-bar">
-        <span className={`aule-dot ${status}`} />
+        <span className={`aule-dot ${status}`} aria-hidden="true" />
         <span className="aule-state">{status === "online" ? "online" : "connecting…"}</span>
         {repos.length > 0 && (
-          <select className="aule-repo" value={cwd} onChange={(e) => aulePickRepo(e.target.value)} disabled={busy}>
+          <select className="aule-repo" aria-label="Repository" value={cwd} onChange={(e) => aulePickRepo(e.target.value)} disabled={busy}>
             {repos.map((r) => <option key={r} value={r}>{repoName(r)}</option>)}
           </select>
         )}
-        {busy && <button className="btn-mini" onClick={auleInterrupt} title="Interrupt"><i className="fa-solid fa-stop" /> Stop</button>}
+        {busy && <button type="button" className="btn-mini" onClick={auleInterrupt} title="Interrupt"><i className="fa-solid fa-stop" aria-hidden="true" /> Stop</button>}
       </div>
 
       <div className="cmd-thread" ref={scrollRef}>
         {thread.length === 0 && <p className="no-entries">Tell {agent.name} what to build in <strong>{repoName(cwd) || "your repo"}</strong>.</p>}
         {thread.map((m, i) => {
           if (m.role === "tool") {
-            return <div key={i} className="aule-tool"><i className="fa-solid fa-wrench" /> {m.name}{m.input?.command ? `: ${String(m.input.command).slice(0, 80)}` : m.input?.file_path ? `: ${m.input.file_path}` : ""}</div>;
+            return <div key={i} className="aule-tool"><i className="fa-solid fa-wrench" aria-hidden="true" /> {m.name}{m.input?.command ? `: ${String(m.input.command).slice(0, 80)}` : m.input?.file_path ? `: ${m.input.file_path}` : ""}</div>;
           }
           if (m.role === "result") {
             return (
               <div key={i} className={`cmd-msg ${m.isError ? "error" : "assistant"}`}>
-                <button type="button" className="cmd-msg-expand" title="Open in viewer" onClick={() => onOpenDoc?.({ title: `${agent.name} · result`, body: m.text || "" })}><i className="fa-solid fa-up-right-and-down-left-from-center" /></button>
+                <button type="button" className="cmd-msg-expand" title="Open in viewer" aria-label="Open result in viewer" onClick={() => onOpenDoc?.({ title: `${agent.name} · result`, body: m.text || "" })}><i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" /></button>
                 <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text || "_(done)_") }} />
                 {typeof m.cost === "number" && <div className="aule-cost">Max plan · ~${m.cost.toFixed(3)} equivalent</div>}
               </div>
@@ -84,18 +84,19 @@ export default function AulePanel({ agent, onOpenDoc }) {
             </div>
           );
         })}
-        {busy && statusLine && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" /> {statusLine}</div>}
+        {busy && statusLine && <div className="cmd-status-line"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> {statusLine}</div>}
       </div>
 
       <form className="cmd-input-row" onSubmit={send}>
         <input
+          aria-label={`Message ${agent.name}`}
           placeholder={busy ? `${agent.name} is coding…` : `Tell ${agent.name} what to build…`}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={busy || status !== "online"}
         />
-        <button className="btn btn-sm" type="submit" disabled={busy || status !== "online" || !input.trim()}>
-          <i className="fa-solid fa-paper-plane" />
+        <button className="btn cmd-icon-btn" type="submit" disabled={busy || status !== "online" || !input.trim()} aria-label="Send">
+          <i className="fa-solid fa-paper-plane" aria-hidden="true" />
         </button>
       </form>
     </div>

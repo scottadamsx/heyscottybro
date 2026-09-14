@@ -132,24 +132,24 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
 
   return (
     <div className={`doclinks${dragOver ? " drag-over" : ""}`} onDrop={onDrop} onDragOver={onDragOver} onDragLeave={() => setDragOver(false)} onPaste={onPaste}>
-      <button type="button" className="doclinks-head" onClick={() => setOpen((o) => !o)}>
-        <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} />
-        <i className="fa-solid fa-paperclip" />
+      <button type="button" className="doclinks-head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} aria-hidden="true" />
+        <i className="fa-solid fa-paperclip" aria-hidden="true" />
         <span>{title}</span>
         <span className="doclinks-count">{links.length}{unread > 0 && <em className="doclinks-unread"> · {unread} unread</em>}</span>
       </button>
 
       {open && (
         <div className="doclinks-body">
-          {loading && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
+          {loading && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
           {!loading && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
-          {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
+          {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
 
           {links.map((l) => (
             <div className={`doclinks-row${l.read ? " read" : ""}`} key={l.id}>
               <button type="button" className="doclinks-open" onClick={() => open_(l)} title="Open document">
-                <span className={`doclinks-dot${l.read ? " read" : ""}`} title={l.read ? "Read" : "Unread"} />
-                <i className={`fa-solid ${icon(l.node_type)}`} />
+                <span className={`doclinks-dot${l.read ? " read" : ""}`} title={l.read ? "Read" : "Unread"}><span className="visually-hidden">{l.read ? "Read: " : "Unread: "}</span></span>
+                <i className={`fa-solid ${icon(l.node_type)}`} aria-hidden="true" />
                 <span className="doclinks-name">{l.node_title}</span>
                 {l.node_missing && <span className="doclinks-missing">missing</span>}
               </button>
@@ -159,31 +159,32 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
                 onClick={() => toggleRead(l)}
                 disabled={busyId === l.id}
                 title={l.read ? "Mark unread" : "Mark read"}
+                aria-label={l.read ? `Mark ${l.node_title} unread` : `Mark ${l.node_title} read`}
               >
-                <i className={`fa-solid ${l.read ? "fa-rotate-left" : "fa-check"}`} />
+                <i className={`fa-solid ${l.read ? "fa-rotate-left" : "fa-check"}`} aria-hidden="true" />
               </button>
-              <button type="button" className="btn-mini" onClick={() => remove(l)} title="Unlink"><i className="fa-solid fa-xmark" /></button>
+              <button type="button" className="btn-mini" onClick={() => remove(l)} title="Unlink" aria-label={`Unlink ${l.node_title}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
             </div>
           ))}
 
           <div className="doclinks-attach" ref={pickRef}>
             <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => (picking ? setPicking(false) : openPicker())}>
-              <i className="fa-solid fa-plus" /> Attach document
+              <i className="fa-solid fa-plus" aria-hidden="true" /> Attach document
             </button>
             <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => fileRef.current?.click()}>
-              <i className="fa-solid fa-upload" /> Upload file
+              <i className="fa-solid fa-upload" aria-hidden="true" /> Upload file
             </button>
             <input ref={fileRef} type="file" multiple accept="image/*,.heic,.heif,.pdf,.txt,.md,.csv,.docx" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
             <span className="doclinks-hint">or drop / paste a screenshot</span>
             {picking && (
               <div className="doclinks-picker">
-                <input autoFocus placeholder="Search your Brain…" value={query} onChange={(e) => setQuery(e.target.value)} />
+                <input autoFocus aria-label="Search your Brain" placeholder="Search your Brain…" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <div className="doclinks-picker-list">
-                  {nodes === null && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading Brain…</p>}
+                  {nodes === null && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading Brain…</p>}
                   {nodes !== null && candidates.length === 0 && <p className="no-entries">No matching documents.</p>}
                   {candidates.map((n) => (
                     <button type="button" key={n.slug} className="doclinks-cand" onClick={() => attach(n.slug)}>
-                      <i className={`fa-solid ${icon(n.type)}`} />
+                      <i className={`fa-solid ${icon(n.type)}`} aria-hidden="true" />
                       <span className="doclinks-name">{n.title || n.slug}</span>
                     </button>
                   ))}

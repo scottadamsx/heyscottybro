@@ -128,11 +128,11 @@ export default function Inbox() {
     <div className="inbox">
       {dialog}
       <div className="inbox-bar">
-        <button className="btn btn-sm btn-primary-sm" onClick={() => setShowAdd((s) => !s)}>
-          <i className="fa-solid fa-plus" /> Add message
+        <button type="button" className="btn btn-sm" aria-expanded={showAdd} onClick={() => setShowAdd((s) => !s)}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> Add message
         </button>
-        <button className="btn btn-sm" onClick={sync} disabled={syncing}>
-          {syncing ? <><i className="fa-solid fa-spinner fa-spin" /> Syncing…</> : <><i className="fa-solid fa-rotate" /> Sync from Gmail</>}
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={sync} disabled={syncing}>
+          {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-rotate" aria-hidden="true" /> Sync from Gmail</>}
         </button>
         <label className="inbox-toggle">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
@@ -147,16 +147,16 @@ export default function Inbox() {
       {showAdd && (
         <div className="inbox-form">
           <div className="inbox-form-row">
-            <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>
-              {CHANNELS.map((c) => <option key={c} value={c}>{c}</option>)}
+            <select aria-label="Channel" value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>
+              {CHANNELS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
             </select>
-            <input placeholder="From (name / handle)" value={form.sender} onChange={(e) => setForm({ ...form, sender: e.target.value })} />
-            <input placeholder="Subject (optional)" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+            <input aria-label="From" placeholder="From (name / handle)" value={form.sender} onChange={(e) => setForm({ ...form, sender: e.target.value })} />
+            <input aria-label="Subject" placeholder="Subject (optional)" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
           </div>
-          <textarea placeholder="Paste the message you need to reply to…" rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+          <textarea aria-label="Message" placeholder="Paste the message you need to reply to…" rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           <div className="inbox-form-actions">
-            <button className="btn btn-sm btn-primary-sm" onClick={add}>Add</button>
-            <button className="btn btn-sm" onClick={() => setShowAdd(false)}>Cancel</button>
+            <button type="button" className="btn btn-sm" onClick={add}>Add</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -169,13 +169,13 @@ export default function Inbox() {
             const expanded = open === m.id;
             return (
               <div className={`inbox-item${expanded ? " open" : ""}${m.read ? "" : " unread"}`} key={m.id}>
-                <button className="inbox-item-head" onClick={() => openItem(m, expanded)}>
+                <button type="button" className="inbox-item-head" aria-expanded={expanded} onClick={() => openItem(m, expanded)}>
                   <span className="inbox-dot" aria-hidden="true" />
-                  <i className={`${chOf(m.channel).prefix} ${chOf(m.channel).icon} inbox-ch-icon`} />
-                  <div className="inbox-item-main">
-                    <div className="inbox-item-title">{m.subject || m.sender || "(message)"}</div>
-                    <div className="inbox-item-sub">{m.sender ? `${m.sender} · ` : ""}{m.body.slice(0, 80).replace(/\s+/g, " ")}…</div>
-                  </div>
+                  <i className={`${chOf(m.channel).prefix} ${chOf(m.channel).icon} inbox-ch-icon`} aria-hidden="true" />
+                  <span className="inbox-item-main">
+                    <span className="inbox-item-title">{!m.read && <span className="visually-hidden">Unread: </span>}{m.subject || m.sender || "(message)"}</span>
+                    <span className="inbox-item-sub">{m.sender ? `${m.sender} · ` : ""}{m.body.slice(0, 80).replace(/\s+/g, " ")}…</span>
+                  </span>
                   <span className={`inbox-status s-${m.status}`}>{STATUS_LABEL[m.status] || m.status}</span>
                 </button>
 
@@ -184,12 +184,13 @@ export default function Inbox() {
                     <div className="inbox-msg">{m.body}</div>
                     <div className="inbox-draft-head">
                       <span>Reply draft</span>
-                      <button className="btn btn-sm" onClick={() => makeDraft(m)} disabled={busy === m.id}>
-                        {busy === m.id ? <><i className="fa-solid fa-spinner fa-spin" /> Drafting…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> {draftFor(m) ? "Redraft" : "Generate draft"}</>}
+                      <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => makeDraft(m)} disabled={busy === m.id}>
+                        {busy === m.id ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Drafting…</> : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> {draftFor(m) ? "Redraft" : "Generate draft"}</>}
                       </button>
                     </div>
                     <textarea
                       className="inbox-draft"
+                      aria-label="Reply draft"
                       rows={5}
                       placeholder="The AI draft appears here — edit it freely."
                       value={draftFor(m)}
@@ -197,15 +198,15 @@ export default function Inbox() {
                     />
                     <div className="inbox-actions">
                       {m.channel === "email" && (
-                        <button className="btn btn-sm btn-primary-sm" onClick={() => send(m)} disabled={!draftFor(m) || sending === m.id || m.status === "replied"}>
-                          {sending === m.id ? <><i className="fa-solid fa-spinner fa-spin" /> Sending…</> : m.status === "replied" ? <><i className="fa-solid fa-check" /> Sent</> : <><i className="fa-solid fa-paper-plane" /> Send reply</>}
+                        <button type="button" className="btn btn-sm" onClick={() => send(m)} disabled={!draftFor(m) || sending === m.id || m.status === "replied"}>
+                          {sending === m.id ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Sending…</> : m.status === "replied" ? <><i className="fa-solid fa-check" aria-hidden="true" /> Sent</> : <><i className="fa-solid fa-paper-plane" aria-hidden="true" /> Send reply</>}
                         </button>
                       )}
-                      <button className="btn btn-sm" onClick={() => copyDraft(m)} disabled={!draftFor(m)}><i className="fa-solid fa-copy" /> Copy</button>
-                      <button className="btn btn-sm" onClick={() => saveDraft(m)}>Save draft</button>
-                      <button className="btn btn-sm" onClick={() => setStatus(m, "replied")}>Replied</button>
-                      <button className="btn btn-sm" onClick={() => setStatus(m, m.status === "archived" ? "needs_reply" : "archived")}>{m.status === "archived" ? "Unarchive" : "Archive"}</button>
-                      <button className="btn-mini danger" onClick={() => remove(m)}><i className="fa-solid fa-trash" /></button>
+                      <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => copyDraft(m)} disabled={!draftFor(m)}><i className="fa-solid fa-copy" aria-hidden="true" /> Copy</button>
+                      <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => saveDraft(m)}>Save draft</button>
+                      <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setStatus(m, "replied")}>Replied</button>
+                      <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setStatus(m, m.status === "archived" ? "needs_reply" : "archived")}>{m.status === "archived" ? "Unarchive" : "Archive"}</button>
+                      <button type="button" className="btn-mini danger" onClick={() => remove(m)} aria-label="Delete message" title="Delete message"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
                     </div>
                   </div>
                 )}
