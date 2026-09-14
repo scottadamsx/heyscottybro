@@ -6,6 +6,8 @@ import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 import { loadDraft, saveDraft, clearDraft, JOURNAL_NEW_DRAFT, journalEditDraft } from "../../utils/drafts";
+import { journalToMarkdown, journalExportFilename } from "../../utils/journalExport";
+import { downloadMarkdown } from "../../lib/exporter";
 
 const savedTime = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -147,13 +149,29 @@ export default function JournalPage() {
   };
   const draftFailedMsg = "Couldn't auto-save this draft — browser storage is full or blocked. Save it before leaving this page.";
 
+  const exportAll = () => {
+    try {
+      downloadMarkdown(journalToMarkdown(entries), journalExportFilename());
+      addToast(`Exported ${entries.length} ${entries.length === 1 ? "entry" : "entries"}.`, "success");
+    } catch (err) {
+      addToast(`Couldn't export journal: ${err?.message || "unknown error"}`, "error");
+    }
+  };
+
   return (
     <div className="module-page">
       <div className="module-header">
         <h1>Journal</h1>
-        <button className="btn btn-sm" onClick={openCompose}>
-          <i className={`fa-solid ${hasDraft ? "fa-pen-to-square" : "fa-plus"}`} aria-hidden="true" /> {hasDraft ? "Resume Draft" : "New Entry"}
-        </button>
+        <div className="header-actions">
+          {ready && !loadError && entries.length > 0 && (
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={exportAll} title="Download every entry as one Markdown file">
+              <i className="fa-solid fa-file-arrow-down" aria-hidden="true" /> Export .md
+            </button>
+          )}
+          <button className="btn btn-sm" onClick={openCompose}>
+            <i className={`fa-solid ${hasDraft ? "fa-pen-to-square" : "fa-plus"}`} aria-hidden="true" /> {hasDraft ? "Resume Draft" : "New Entry"}
+          </button>
+        </div>
       </div>
 
       {/* Compose form — every keystroke is cached as a draft */}
