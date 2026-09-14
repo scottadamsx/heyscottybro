@@ -11,6 +11,9 @@ import { loadMessages } from "../../api/messagesApi";
 import { buildBrief } from "../../lib/brief";
 import { ExportKit } from "../../components/ui";
 import LineChart from "../../components/ui/LineChart";
+import RescheduleSheet from "../../components/RescheduleSheet";
+import { overdueReminders } from "../../utils/reschedule";
+import { useToast } from "../../contexts/ToastContext";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
@@ -42,7 +45,18 @@ export default function DashboardPage() {
   const [aiError, setAiError] = useState("");
   const [showWeek, setShowWeek] = useState(false);
   const [range, setRange] = useState(7);
+  const [scheduling, setScheduling] = useState(null); // { item, kind } in the Fit-it-in dialog
   const navigate = useNavigate();
+  const { addToast } = useToast();
+  // After a reschedule, re-read just the plan data so Up next / counts move.
+  const refreshPlan = async () => {
+    try {
+      const [reminders, events] = await Promise.all([loadReminders(), loadEvents()]);
+      setData((d) => ({ ...d, reminders, events }));
+    } catch (err) {
+      addToast(`Saved, but couldn't refresh the list: ${err?.message || err}`, "error");
+    }
+  };
   const openTask = (id) => navigate(`/admin/tasks/${id}`);
 
   useEffect(() => {
@@ -114,7 +128,7 @@ export default function DashboardPage() {
   // ── Tasks + events ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
   const todayItems = remindersForDay(activeReminders, todayStr);
-  const overdue = activeReminders.filter((r) => r.date && r.date < todayStr && (r.recurrence || "none") === "none");
+  const overdue = overdueReminders(activeReminders, todayStr);
   const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30)).sort((a, b) => a.date.localeCompare(b.date));
   const anytimeItems = undatedReminders(activeReminders);
   const weekEnd = addDaysStr(todayStr, 6);
@@ -126,9 +140,9 @@ export default function DashboardPage() {
   const courseById = Object.fromEntries(school.courses.map((c) => [c.id, c]));
   const projectById = Object.fromEntries(data.projects.map((p) => [p.id, p]));
   const upNext = [
-    ...todayItems.map((r) => ({ kind: r.course_id ? "school" : "task", id: `t-${r.id}-${r.date}`, title: r.name, date: todayStr, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
+    ...todayItems.map((r) => ({ kind: r.course_id ? "school" : "task", id: `t-${r.id}-${r.date}`, raw: r, title: r.name, date: todayStr, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
     ...eventsThisWeek.map((e) => ({ kind: "event", id: `e-${e.id}`, title: e.title, date: e.date < todayStr ? todayStr : e.date, time: e.start_time, sub: "Event", go: () => navigate(`/admin/planner?date=${e.date}`) })),
-    ...upcomingAll.slice(0, 8).map((r) => ({ kind: r.course_id ? "school" : "task", id: `u-${r.id}-${r.date}`, title: r.name, date: r.date, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
+    ...upcomingAll.slice(0, 8).map((r) => ({ kind: r.course_id ? "school" : "task", id: `u-${r.id}-${r.date}`, raw: data.reminders.find((x) => x.id === r.id), title: r.name, date: r.date, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
   ].sort((a, b) => a.date.localeCompare(b.date) || String(a.time || "99").localeCompare(String(b.time || "99"))).slice(0, 5);
   const whenLabel = (it) => {
     const day = it.date === todayStr ? "Today" : it.date === addDaysStr(todayStr, 1) ? "Tomorrow" : shortDow(it.date);
@@ -249,12 +263,32 @@ export default function DashboardPage() {
           <div className="section-head">
             <h2 className="section-title">Up next</h2>
           </div>
+          {overdue.length > 0 && (
+            <div className="un-overdue">
+              <div className="db-subhead">Overdue <span className="db-count">{overdue.length}</span></div>
+              <ul className="un-list">
+                {overdue.slice(0, 4).map((r) => (
+                  <li key={`o-${r.id}`} className="un-item">
+                    <div className="un-row" role="button" tabIndex={0} onClick={() => openTask(r.id)} onKeyDown={onActivate(() => openTask(r.id))}>
+                      <span className="un-icon kind-overdue" aria-hidden="true"><i className="fa-solid fa-clock-rotate-left" /></span>
+                      <span className="un-main">
+                        <span className="un-title">{r.name}</span>
+                        <span className="un-sub is-overdue">Was due {shortDate(r.date)}</span>
+                      </span>
+                    </div>
+                    <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setScheduling({ item: r, kind: "task" })}>Fit it in</button>
+                  </li>
+                ))}
+              </ul>
+              {overdue.length > 4 && <Link to="/admin/reminders" className="link-more">{overdue.length - 4} more overdue <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>}
+            </div>
+          )}
           {upNext.length === 0 ? (
             <p className="no-entries">Nothing coming up this week. You&apos;re clear.</p>
           ) : (
             <ul className="un-list">
               {upNext.map((it) => (
-                <li key={it.id}>
+                <li key={it.id} className="un-item">
                   <div className="un-row" role="button" tabIndex={0} onClick={it.go} onKeyDown={onActivate(it.go)}>
                     <span className={`un-icon kind-${it.kind}`} aria-hidden="true">
                       <i className={`fa-solid ${it.kind === "event" ? "fa-calendar-day" : it.kind === "school" ? "fa-graduation-cap" : "fa-check"}`} />
@@ -265,6 +299,11 @@ export default function DashboardPage() {
                     </span>
                     <span className={`un-when${it.date === todayStr ? " is-today" : ""}`}>{whenLabel(it)}</span>
                   </div>
+                  {it.raw && (it.raw.recurrence || "none") === "none" && (
+                    <button type="button" className="icon-x" onClick={() => setScheduling({ item: it.raw, kind: "task" })} aria-label={`Schedule ${it.title}`} title="Schedule a time">
+                      <i className="fa-regular fa-clock" aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -392,6 +431,18 @@ export default function DashboardPage() {
         <StorageUsage />
         <ConnectionStatus />
       </div>
+
+      {scheduling && (
+        <RescheduleSheet
+          item={scheduling.item}
+          kind={scheduling.kind}
+          reminders={data.reminders}
+          events={data.events}
+          today={todayStr}
+          onClose={() => setScheduling(null)}
+          onMoved={refreshPlan}
+        />
+      )}
 
       {/* This-week reminders, grouped by day */}
       {showWeek && (

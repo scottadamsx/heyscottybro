@@ -51,6 +51,11 @@
   transition: background-color var(--dur-fast);
 }
 .un-row:hover { background: var(--bg-raised); }
+.un-item { display: flex; align-items: center; gap: var(--space-xs); }
+.un-item > .un-row { flex: 1; min-width: 0; }
+.un-icon.kind-overdue { background: var(--danger-bg); color: var(--red); }
+.un-sub.is-overdue { color: var(--red); }
+.un-overdue { display: flex; flex-direction: column; gap: var(--space-xs); padding-bottom: var(--space-md); border-bottom: 1px solid var(--border-subtle); }
 .un-icon { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-full); font-size: 14px; }
 .un-icon.kind-task { background: var(--accent-bg); color: var(--accent); }
 .un-icon.kind-event { background: var(--info-bg); color: var(--blue); }

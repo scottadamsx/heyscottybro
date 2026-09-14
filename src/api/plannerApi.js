@@ -196,16 +196,29 @@ export async function completeReminder(id, occurrenceDate) {
 export async function updateReminder(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id"].forEach((k) => {
+  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
+  // Returns { dropped: [...] } when a column the DB doesn't have yet had to be
+  // left out (the rest of the edit still saved) — the caller must tell Scott.
+  let dropped = [];
   await op(
-    async () => { const { error } = await supabase.from("reminders").update(patch).eq("id", id); if (error) throw error; },
+    async () => {
+      let { error } = await supabase.from("reminders").update(patch).eq("id", id);
+      if (error && "duration_min" in patch && isMissingColumn(error, "duration_min")) {
+        console.error("[plannerApi] reminders.duration_min is missing — run supabase/migrations/2026-09-14-reminder-duration.sql. Saving the rest of the edit WITHOUT the duration:", error.message);
+        const rest = { ...patch }; delete rest.duration_min;
+        dropped = ["duration_min"];
+        ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
+      }
+      if (error) throw error;
+    },
     () => local.update("reminders", id, patch),
     "reminders.update",
   );
   emitDataChange("reminders");
+  return { dropped };
 }
 
 export async function deleteReminder(id) {

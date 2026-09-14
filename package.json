@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "agents": "node agent-server/server.mjs",
-    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js",
+    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js src/utils/reschedule.test.js",
     "lint": "eslint . --max-warnings=0"
   },
   "dependencies": {
