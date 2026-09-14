@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./budget.css";
 
 const WEEKS_PER_MONTH = 4.33;
 
@@ -175,15 +176,15 @@ export default function WeeklyTracker({
       {dialog}
       <div className="bud-week-nav">
         <button type="button" className="btn-mini" onClick={() => setWeekOffset(w => w - 1)} aria-label="Previous week">
-          <i className="fa-solid fa-chevron-left" />
+          <i className="fa-solid fa-chevron-left" aria-hidden="true" />
         </button>
-        <button type="button" className="bud-week-title" onClick={() => setExpanded(v => !v)}>
+        <button type="button" className="bud-week-title" aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
           <span className="bud-week-label-top">{label}</span>
           <span className="bud-week-dates">{dateRange}</span>
-          <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"} bud-week-chev`} />
+          <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"} bud-week-chev`} aria-hidden="true" />
         </button>
         <button type="button" className="btn-mini" onClick={() => setWeekOffset(w => w + 1)} aria-label="Next week">
-          <i className="fa-solid fa-chevron-right" />
+          <i className="fa-solid fa-chevron-right" aria-hidden="true" />
         </button>
       </div>
 
@@ -192,7 +193,7 @@ export default function WeeklyTracker({
         {/* Free to spend */}
         <div className="bud-week-free-card">
           <div className="bud-week-caption">Free to spend</div>
-          <div className="bud-week-free-val" style={{ color: freeOver ? "var(--bud-red)" : "var(--bud-green)" }}>
+          <div className={`bud-week-free-val ${freeOver ? "bud-tone-bad" : "bud-tone-good"}`}>
             {freeOver ? "-" : ""}{formatMoney(Math.abs(week.freeToSpend))}
           </div>
           <div className="bud-week-fun-sub">
@@ -200,7 +201,7 @@ export default function WeeklyTracker({
           </div>
           {weekOffset === 0 && (
             <button type="button" className="btn accent bud-week-fun-btn" onClick={() => onQuickLog("Entertainment")}>
-              <i className="fa-solid fa-plus" /> Log expense
+              <i className="fa-solid fa-plus" aria-hidden="true" /> Log expense
             </button>
           )}
         </div>
@@ -209,21 +210,19 @@ export default function WeeklyTracker({
           {/* Fun pot */}
           <div className="bud-week-stat">
             <div className="bud-week-caption">Fun money left</div>
-            <div className="bud-week-stat-val" style={{ color: funOver ? "var(--bud-red)" : "var(--bud-green)" }}>
+            <div className={`bud-week-stat-val ${funOver ? "bud-tone-bad" : "bud-tone-good"}`}>
               {funOver ? "-" : ""}{formatMoney(Math.abs(week.funLeft))}
             </div>
-            <div className="bud-week-fun-track" style={{ marginTop: "0.3rem" }}>
-              <div className="bud-week-fun-fill" style={{
-                width: `${Math.min(week.funWeekly > 0 ? (week.funSpent / week.funWeekly) * 100 : 0, 100)}%`,
-                background: funOver ? "var(--bud-red)" : week.funSpent / week.funWeekly > 0.75 ? "var(--bud-gold)" : "var(--bud-green)",
-              }} />
+            <div className="bud-week-fun-track">
+              <div className={`bud-week-fun-fill ${funOver ? "bud-bg-bad" : week.funSpent / week.funWeekly > 0.75 ? "bud-bg-warn" : "bud-bg-good"}`}
+                style={{ width: `${Math.min(week.funWeekly > 0 ? (week.funSpent / week.funWeekly) * 100 : 0, 100)}%` }} />
             </div>
           </div>
 
           {/* Scheduled unpaid */}
           <div className="bud-week-stat">
             <div className="bud-week-caption">Bills due</div>
-            <div className="bud-week-stat-val" style={{ color: week.scheduledUnpaidTotal > 0 ? "var(--bud-gold)" : "var(--text-muted)" }}>
+            <div className={`bud-week-stat-val ${week.scheduledUnpaidTotal > 0 ? "bud-tone-warn" : "bud-tone-muted"}`}>
               {formatMoney(week.scheduledUnpaidTotal)}
             </div>
             <div className="bud-week-stat-sub">{week.scheduled.filter(s => !s.fulfilled).length} unpaid</div>
@@ -233,7 +232,7 @@ export default function WeeklyTracker({
           {week.commitments.length > 0 && (
             <div className="bud-week-stat">
               <div className="bud-week-caption">Commitments</div>
-              <div className="bud-week-stat-val" style={{ color: "var(--orange)" }}>
+              <div className="bud-week-stat-val bud-tone-warn">
                 {formatMoney(week.commitmentTotal)}
               </div>
               <div className="bud-week-stat-sub">{week.commitments.length} event{week.commitments.length !== 1 ? "s" : ""}</div>
@@ -243,7 +242,7 @@ export default function WeeklyTracker({
           {week.income > 0 && (
             <div className="bud-week-stat">
               <div className="bud-week-caption">Income logged</div>
-              <div className="bud-week-stat-val" style={{ color: "var(--bud-green)" }}>+{formatMoney(week.income)}</div>
+              <div className="bud-week-stat-val bud-tone-good">+{formatMoney(week.income)}</div>
             </div>
           )}
         </div>
@@ -255,7 +254,7 @@ export default function WeeklyTracker({
           {week.catBars.map(({ cat, budget, spent }) => {
             const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
             const over = budget > 0 && spent > budget;
-            const barColor = over ? "var(--bud-red)" : pct > 75 ? "var(--bud-gold)" : "var(--accent)";
+            const barTone = over ? "bud-bg-bad" : pct > 75 ? "bud-bg-warn" : "bud-bg-good";
             return (
               <div className="bud-cat-bar-row" key={cat}>
                 <div className="bud-cat-bar-label">
@@ -265,7 +264,7 @@ export default function WeeklyTracker({
                   </span>
                 </div>
                 <div className="bud-cat-bar-track">
-                  <div className="bud-cat-bar-fill" style={{ width: budget > 0 ? `${pct}%` : "100%", background: barColor, opacity: budget > 0 ? 1 : 0.35 }} />
+                  <div className={`bud-cat-bar-fill ${barTone}${budget > 0 ? "" : " is-unbudgeted"}`} style={{ width: budget > 0 ? `${pct}%` : "100%" }} />
                 </div>
               </div>
             );
@@ -274,7 +273,7 @@ export default function WeeklyTracker({
       )}
 
       <button type="button" className="bud-week-expand-hint" onClick={() => setExpanded(v => !v)}>
-        {expanded ? "Hide details" : "Show logged + scheduled"} <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`} />
+        {expanded ? "Hide details" : "Show logged + scheduled"} <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" />
       </button>
 
       {expanded && (
@@ -287,8 +286,8 @@ export default function WeeklyTracker({
               if (editingId === tx.id) {
                 return (
                   <div className="bud-tx-edit" key={tx.id} onKeyDown={onKey}>
-                    <input autoFocus value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} placeholder="Description" />
-                    <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} />
+                    <input autoFocus value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} placeholder="Description" aria-label="Description" />
+                    <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} aria-label="Amount" />
                     <select value={draft.type} onChange={e => setDraft({ ...draft, type: e.target.value })}>
                       <option value="expense">Expense</option>
                       <option value="income">Income</option>
@@ -297,8 +296,8 @@ export default function WeeklyTracker({
                       {categories.map(c => <option key={c}>{c}</option>)}
                     </select>
                     <DatePicker value={draft.date} onChange={(v) => setDraft({ ...draft, date: v })} />
-                    <button type="button" className="btn-mini accent" onClick={commit}><i className="fa-solid fa-check" /></button>
-                    <button type="button" className="btn-mini muted" onClick={cancel}><i className="fa-solid fa-xmark" /></button>
+                    <button type="button" className="btn-mini accent" onClick={commit} aria-label="Save"><i className="fa-solid fa-check" aria-hidden="true" /></button>
+                    <button type="button" className="btn-mini muted" onClick={cancel} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                   </div>
                 );
               }
@@ -312,8 +311,8 @@ export default function WeeklyTracker({
                   </div>
                   <div className="bud-tx-amount">{signed < 0 ? "-" : "+"}{formatMoney(signed)}</div>
                   <div className="bud-tx-actions">
-                    <button type="button" className="btn-mini" onClick={() => startEdit(tx)}><i className="fa-solid fa-pen" /></button>
-                    <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
+                    <button type="button" className="btn-mini" onClick={() => startEdit(tx)} aria-label="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /></button>
+                    <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
                   </div>
                 </div>
               );
@@ -324,7 +323,7 @@ export default function WeeklyTracker({
           <div className="bud-week-col">
             <h4 className="bud-week-col-head">Scheduled ({week.scheduled.length})</h4>
             {week.scheduled.length === 0 && (
-              <p className="bud-muted">No dated bills this week.<br /><span style={{ fontSize: "0.72rem" }}>Set a "Due day" on a bill to see it here.</span></p>
+              <p className="bud-muted">No dated bills this week.<br /><span className="bud-week-hint">Set a &quot;Due day&quot; on a bill to see it here.</span></p>
             )}
             {week.scheduled.map((s, i) => {
               const dueLabel = new Date(s.date + "T00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -333,14 +332,14 @@ export default function WeeklyTracker({
                   <div className="bud-tx-main">
                     <div className="bud-tx-desc">
                       {s.bill.name}
-                      {s.fulfilled && <span className="bud-paid-badge"><i className="fa-solid fa-check" /> paid</span>}
+                      {s.fulfilled && <span className="bud-paid-badge"><i className="fa-solid fa-check" aria-hidden="true" /> paid</span>}
                     </div>
                     <div className="bud-tx-meta">Due {dueLabel} · {s.bill.category || "Other"}</div>
                   </div>
                   <div className="bud-tx-amount">-{formatMoney(s.bill.amount)}</div>
                   {!s.fulfilled && (
                     <button type="button" className="btn-mini accent" onClick={() => onLogBill(s.bill, s.date)}>
-                      <i className="fa-solid fa-check" /> Paid
+                      <i className="fa-solid fa-check" aria-hidden="true" /> Paid
                     </button>
                   )}
                 </div>
@@ -360,7 +359,7 @@ export default function WeeklyTracker({
                       <div className="bud-tx-desc">{e.title}</div>
                       <div className="bud-tx-meta">{dayLabel}{e.description ? ` · ${e.description}` : ""}</div>
                     </div>
-                    <div className="bud-tx-amount" style={{ color: "var(--orange)" }}>~{formatMoney(e.cost)}</div>
+                    <div className="bud-tx-amount">~{formatMoney(e.cost)}</div>
                   </div>
                 );
               })}
@@ -371,8 +370,8 @@ export default function WeeklyTracker({
           {weekOffset === 0 && week.laterThisMonth.length > 0 && (
             <div className="bud-week-later">
               <div className="bud-week-later-head">
-                <h4 className="bud-week-col-head" style={{ margin: 0 }}>Coming up later this month ({week.laterThisMonth.length})</h4>
-                <span className="bud-muted" style={{ fontSize: "0.78rem" }}>Total {formatMoney(week.laterTotal)} · pay early to log now</span>
+                <h4 className="bud-week-col-head">Coming up later this month ({week.laterThisMonth.length})</h4>
+                <span className="bud-muted bud-week-later-total">Total {formatMoney(week.laterTotal)} · pay early to log now</span>
               </div>
               <div className="bud-week-later-list">
                 {week.laterThisMonth.map(s => {
@@ -385,7 +384,7 @@ export default function WeeklyTracker({
                       </div>
                       <div className="bud-tx-amount">-{formatMoney(s.bill.amount)}</div>
                       <button type="button" className="btn-mini accent" onClick={() => onLogBill(s.bill, toDateStr(new Date()))} title="Pay early">
-                        <i className="fa-solid fa-forward" /> Pay early
+                        <i className="fa-solid fa-forward" aria-hidden="true" /> Pay early
                       </button>
                     </div>
                   );

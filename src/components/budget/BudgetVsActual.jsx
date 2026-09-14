@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { formatMoney } from "../../utils/plannerUtils";
+import "./budget.css";
 
 export default function BudgetVsActual({ projection, recurringBills }) {
   const rows = useMemo(() => {
@@ -59,7 +60,7 @@ export default function BudgetVsActual({ projection, recurringBills }) {
     <div className="bud-bva">
       {rows.categories.map(c => {
         const over = c.actual > c.budgeted && c.budgeted > 0;
-        const barColor = over ? "var(--bud-red)" : "var(--bud-green)";
+        const tone = over ? "bad" : "good";
         const widthPct = Math.min(c.ratio * 100, 100);
         return (
           <div className="bud-bva-row" key={c.category}>
@@ -68,13 +69,13 @@ export default function BudgetVsActual({ projection, recurringBills }) {
               <span className="bud-bva-nums">
                 <strong>{formatMoney(c.actual)}</strong>
                 <span className="bud-muted"> / {formatMoney(c.budgeted)}</span>
-                <span style={{ color: barColor, marginLeft: "0.5rem" }}>
+                <span className={`bud-bva-delta bud-tone-${tone}`}>
                   {c.delta >= 0 ? "\u2193" : "\u2191"} {formatMoney(Math.abs(c.delta))}
                 </span>
               </span>
             </div>
             <div className="bud-bva-track">
-              <div className="bud-bva-fill" style={{ width: `${widthPct}%`, background: barColor }} />
+              <div className={`bud-bva-fill bud-bg-${tone}`} style={{ width: `${widthPct}%` }} />
               {c.ratio > 1 && <div className="bud-bva-over" style={{ width: `${Math.min((c.ratio - 1) * 100, 100)}%` }} />}
             </div>
           </div>
@@ -84,14 +85,14 @@ export default function BudgetVsActual({ projection, recurringBills }) {
         <div className="bud-bva-extras">
           {rows.unexpectedIncome > 0 && (
             <div className="bud-bva-extra">
-              <span><i className="fa-solid fa-arrow-up" /> Unexpected income</span>
-              <strong style={{ color: "var(--bud-green)" }}>+{formatMoney(rows.unexpectedIncome)}</strong>
+              <span><i className="fa-solid fa-arrow-up" aria-hidden="true" /> Unexpected income</span>
+              <strong className="bud-tone-good">+{formatMoney(rows.unexpectedIncome)}</strong>
             </div>
           )}
           {rows.unexpectedExpenses > 0 && (
             <div className="bud-bva-extra">
-              <span><i className="fa-solid fa-arrow-down" /> Unexpected expenses</span>
-              <strong style={{ color: "var(--bud-red)" }}>-{formatMoney(rows.unexpectedExpenses)}</strong>
+              <span><i className="fa-solid fa-arrow-down" aria-hidden="true" /> Unexpected expenses</span>
+              <strong className="bud-tone-bad">-{formatMoney(rows.unexpectedExpenses)}</strong>
             </div>
           )}
         </div>

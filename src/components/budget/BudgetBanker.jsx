@@ -71,30 +71,32 @@ export default function BudgetBanker({ onChanged }) {
   const grow = (e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; };
   const clear = () => { setDisplay([]); setHistory([]); };
 
+  // Bubbles reuse the app chat's own classes (.chat-msg / .chat-md / .chat-send)
+  // so Griphook reads exactly like Frodo's panel; only the frame is local.
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "min(70vh, 560px)" }}>
+    <div className="db-card banker">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10, borderBottom: "0.5px solid var(--border-subtle)", marginBottom: 10 }}>
-        <div style={{ fontSize: 26, lineHeight: 1 }}><i className={`fa-solid ${BANKER.icon}`} aria-hidden="true" /></div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{BANKER.name} <i className={`fa-solid ${BANKER.icon}`} style={{ fontSize: 12, opacity: 0.6, marginLeft: 2 }} /></div>
-          <div className="bud-muted-11">{BANKER.tagline} · guards your gold</div>
+      <div className="banker-head">
+        <span className="banker-avatar" aria-hidden="true"><i className={`fa-solid ${BANKER.icon}`} /></span>
+        <div className="banker-id">
+          <span className="banker-name">{BANKER.name}</span>
+          <span className="banker-tag">{BANKER.tagline} · guards your gold</span>
         </div>
         {display.length > 0 && (
-          <button className="btn-sm bud-btn-xs" onClick={clear} title="Clear conversation">
-            <i className="fa-solid fa-rotate-left" /> Clear
+          <button type="button" className="btn-sm btn-secondary-sm" onClick={clear} title="Clear conversation">
+            <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Clear
           </button>
         )}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, paddingRight: 4 }}>
+      <div className="banker-log" role="log" aria-live="polite" aria-label={`Conversation with ${BANKER.name}`}>
         {display.length === 0 && (
-          <div className="bud-muted-13">
-            <p style={{ marginTop: 0 }}><strong>{BANKER.name}</strong> keeps your ledger. Tell him what to change — he handles the rest. Try:</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div className="banker-empty">
+            <p><strong>{BANKER.name}</strong> keeps your ledger. Tell him what to change — he handles the rest. Try:</p>
+            <div className="banker-suggestions">
               {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)} disabled={loading} className="bud-suggestion">
+                <button key={s} type="button" onClick={() => send(s)} disabled={loading} className="bud-suggestion">
                   {s}
                 </button>
               ))}
@@ -103,27 +105,28 @@ export default function BudgetBanker({ onChanged }) {
         )}
         {display.map((m, i) => (
           m.role === "user"
-            ? <div key={i} className="bud-bubble bud-bubble-user">{m.text}</div>
-            : <div key={i} className="chat-md bud-bubble bud-bubble-bot">
-                <div className="bud-muted-11" style={{ marginBottom: 3 }}>{BANKER.name}</div>
+            ? <div key={i} className="chat-msg user">{m.text}</div>
+            : <div key={i} className="chat-msg assistant chat-md">
+                <span className="chat-author">{BANKER.name}</span>
                 <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
               </div>
         ))}
         {loading && (
-          <div className="bud-bubble bud-bubble-bot" style={{ color: "var(--text-muted)", fontStyle: "italic", fontSize: 13 }}>
-            {status || `${BANKER.name} is counting the gold…`}
+          <div className="chat-msg assistant banker-typing" role="status">
+            <span className="chat-typing" aria-hidden="true"><span /><span /><span /></span>
+            <em className="chat-status">{status || `${BANKER.name} is counting the gold…`}</em>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
       {/* Input */}
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 10, borderTop: "0.5px solid var(--border-subtle)", paddingTop: 10 }}>
+      <div className="banker-input">
         <textarea ref={taRef} value={input} maxLength={MAX_INPUT} onChange={grow} onKeyDown={onKey} rows={1}
-          placeholder={`Tell ${BANKER.name} what to do with your money…`}
-          style={{ flex: 1, resize: "none", fontSize: 14, padding: "8px 10px", maxHeight: 120, lineHeight: 1.4 }} />
-        <button className="btn" onClick={() => send()} disabled={loading || !input.trim()} style={{ padding: "8px 12px" }} aria-label="Send">
-          <i className="fa-solid fa-paper-plane" />
+          aria-label={`Message ${BANKER.name}`}
+          placeholder={`Tell ${BANKER.name} what to do with your money…`} />
+        <button type="button" className="chat-send" onClick={() => send()} disabled={loading || !input.trim()} aria-label="Send">
+          <i className="fa-solid fa-paper-plane" aria-hidden="true" />
         </button>
       </div>
     </div>

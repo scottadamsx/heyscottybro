@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatMoney } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./budget.css";
 
 export default function MonthBreakdown({ month, categories, onUpdateTx, onDeleteTx, onLogFromSource }) {
   const [editingId, setEditingId] = useState(null);
@@ -35,7 +36,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
         <div className="bud-breakdown-col">
           <div className="bud-breakdown-head">
             <h4>Actuals</h4>
-            <span className="bud-breakdown-sum" style={{ color: actualsSum >= 0 ? "var(--bud-green)" : "var(--bud-red)" }}>
+            <span className={`bud-breakdown-sum ${actualsSum >= 0 ? "bud-tone-good" : "bud-tone-bad"}`}>
               {actualsSum >= 0 ? "+" : "-"}{formatMoney(actualsSum)}
             </span>
           </div>
@@ -46,8 +47,8 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
             if (editingId === tx.id) {
               return (
                 <div className="bud-tx-edit" key={tx.id} onKeyDown={onKey}>
-                  <input autoFocus value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} />
-                  <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} />
+                  <input autoFocus value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} aria-label="Description" />
+                  <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} aria-label="Amount" />
                   <select value={draft.type} onChange={e => setDraft({ ...draft, type: e.target.value })}>
                     <option value="expense">Expense</option>
                     <option value="income">Income</option>
@@ -56,8 +57,8 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                     {categories.map(c => <option key={c}>{c}</option>)}
                   </select>
                   <DatePicker value={draft.date} onChange={(v) => setDraft({ ...draft, date: v })} />
-                  <button type="button" className="btn-mini" onClick={commit} aria-label="Save"><i className="fa-solid fa-check" /></button>
-                  <button type="button" className="btn-mini muted" onClick={cancel} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
+                  <button type="button" className="btn-mini" onClick={commit} aria-label="Save"><i className="fa-solid fa-check" aria-hidden="true" /></button>
+                  <button type="button" className="btn-mini muted" onClick={cancel} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               );
             }
@@ -66,14 +67,14 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                 <div className="bud-tx-main">
                   <div className="bud-tx-desc">
                     {tx.description}
-                    {linked && <span className="bud-tx-link" title="Linked to a recurring source"><i className="fa-solid fa-link" /></span>}
+                    {linked && <span className="bud-tx-link" title="Linked to a recurring source"><i className="fa-solid fa-link" aria-hidden="true" /><span className="visually-hidden">Linked to a recurring source</span></span>}
                   </div>
                   <div className="bud-tx-meta">{tx.category} · {tx.date}</div>
                 </div>
                 <div className="bud-tx-amount">{signed >= 0 ? "+" : "-"}{formatMoney(signed)}</div>
                 <div className="bud-tx-actions">
-                  <button type="button" className="btn-mini" onClick={() => startEdit(tx)} aria-label="Edit"><i className="fa-solid fa-pen" /></button>
-                  <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
+                  <button type="button" className="btn-mini" onClick={() => startEdit(tx)} aria-label="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /></button>
+                  <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${tx.description}"?`, { title: "Delete transaction", confirmLabel: "Delete" })) onDeleteTx(tx.id); }} aria-label="Delete"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
                 </div>
               </div>
             );
@@ -99,7 +100,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
               </div>
               <div className="bud-tx-amount">+{formatMoney(s.amount)}</div>
               <button type="button" className="btn-mini accent" onClick={() => onLogFromSource(s, "income", month.key)}>
-                <i className="fa-solid fa-plus" /> Log
+                <i className="fa-solid fa-plus" aria-hidden="true" /> Log
               </button>
             </div>
           ))}
@@ -111,7 +112,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
               </div>
               <div className="bud-tx-amount">-{formatMoney(b.amount)}</div>
               <button type="button" className="btn-mini accent" onClick={() => onLogFromSource(b, "recurring", month.key)}>
-                <i className="fa-solid fa-plus" /> Log
+                <i className="fa-solid fa-plus" aria-hidden="true" /> Log
               </button>
             </div>
           ))}
