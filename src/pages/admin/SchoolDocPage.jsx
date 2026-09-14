@@ -5,6 +5,7 @@ import { getDocument, getSignedUrl } from "../../api/documentsApi";
 import { renderMarkdown } from "../../utils/markdown";
 import CopyId, { docId } from "../../components/CopyId";
 import { ExportKit } from "../../components/ui";
+import "./reader.css"; // .reader-tag
 import "./schooldoc.css";
 
 /**
@@ -40,11 +41,11 @@ export default function SchoolDocPage() {
     return () => { alive = false; };
   }, [slug]);
 
-  if (node === undefined) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading document…</p></div>;
+  if (node === undefined) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading document…</p></div>;
   if (node === null) return (
     <div className="module-page">
       <p className="no-entries">Document not found — it may have been deleted.</p>
-      <button className="btn btn-sm" onClick={() => navigate("/admin/school")}>Back to School</button>
+      <div><button type="button" className="btn btn-sm" onClick={() => navigate("/admin/school")}>Back to School</button></div>
     </div>
   );
 
@@ -56,30 +57,30 @@ export default function SchoolDocPage() {
   return (
     <div className="module-page schooldoc-page">
       <div className="schooldoc-bar">
-        <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate("/admin/school")}>
-          <i className="fa-solid fa-arrow-left" /> School
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => navigate("/admin/school")}>
+          <i className="fa-solid fa-arrow-left" aria-hidden="true" /> School
         </button>
         <div className="schooldoc-bar-actions">
           <ExportKit exporter={{ title: node.title || slug, filename: docId(node.title, slug).toLowerCase(), toMarkdown: () => node.body || "" }} />
-          {url && <a className="btn btn-sm btn-secondary-sm" href={url} target="_blank" rel="noreferrer"><i className="fa-solid fa-arrow-up-right-from-square" /> Open original</a>}
+          {url && <a className="btn btn-sm btn-secondary-sm" href={url} target="_blank" rel="noreferrer"><i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /> Open original</a>}
         </div>
       </div>
 
       <div className={`schooldoc-split${doc ? "" : " single"}`}>
         {doc && (
           <section className="schooldoc-doc">
-            <div className="schooldoc-pane-title"><i className="fa-solid fa-file-lines" /> The document</div>
+            <h2 className="schooldoc-pane-title"><i className="fa-solid fa-file-lines" aria-hidden="true" /> The document</h2>
             {url && isPdf && <iframe title={doc.name} src={url} className="schooldoc-frame" />}
             {url && isImage && <img src={url} alt={doc.name} className="schooldoc-img" />}
             {url && !isPdf && !isImage && (
               <p className="no-entries">Preview not available — <a href={url} target="_blank" rel="noreferrer">open the original</a>.</p>
             )}
-            {!url && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Fetching the file…</p>}
+            {!url && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Fetching the file…</p>}
           </section>
         )}
 
         <section className="schooldoc-note">
-          <div className="schooldoc-pane-title"><i className="fa-solid fa-brain" /> What the Brain took from it</div>
+          <h2 className="schooldoc-pane-title"><i className="fa-solid fa-brain" aria-hidden="true" /> What the Brain took from it</h2>
           <h1 className="schooldoc-title">{node.title}</h1>
           <div className="schooldoc-meta">
             {(node.tags || []).filter((t) => !t.startsWith("doc:")).map((t) => <span key={t} className="reader-tag">#{t}</span>)}

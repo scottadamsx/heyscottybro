@@ -157,11 +157,11 @@ export default function SchoolPage() {
         exporter={exporter}
         actions={
           <>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => setShowImport(true)}>
-              <i className="fa-solid fa-file-import" /> Import document
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setShowImport(true)}>
+              <i className="fa-solid fa-file-import" aria-hidden="true" /> Import document
             </button>
-            <button className="btn btn-sm" onClick={() => setCourseForm({ ...EMPTY_COURSE })}>
-              <i className="fa-solid fa-plus" /> Add course
+            <button type="button" className="btn btn-sm" onClick={() => setCourseForm({ ...EMPTY_COURSE })}>
+              <i className="fa-solid fa-plus" aria-hidden="true" /> Add course
             </button>
           </>
         }
@@ -190,7 +190,7 @@ export default function SchoolPage() {
         const onTarget = st.projectedFinal != null && c.target_grade != null ? st.projectedFinal >= c.target_grade : null;
         return (
           <Card key={c.id} className="school-course">
-            <button type="button" className="school-course-head" onClick={() => setOpen(expanded ? null : c.id)}>
+            <button type="button" className="school-course-head" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : c.id)}>
               <span className="school-course-code" style={{ background: c.color || "var(--accent)" }}>{c.code}</span>
               <span className="school-course-main">
                 <span className="school-course-name">{c.name}</span>
@@ -204,24 +204,26 @@ export default function SchoolPage() {
               <span className="school-course-side">
                 {onTarget != null && <Badge tone={onTarget ? "good" : "bad"}>{onTarget ? "On target" : "Below target"}</Badge>}
                 {next && <Badge tone={daysUntil(next.date) <= 3 ? "warn" : "default"} icon="fa-clock">{next.date}</Badge>}
-                <i className={`fa-solid fa-chevron-${expanded ? "up" : "down"}`} />
+                <i className={`fa-solid fa-chevron-${expanded ? "up" : "down"}`} aria-hidden="true" />
               </span>
             </button>
 
             {expanded && (
               <div className="school-course-body">
                 <div className="school-course-actions">
-                  <button className="btn btn-sm btn-secondary-sm" onClick={() => setDeadlineFor(c)}><i className="fa-solid fa-calendar-plus" /> Add deadline</button>
-                  <button className="btn btn-sm btn-secondary-sm" onClick={() => setCourseForm({ ...c, target_grade: c.target_grade ?? "" })}><i className="fa-solid fa-pen" /> Edit course</button>
-                  <button className="btn btn-sm btn-secondary-sm" onClick={() => removeCourse(c)} style={{ color: "var(--red)" }}><i className="fa-solid fa-trash" /> Delete</button>
+                  <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setDeadlineFor(c)}><i className="fa-solid fa-calendar-plus" aria-hidden="true" /> Add deadline</button>
+                  <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setCourseForm({ ...c, target_grade: c.target_grade ?? "" })}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit course</button>
+                  <button type="button" className="btn-delete" onClick={() => removeCourse(c)}><i className="fa-solid fa-trash" aria-hidden="true" /> Delete</button>
                 </div>
                 {cds.length > 0 && (
                   <div className="school-deadlines-inline">
                     {cds.map((r) => (
                       <div key={r.id} className="school-deadline-row">
-                        <button className="school-deadline-done" title="Mark done" onClick={() => completeDeadline(r)}><i className="fa-regular fa-circle" /></button>
+                        <button type="button" className="school-deadline-done" title="Mark done" aria-label={`Mark ${r.name} done`} onClick={() => completeDeadline(r)}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
                         <span className="school-deadline-name">{r.name}</span>
-                        <span className={`school-deadline-date${daysUntil(r.date) < 0 ? " overdue" : daysUntil(r.date) <= 3 ? " soon" : ""}`}>{r.date}</span>
+                        <span className={`school-deadline-date${daysUntil(r.date) < 0 ? " overdue" : daysUntil(r.date) <= 3 ? " soon" : ""}`}>
+                          {r.date}{daysUntil(r.date) < 0 ? <span className="visually-hidden"> (overdue)</span> : daysUntil(r.date) <= 3 ? <span className="visually-hidden"> (due soon)</span> : null}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -248,20 +250,21 @@ export default function SchoolPage() {
                   className="school-deadline-name"
                   title="Open the document"
                 >
-                  {(n.tags || []).some((t) => t.startsWith("doc:")) && <i className="fa-solid fa-file-pdf" style={{ marginRight: 6, color: "var(--accent)" }} />}
+                  {(n.tags || []).some((t) => t.startsWith("doc:")) && <i className="fa-solid fa-file-pdf school-doc-icon" aria-hidden="true" />}
                   {n.title}
                 </Link>
                 <span className="school-deadline-date">{String(n.created_at || "").slice(0, 10)}</span>
                 <button
                   type="button"
-                  className="school-deadline-done"
+                  className="school-deadline-done is-delete"
                   title="Delete this document"
+                  aria-label={`Delete ${n.title}`}
                   onClick={async () => {
                     if (!await confirm(`Delete "${n.title}"?`, { title: "Delete document", confirmLabel: "Delete" })) return;
                     try { await deleteNode(n.id); refresh(); } catch (e) { addToast(e.message, "error"); }
                   }}
                 >
-                  <i className="fa-solid fa-trash" style={{ fontSize: 11 }} />
+                  <i className="fa-solid fa-trash" aria-hidden="true" />
                 </button>
               </div>
             );
@@ -274,7 +277,7 @@ export default function SchoolPage() {
         <Card title="All deadlines" icon="fa-flag-checkered">
           {deadlines.map((r) => (
             <div key={r.id} className="school-deadline-row">
-              <button className="school-deadline-done" title="Mark done" onClick={() => completeDeadline(r)}><i className="fa-regular fa-circle" /></button>
+              <button type="button" className="school-deadline-done" title="Mark done" aria-label={`Mark ${r.name} done`} onClick={() => completeDeadline(r)}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
               <Badge>{courseById[r.course_id]?.code || "?"}</Badge>
               <Link to={`/admin/tasks/${r.id}`} className="school-deadline-name">{r.name}</Link>
               <span className={`school-deadline-date${daysUntil(r.date) < 0 ? " overdue" : daysUntil(r.date) <= 3 ? " soon" : ""}`}>
@@ -299,15 +302,15 @@ export default function SchoolPage() {
       {courseForm && (
         <Modal title={courseForm.id ? `Edit ${courseForm.code}` : "Add course"} onClose={() => setCourseForm(null)}
           footer={<>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => setCourseForm(null)}>Cancel</button>
-            <button className="btn btn-sm" onClick={saveCourse}>Save</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setCourseForm(null)}>Cancel</button>
+            <button type="button" className="btn btn-sm" onClick={saveCourse}>Save</button>
           </>}>
           <div className="school-form">
-            <input placeholder="Code (CP 2315) *" value={courseForm.code} onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })} />
-            <input placeholder="Name (Cloud Developer Capstone) *" value={courseForm.name} onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })} />
-            <input placeholder="Term (Spring 2026)" value={courseForm.term} onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })} />
-            <input placeholder="Instructor" value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} />
-            <input type="number" placeholder="Target grade % (e.g. 80)" value={courseForm.target_grade} onChange={(e) => setCourseForm({ ...courseForm, target_grade: e.target.value })} />
+            <input aria-label="Course code" placeholder="Code (CP 2315) *" value={courseForm.code} onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })} />
+            <input aria-label="Course name" placeholder="Name (Cloud Developer Capstone) *" value={courseForm.name} onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })} />
+            <input aria-label="Term" placeholder="Term (Spring 2026)" value={courseForm.term} onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })} />
+            <input aria-label="Instructor" placeholder="Instructor" value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} />
+            <input type="number" aria-label="Target grade %" placeholder="Target grade % (e.g. 80)" value={courseForm.target_grade} onChange={(e) => setCourseForm({ ...courseForm, target_grade: e.target.value })} />
           </div>
         </Modal>
       )}
@@ -316,11 +319,11 @@ export default function SchoolPage() {
       {deadlineFor && (
         <Modal title={`New ${deadlineFor.code} deadline`} onClose={() => setDeadlineFor(null)}
           footer={<>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => setDeadlineFor(null)}>Cancel</button>
-            <button className="btn btn-sm" onClick={addDeadline}>Add</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDeadlineFor(null)}>Cancel</button>
+            <button type="button" className="btn btn-sm" onClick={addDeadline}>Add</button>
           </>}>
           <div className="school-form">
-            <input placeholder="What's due? (Lab 3, Final report…) *" value={dl.name} onChange={(e) => setDl({ ...dl, name: e.target.value })} />
+            <input aria-label="What's due?" placeholder="What's due? (Lab 3, Final report…) *" value={dl.name} onChange={(e) => setDl({ ...dl, name: e.target.value })} />
             <DatePicker value={dl.date} onChange={(v) => setDl({ ...dl, date: v })} />
             <p className="school-form-hint">Deadlines are reminders under the hood — they'll show on Plan and Today automatically.</p>
           </div>

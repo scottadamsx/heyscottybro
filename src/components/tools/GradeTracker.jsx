@@ -133,9 +133,9 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
       {stats.notes.map((n) => <p className="metric-note" key={n}>{n}</p>)}
 
       <div className="gt-actions">
-        <button className="btn btn-sm" onClick={openNew}><i className="fa-solid fa-plus" /> Add assessment</button>
-        <button className="btn btn-sm" onClick={makePlan} disabled={planning}>
-          {planning ? <><i className="fa-solid fa-spinner fa-spin" /> Thinking…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> Generate catch-up plan</>}
+        <button type="button" className="btn btn-sm" onClick={openNew}><i className="fa-solid fa-plus" aria-hidden="true" /> Add assessment</button>
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={makePlan} disabled={planning}>
+          {planning ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Thinking…</> : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Generate catch-up plan</>}
         </button>
       </div>
 
@@ -143,18 +143,18 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
       {showForm && (
         <div className="gt-form">
           <div className="gt-form-row">
-            <input placeholder="Course (e.g. CP 2561)" value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} />
-            <input placeholder="Assessment (e.g. Test 2)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <input aria-label="Course" placeholder="Course (e.g. CP 2561)" value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} />
+            <input aria-label="Assessment" placeholder="Assessment (e.g. Test 2)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="gt-form-row">
             <label>Earned<input type="number" step="0.01" placeholder="—" value={form.earned} onChange={(e) => setForm({ ...form, earned: e.target.value })} /></label>
             <label>Out of<input type="number" step="0.01" value={form.max} onChange={(e) => setForm({ ...form, max: e.target.value })} /></label>
             <label>Weight %<input type="number" step="0.1" min="0" placeholder="e.g. 15" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></label>
           </div>
-          <textarea placeholder="Instructor feedback (optional — fuels the catch-up plan)" rows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
+          <textarea aria-label="Instructor feedback" placeholder="Instructor feedback (optional — fuels the catch-up plan)" rows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
           <div className="gt-form-actions">
-            <button className="btn btn-sm btn-primary-sm" onClick={save}>{editId ? "Save" : "Add"}</button>
-            <button className="btn btn-sm" onClick={() => { setShowForm(false); setEditId(null); }}>Cancel</button>
+            <button type="button" className="btn btn-sm" onClick={save}>{editId ? "Save" : "Add"}</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setShowForm(false); setEditId(null); }}>Cancel</button>
           </div>
         </div>
       )}
@@ -177,8 +177,8 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
                 </div>
                 <div className={`gt-item-pct ${p != null && p < 60 ? "low" : p != null && p >= 80 ? "high" : ""}`}>{p == null ? "—" : `${p}%`}</div>
                 <div className="gt-item-btns">
-                  <button className="btn-mini" onClick={() => openEdit(g)} aria-label={`Edit ${g.name}`}><i className="fa-solid fa-pen" /></button>
-                  <button className="btn-mini danger" onClick={() => remove(g)} aria-label={`Delete ${g.name}`}><i className="fa-solid fa-trash" /></button>
+                  <button type="button" className="btn-mini" onClick={() => openEdit(g)} aria-label={`Edit ${g.name}`}><i className="fa-solid fa-pen" aria-hidden="true" /></button>
+                  <button type="button" className="btn-mini danger" onClick={() => remove(g)} aria-label={`Delete ${g.name}`}><i className="fa-solid fa-trash" aria-hidden="true" /></button>
                 </div>
               </div>
             );
@@ -189,7 +189,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
       {/* AI plan */}
       {plan && (
         <div className="gt-plan">
-          <h4><i className="fa-solid fa-wand-magic-sparkles" /> Catch-up plan</h4>
+          <h4><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Catch-up plan</h4>
           {plan.summary && <p className="gt-plan-summary">{plan.summary}</p>}
           {plan.weak_areas?.length > 0 && (
             <div className="gt-weak">
@@ -203,8 +203,8 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
             ))}
           </ol>
           {plan.action_items.length > 0 && (
-            <button className="btn btn-sm btn-primary-sm" onClick={addPlanToReminders} disabled={adding}>
-              {adding ? <><i className="fa-solid fa-spinner fa-spin" /> Adding…</> : <><i className="fa-solid fa-list-check" /> Add {plan.action_items.length} task{plan.action_items.length === 1 ? "" : "s"} to Reminders</>}
+            <button type="button" className="btn btn-sm" onClick={addPlanToReminders} disabled={adding}>
+              {adding ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Adding…</> : <><i className="fa-solid fa-list-check" aria-hidden="true" /> Add {plan.action_items.length} task{plan.action_items.length === 1 ? "" : "s"} to Reminders</>}
             </button>
           )}
         </div>
