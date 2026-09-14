@@ -76,8 +76,8 @@ export default function BudgetTransactions({ config, transactions, setTransactio
   return (
     <div>
       {/* Header row */}
-      <div className="bud-hstack" style={{ marginBottom: 14, alignItems: "center" }}>
-        <button className="btn bud-flex1" onClick={openNew}><i className="fa-solid fa-plus" /> Log transaction</button>
+      <div className="money-toolbar">
+        <button type="button" className="btn" onClick={openNew}><i className="fa-solid fa-plus" aria-hidden="true" /> Log transaction</button>
         <div className="bud-seg">
           <button onClick={() => setViewMode("transactions")} className={`bud-seg-btn${viewMode === "transactions" ? " bud-seg-btn-on" : ""}`}>
             Transactions
@@ -188,7 +188,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           <td>
                             <span className="bud-pill bud-pill-10">{t.category}</span>
                           </td>
-                          <td className="bud-right bud-mono" style={{ color: "var(--red)" }}>
+                          <td className="bud-right bud-mono">
                             {!isIncome ? formatMoney(t.amount) : ""}
                           </td>
                           <td className="bud-right bud-mono" style={{ color: "var(--green)" }}>
@@ -253,11 +253,11 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                           {t.notes && <span className="bud-muted-11" style={{ marginLeft: 6 }}>· {t.notes}</span>}
                         </td>
                         <td><span className="bud-pill">{t.category}</span></td>
-                        <td className="bud-right bud-mono" style={{ color: t.type === "income" ? "var(--green)" : t.type === "future" ? "var(--accent)" : t.type === "savings" ? "#14b8a6" : /* theme-fixed: user colour (savings category) */ "var(--red)", whiteSpace: "nowrap" }}>
+                        <td className={`bud-right money-tx-amt t-${t.type}`}>
                           {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
                         </td>
                         <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                          {(t.is_bill || t.fulfills_recurring_id) && <span style={{ fontSize: 10, color: "var(--orange)", background: "var(--warn-bg)", borderRadius: 4, padding: "1px 5px", marginRight: 5 }}>{billName(t.fulfills_recurring_id) || "Bill"}</span>}
+                          {(t.is_bill || t.fulfills_recurring_id) && <span className="bud-billtag">{billName(t.fulfills_recurring_id) || "Bill"}</span>}
                           {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>

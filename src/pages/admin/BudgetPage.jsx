@@ -305,14 +305,10 @@ export default function BudgetPage() {
   return (
     <div className="combined-page">
       <div className="combined-page-header">
-        <h1 className="combined-page-title">
-          <i className="fa-solid fa-wallet" /> Money{" "}
-          {/* Claude's visible-change marker — delete this span whenever */}
-          <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)", letterSpacing: 1 }}>puffin</span>
-        </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <h1 className="combined-page-title">Money</h1>
+        <div className="combined-page-toolbar">
           <PageTabs tabs={TABS} active={tab} onChange={switchTab} />
-          <ExportKit exporter={{
+          <div className="page-actions"><ExportKit exporter={{
             title: "Money report",
             filename: "money-report",
             toMarkdown: () => {
@@ -327,7 +323,7 @@ export default function BudgetPage() {
               return L.join("\n");
             },
             toRows: () => (transactions || []).map(uiShape).map((t) => ({ date: t.date, description: t.description, type: t.type, category: t.category, amount: t.amount })),
-          }} />
+          }} /></div>
         </div>
       </div>
 

@@ -1,102 +1,79 @@
-/* ═══ Shared budget-component styles ═══
-   Migrated from repeated inline style={{}} objects in the Budget* components.
-   All classes are prefixed .bud- ; NOTE: .bud-card already exists in index.css
-   (RecurringCard), so the card pattern here is .bud-panel. Values are faithful
-   translations of the original inline styles — do not "clean up" numbers. */
+/* ═══ Money (budget components) — on the design system (DR-013) ═══
+   Class names are unchanged so every Budget* component picks this up.
+   Tokens only; colour/shape come from globals.css. .bud-card (RecurringCard)
+   lives in index.css; the card pattern here is .bud-panel. */
 
-/* ── Section heading (was: const sh = {…}) ── */
-.bud-sh { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; color: var(--text-muted); margin: 16px 0 8px; font-weight: 500; }
-.bud-sh-tight { margin: 14px 0 8px; }
-.bud-sh-an { font-size: 10px; letter-spacing: 0.1em; margin: 20px 0 10px; font-weight: 700; }
+/* ── Section heading ── */
+.bud-sh { margin: var(--space-xl) 0 var(--space-sm); font-family: var(--font-display); font-size: var(--text-md); line-height: 1.5rem; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; }
+.bud-sh-tight { margin: var(--space-lg) 0 var(--space-sm); }
+.bud-sh-an { margin: var(--space-xl) 0 var(--space-sm); font-size: var(--text-md); }
 
-/* ── Card (was: const card = {…}) ── */
-.bud-panel { background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.5rem; }
-.bud-panel-db { padding: 0.875rem 1.125rem; margin-bottom: 8px; }   /* Dashboard */
-.bud-panel-bi { padding: 0.875rem; margin-bottom: 8px; }            /* Bills & Income */
-.bud-panel-an { padding: 1rem; margin-bottom: 12px; }               /* Analytics */
-/* Dashboard summary-stat card rendered as a <button> */
-.bud-statbtn { margin-bottom: 0; text-align: left; cursor: pointer; font: inherit; }
+/* ── Card ── */
+.bud-panel { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.bud-panel-db { padding: var(--space-lg); margin-bottom: var(--space-md); }
+.bud-panel-bi { padding: var(--space-md); margin-bottom: var(--space-sm); }
+.bud-panel-an { padding: var(--space-lg); margin-bottom: var(--space-md); }
+.bud-statbtn { margin-bottom: 0; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 
-/* ── Mono numerals (was: const mono = {…}) ── */
-.bud-mono { font-family: var(--font-mono, monospace); font-weight: 500; }
-.bud-mono-b { font-weight: 600; } /* Analytics uses 600 */
+/* ── Numbers: tabular figures in the reading face (no monospace) ── */
+.bud-mono { font-family: inherit; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bud-mono-b { font-weight: 700; }
 
-/* ── Inputs (was: const inp = {…}) ── */
-.bud-inp { width: 100%; margin-bottom: 8px; }
+/* ── Inputs ── */
+.bud-inp { width: 100%; margin-bottom: var(--space-xs); }
 
-/* ── Text utilities ── */
-.bud-muted-10 { font-size: 10px; color: var(--text-muted); }
-.bud-muted-11 { font-size: 11px; color: var(--text-muted); }
-.bud-muted-12 { font-size: 12px; color: var(--text-muted); }
-.bud-muted-13 { font-size: 13px; color: var(--text-muted); }
+/* ── Text utilities (12px floor) ── */
+.bud-muted-10, .bud-muted-11, .bud-muted-12 { font-size: var(--text-xs); color: var(--text-secondary); }
+.bud-muted-13 { font-size: var(--text-sm); color: var(--text-secondary); }
 .bud-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bud-caps-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
-.bud-form-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; text-transform: none; letter-spacing: 0; }
-.bud-tile-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
-.bud-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-.bud-label-sm { font-size: 11px; margin-bottom: 3px; }
+.bud-caps-label, .bud-tile-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
+.bud-tile-label { margin-bottom: var(--space-2xs); }
+.bud-form-title { margin-bottom: var(--space-sm); font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; }
+.bud-label { display: block; margin-bottom: var(--space-2xs); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
+.bud-label-sm { font-size: var(--text-xs); margin-bottom: var(--space-2xs); }
 
 /* ── Layout helpers ── */
-.bud-row { display: flex; justify-content: space-between; align-items: center; }
-.bud-row-b { display: flex; justify-content: space-between; align-items: baseline; }
-.bud-hstack { display: flex; gap: 8px; }
-.bud-actions { display: flex; gap: 4px; }
+.bud-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-sm); }
+.bud-row-b { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-sm); }
+.bud-hstack { display: flex; gap: var(--space-xs); }
+.bud-actions { display: flex; gap: var(--space-2xs); }
 .bud-flex1 { flex: 1; }
-.bud-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.bud-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.bud-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.bud-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-md); }
 
 /* ── Pills / badges ── */
-.bud-pill { font-size: 11px; background: var(--bg-raised); border-radius: 4px; padding: 2px 6px; }
-.bud-pill-10 { font-size: 10px; }
-.bud-tag { font-size: 10px; color: var(--text-muted); border: 0.5px solid var(--border-subtle); border-radius: 4px; padding: 0 4px; }
-.bud-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-raised); border: 0.5px solid var(--border-subtle); border-radius: 99px; padding: 4px 10px; font-size: 12px; }
+.bud-pill { padding: 2px var(--space-xs); border-radius: var(--radius-full); background: var(--bg-raised); font-size: var(--text-xs); }
+.bud-pill-10 { font-size: var(--text-xs); }
+.bud-tag { padding: 0 var(--space-xs); border: 1px solid var(--border-primary); border-radius: var(--radius-full); font-size: var(--text-xs); color: var(--text-secondary); }
+.bud-chip { display: inline-flex; align-items: center; gap: var(--space-2xs); padding: var(--space-2xs) var(--space-sm); border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card); font-size: var(--text-sm); }
 
 /* ── Progress bars ── */
-.bud-bar { height: 6px; background: var(--bg-raised); border-radius: 4px; overflow: hidden; }
-.bud-bar-fill { height: 100%; border-radius: 4px; }              /* width/background stay inline (dynamic) */
-.bud-bar-an { height: 5px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
-.bud-bar-fill-an { height: 100%; border-radius: 999px; transition: width .3s; } /* width/background inline */
+.bud-bar, .bud-bar-an { height: 8px; background: var(--bg-raised); border-radius: var(--radius-full); overflow: hidden; }
+.bud-bar-fill, .bud-bar-fill-an { height: 100%; border-radius: var(--radius-full); transition: width 0.3s var(--ease); } /* width/background inline (dynamic) */
 
-/* ── Button size overrides (compound selectors so they beat .btn/.btn-sm
-      regardless of stylesheet order) ── */
-.bud-btn-xs, .btn.bud-btn-xs, .btn-sm.bud-btn-xs { font-size: 11px; padding: 3px 8px; }
-.bud-btn-xs2, .btn.bud-btn-xs2, .btn-sm.bud-btn-xs2 { font-size: 11px; padding: 3px 7px; }
-.bud-btn-sm, .btn.bud-btn-sm, .btn-sm.bud-btn-sm { font-size: 12px; padding: 4px 10px; }
-.bud-btn-sm2, .btn.bud-btn-sm2, .btn-sm.bud-btn-sm2 { font-size: 12px; padding: 4px 12px; }
-.bud-btn-md, .btn.bud-btn-md, .btn-sm.bud-btn-md { font-size: 12px; padding: 5px 12px; }
+/* ── Button sizes (compound selectors beat .btn/.btn-sm by order) ── */
+.admin-shell .bud-btn-xs, .admin-shell .bud-btn-xs2 { min-height: 28px; padding: 0 var(--space-sm); font-size: var(--text-xs); }
+.admin-shell .bud-btn-sm, .admin-shell .bud-btn-sm2, .admin-shell .bud-btn-md { min-height: var(--control-h-sm); padding: 0 var(--space-sm); font-size: var(--text-sm); }
 
-/* Plain "×" / ghost buttons */
-.bud-x { background: none; border: none; color: var(--text-muted); cursor: pointer; }
-/* Dashboard pay-period navigator ‹ › */
-.bud-navbtn { background: none; border: 0.5px solid var(--border-subtle); border-radius: 6px; padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 14px; }
+.bud-x { border: none; background: none; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.bud-x:hover { color: var(--text-primary); }
+.bud-navbtn {
+  width: var(--control-h-sm); height: var(--control-h-sm); display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card);
+  color: var(--text-primary); font-size: 12px; cursor: pointer;
+}
+.bud-navbtn:hover { background: var(--bg-hover); }
 
 /* ── Tables ── */
-.bud-table { width: 100%; border-collapse: collapse; }
-.bud-table thead tr { border-bottom: 1px solid var(--border-subtle); }
-.bud-table tbody tr { border-bottom: 0.5px solid var(--border-subtle); }
-.bud-table tfoot tr { border-top: 1px solid var(--border-subtle); }
-.bud-table th { color: var(--text-muted); font-weight: 500; text-transform: none; text-align: left; }
-
-.bud-table-an { font-size: 12px; }                                /* Analytics trends */
-.bud-table-an th { padding: 7px 8px; font-size: 10px; letter-spacing: 0.06em; white-space: nowrap; }
-.bud-table-an td { padding: 8px 8px; }
-
-.bud-table-ledger { font-size: 12px; }                            /* Transactions ledger */
-.bud-table-ledger th { padding: 6px 8px; font-size: 10px; letter-spacing: 0.05em; white-space: nowrap; }
-.bud-table-ledger td { padding: 7px 8px; }
-
-.bud-table-tx { font-size: 13px; }                                /* Transactions list */
-.bud-table-tx th { padding: 6px 8px; font-size: 11px; letter-spacing: 0.05em; white-space: nowrap; }
-.bud-table-tx td { padding: 7px 8px; }
-
-.bud-table-rec { font-size: 13px; }                               /* Reconcile */
-.bud-table-rec th { padding: 6px 8px; font-size: 11px; }
-.bud-table-rec td { padding: 7px 8px; }
-
-.bud-table-sim { font-size: 12px; }                               /* Simulator */
-.bud-table-sim th { padding: 6px 6px; font-size: 10px; letter-spacing: 0.05em; white-space: nowrap; }
-.bud-table-sim td { padding: 5px 6px; }
-
+.bud-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.bud-table thead tr { border-bottom: 1px solid var(--border-primary); }
+.bud-table tbody tr { border-bottom: 1px solid var(--border-subtle); }
+.bud-table tbody tr:last-child { border-bottom: none; }
+.bud-table tfoot tr { border-top: 1px solid var(--border-primary); }
+.bud-table th { padding: var(--space-xs) var(--space-sm); font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); text-align: left; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.bud-table td { padding: var(--space-sm); font-variant-numeric: tabular-nums; }
+.bud-table-an, .bud-table-ledger, .bud-table-tx, .bud-table-rec, .bud-table-sim { font-size: var(--text-sm); }
+.bud-table-sim td { padding: var(--space-2xs) var(--space-xs); }
 .bud-table .bud-right { text-align: right; }
 
 /* ── SVG chart helpers ── */
@@ -106,53 +83,195 @@
 .bud-fill-secondary { fill: var(--text-secondary); }
 .bud-stroke-green { stroke: var(--green); }
 .bud-stroke-red { stroke: var(--red); }
-.bud-stroke-grid { stroke: var(--border-subtle); }
+.bud-stroke-grid { stroke: var(--chart-grid); }
+.bud-stroke-in { stroke: var(--teal); }
+.bud-stroke-out { stroke: var(--coral); }
+.bud-chart-text { font-family: var(--font-body); font-size: 12px; }
 
 /* ── Analytics insights ── */
-.bud-insight { display: flex; gap: 10px; align-items: flex-start; border: 1px solid transparent; border-radius: 0.375rem; padding: 0.625rem 0.875rem; }
-.bud-insight-icon { font-size: 14px; font-weight: 800; flex-shrink: 0; margin-top: 0; }
-.bud-insight-msg { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
-.bud-insight-success { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.22); }
+.bud-insight { display: flex; gap: var(--space-sm); align-items: flex-start; padding: var(--space-sm) var(--space-md); border: none; border-radius: var(--radius-md); }
+.bud-insight-icon { flex-shrink: 0; font-size: 14px; font-weight: 700; }
+.bud-insight-msg { font-size: var(--text-sm); line-height: 1.25rem; color: var(--text-primary); }
+.bud-insight-success { background: var(--success-bg); }
 .bud-insight-success .bud-insight-icon { color: var(--green); }
-.bud-insight-warning { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.22); }
+.bud-insight-warning { background: var(--warn-bg); }
 .bud-insight-warning .bud-insight-icon { color: var(--orange); }
-.bud-insight-danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.22); }
+.bud-insight-danger { background: var(--danger-bg); }
 .bud-insight-danger .bud-insight-icon { color: var(--red); }
-.bud-insight-info { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.22); }
-.bud-insight-info .bud-insight-icon { color: var(--accent); }
+.bud-insight-info { background: var(--info-bg); }
+.bud-insight-info .bud-insight-icon { color: var(--blue); }
 
-/* ── Analytics trend badges ── */
-.bud-trend-up { color: var(--red); font-size: 11px; font-weight: 700; }
-.bud-trend-down { color: var(--green); font-size: 11px; font-weight: 700; }
-.bud-trend-flat { color: var(--text-muted); font-size: 11px; }
+/* ── Trend badges ── */
+.bud-trend-up { font-size: var(--text-xs); font-weight: 700; color: var(--red); }
+.bud-trend-down { font-size: var(--text-xs); font-weight: 700; color: var(--green); }
+.bud-trend-flat { font-size: var(--text-xs); color: var(--text-secondary); }
 
-/* ── Reconcile summary stat row (was: const statCard = {…}) ── */
-.bud-statrow { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 12px; background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.375rem; margin-bottom: 6px; }
+/* ── Reconcile summary stat row ── */
+.bud-statrow { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-xs); padding: var(--space-sm) var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
 
-/* ── Dashboard expanded-row transaction drill ── */
-.bud-drill { margin-top: 8px; border-top: 0.5px dashed var(--border-subtle); padding-top: 8px; }
+/* ── Expanded-row transaction drill ── */
+.bud-drill { margin-top: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--border-subtle); }
+.bud-drill-row { display: flex; justify-content: space-between; gap: var(--space-sm); padding: var(--space-2xs) 0; font-size: var(--text-xs); }
+.bud-drill-desc { color: var(--text-primary); }
+.bud-drill-meta { white-space: nowrap; color: var(--text-secondary); }
 
-/* ── Transactions view-mode segmented control ── */
-.bud-seg { display: flex; background: var(--bg-card); border: 0.5px solid var(--border-subtle); border-radius: 0.375rem; padding: 3px; gap: 3px; }
-.bud-seg-btn { padding: 5px 12px; border-radius: 0.25rem; border: none; font-size: 12px; cursor: pointer; background: transparent; color: var(--text-muted); font-weight: 400; }
-.bud-seg-btn-on { background: var(--bg-raised); color: var(--text-primary); font-weight: 600; }
+/* ── Segmented control (Transactions view mode) ── */
+.bud-seg { display: inline-flex; gap: 2px; padding: 4px; background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); }
+.bud-seg-btn { height: 28px; padding: 0 var(--space-sm); border: none; border-radius: var(--radius-full); background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-weight: 500; cursor: pointer; }
+.bud-seg-btn-on { background: var(--bg-card); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-raised); }
 
-/* ── Transactions expense/income/savings type toggle (colors stay inline) ── */
-.bud-typebtn { flex: 1; padding: 7px 0; border-radius: 0.375rem; font-size: 12px; cursor: pointer; }
+/* ── Expense / income / savings type toggle (colours stay inline) ── */
+.bud-typebtn { flex: 1; min-height: var(--control-h-sm); border-radius: var(--radius-full); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; }
 
-/* ── Simulator editable table inputs ── */
-.bud-sim-inp { font-size: 11px; padding: 3px 4px; background: transparent; border: 0.5px solid var(--border-subtle); border-radius: 4px; color: inherit; }
-.bud-sim-num { width: 70px; text-align: right; }
+/* ── Simulator inputs ── */
+.bud-sim-inp { padding: 2px var(--space-2xs); border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); background: transparent; color: inherit; font-size: var(--text-xs); }
+.bud-sim-num { width: 72px; text-align: right; }
 
-/* ── Misc repeated fragments ── */
-.bud-chev { font-size: 10px; color: var(--text-muted); margin-right: 8px; }        /* row expand chevron */
-.bud-over-note { font-size: 11px; color: var(--red); margin-top: 3px; }            /* "$X over budget" */
-.bud-sec-13 { font-size: 13px; color: var(--text-secondary); }                     /* secondary 13px label */
-.bud-title-14 { font-size: 14px; font-weight: 500; }                               /* row title */
-.bud-amt-14 { font-size: 14px; margin-right: 12px; }                               /* row amount (with .bud-mono) */
+/* ── Small repeated fragments ── */
+.bud-chev { margin-right: var(--space-xs); font-size: 10px; color: var(--text-muted); }
+.bud-over-note { margin-top: var(--space-2xs); font-size: var(--text-xs); font-weight: 600; color: var(--red); }
+.bud-sec-13 { font-size: var(--text-sm); color: var(--text-secondary); }
+.bud-title-14 { font-size: var(--text-base); font-weight: 600; }
+.bud-amt-14 { margin-right: var(--space-sm); font-size: var(--text-base); }
 
 /* ── Banker chat ── */
-.bud-bubble { border: 0.5px solid var(--border-subtle); border-radius: 12px; padding: 0.6rem 0.85rem; max-width: 85%; font-size: 14px; line-height: 1.5; }
-.bud-bubble-user { align-self: flex-end; background: var(--accent); color: #fff; }
+.bud-bubble { max-width: 85%; padding: var(--space-sm) var(--space-md); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); font-size: var(--text-base); line-height: var(--leading-normal); }
+.bud-bubble-user { align-self: flex-end; background: var(--bg-inverse); border-color: var(--bg-inverse); color: var(--text-inverse); }
 .bud-bubble-bot { align-self: flex-start; background: var(--bg-card); }
-.bud-suggestion { text-align: left; background: var(--bg-raised); border: 0.5px solid var(--border-subtle); border-radius: 8px; padding: 7px 10px; color: var(--text-secondary); cursor: pointer; font-size: 13px; }
+.bud-suggestion { padding: var(--space-xs) var(--space-sm); border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); font: inherit; font-size: var(--text-sm); text-align: left; cursor: pointer; }
+.bud-suggestion:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ═══ Money overview (BudgetDashboard) ═══ */
+.money { display: flex; flex-direction: column; gap: var(--space-xl); }
+.money-period { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+.money-period-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 600; }
+.money-period-sub { margin: 2px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.money-period-nav { display: flex; align-items: center; gap: var(--space-xs); }
+.money-kpi-value.tone-good { color: var(--green); }
+.money-kpi-value.tone-warn { color: var(--orange); }
+.money-kpi-value.tone-bad { color: var(--red); }
+.money-kpi-sub { font-size: var(--text-sm); color: var(--text-secondary); }
+
+.money-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); }
+.money-panel { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.money-panel-label { font-size: var(--text-base); font-weight: 500; color: var(--text-secondary); }
+.money-panel-value { font-family: var(--font-display); font-size: var(--text-3xl); line-height: 3rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.money-panel-value.tone-good { color: var(--green); }
+.money-panel-value.tone-warn { color: var(--orange); }
+.money-panel-value.tone-bad { color: var(--red); }
+.money-panel-sub { font-size: var(--text-sm); color: var(--text-secondary); }
+.money-panel .bud-bar { margin-top: var(--space-sm); background: var(--bg-card); }
+
+.money-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-lg); align-items: start; }
+.money-grid > .db-card { margin: 0; }
+.money-card-note { margin: 0 0 var(--space-md); font-size: var(--text-sm); color: var(--text-secondary); }
+.money-meter + .money-meter { margin-top: var(--space-md); }
+.money-meter-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-xs); font-size: var(--text-sm); }
+.money-meter-name { display: inline-flex; align-items: center; gap: var(--space-2xs); font-weight: 600; color: var(--text-primary); }
+.money-meter-name.is-link { border: none; background: none; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
+.money-meter-nums { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.money-meter-nums.is-over { color: var(--red); }
+.money-meter-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-xs); color: var(--text-secondary); }
+.money-meter.is-past { opacity: 0.55; }
+.money-meter.is-current .money-meter-name::after { content: "Now"; margin-left: var(--space-2xs); padding: 1px var(--space-xs); border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent); font-size: var(--text-xs); font-weight: 600; }
+.money-inline-edit { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+.money-inline-edit input { width: 96px; min-height: var(--control-h-sm); }
+.money-add-row { display: flex; gap: var(--space-xs); align-items: center; flex-wrap: wrap; margin-top: var(--space-md); }
+.money-add-row select { flex: 1; min-width: 128px; }
+.money-add-row input { width: 112px; }
+.money-add { margin-top: var(--space-md); align-self: flex-start; }
+.money-goal-form { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-md); }
+.money-goal-form.has-rule { padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); }
+.money-goal-note { color: var(--accent); font-weight: 500; }
+.money-goal-note.is-done { color: var(--green); }
+
+/* Bills this period */
+.money-bills-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.money-bills-count { font-size: var(--text-sm); color: var(--text-secondary); }
+.money-bills-count.is-done { color: var(--green); font-weight: 600; }
+.money-bill { padding: var(--space-sm) 0; border-top: 1px solid var(--border-subtle); }
+.money-bill-row { display: flex; align-items: center; gap: var(--space-sm); cursor: pointer; }
+.money-bill-main { flex: 1; min-width: 0; }
+.money-bill-name { font-weight: 600; }
+.money-bill.is-paid .money-bill-name { color: var(--text-secondary); }
+.money-bill-sub { font-size: var(--text-xs); color: var(--text-secondary); }
+.money-bill-amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+.money-bill.is-paid .money-bill-amt { color: var(--text-muted); text-decoration: line-through; }
+.money-status { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--space-sm); border: none; border-radius: var(--radius-full); background: var(--success-bg); color: var(--green); font: inherit; font-size: var(--text-xs); font-weight: 600; }
+button.money-status { cursor: pointer; }
+.money-drill-ok { color: var(--green); }
+
+/* Category spend bars */
+.money-cat + .money-cat { margin-top: var(--space-sm); }
+
+/* Recent list */
+.money-tx { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) 0; border-top: 1px solid var(--border-subtle); }
+.money-tx:first-child { border-top: none; padding-top: 0; }
+.money-tx-main { flex: 1; min-width: 0; }
+.money-tx-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.money-tx-sub { font-size: var(--text-xs); color: var(--text-secondary); }
+.money-tx-amt { flex-shrink: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.money-tx-amt.t-income { color: var(--green); }
+.money-tx-amt.t-expense { color: var(--text-primary); }
+.money-tx-amt.t-future { color: var(--blue); }
+.money-tx-amt.t-savings { color: var(--teal-deep); }
+
+.money-chart-wrap { position: relative; display: grid; grid-template-columns: auto 1fr; gap: var(--space-md); }
+.money-chart-y { position: relative; width: 48px; }
+.money-chart-y span { position: absolute; right: 0; transform: translateY(-50%); font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money-chart { width: 100%; height: 176px; display: block; overflow: visible; }
+.money-legend { display: flex; gap: var(--space-md); margin-bottom: var(--space-sm); font-size: var(--text-xs); color: var(--text-secondary); }
+.money-legend i { display: inline-block; width: 12px; height: 3px; margin-right: var(--space-2xs); border-radius: var(--radius-full); vertical-align: middle; }
+.money-legend .in { background: var(--teal); }
+.money-legend .out { background: var(--coral); }
+
+/* Stat drill dialog */
+.money-dialog { width: min(520px, 100%); }
+.money-dialog-total { margin-top: var(--space-2xs); font-family: var(--font-display); font-size: var(--text-xl); line-height: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.money-dialog-count { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 400; color: var(--text-secondary); }
+
+/* Transactions + Bills & Income */
+.money-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; margin-bottom: var(--space-md); }
+.money-tx-amt { white-space: nowrap; }
+.bud-billtag { margin-right: var(--space-2xs); padding: 1px var(--space-xs); border-radius: var(--radius-full); background: var(--warn-bg); color: var(--orange); font-size: var(--text-xs); font-weight: 600; }
+.bud-status { padding: 1px var(--space-xs); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 600; }
+.bud-status.is-active { background: var(--success-bg); color: var(--green); }
+.bud-status.is-upcoming { background: var(--info-bg); color: var(--blue); }
+.bud-status.is-ended { background: var(--bg-raised); color: var(--text-secondary); }
+
+/* Analytics */
+.money-analytics { margin-top: var(--space-2xl); }
+.bud-overview-chart { width: 100%; height: auto; display: block; }
+.bud-area-out { fill: var(--coral); fill-opacity: 0.08; }
+.bud-dot-in { fill: var(--teal); stroke: var(--bg-card); stroke-width: 2; }
+.bud-dot-out { fill: var(--coral); stroke: var(--bg-card); stroke-width: 2; }
+.bud-nets { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-md); }
+.bud-net { padding: var(--space-2xs) var(--space-sm); border-radius: var(--radius-full); background: var(--bg-raised); font-size: var(--text-xs); color: var(--text-secondary); }
+.bud-net b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bud-net b.is-pos { color: var(--green); }
+.bud-net b.is-neg { color: var(--red); }
+.bud-proj { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+.bud-proj-label { font-size: var(--text-xs); color: var(--text-secondary); }
+.bud-proj-hint { color: var(--green); }
+.bud-proj-value { margin-top: var(--space-2xs); font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bud-proj-value.is-pos { color: var(--green); }
+.bud-proj-value.is-neg { color: var(--red); }
+.bud-insights { display: flex; flex-direction: column; gap: var(--space-xs); }
+.bud-spark { display: inline-block; vertical-align: middle; }
+.bud-spark polyline { stroke: currentColor; }
+.bud-spark circle { fill: currentColor; }
+.bud-spark.tone-up { color: var(--red); }
+.bud-spark.tone-down { color: var(--green); }
+.bud-spark.tone-flat { color: var(--text-muted); }
+.bud-table-wrap { overflow-x: auto; }
+.bud-td-strong { font-weight: 600; }
+.bud-td-muted { color: var(--text-secondary); }
+.bud-table-note { margin: var(--space-md) 0 0; }
+
+@media (max-width: 900px) {
+  .money-panels, .money-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .bud-grid-2, .bud-grid-3 { grid-template-columns: 1fr; }
+  .money-panel-value { font-size: var(--text-2xl); line-height: 2.5rem; }
+}

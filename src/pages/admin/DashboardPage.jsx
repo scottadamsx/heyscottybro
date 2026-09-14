@@ -228,12 +228,21 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <LineChart
-            data={series}
-            height={176}
-            ariaLabel={`Spending by day, last ${range} days, ${formatMoney(rangeTotal)} total`}
-            format={(v, axis) => (axis ? compactMoney(v) : formatMoney(v))}
-          />
+          {rangeTotal > 0 ? (
+            <LineChart
+              data={series}
+              height={176}
+              ariaLabel={`Spending by day, last ${range} days, ${formatMoney(rangeTotal)} total`}
+              format={(v, axis) => (axis ? compactMoney(v) : formatMoney(v))}
+            />
+          ) : (
+            <div className="empty-state activity-empty">
+              <i className="fa-solid fa-chart-line empty-state-icon" aria-hidden="true" />
+              <div className="empty-state-title">No spending in the last {range} days</div>
+              <div className="empty-state-desc">Log a purchase in Money and it shows up here.</div>
+              <Link to="/admin/finance" className="btn btn-sm empty-state-action">Open Money</Link>
+            </div>
+          )}
         </Item>
 
         <Item className="today-section upnext">

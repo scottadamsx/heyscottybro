@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { formatMoney, toDateStr, genId, getPayPeriod, formatPeriodLabel, getBillDatesInRange } from "../../utils/budgetCalc";
+import { formatMoney, toDateStr, genId, getPayPeriod, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./budget.css";
 import DatePicker from "../DatePicker";
@@ -146,16 +146,14 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           const from = inc.startDate || inc.nextDate;
           const to = inc.endDate;
           const todayStr = toDateStr();
-          const isActive = (!from || from <= todayStr) && (!to || to >= todayStr);
           const isPast = to && to < todayStr;
           const isFuture = from && from > todayStr;
-          const statusColor = isPast ? "var(--text-muted)" : isFuture ? "var(--orange)" : "var(--green)";
           return (
           <div key={inc.id} className="bud-panel bud-panel-bi" style={{ display: "flex", alignItems: "center", opacity: isPast ? 0.55 : 1 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span className="bud-title-14">{inc.name}</span>
-                <span style={{ fontSize: 10, color: statusColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{isPast ? "ended" : isFuture ? "upcoming" : "active"}</span>
+                <span className={`bud-status ${isPast ? "is-ended" : isFuture ? "is-upcoming" : "is-active"}`}>{isPast ? "Ended" : isFuture ? "Upcoming" : "Active"}</span>
               </div>
               <div className="bud-muted-11" style={{ marginTop: 2 }}>
                 {inc.frequency} · {from ? `from ${from}` : "no start"}{to ? ` → ${to}` : " → ongoing"}
@@ -274,17 +272,17 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
 
       {/* Fresh start */}
       <p className="bud-sh">Reset</p>
-      <div className="bud-panel bud-panel-bi" style={{ border: "0.5px solid var(--danger-bg)" }}>
-        <div className="bud-muted-12" style={{ marginBottom: 10 }}>
+      <div className="bud-panel bud-panel-bi">
+        <div className="money-card-note">
           Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
         </div>
-        <button className="btn"
+        <button type="button" className="btn-sm btn-delete"
           onClick={async () => {
             if (!await confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.", { title: "Fresh start", confirmLabel: "Reset" })) return;
             if (onFreshStart) onFreshStart();
           }}
-          style={{ background: "var(--danger-bg)", color: "var(--red)", border: "1px solid var(--danger-bg)", fontWeight: 600, width: "100%" }}>
-          Fresh start — clear transactions &amp; reset balance
+          >
+          Fresh start: clear transactions &amp; reset balance
         </button>
       </div>
       {dialog}
