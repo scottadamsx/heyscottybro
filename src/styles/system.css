@@ -975,7 +975,9 @@
   .admin-shell .col-7, .admin-shell .col-8,
   .admin-shell .fin-grid .col-5, .admin-shell .fin-grid .col-7 { grid-column: span 12; }
   .admin-shell .calendar-upcoming { grid-template-columns: 1fr; }
-  .admin-shell .combined-page-header { flex-direction: column; align-items: stretch; }
+  /* nowrap: a wrapping column sizes itself to its widest child (the tab strip),
+     which pushed Money to ~680px on a 390px phone. */
+  .admin-shell .combined-page-header { flex-direction: column; flex-wrap: nowrap; align-items: stretch; min-width: 0; }
   .admin-shell .combined-page-toolbar { flex-direction: column; align-items: stretch; }
   .admin-shell .page-actions { margin-left: 0; }
 }
