@@ -1,7 +1,7 @@
 /* ── Today — the reference layout: numbers + feature panel, activity + list,
    a tinted "spaces" band, then detail cards. Tokens only (globals.css). ── */
 
-.today { display: flex; flex-direction: column; gap: var(--space-2xl); }
+.today { display: flex; flex-direction: column; gap: var(--space-2xl); container: today / inline-size; }
 .today-head { align-items: flex-end; }
 .today-date { margin: var(--space-2xs) 0 0; font-size: var(--text-base); color: var(--text-secondary); }
 
@@ -107,20 +107,20 @@
 .admin-shell .act-more { margin-top: var(--space-sm); align-self: flex-start; }
 .week-dot { background: var(--accent); }
 
-/* ── Responsive ── */
-@media (max-width: 1280px) {
+/* ── Responsive — by the page's own width (container), not the window, so the
+   docked chat panel or a collapsed sidebar can never squeeze a layout. ── */
+@container today (max-width: 1080px) {
   .today-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); }
 }
-@media (max-width: 1100px) {
+@container today (max-width: 960px) {
   .admin-shell .spaces { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); }
   .spaces-intro p { max-width: none; }
 }
-@media (max-width: 760px) {
+@container today (max-width: 720px) {
   .spaces-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-2xl); }
   .admin-shell .space-cta { grid-column: span 2; flex-direction: row; align-items: center; }
 }
-@media (max-width: 640px) {
-  .today { gap: var(--space-xl); }
+@container today (max-width: 600px) {
   .today-kpis { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
   .kpi-value { font-size: var(--text-xl); line-height: 2rem; }
   .admin-shell .take { flex-direction: column; align-items: flex-start; gap: var(--space-md); min-height: 0; padding: var(--space-lg); }
@@ -130,3 +130,4 @@
   .admin-shell .take-go:hover { transform: none; }
   .admin-shell .spaces { padding: var(--space-2xl) var(--space-md) var(--space-lg); }
 }
+@media (max-width: 640px) { .today { gap: var(--space-xl); } }

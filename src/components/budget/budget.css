@@ -142,7 +142,7 @@
 .bud-suggestion:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 /* ═══ Money overview (BudgetDashboard) ═══ */
-.money { display: flex; flex-direction: column; gap: var(--space-xl); }
+.money { display: flex; flex-direction: column; gap: var(--space-xl); container: money / inline-size; }
 .money-period { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
 .money-period-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 600; }
 .money-period-sub { margin: 2px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
@@ -268,7 +268,7 @@ button.money-status { cursor: pointer; }
 .bud-td-muted { color: var(--text-secondary); }
 .bud-table-note { margin: var(--space-md) 0 0; }
 
-@media (max-width: 900px) {
+@container money (max-width: 760px) {
   .money-panels, .money-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {

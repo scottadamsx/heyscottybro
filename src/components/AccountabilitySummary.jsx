@@ -57,7 +57,7 @@ export default function AccountabilitySummary() {
     <div className="db-card col-6">
       <div className="db-card-header">
         <h3 className="db-card-title">Accountability</h3>
-        <Link to="/admin/accountability" className="ai-briefing-date" style={{ color: "var(--accent)" }}>View all ›</Link>
+        <Link to="/admin/life?tab=habits" className="link-more">All habits <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>
       </div>
 
       {!ready ? (
@@ -68,23 +68,23 @@ export default function AccountabilitySummary() {
           <button type="button" className="btn-sm" onClick={() => { setReady(false); load(); }}>Retry</button>
         </div>
       ) : trackers.length === 0 ? (
-        <p className="no-entries">No trackers yet. <Link to="/admin/accountability" style={{ color: "var(--accent)" }}>Add one</Link> to track gym days, habits or tallies.</p>
+        <p className="no-entries">No trackers yet. <Link to="/admin/life?tab=habits">Add one</Link> to track gym days, habits or tallies.</p>
       ) : (
-        <div className="db-list" style={{ marginTop: "0.4rem" }}>
+        <div className="db-list">
           {trackers.map((t) => {
             const c = countOn(t.id, todayStr);
             const done = t.mode === "check" && c > 0;
             return (
               <div className="db-list-item" key={t.id}>
-                <div className="db-list-item--clickable" role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0, flex: 1, cursor: "pointer" }} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
+                <div className="db-list-item--clickable habit-row-main" role="button" tabIndex={0} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
                                     <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
                     <div className="db-list-item-subtitle">{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</div>
                   </div>
                 </div>
                 <button
-                  className={`btn-sm ${done ? "btn-complete" : ""}`}
-                  style={done ? {} : { background: "var(--bg-raised)", color: "var(--text-primary)" }}
+                  type="button"
+                  className={`btn-sm ${done ? "btn-complete" : "btn-secondary-sm"}`}
                   onClick={() => logToday(t)}
                 >
                   {t.mode === "check" ? (done ? "Done" : "Mark done") : "+ Log"}

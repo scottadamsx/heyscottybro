@@ -31,8 +31,9 @@ export default function AdminLogin() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
+        <span className="auth-mark" aria-hidden="true"><i /><i /><i /><i /></span>
         <h2>
-          <span className="gradient-text">Admin</span> Login
+          Sign in
         </h2>
         <p>Your personal command centre.</p>
 
@@ -60,13 +61,13 @@ export default function AdminLogin() {
             required
           />
           {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="btn" disabled={loading} style={{ width: "100%", marginTop: "0.5rem" }}>
+          <button type="submit" className="btn auth-submit" disabled={loading}>
             {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
 
         <Link to="/" className="auth-back">
-          <i className="fa-solid fa-arrow-left" /> Back to heyScottyBro
+          <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to heyScottyBro
         </Link>
       </div>
     </div>

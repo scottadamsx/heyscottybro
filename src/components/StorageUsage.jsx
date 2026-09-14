@@ -17,15 +17,15 @@ function fmt(b) {
 
 function Bar({ label, used, limit }) {
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
-  const color = pct >= 90 ? "var(--red)" : pct >= 75 ? "var(--gold,var(--orange))" : "var(--green)";
+  const color = pct >= 90 ? "var(--red)" : pct >= 75 ? "var(--amber)" : "var(--teal)";
   return (
-    <div style={{ marginBottom: "0.85rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 5 }}>
-        <span style={{ fontWeight: 600 }}>{label}</span>
-        <span style={{ color: "var(--text-muted)" }}>{fmt(used)} / {fmt(limit)} · {pct.toFixed(0)}%</span>
+    <div className="meter">
+      <div className="meter-head">
+        <span className="meter-name">{label}</span>
+        <span className="meter-nums">{fmt(used)} / {fmt(limit)} · {pct.toFixed(0)}%</span>
       </div>
-      <div style={{ height: 8, background: "var(--bg-raised)", borderRadius: 5, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 5, transition: "width .3s" }} />
+      <div className="meter-track" role="progressbar" aria-label={`${label} used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
+        <div className="meter-fill" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
   );
@@ -55,17 +55,17 @@ export default function StorageUsage() {
 
   return (
     <div className="db-card col-6">
-      <div className="db-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 className="db-card-title"><i className="fa-solid fa-database" style={{ marginRight: 8, opacity: 0.7 }} />Storage</h3>
-        <button className="btn btn-sm btn-secondary-sm" onClick={fetchUsage} disabled={status === "loading"} aria-label="Refresh storage usage">
-          <i className={`fa-solid fa-rotate-right ${status === "loading" ? "fa-spin" : ""}`} />
+      <div className="db-card-header">
+        <h3 className="db-card-title">Storage</h3>
+        <button type="button" className="icon-x" onClick={fetchUsage} disabled={status === "loading"} aria-label="Refresh storage usage">
+          <i className={`fa-solid fa-rotate-right ${status === "loading" ? "fa-spin" : ""}`} aria-hidden="true" />
         </button>
       </div>
 
       {status === "loading" && <p className="no-entries">Measuring…</p>}
 
       {status === "error" && (
-        <p className="error-message" style={{ fontSize: "0.85rem" }}>
+        <p className="error-message">
           {/function .*does not exist|could not find/i.test(error)
             ? "storage_usage() isn’t in the database yet — run MIGRATION_2026-06-14-storage-usage.sql in the Supabase SQL editor."
             : error}
@@ -78,34 +78,32 @@ export default function StorageUsage() {
 
       {status === "ready" && (
         <>
-          <div style={{ marginTop: "0.5rem" }}>
-            <Bar label="Database" used={data.db_bytes} limit={DB_LIMIT} />
-            <Bar label="File storage" used={storageBytes} limit={STORAGE_LIMIT} />
-          </div>
+          <Bar label="Database" used={data.db_bytes} limit={DB_LIMIT} />
+          <Bar label="File storage" used={storageBytes} limit={STORAGE_LIMIT} />
 
-          <button className="dashboard-expand" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? "Hide breakdown" : "Show breakdown"} <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`} />
+          <button type="button" className="btn-mini card-toggle" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+            {expanded ? "Hide breakdown" : "Show breakdown"} <i className={`fa-solid ${expanded ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" />
           </button>
 
           {expanded && (
-            <div style={{ marginTop: "0.6rem" }}>
-              <div className="stat-label" style={{ marginBottom: 4 }}>Tables</div>
+            <div>
+              <div className="sublist-title">Tables</div>
               <div className="db-list">
                 {tables.slice(0, 12).map((t) => (
-                  <div className="db-list-item" key={t.name} style={{ padding: "4px 0" }}>
-                    <div className="db-list-item-title" style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>{t.name}</div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{fmt(t.bytes)}</div>
+                  <div className="db-list-item is-compact" key={t.name}>
+                    <div className="db-list-item-title code-name">{t.name}</div>
+                    <div className="meter-nums">{fmt(t.bytes)}</div>
                   </div>
                 ))}
                 {tables.length === 0 && <p className="no-entries">No tables found.</p>}
               </div>
 
-              <div className="stat-label" style={{ margin: "0.7rem 0 4px" }}>File buckets</div>
+              <div className="sublist-title">File buckets</div>
               <div className="db-list">
                 {buckets.map((b) => (
-                  <div className="db-list-item" key={b.name} style={{ padding: "4px 0" }}>
-                    <div className="db-list-item-title" style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>{b.name} <span style={{ color: "var(--text-muted)" }}>· {b.files} file{b.files === 1 ? "" : "s"}</span></div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{fmt(b.bytes)}</div>
+                  <div className="db-list-item is-compact" key={b.name}>
+                    <div className="db-list-item-title code-name">{b.name} <span className="meter-nums">· {b.files} file{b.files === 1 ? "" : "s"}</span></div>
+                    <div className="meter-nums">{fmt(b.bytes)}</div>
                   </div>
                 ))}
                 {buckets.length === 0 && <p className="no-entries">No files stored yet.</p>}
@@ -114,7 +112,7 @@ export default function StorageUsage() {
           )}
 
           {data.measured_at && (
-            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.6rem" }}>
+            <div className="card-foot-note">
               Measured {new Date(data.measured_at).toLocaleString()}
             </div>
           )}

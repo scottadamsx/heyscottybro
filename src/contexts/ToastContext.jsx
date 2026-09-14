@@ -61,17 +61,15 @@ export function ToastProvider({ children }) {
 function ToastContainer({ toasts, dismiss }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="toast-stack" role="status" aria-live="polite" style={{
-      position: "fixed", top: "1rem", right: "1rem", zIndex: 9999,
-      display: "flex", flexDirection: "column", gap: "0.5rem",
-      maxWidth: "360px", width: "calc(100vw - 2rem)",
-    }}>
+    <div className="toast-stack" role="status" aria-live="polite">
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} dismiss={dismiss} />
       ))}
     </div>
   );
 }
+
+const TOAST_ICON = { error: "fa-xmark", success: "fa-check", warning: "fa-exclamation", info: "fa-info" };
 
 function ToastItem({ toast: t, dismiss }) {
   const [expanded, setExpanded] = useState(false);
@@ -80,11 +78,7 @@ function ToastItem({ toast: t, dismiss }) {
   const full = String(t.message ?? "");
   const isLong = full.length > PREVIEW_CHARS;
   const shown = isLong && !expanded ? `${full.slice(0, PREVIEW_CHARS).trimEnd()}…` : full;
-
-  const accent = t.type === "error" ? "var(--red)"
-    : t.type === "success" ? "var(--green)"
-    : t.type === "warning" ? "var(--orange)"
-    : "var(--text-primary)";
+  const kind = TOAST_ICON[t.type] ? t.type : "info";
 
   const copyFull = () => {
     copyToClipboard(full)
@@ -92,72 +86,29 @@ function ToastItem({ toast: t, dismiss }) {
       .catch(() => {});
   };
 
-  const microBtn = {
-    fontSize: "0.7rem", fontWeight: 600, background: "none", border: "none",
-    cursor: "pointer", padding: 0, lineHeight: 1,
-  };
-
   return (
-    <div style={{
-      display: "flex", alignItems: "flex-start", gap: "0.75rem",
-      padding: "0.75rem 1rem",
-      borderRadius: "0.5rem",
-      background: "var(--bg-raised)",
-      border: `1px solid ${
-        t.type === "error" ? "var(--red)"
-        : t.type === "success" ? "var(--green)"
-        : t.type === "warning" ? "var(--orange)"
-        : "var(--border-primary, #333)"}`,
-      boxShadow: "var(--shadow-card, 0 4px 16px rgba(0,0,0,0.4))",
-      fontSize: "0.875rem",
-      lineHeight: 1.4,
-    }}>
-      <span style={{ fontSize: "1rem", flexShrink: 0, marginTop: "1px", color: accent }}>
-        <i className={`fa-solid ${t.type === "error" ? "fa-xmark" : t.type === "success" ? "fa-check" : t.type === "warning" ? "fa-triangle-exclamation" : "fa-circle-info"}`} aria-hidden="true" />
-      </span>
-      <span className="visually-hidden">{TYPE_PREFIX[t.type] || TYPE_PREFIX.info}</span>
+    <div className={`toast toast-${kind}`}>
+      <span className="toast-icon" aria-hidden="true"><i className={`fa-solid ${TOAST_ICON[kind]}`} /></span>
+      <span className="visually-hidden">{TYPE_PREFIX[kind]}</span>
 
-      <div style={{ flex: 1, minWidth: 0, color: accent }}>
-        <span
-          onClick={isLong ? copyFull : undefined}
-          title={isLong ? "Click to copy the full message" : undefined}
-          style={{
-            display: "block",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            cursor: isLong ? "copy" : "default",
-          }}
-        >
-          {shown}
-        </span>
-
+      <div className="toast-body">
+        {isLong
+          ? <button type="button" className="toast-msg is-copyable" onClick={copyFull} title="Copy the full message">{shown}</button>
+          : <span className="toast-msg">{shown}</span>}
         {isLong && (
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
-            <button onClick={copyFull} style={{ ...microBtn, color: "var(--accent)" }}>
-              {copied ? "Copied" : "Copy full message"}
-            </button>
-            <button onClick={() => setExpanded((v) => !v)} style={{ ...microBtn, color: "var(--text-muted)" }}>
-              {expanded ? "Show less" : "Show more"}
-            </button>
+          <div className="toast-links">
+            <button type="button" onClick={copyFull}>{copied ? "Copied" : "Copy full message"}</button>
+            <button type="button" onClick={() => setExpanded((v) => !v)}>{expanded ? "Show less" : "Show more"}</button>
           </div>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+      <div className="toast-actions">
         {t.retry && (
-          <button
-            onClick={() => { t.retry(); dismiss(t.id); }}
-            style={{ fontSize: "0.75rem", color: "var(--accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          >
-            Retry
-          </button>
+          <button type="button" className="toast-retry" onClick={() => { t.retry(); dismiss(t.id); }}>Retry</button>
         )}
-        <button
-          onClick={() => dismiss(t.id)}
-          style={{ fontSize: "0.875rem", color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
-          aria-label="Dismiss"
-        >
-          ×
+        <button type="button" className="toast-x" onClick={() => dismiss(t.id)} aria-label="Dismiss">
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
         </button>
       </div>
     </div>

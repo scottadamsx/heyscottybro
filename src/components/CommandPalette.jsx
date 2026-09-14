@@ -85,46 +85,40 @@ export default function CommandPalette({ onClose }) {
   }, [cursor]);
 
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "12vh" }}
-      onClick={onClose}
-    >
-      <div
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", borderRadius: "0.75rem", width: "100%", maxWidth: "520px", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-primary)" }}>
-          <i className="fa-solid fa-magnifying-glass" style={{ color: "var(--text-muted)" }} />
+    <div className="cmdk-backdrop" onClick={onClose}>
+      <div className="cmdk" role="dialog" aria-modal="true" aria-label="Search and jump" onClick={(e) => e.stopPropagation()}>
+        <div className="cmdk-search">
+          <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
             placeholder="Go to…"
-            style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: "1rem", color: "var(--text-primary)", caretColor: "var(--accent)" }}
+            aria-label="Search pages"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls="cmdk-list"
+            aria-activedescendant={results[cursor] ? `cmdk-${cursor}` : undefined}
           />
-          <kbd style={{ fontSize: "0.7rem", color: "var(--text-muted)", background: "var(--bg-raised)", border: "1px solid var(--border-primary)", borderRadius: "0.25rem", padding: "0.1rem 0.35rem" }}>Esc</kbd>
+          <kbd className="cmdk-kbd">Esc</kbd>
         </div>
 
-        <div ref={listRef} style={{ maxHeight: "400px", overflowY: "auto", padding: "0.375rem 0" }}>
-          {results.length === 0 && (
-            <p style={{ padding: "0.75rem 1rem", color: "var(--text-muted)", fontSize: "0.875rem", margin: 0 }}>No results</p>
-          )}
+        <div ref={listRef} id="cmdk-list" role="listbox" className="cmdk-list">
+          {results.length === 0 && <p className="cmdk-empty">No results</p>}
           {results.map((cmd, i) => (
             <button
               key={cmd.label}
+              id={`cmdk-${i}`}
+              role="option"
+              aria-selected={i === cursor}
+              className={`cmdk-item${i === cursor ? " is-active" : ""}`}
               onClick={() => go(cmd)}
               onMouseEnter={() => setCursor(i)}
-              style={{
-                display: "flex", alignItems: "center", gap: "0.75rem",
-                width: "100%", padding: "0.6rem 1rem", background: i === cursor ? "var(--bg-raised)" : "none",
-                border: "none", cursor: "pointer", textAlign: "left",
-                color: "var(--text-primary)", fontSize: "0.875rem",
-              }}
             >
-              <i className={`fa-solid ${cmd.icon}`} style={{ width: "1rem", textAlign: "center", color: "var(--text-muted)" }} />
-              <span style={{ flex: 1 }}>{cmd.label}</span>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{cmd.section}</span>
+              <i className={`fa-solid ${cmd.icon}`} aria-hidden="true" />
+              <span className="cmdk-label">{cmd.label}</span>
+              <span className="cmdk-section">{cmd.section}</span>
             </button>
           ))}
         </div>

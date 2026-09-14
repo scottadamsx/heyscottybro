@@ -256,6 +256,20 @@
 .admin-shell .section-title { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 600; margin: 0; }
 
 
+/* ── 3b. Base button outside the shell (sign-in, shared docs, public tools).
+   Inside .admin-shell the section-4 rules take over by specificity. ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);
+  min-height: var(--control-h); padding: 0 var(--space-md);
+  border: 1px solid var(--bg-inverse); border-radius: var(--radius-full);
+  background: var(--bg-inverse); color: var(--text-inverse);
+  font: 600 var(--text-base)/1 var(--font-body); white-space: nowrap; cursor: pointer;
+  transition: background-color var(--dur-fast), transform var(--dur-fast) var(--ease);
+}
+.btn:hover { background: var(--bg-inverse-hover); }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* ── 4. Buttons ──────────────────────────────────────────────────────────── */
 /* One family, capsule-shaped. Primary = ink. Secondary = outline. Ghost =
    text. Danger = red outline. Sizes: 40 default · 32 small · 28 mini. */
@@ -377,7 +391,7 @@
 
 /* ── 5. Fields + cards ───────────────────────────────────────────────────── */
 
-.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.admin-shell input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"])),
 .admin-shell select,
 .admin-shell textarea {
   width: 100%; min-height: var(--control-h); padding: 0 var(--space-sm);
@@ -390,10 +404,10 @@
 .admin-shell textarea { padding: var(--space-sm); line-height: var(--leading-normal); min-height: 88px; resize: vertical; }
 .admin-shell input::placeholder,
 .admin-shell textarea::placeholder { color: var(--text-muted); }
-.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):hover,
+.admin-shell input:where(:not([type="checkbox"], [type="radio"], [type="range"])):hover,
 .admin-shell select:hover,
 .admin-shell textarea:hover { border-color: var(--border-strong); }
-.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+.admin-shell input:where(:not([type="checkbox"], [type="radio"], [type="range"])):focus,
 .admin-shell select:focus,
 .admin-shell textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .admin-shell input:disabled, .admin-shell select:disabled, .admin-shell textarea:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -574,6 +588,20 @@
 .kpi-sub { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 
+/* Meter: label + numbers over a capsule track (fill width/colour inline) */
+.meter + .meter { margin-top: var(--space-md); }
+.meter-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-xs); font-size: var(--text-sm); }
+.meter-name { font-weight: 600; color: var(--text-primary); }
+.meter-nums { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.meter-track { height: 8px; border-radius: var(--radius-full); background: var(--bg-raised); overflow: hidden; }
+.meter-fill { height: 100%; border-radius: var(--radius-full); transition: width 0.3s var(--ease); }
+.card-foot-note { margin-top: var(--space-md); font-size: var(--text-xs); color: var(--text-secondary); }
+.sublist-title { margin: var(--space-md) 0 var(--space-2xs); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+.admin-shell .db-list-item.is-compact { min-height: 32px; padding-block: var(--space-2xs); }
+.habit-row-main { display: flex; align-items: center; gap: var(--space-sm); flex: 1; min-width: 0; cursor: pointer; }
+.admin-shell .card-toggle { margin-top: var(--space-md); }
+.code-name { font-family: var(--font-mono); font-size: var(--text-sm); }
+
 /* Progress bars */
 .admin-shell .fin-progress { height: 8px; background: var(--bg-raised); border-radius: var(--radius-full); overflow: hidden; }
 .admin-shell .fin-progress span { display: block; height: 100%; border-radius: var(--radius-full); transition: width 0.4s var(--ease); }
@@ -713,6 +741,42 @@
   .admin-shell .chat-panel { width: var(--chat-w); max-width: var(--chat-w); box-shadow: none; border-left: 1px solid var(--border-subtle); }
 }
 
+
+/* Command palette (⌘K) */
+.cmdk-backdrop { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: flex-start; justify-content: center; padding: 12vh var(--space-md) 0; background: var(--overlay); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.cmdk { width: 100%; max-width: 560px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); }
+.cmdk-search { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); }
+.admin-shell .cmdk-search input { flex: 1; min-height: 32px; padding: 0; border: none; background: none; box-shadow: none; font-size: var(--text-md); color: var(--text-primary); caret-color: var(--accent); }
+.admin-shell .cmdk-search input:focus { box-shadow: none; }
+.cmdk-kbd { padding: 2px var(--space-xs); border: 1px solid var(--border-primary); border-radius: var(--radius-xs); font: 500 var(--text-2xs)/1.4 var(--font-body); color: var(--text-secondary); }
+.cmdk-list { max-height: min(400px, 56vh); overflow-y: auto; padding: var(--space-xs); }
+.cmdk-empty { margin: 0; padding: var(--space-sm) var(--space-md); font-size: var(--text-base); color: var(--text-secondary); }
+.cmdk-item { display: flex; align-items: center; gap: var(--space-sm); width: 100%; min-height: 40px; padding: 0 var(--space-sm); border: none; border-radius: var(--radius-md); background: none; color: var(--text-primary); font: inherit; font-size: var(--text-base); text-align: left; cursor: pointer; }
+.cmdk-item i { width: 20px; text-align: center; color: var(--text-secondary); }
+.cmdk-item.is-active { background: var(--bg-raised); }
+.cmdk-item.is-active i { color: var(--accent); }
+.cmdk-label { flex: 1; }
+.cmdk-section { font-size: var(--text-xs); color: var(--text-secondary); }
+
+/* Toasts (render at the app root, outside .admin-shell) */
+.toast-stack { position: fixed; top: var(--space-md); right: var(--space-md); z-index: 9999; display: flex; flex-direction: column; gap: var(--space-xs); width: min(380px, calc(100vw - 2 * var(--space-md))); font-family: var(--font-body); }
+.toast { display: flex; align-items: flex-start; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-floating); font-size: var(--text-base); line-height: var(--leading-normal); color: var(--text-primary); animation: toast-in var(--dur) var(--ease); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.toast-icon { flex-shrink: 0; width: 24px; height: 24px; margin-top: -2px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-full); font-size: 11px; }
+.toast-error .toast-icon { background: var(--danger-bg); color: var(--red); }
+.toast-success .toast-icon { background: var(--success-bg); color: var(--green); }
+.toast-warning .toast-icon { background: var(--warn-bg); color: var(--orange); }
+.toast-info .toast-icon { background: var(--info-bg); color: var(--blue); }
+.toast-body { flex: 1; min-width: 0; }
+.toast-msg { display: block; white-space: pre-wrap; word-break: break-word; }
+.toast-msg.is-copyable { padding: 0; border: none; background: none; font: inherit; color: inherit; text-align: left; cursor: copy; }
+.toast-links { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-2xs); }
+.toast-links button, .toast-retry { padding: 0; border: none; background: none; font: 600 var(--text-xs)/1.5 var(--font-body); color: var(--text-secondary); cursor: pointer; }
+.toast-links button:first-child, .toast-retry { color: var(--accent); }
+.toast-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
+.toast-x { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; margin: -2px -4px 0 0; padding: 0; border: none; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+.toast-x:hover { background: var(--bg-raised); color: var(--text-primary); }
+@media (max-width: 640px) { .toast-stack { top: auto; bottom: calc(var(--space-md) + env(safe-area-inset-bottom)); left: var(--space-md); right: var(--space-md); width: auto; } }
 
 /* ── 9. States: empty, loading, error ────────────────────────────────────── */
 
@@ -910,7 +974,7 @@
   .admin-shell .uik-card { padding: var(--space-md); }
   .admin-shell .panel-mint, .admin-shell .panel-peach { padding: var(--space-lg); }
   /* 16px stops iOS Safari zooming the page on focus */
-  .admin-shell input:not([type="checkbox"]):not([type="radio"]),
+  .admin-shell input:where(:not([type="checkbox"], [type="radio"])),
   .admin-shell select,
   .admin-shell textarea { font-size: var(--text-md); }
   .admin-shell .chat-input { min-height: unset; }
