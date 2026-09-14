@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { THEMES, useTheme, setTheme } from "../../utils/theme";
-import { Link } from "react-router-dom";
 import { HIDE_SMOKE_TRACKER, useSetting, setSetting, useHiddenPages, toggleHiddenPage } from "../../utils/settings";
 import { NAV_ITEMS } from "./AdminLayout";
 import { clearAgentSession } from "../../api/agentSessionsApi";
@@ -121,42 +120,27 @@ export default function SettingsPage() {
         <div className="settings-row">
           <div className="settings-row-body">
             <div className="settings-row-title">
-              <i className="fa-solid fa-circle-half-stroke" /> Theme
+              <i className="fa-solid fa-circle-half-stroke" /> Appearance
             </div>
             <div className="settings-row-meta">
-              Light is the default. Dark follows the same layout; Windows XP is the full Luna treatment.
+              Light is the default. Automatic follows your device and switches with it.
               Saved on this device and applied instantly.
             </div>
           </div>
-          <div className="theme-picker" role="radiogroup" aria-label="Theme">
+          <div className="segmented" role="radiogroup" aria-label="Appearance">
             {THEMES.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 role="radio"
                 aria-checked={theme === t.id}
-                className={`theme-picker-opt${theme === t.id ? " active" : ""}`}
+                className={`segmented-opt${theme === t.id ? " active" : ""}`}
                 onClick={() => setTheme(t.id)}
-                title={t.hint}
               >
-                <i className={t.icon} /> {t.label}
+                <i className={t.icon} aria-hidden="true" /> {t.label}
               </button>
             ))}
           </div>
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-body">
-            <div className="settings-row-title">
-              <i className="fa-solid fa-swatchbook" /> Appearance
-            </div>
-            <div className="settings-row-meta">
-              The design system — themes, tokens, and the component gallery. Moved out of the
-              main nav; it's a workshop, not a daily destination.
-            </div>
-          </div>
-          <Link className="btn btn-sm btn-secondary-sm" to="/admin/design">
-            Open Design <i className="fa-solid fa-arrow-right" />
-          </Link>
         </div>
       </div>
     </div>

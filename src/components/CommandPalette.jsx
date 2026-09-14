@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDesktop } from "./xp/Desktop";
 import { HIDE_SMOKE_TRACKER, useSetting, useHiddenPages } from "../utils/settings";
 
 const COMMANDS = [
@@ -38,12 +37,10 @@ const COMMANDS = [
   { label: "Files",           to: "/admin/vault?tab=files",          icon: "fa-database",         section: "Vault" },
   { label: "Hike DB",         to: "/admin/vault?tab=databases",      icon: "fa-person-hiking",    section: "Vault" },
   { label: "Settings",        to: "/admin/settings",                 icon: "fa-gear",             section: "System" },
-  { label: "Design / Appearance", to: "/admin/design",               icon: "fa-swatchbook",       section: "System" },
   { label: "View Site",      to: "/",                              icon: "fa-globe",          section: "Site" },
 ];
 
 export default function CommandPalette({ onClose }) {
-  const desk = useDesktop();
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
@@ -70,11 +67,8 @@ export default function CommandPalette({ onClose }) {
 
   useEffect(() => { setCursor(0); }, [results]);
 
-  // In the XP desktop a command opens/focuses a window; the public site opens in a new tab so the desktop survives.
   const go = (cmd) => {
-    if (desk && cmd.to.startsWith("/admin")) desk.openWindow(cmd.to);
-    else if (desk && cmd.to === "/") window.open("/", "_blank", "noopener");
-    else navigate(cmd.to);
+    navigate(cmd.to);
     onClose();
   };
 

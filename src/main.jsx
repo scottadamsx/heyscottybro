@@ -6,17 +6,16 @@ import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { reloadOnceForStaleChunk } from "./utils/lazyWithReload.js";
 import "./styles/globals.css"; // design tokens FIRST — QF-7, one styling source of truth
-import "./index.css";
+import "./index.css"; // public site + feature-module rules
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
-import "./styles/admin-executive.css"; // minimal executive skin for /admin (loads last)
-import "./styles/features.css"; // documents · nutrition · recipes (loads after admin theme)
-import "./styles/theme-xp.css"; // Windows XP chrome — only matches [data-theme="xp"]
-import "./styles/xp-desktop-admin.css"; // XP admin desktop: windows + taskbar
+import "./styles/features.css"; // documents · nutrition · recipes
+import "./styles/system.css"; // the admin design system: shell + primitives (loads last among screens)
 import "./styles/print.css"; // print layer — @media print only
-import { applyTheme, getTheme } from "./utils/theme.js";
+import { applyTheme, getTheme, watchSystemTheme } from "./utils/theme.js";
 
 // Theme before first paint: <html data-theme> drives every token in globals.css.
 applyTheme(getTheme());
+watchSystemTheme();
 // Other tabs switching the theme should repaint this one too.
 window.addEventListener("storage", (e) => { if (e.key === "setting:theme") applyTheme(getTheme()); });
 

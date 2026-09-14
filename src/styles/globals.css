@@ -1,685 +1,238 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    globals.css — THE styling source of truth (house style QF-7).
    ─────────────────────────────────────────────────────────────────────────────
-   Every colour, radius, spacing and type value the app is allowed to use lives
-   here as a custom property. Components reference tokens; they do not write
-   literals. `index.css` holds component rules only and is loaded after this.
+   Every colour, radius, spacing, type and motion value the app may use lives
+   here as a custom property. Components reference tokens; they never write
+   literals. Component rules live in styles/system.css (admin design system)
+   and index.css (public site + feature modules), loaded after this file.
 
-  Theme scopes live on <html> via data-theme (see theme.js). Same token names
-  in every scope, so one component works across every theme.
+   Two scopes only (DR-013, 2026-09-14): light (default) and dark, set on
+   <html data-theme> before first paint by utils/theme.js. Same token names
+   in both, so one component works in both.
+
+   The system, in one breath:
+   · 8-point grid. Every space is 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64.
+   · One type scale: 11 · 12 · 13 · 14 · 16 · 20 · 24 · 32 · 40, line
+     heights on the 4-point grid. Body 14/20. Slab display face for titles
+     and headline numbers, SF/system for everything you read.
+   · Radii: 6 (checkboxes, tags) · 8 (small chips) · 12 (inputs, list rows)
+     · 16 (cards) · 24 (feature panels, dialogs). Buttons, tabs and pills are
+     capsules (full). Nested radius = outer − gap.
+   · Three control heights: 32 · 40 · 48; 44 minimum on touch.
+   · Warm neutrals from the reference; one accent (coral) used sparingly;
+     every text colour passes WCAG AA (≥ 4.5:1) on the surface it sits on.
 
    Named `globals.css` deliberately: devrules/validate-ui.mjs resolves the
-   global stylesheet by that exact basename, and while this project called it
-   index.css the checker silently skipped UI-4 entirely and reported UI-7 as
-   failing even though three prefers-reduced-motion blocks were present.
-   Extracting the tokens is what QF-7 asks for anyway; being visible to the
-   checker is the bonus. See ledger DR-009.
+   global stylesheet by that exact basename (ledger DR-009).
    ───────────────────────────────────────────────────────────────────────── */
-
-/* Pixelated MS Sans Serif — the bitmap UI face for the XP theme (public/fonts, MIT). */
-@font-face { font-family: "Pixelated MS Sans Serif"; src: url("/fonts/ms_sans_serif.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Pixelated MS Sans Serif"; src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-
-/* ═══ Theme scopes ═══════════════════════════════════════════════════════════
-  <html data-theme="..."> is set before first paint (src/utils/theme.js,
-   applied in main.jsx). Same token NAMES in every scope; only values change.
-  light = the default: an Apple-esque paper-and-hairline look.
-  dark, xp, apple-retro, ios-retro, minecraft, backyard, never86, arcade are
-  optional packs.
-   The admin shell no longer carries its own palette; it inherits from here.
-   ═════════════════════════════════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
-  /* Surfaces */
-  --bg-base: #F5F5F7;
+  /* ── Surfaces ── */
+  --bg-base: #FFFFFF;            /* content canvas */
+  --bg-sidebar: #F5EEE7;         /* cream chrome */
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-raised: #F2F2F7;
-  --bg-hover: #E8E8ED;
-  --canvas-bg: linear-gradient(180deg, #FBFBFD 0%, #F5F5F7 100%);
-  --canvas-dot: rgba(29,29,31,0.045);
+  --bg-raised: #F8F4F0;          /* insets, inputs, segmented tracks */
+  --bg-hover: #F2EBE4;
+  --bg-selected: #FFFFFF;        /* selected row on cream */
+  --bg-inverse: #221E1B;         /* primary button, strong chips */
+  --bg-inverse-hover: #3A342F;
+  --tint-mint: #EAF4F2;          /* feature panel (reference "Channels") */
+  --tint-peach: #F7EEE8;         /* feature panel (reference "Upgrade") */
+  --sidebar-hover: rgba(34, 30, 27, 0.05);
 
-  /* Hairlines */
-  --border-subtle: rgba(60,60,67,0.12);
-  --border-primary: rgba(60,60,67,0.22);
-  --border-accent: rgba(0,113,227,0.45);
-  --line: rgba(60,60,67,0.12);
+  /* ── Hairlines ── */
+  --border-subtle: #EFE7E0;
+  --border-primary: #E3D9D0;
+  --border-strong: #CFC3B8;
+  --border-accent: rgba(210, 69, 45, 0.45);
+  --line: var(--border-subtle);
 
-  /* Text */
-  --text-primary: #1D1D1F;
-  --text-secondary: #6E6E73;
-  --text-muted: #86868B;
+  /* ── Text (all ≥ 4.5:1 on --bg-base) ── */
+  --text-primary: #221E1B;       /* 16.5:1 */
+  --text-secondary: #6B625B;     /* 6.0:1 */
+  --text-muted: #7A716A;         /* 4.6:1 */
   --text-on-accent: #FFFFFF;
+  --text-inverse: #FFFFFF;
 
-  /* Identity — flag red (public-site decoration only) */
-  --red-flag: #CF1124;
-  --red-flag-deep: #A50D1D;
-  --pure-black: #000000;
+  /* ── Accent + semantic ── */
+  --accent: #D2452D;             /* coral, text-safe (4.5:1) */
+  --accent-hover: #B93A25;
+  --accent-bg: rgba(235, 91, 67, 0.10);
+  --accent-glow: rgba(235, 91, 67, 0.24);
+  --green: #237A6F;              /* positive text */
+  --red: #C23329;                /* danger text */
+  --red-deep: #A12920;
+  --orange: #9A6412;             /* warning text */
+  --blue: #3564C9;
+  --cyan: #2F7F9E;
+  --success-bg: rgba(99, 181, 170, 0.16);
+  --danger-bg: rgba(194, 51, 41, 0.09);
+  --warn-bg: rgba(242, 180, 65, 0.18);
+  --info-bg: rgba(79, 127, 224, 0.10);
 
-  /* Actions */
-  --accent: #0071E3;
-  --accent-deep: #0060C0;
-  --accent-light: #0A84FF;
-  --accent-bg: rgba(0,113,227,0.10);
-  --accent-glow: rgba(0,113,227,0.28);
-  --cyan: #32ADE6;
-  --cyan-glow: rgba(50,173,230,0.25);
-  --green: #1E9E4C;
-  --red: #E0342B;
-  --red-deep: #B8281F;
-  --orange: #D97706;
+  /* ── Chart + decoration fills (never carry small text) ── */
+  --coral: #EB5B43;
+  --teal: #63B5AA;
+  --amber: #F2B441;
+  --sky: #4F7FE0;
+  --umber: #A97C5E;
+  --teal-deep: #2B7A70;          /* teal that carries white text (5.1:1) */
+  --chart-1: var(--amber);
+  --chart-2: var(--teal);
+  --chart-3: var(--coral);
+  --chart-4: var(--sky);
+  --chart-5: var(--umber);
+  --chart-grid: #F1EBE5;
 
-  /* Status tints — tint background + dark text of the same hue */
-  --success-bg: rgba(52,199,89,0.14);
-  --danger-bg: rgba(255,59,48,0.12);
-  --warn-bg: rgba(255,149,0,0.14);
-  --info-bg: rgba(0,113,227,0.10);
+  /* ── Elevation ── */
+  --overlay: rgba(34, 30, 27, 0.36);
+  --shadow-card: 0 1px 2px rgba(34, 30, 27, 0.04);
+  --shadow-raised: 0 1px 2px rgba(34, 30, 27, 0.06), 0 2px 8px rgba(34, 30, 27, 0.05);
+  --shadow-floating: 0 12px 32px rgba(34, 30, 27, 0.10), 0 2px 6px rgba(34, 30, 27, 0.05);
+  --shadow-modal: 0 24px 64px rgba(34, 30, 27, 0.20), 0 4px 12px rgba(34, 30, 27, 0.06);
 
-  /* Overlays & elevation */
-  --overlay: rgba(29,29,31,0.45);
-  --shadow-card: 0 1px 2px rgba(29,29,31,0.04);
-  --shadow-floating: 0 12px 32px rgba(29,29,31,0.10), 0 1px 2px rgba(29,29,31,0.06);
-  --shadow-modal: 0 28px 70px rgba(29,29,31,0.28);
-  --shadow-glow: none;
+  /* ── Type ── */
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Roboto Slab", "Rockwell", "Georgia", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --letter-spacing-body: 0;
+  --text-2xs: 0.6875rem;   /* 11 */
+  --text-xs: 0.75rem;      /* 12 */
+  --text-sm: 0.8125rem;    /* 13 */
+  --text-base: 0.875rem;   /* 14 */
+  --text-md: 1rem;         /* 16 */
+  --text-lg: 1.25rem;      /* 20 */
+  --text-xl: 1.5rem;       /* 24 */
+  --text-2xl: 2rem;        /* 32 */
+  --text-3xl: 2.5rem;      /* 40 */
+  --leading-tight: 1.25;
+  --leading-normal: 1.43;  /* 20 on 14 */
+  --leading-relaxed: 1.6;
 
-  /* Gradients */
-  --grad-hero: transparent;
-  --grad-card: #FFFFFF;
-  --grad-accent: linear-gradient(180deg, #0A84FF, #0071E3);
-  --grad-glow: transparent;
-  --flag-stripe: linear-gradient(90deg,
-    var(--red-flag) 0 60%, var(--pure-black) 60% 80%,
-    #FFFFFF 80% 86%, var(--red-flag) 86% 100%);
+  /* ── Space (8-point grid) ── */
+  --space-2xs: 0.25rem;    /* 4 */
+  --space-xs: 0.5rem;      /* 8 */
+  --space-sm: 0.75rem;     /* 12 */
+  --space-md: 1rem;        /* 16 */
+  --space-lg: 1.5rem;      /* 24 */
+  --space-xl: 2rem;        /* 32 */
+  --space-2xl: 3rem;       /* 48 */
+  --space-3xl: 4rem;       /* 64 */
 
-  /* Typography — SF on Apple hardware, Inter-class fallbacks elsewhere */
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Geist", "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Geist", "Archivo", "Segoe UI", system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
-  --letter-spacing-body: -0.01em;
-
-  /* Layout */
-  --nav-height: 68px;
-  --control-h: 40px;
-
-  /* Radius ramp (housestyle-ui §3) */
+  /* ── Radius ── */
+  --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 20px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
 
-  /* XP-only chrome (neutral no-ops elsewhere) */
-  --bevel-light: transparent;
-  --bevel-dark: transparent;
-  --titlebar-grad: var(--bg-surface);
-  --titlebar-text: var(--text-primary);
-  --chrome-blur: saturate(180%) blur(20px);
-  --chrome-bg: rgba(255,255,255,0.72);
+  /* ── Controls + layout ── */
+  --control-h-sm: 32px;
+  --control-h: 40px;
+  --control-h-lg: 48px;
+  --sidebar-w: 256px;
+  --sidebar-w-collapsed: 72px;
+  --content-max: 1200px;
+  --page-pad: 40px;
+  --chat-w: 380px;
+  --nav-height: 64px;
 
-  /* Spacing scale */
-  --space-2xs: 0.25rem;
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
+  /* ── Motion ── */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
 
-  /* Type scale */
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 2rem;
-
-  --leading-tight: 1.25;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.7;
+  /* ── Legacy aliases — older module CSS still reads these names. They map
+     onto the system instead of carrying their own values. ── */
+  --accent-deep: var(--accent-hover);
+  --accent-light: var(--accent);
+  --grad-accent: var(--accent);
+  --grad-hero: transparent;
+  --canvas-bg: var(--bg-base);
+  --cyan-glow: transparent;
+  --red-flag: var(--accent);
+  --pure-black: var(--text-primary);
+  --flag-stripe: var(--accent);
+  --chrome-bg: var(--bg-sidebar);
+  --chrome-blur: none;
+  --bg-elevated: var(--bg-hover);
+  --danger: var(--red);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg-base: #0E0E10;
-  --bg-surface: #161618;
-  --bg-card: #1C1C1E;
-  --bg-raised: #2C2C2E;
-  --bg-hover: #3A3A3C;
-  --canvas-bg: linear-gradient(180deg, #121214 0%, #0E0E10 100%);
-  --canvas-dot: rgba(255,255,255,0.035);
 
-  --border-subtle: rgba(255,255,255,0.09);
-  --border-primary: rgba(255,255,255,0.16);
-  --border-accent: rgba(10,132,255,0.5);
-  --line: rgba(255,255,255,0.09);
+  --bg-base: #161412;
+  --bg-sidebar: #1D1A17;
+  --bg-surface: #1D1A17;
+  --bg-card: #211E1B;
+  --bg-raised: #2A2622;
+  --bg-hover: #302B27;
+  --bg-selected: #2E2925;
+  --bg-inverse: #F4EFEA;
+  --bg-inverse-hover: #DDD6CF;
+  --tint-mint: #1B2624;
+  --tint-peach: #2A211D;
+  --sidebar-hover: rgba(255, 240, 225, 0.06);
 
-  --text-primary: #F5F5F7;
-  --text-secondary: #A1A1A6;
-  --text-muted: #6E6E73;
-  --text-on-accent: #FFFFFF;
+  --border-subtle: rgba(255, 240, 225, 0.07);
+  --border-primary: rgba(255, 240, 225, 0.12);
+  --border-strong: rgba(255, 240, 225, 0.22);
+  --border-accent: rgba(242, 115, 92, 0.5);
 
-  --accent: #0A84FF;
-  --accent-deep: #0071E3;
-  --accent-light: #409CFF;
-  --accent-bg: rgba(10,132,255,0.16);
-  --accent-glow: rgba(10,132,255,0.35);
-  --cyan: #64D2FF;
-  --green: #30D158;
-  --red: #FF453A;
-  --red-deep: #D93A31;
-  --orange: #FF9F0A;
+  --text-primary: #F4EFEA;       /* 16.1:1 */
+  --text-secondary: #B5ACA4;     /* 8.2:1 */
+  --text-muted: #958C85;         /* 5.6:1 */
+  --text-on-accent: #1A1512;
+  --text-inverse: #161412;
 
-  --success-bg: rgba(48,209,88,0.16);
-  --danger-bg: rgba(255,69,58,0.16);
-  --warn-bg: rgba(255,159,10,0.16);
-  --info-bg: rgba(10,132,255,0.16);
+  --accent: #F2735C;
+  --accent-hover: #F58A76;
+  --accent-bg: rgba(242, 115, 92, 0.14);
+  --accent-glow: rgba(242, 115, 92, 0.30);
+  --green: #6CC4B8;
+  --red: #F2675E;
+  --red-deep: #F58A83;
+  --orange: #E9B04A;
+  --blue: #86A6F2;
+  --cyan: #6CB8D6;
+  --success-bg: rgba(108, 196, 184, 0.14);
+  --danger-bg: rgba(242, 103, 94, 0.14);
+  --warn-bg: rgba(233, 176, 74, 0.14);
+  --info-bg: rgba(134, 166, 242, 0.14);
 
-  --overlay: rgba(0,0,0,0.6);
-  --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset;
-  --shadow-floating: 0 14px 34px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
-  --shadow-modal: 0 40px 90px rgba(0,0,0,0.7);
+  --coral: #F2735C;
+  --teal: #6CC4B8;
+  --amber: #E9B04A;
+  --sky: #86A6F2;
+  --umber: #C39A7C;
+  --teal-deep: #2B7A70;
+  --chart-grid: rgba(255, 240, 225, 0.07);
 
-  --grad-card: var(--bg-card);
-  --grad-accent: linear-gradient(180deg, #409CFF, #0A84FF);
-  --chrome-bg: rgba(22,22,24,0.72);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-floating: 0 12px 32px rgba(0, 0, 0, 0.50), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.60);
 }
 
-:root[data-theme="xp"] {
-  color-scheme: light;
-  --bg-base: #ECE9D8;
-  --bg-surface: #F6F5EE;
-  --bg-card: #FFFFFF;
-  --bg-raised: #F1EFE2;
-  --bg-hover: #E3E1D3;
-  --canvas-bg: url("/images/bliss.jpg") center / cover no-repeat fixed, linear-gradient(180deg, #5A7EDC 0%, #7CB0E6 40%, #4E8A2F 100%);
-  --canvas-dot: transparent;
-
-  --border-subtle: #ACA899;
-  --border-primary: #7F9DB9;
-  --border-accent: #316AC5;
-  --line: #ACA899;
-
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --text-muted: #6D6D6D;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #316AC5;
-  --accent-deep: #0A246A;
-  --accent-light: #3399FF;
-  --accent-bg: #C1D2EE;
-  --accent-glow: rgba(49,106,197,0.45);
-  --cyan: #3399FF;
-  --green: #3B9F3C;
-  --red: #C93A2E;
-  --red-deep: #A22C22;
-  --orange: #E68A00;
-
-  --success-bg: #D8F0D3;
-  --danger-bg: #F5D3CF;
-  --warn-bg: #FBEBC5;
-  --info-bg: #FFFFE1;
-
-  --overlay: rgba(0,0,0,0.35);
-  --shadow-card: none;
-  --shadow-floating: 2px 2px 3px rgba(0,0,0,0.35);
-  --shadow-modal: 4px 4px 6px rgba(0,0,0,0.45);
-
-  --grad-card: #FFFFFF;
-  --grad-accent: linear-gradient(180deg, #4C9CFF 0%, #1C5FDE 50%, #0B4BC7 100%);
-
-  --font-body: Tahoma, "Trebuchet MS", Verdana, "Segoe UI", sans-serif;
-  --font-display: "Trebuchet MS", Tahoma, Verdana, sans-serif;
-  --font-mono: "Lucida Console", Consolas, monospace;
-  --letter-spacing-body: 0;
-
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-
-  --bevel-light: #FFFFFF;
-  --bevel-dark: #ACA899;
-  --titlebar-grad: linear-gradient(180deg, #0A5FE5 0%, #0842C9 6%, #0A5FE5 12%, #1B67F0 45%, #0A50DE 88%, #0A3FB8 100%);
-  --titlebar-text: #FFFFFF;
-  --chrome-blur: none;
-  --chrome-bg: #ECE9D8;
+/* Touch devices: every control is a real 44px target. */
+@media (pointer: coarse) {
+  :root { --control-h-sm: 44px; --control-h: 44px; }
 }
-
-:root[data-theme="apple-retro"] {
-  color-scheme: light;
-  --bg-base: #D8D4C7;
-  --bg-surface: #ECE8DC;
-  --bg-card: #F4F1E6;
-  --bg-raised: #E1DCCD;
-  --bg-hover: #D5CFBE;
-  --canvas-bg: linear-gradient(180deg, #E4E0D2 0%, #D8D4C7 100%);
-  --canvas-dot: rgba(30, 30, 30, 0.05);
-
-  --border-subtle: rgba(33, 33, 33, 0.2);
-  --border-primary: rgba(22, 22, 22, 0.35);
-  --border-accent: rgba(60, 98, 170, 0.5);
-  --line: rgba(22, 22, 22, 0.2);
-
-  --text-primary: #171717;
-  --text-secondary: #47423A;
-  --text-muted: #6A645A;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #3D63AA;
-  --accent-deep: #2D4A83;
-  --accent-light: #5B83D0;
-  --accent-bg: rgba(61, 99, 170, 0.14);
-  --accent-glow: rgba(61, 99, 170, 0.28);
-  --cyan: #4A7FA8;
-  --green: #3E7A44;
-  --red: #AF453B;
-  --red-deep: #84352E;
-  --orange: #A56A2A;
-
-  --success-bg: rgba(62, 122, 68, 0.16);
-  --danger-bg: rgba(175, 69, 59, 0.15);
-  --warn-bg: rgba(165, 106, 42, 0.16);
-  --info-bg: rgba(61, 99, 170, 0.14);
-
-  --overlay: rgba(40, 34, 26, 0.45);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 1px 1px rgba(0, 0, 0, 0.06);
-  --shadow-floating: 0 12px 22px rgba(53, 45, 36, 0.24);
-  --shadow-modal: 0 20px 42px rgba(40, 32, 23, 0.32);
-
-  --grad-card: linear-gradient(180deg, #F8F4E9, #EFEBDD);
-  --grad-accent: linear-gradient(180deg, #6B90D4 0%, #3D63AA 70%, #2E4B85 100%);
-  --chrome-bg: rgba(236, 232, 220, 0.84);
-
-  --font-body: "Geneva", "Lucida Grande", "Chicago", "Trebuchet MS", sans-serif;
-  --font-display: "Charcoal", "Geneva", "Trebuchet MS", sans-serif;
-  --font-mono: "Monaco", "SF Mono", Menlo, monospace;
-}
-
-:root[data-theme="ios-retro"] {
-  color-scheme: light;
-  --bg-base: #DCE7F4;
-  --bg-surface: #F6FAFF;
-  --bg-card: #FFFFFF;
-  --bg-raised: #E8F0FB;
-  --bg-hover: #D7E6F8;
-  --canvas-bg: linear-gradient(180deg, #A9C6E7 0%, #CEDDF0 38%, #DCE7F4 100%);
-  --canvas-dot: rgba(255, 255, 255, 0.18);
-
-  --border-subtle: rgba(44, 72, 112, 0.2);
-  --border-primary: rgba(44, 72, 112, 0.32);
-  --border-accent: rgba(41, 122, 222, 0.5);
-  --line: rgba(44, 72, 112, 0.2);
-
-  --text-primary: #102744;
-  --text-secondary: #355376;
-  --text-muted: #5A7593;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #2A7CDE;
-  --accent-deep: #1F63B4;
-  --accent-light: #5AA1F2;
-  --accent-bg: rgba(42, 124, 222, 0.16);
-  --accent-glow: rgba(42, 124, 222, 0.3);
-  --cyan: #47A7D9;
-  --green: #31A06A;
-  --red: #D4514F;
-  --red-deep: #A53D3C;
-  --orange: #D58D43;
-
-  --success-bg: rgba(49, 160, 106, 0.16);
-  --danger-bg: rgba(212, 81, 79, 0.16);
-  --warn-bg: rgba(213, 141, 67, 0.2);
-  --info-bg: rgba(42, 124, 222, 0.14);
-
-  --overlay: rgba(14, 26, 46, 0.46);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 2px 4px rgba(28, 56, 92, 0.1);
-  --shadow-floating: 0 14px 28px rgba(25, 52, 84, 0.2);
-  --shadow-modal: 0 24px 56px rgba(15, 32, 56, 0.3);
-
-  --grad-card: linear-gradient(180deg, #FFFFFF 0%, #F2F7FE 100%);
-  --grad-accent: linear-gradient(180deg, #8FC1FF 0%, #3D86E8 55%, #2A68C4 100%);
-  --chrome-bg: rgba(234, 242, 252, 0.84);
-
-  --font-body: "Helvetica Neue", "Arial", sans-serif;
-  --font-display: "Helvetica Neue", "Arial", sans-serif;
-  --font-mono: "Courier New", monospace;
-}
-
-:root[data-theme="minecraft"] {
-  color-scheme: dark;
-  --bg-base: #2B2F22;
-  --bg-surface: #343B29;
-  --bg-card: #3E462F;
-  --bg-raised: #4A5437;
-  --bg-hover: #566242;
-  --canvas-bg: linear-gradient(180deg, #4D6B3A 0%, #2D3E23 100%);
-  --canvas-dot: rgba(0, 0, 0, 0.12);
-
-  --border-subtle: rgba(16, 20, 12, 0.45);
-  --border-primary: rgba(10, 14, 8, 0.64);
-  --border-accent: rgba(144, 197, 73, 0.55);
-  --line: rgba(11, 16, 8, 0.45);
-
-  --text-primary: #EAF1D3;
-  --text-secondary: #C3D09D;
-  --text-muted: #99A97B;
-  --text-on-accent: #102007;
-
-  --accent: #90C549;
-  --accent-deep: #6FA037;
-  --accent-light: #B6DF74;
-  --accent-bg: rgba(144, 197, 73, 0.2);
-  --accent-glow: rgba(144, 197, 73, 0.35);
-  --cyan: #6AB39B;
-  --green: #8CCB50;
-  --red: #C85A47;
-  --red-deep: #9A4233;
-  --orange: #CC8F45;
-
-  --success-bg: rgba(140, 203, 80, 0.2);
-  --danger-bg: rgba(200, 90, 71, 0.2);
-  --warn-bg: rgba(204, 143, 69, 0.2);
-  --info-bg: rgba(106, 179, 155, 0.2);
-
-  --overlay: rgba(8, 12, 5, 0.58);
-  --shadow-card: 0 2px 0 rgba(255, 255, 255, 0.06) inset, 0 0 0 1px rgba(0, 0, 0, 0.22);
-  --shadow-floating: 0 14px 28px rgba(5, 8, 3, 0.5);
-  --shadow-modal: 0 28px 60px rgba(5, 8, 3, 0.68);
-
-  --grad-card: linear-gradient(180deg, #445036, #3A432E);
-  --grad-accent: linear-gradient(180deg, #C0E57F 0%, #86BC41 60%, #6D9E37 100%);
-  --chrome-bg: rgba(49, 55, 40, 0.86);
-
-  --font-body: "Trebuchet MS", "Verdana", sans-serif;
-  --font-display: "Trebuchet MS", "Verdana", sans-serif;
-  --font-mono: "Lucida Console", "Consolas", monospace;
-}
-
-:root[data-theme="backyard"] {
-  color-scheme: light;
-  --bg-base: #E8F2DF;
-  --bg-surface: #F5FAEF;
-  --bg-card: #FFFFFF;
-  --bg-raised: #EAF4E2;
-  --bg-hover: #DAECCC;
-  --canvas-bg: radial-gradient(circle at 10% 8%, #CDE8FF 0%, #B9DCF8 24%, #9FD091 56%, #87B872 100%);
-  --canvas-dot: rgba(62, 91, 50, 0.08);
-
-  --border-subtle: rgba(57, 90, 46, 0.17);
-  --border-primary: rgba(47, 77, 38, 0.3);
-  --border-accent: rgba(47, 129, 73, 0.45);
-  --line: rgba(57, 90, 46, 0.17);
-
-  --text-primary: #17311A;
-  --text-secondary: #3E5A42;
-  --text-muted: #5D7862;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #2F8C56;
-  --accent-deep: #256C43;
-  --accent-light: #54A875;
-  --accent-bg: rgba(47, 140, 86, 0.14);
-  --accent-glow: rgba(47, 140, 86, 0.28);
-  --cyan: #3E9BB1;
-  --green: #3C9E45;
-  --red: #BB4E3B;
-  --red-deep: #8A392C;
-  --orange: #BF7A32;
-
-  --success-bg: rgba(60, 158, 69, 0.16);
-  --danger-bg: rgba(187, 78, 59, 0.15);
-  --warn-bg: rgba(191, 122, 50, 0.18);
-  --info-bg: rgba(62, 155, 177, 0.14);
-
-  --overlay: rgba(20, 40, 22, 0.4);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 2px 6px rgba(42, 78, 34, 0.08);
-  --shadow-floating: 0 14px 28px rgba(28, 57, 24, 0.2);
-  --shadow-modal: 0 24px 56px rgba(20, 44, 19, 0.28);
-
-  --grad-card: linear-gradient(180deg, #FFFFFF 0%, #F1F8EA 100%);
-  --grad-accent: linear-gradient(180deg, #6DC48F 0%, #2F8C56 62%, #236A42 100%);
-  --chrome-bg: rgba(236, 247, 228, 0.84);
-
-  --font-body: "Hanken Grotesk", "Avenir Next", "Segoe UI", sans-serif;
-  --font-display: "Archivo", "Hanken Grotesk", "Segoe UI", sans-serif;
-}
-
-:root[data-theme="never86"] {
-  color-scheme: dark;
-  --bg-base: #120E12;
-  --bg-surface: #1B141A;
-  --bg-card: #241A23;
-  --bg-raised: #2E2130;
-  --bg-hover: #3C2B3E;
-  --canvas-bg: radial-gradient(circle at 15% 0%, #2B1625 0%, #150E14 44%, #0E0A0F 100%);
-  --canvas-dot: rgba(255, 80, 110, 0.07);
-
-  --border-subtle: rgba(255, 122, 146, 0.15);
-  --border-primary: rgba(255, 122, 146, 0.24);
-  --border-accent: rgba(255, 90, 122, 0.48);
-  --line: rgba(255, 122, 146, 0.15);
-
-  --text-primary: #FFE8EF;
-  --text-secondary: #E1B7C5;
-  --text-muted: #B68A9A;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #FF4E72;
-  --accent-deep: #CF3659;
-  --accent-light: #FF7B98;
-  --accent-bg: rgba(255, 78, 114, 0.2);
-  --accent-glow: rgba(255, 78, 114, 0.36);
-  --cyan: #59D1DF;
-  --green: #52C18A;
-  --red: #FF5460;
-  --red-deep: #C73842;
-  --orange: #E8924A;
-
-  --success-bg: rgba(82, 193, 138, 0.18);
-  --danger-bg: rgba(255, 84, 96, 0.2);
-  --warn-bg: rgba(232, 146, 74, 0.2);
-  --info-bg: rgba(89, 209, 223, 0.18);
-
-  --overlay: rgba(6, 3, 8, 0.68);
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 0 0 1px rgba(255, 100, 130, 0.08);
-  --shadow-floating: 0 16px 34px rgba(0, 0, 0, 0.56), 0 0 24px rgba(255, 78, 114, 0.14);
-  --shadow-modal: 0 36px 84px rgba(0, 0, 0, 0.72), 0 0 40px rgba(255, 78, 114, 0.16);
-
-  --grad-card: linear-gradient(180deg, #2A1D2A 0%, #211822 100%);
-  --grad-accent: linear-gradient(180deg, #FF9AB0 0%, #FF4E72 58%, #CF3659 100%);
-  --chrome-bg: rgba(30, 20, 30, 0.84);
-
-  --font-body: "Archivo", "Segoe UI", sans-serif;
-  --font-display: "Archivo", "Avenir Next", sans-serif;
-}
-
-:root[data-theme="arcade"] {
-  color-scheme: dark;
-  --bg-base: #110A21;
-  --bg-surface: #1A0F31;
-  --bg-card: #231243;
-  --bg-raised: #30195B;
-  --bg-hover: #3A2272;
-  --canvas-bg: radial-gradient(circle at 15% 10%, #3A1D67 0%, #170D2E 42%, #0E0720 100%);
-  --canvas-dot: rgba(0, 255, 255, 0.08);
-
-  --border-subtle: rgba(105, 83, 179, 0.35);
-  --border-primary: rgba(132, 110, 211, 0.5);
-  --border-accent: rgba(0, 227, 255, 0.55);
-  --line: rgba(105, 83, 179, 0.35);
-
-  --text-primary: #F5EFFF;
-  --text-secondary: #D4C7F2;
-  --text-muted: #A99DC8;
-  --text-on-accent: #0A0420;
-
-  --accent: #00D6FF;
-  --accent-deep: #00A7D0;
-  --accent-light: #69EEFF;
-  --accent-bg: rgba(0, 214, 255, 0.2);
-  --accent-glow: rgba(0, 214, 255, 0.42);
-  --cyan: #41F4FF;
-  --green: #6DE866;
-  --red: #FF5CC8;
-  --red-deep: #D945A7;
-  --orange: #FFB347;
-
-  --success-bg: rgba(109, 232, 102, 0.2);
-  --danger-bg: rgba(255, 92, 200, 0.2);
-  --warn-bg: rgba(255, 179, 71, 0.24);
-  --info-bg: rgba(0, 214, 255, 0.2);
-
-  --overlay: rgba(6, 4, 18, 0.68);
-  --shadow-card: 0 0 0 1px rgba(145, 114, 255, 0.18), 0 0 24px rgba(0, 214, 255, 0.1);
-  --shadow-floating: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 36px rgba(0, 214, 255, 0.16);
-  --shadow-modal: 0 34px 74px rgba(0, 0, 0, 0.74), 0 0 48px rgba(255, 92, 200, 0.14);
-
-  --grad-card: linear-gradient(180deg, #2A1550 0%, #1D103A 100%);
-  --grad-accent: linear-gradient(180deg, #74F0FF 0%, #00D6FF 62%, #00A6CE 100%);
-  --chrome-bg: rgba(28, 14, 50, 0.86);
-
-  --font-body: "Hanken Grotesk", "Segoe UI", sans-serif;
-  --font-display: "Archivo", "Hanken Grotesk", sans-serif;
-}
-
-/* An original theme in the spirit of a Nintendo DS Mario game's menu — bright
-   Mushroom Kingdom sky, coin gold, pipe green, chunky rounded "block" panels
-   with a flat offset shadow instead of a soft blur. Not a reproduction of any
-   copyrighted Nintendo artwork, logo, or character — colours and shapes only,
-   same as this app's Minecraft/arcade packs. */
-:root[data-theme="mario"] {
-  color-scheme: light;
-  --bg-base: #7EC8F2;
-  --bg-surface: #FFFDF5;
-  --bg-card: #FFFFFF;
-  --bg-raised: #FFF3C4;
-  --bg-hover: #FFE9A8;
-  --canvas-bg:
-    radial-gradient(circle at 12% 18%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 9%),
-    radial-gradient(circle at 82% 12%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 8%),
-    radial-gradient(circle at 65% 28%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 7%),
-    linear-gradient(180deg, #4FB6F5 0%, #7EC8F2 45%, #A9DCF7 100%);
-  --canvas-dot: rgba(255,255,255,0.3);
-
-  --border-subtle: rgba(94,54,20,0.2);
-  --border-primary: rgba(94,54,20,0.36);
-  --border-accent: rgba(229,37,33,0.55);
-  --line: rgba(94,54,20,0.2);
-
-  --text-primary: #3A2210;
-  --text-secondary: #7A4A22;
-  --text-muted: #A07C55;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #E52521;
-  --accent-deep: #B81E1A;
-  --accent-light: #FF5A46;
-  --accent-bg: rgba(229,37,33,0.12);
-  --accent-glow: rgba(229,37,33,0.35);
-  --cyan: #049CD8;
-  --green: #43B047;
-  --red: #E52521;
-  --red-deep: #B81E1A;
-  --orange: #F7A81B;
-
-  --success-bg: rgba(67,176,71,0.18);
-  --danger-bg: rgba(229,37,33,0.14);
-  --warn-bg: rgba(247,168,27,0.2);
-  --info-bg: rgba(4,156,216,0.14);
-
-  --overlay: rgba(30,15,5,0.45);
-  --shadow-card: 0 3px 0 rgba(94,54,20,0.3), 0 1px 2px rgba(20,10,5,0.15);
-  --shadow-floating: 0 6px 0 rgba(94,54,20,0.32), 0 16px 30px rgba(20,10,5,0.24);
-  --shadow-modal: 0 10px 0 rgba(94,54,20,0.36), 0 32px 64px rgba(20,10,5,0.34);
-
-  --grad-card: linear-gradient(180deg, #FFFDF5 0%, #FFF3C4 100%);
-  --grad-accent: linear-gradient(180deg, #FF6B54 0%, #E52521 58%, #B81E1A 100%);
-  --chrome-bg: rgba(255,253,245,0.92);
-
-  --font-body: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-display: "Baloo 2", "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-mono: "Lucida Console", Consolas, monospace;
-  --letter-spacing-body: 0;
-
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 26px;
-  --radius-xl: 34px;
-}
-
-/* An original theme in the spirit of the PlayStation 3's XMB (XrossMediaBar)
-   menu — the deep-space navy, the soft wave-glow horizon, the cool blue
-   highlight, clean minimal type. Not a reproduction of Sony's proprietary
-   font or any copyrighted artwork — colours, glow and shape only. */
-:root[data-theme="ps3"] {
-  color-scheme: dark;
-  --bg-base: #060B14;
-  --bg-surface: #0A121F;
-  --bg-card: #101A2C;
-  --bg-raised: #16233A;
-  --bg-hover: #1D2E4A;
-  --canvas-bg: radial-gradient(ellipse 90% 60% at 50% 28%, #1E4576 0%, #123157 32%, #0A1729 62%, #050810 100%);
-  --canvas-dot: rgba(120,190,255,0.06);
-
-  --border-subtle: rgba(140,190,255,0.14);
-  --border-primary: rgba(140,190,255,0.26);
-  --border-accent: rgba(80,170,255,0.55);
-  --line: rgba(140,190,255,0.14);
-
-  --text-primary: #EAF3FF;
-  --text-secondary: #A9C4E8;
-  --text-muted: #6F87AC;
-  --text-on-accent: #FFFFFF;
-
-  --accent: #3AA0FF;
-  --accent-deep: #1D6CB8;
-  --accent-light: #6FC0FF;
-  --accent-bg: rgba(58,160,255,0.14);
-  --accent-glow: rgba(58,160,255,0.42);
-  --cyan: #4FD8E8;
-  --green: #4E9F5C;
-  --red: #D0413B;
-  --red-deep: #A32F2A;
-  --orange: #E0973D;
-
-  --success-bg: rgba(78,159,92,0.18);
-  --danger-bg: rgba(208,65,59,0.18);
-  --warn-bg: rgba(224,151,61,0.2);
-  --info-bg: rgba(58,160,255,0.16);
-
-  --overlay: rgba(2,5,10,0.65);
-  --shadow-card: 0 0 0 1px rgba(80,170,255,0.14), 0 4px 14px rgba(0,0,0,0.4);
-  --shadow-floating: 0 18px 40px rgba(0,0,0,0.6), 0 0 30px rgba(58,160,255,0.16);
-  --shadow-modal: 0 40px 90px rgba(0,0,0,0.75), 0 0 50px rgba(58,160,255,0.2);
-
-  --grad-card: linear-gradient(180deg, #16233A 0%, #101A2C 100%);
-  --grad-accent: linear-gradient(180deg, #6FC0FF 0%, #3AA0FF 55%, #1D6CB8 100%);
-  --chrome-bg: rgba(10,18,31,0.82);
-
-  --font-body: "Geist", "Century Gothic", "Segoe UI", sans-serif;
-  --font-display: "Geist", "Century Gothic", "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", Consolas, monospace;
-  --letter-spacing-body: 0.01em;
-}
+@media (max-width: 1100px) { :root { --page-pad: 32px; } }
+@media (max-width: 900px)  { :root { --page-pad: 24px; } }
+@media (max-width: 640px)  { :root { --page-pad: 16px; } }
 
 html { background: var(--bg-base); }
 
-/* The admin shell inherits the active theme; the only thing it still owns is
-   the tighter tracking that the Geist/SF UI look wants. */
-.admin-shell {
-  --font-mono: ui-monospace, "SF Mono", "Geist Mono", Menlo, Consolas, monospace;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  letter-spacing: var(--letter-spacing-body);
-}
-
 /* ── UI-7 · Motion respects the OS setting ────────────────────────────────────
    Anyone who has asked their system to reduce motion gets no transitions and
-   no animation, anywhere, without each component opting in. Component-level
-   blocks elsewhere in the cascade stay as they are; this is the floor. */
+   no animation, anywhere, without each component opting in. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -690,6 +243,9 @@ html { background: var(--bg-base); }
     scroll-behavior: auto !important;
   }
 }
+
+/* ── QF-9 · One visible focus indicator, everywhere ── */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── Load-failure state (QF-3) ────────────────────────────────────────────────
    A page that could not read its data shows THIS, never an empty state. Colour
@@ -704,15 +260,15 @@ html { background: var(--bg-base); }
   border-radius: var(--radius-md);
   background: var(--danger-bg);
   color: var(--text-primary);
-  margin-block: var(--space-sm);
+  margin-block: var(--space-xs);
 }
-.load-error-msg { margin: 0; font-size: 0.875rem; line-height: 1.45; font-weight: 500; }
+.load-error-msg { margin: 0; font-size: var(--text-base); line-height: var(--leading-normal); font-weight: 500; }
 
 /* Inline data-quality note under a metric (grade weights, unweighted rows…). */
 .metric-note {
-  margin: 0.25rem 0 0;
-  font-size: 0.78rem;
-  line-height: 1.4;
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.33;
   color: var(--text-muted);
 }
 .metric-note::before { content: "Note: "; font-weight: 600; }

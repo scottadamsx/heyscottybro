@@ -6,236 +6,143 @@ import ChatBot from "../../components/ChatBot";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
-import { useTheme } from "../../utils/theme";
 import { useHiddenPages } from "../../utils/settings";
-import { DesktopProvider, DesktopArea, Taskbar, useDesktop } from "../../components/xp/Desktop";
 
-/** In desktop mode a rail link opens/focuses a window instead of swapping the page. */
-function RailLink({ to, className, title, children, end, onClick, style }) {
-  const desk = useDesktop();
-  if (desk && to === "/") return <a href="/" target="_blank" rel="noopener" className={typeof className === "function" ? className({ isActive: false }) : className} title={title} style={style} onClick={onClick}>{children}</a>;
-  if (!desk || !to.startsWith("/admin")) return <NavLink to={to} className={className} title={title} end={end} onClick={onClick} style={style}>{children}</NavLink>;
-  const space = to.replace(/^\/admin\/?/, "").split(/[/?]/)[0];
-  const isActive = desk.focused && desk.focused.path.replace(/^\/admin\/?/, "").split(/[/?]/)[0] === space;
-  const cls = typeof className === "function" ? className({ isActive }) : className;
-  return <button type="button" className={cls} title={title} style={style} onClick={(e) => { desk.openWindow(to); onClick?.(e); }}>{children}</button>;
-}
-
-// The Seven Spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
-// Reminders sits beside Plan: the dedicated Tasks & Reminders surface, restored
-// as its own page after the Phase-2 overhaul had folded it into the redirect.
+// The spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
 // Exported so Settings can build the "hide this page" list from the same
 // source of truth instead of a second, driftable copy.
 export const NAV_ITEMS = [
   { to: "/admin/planner",   icon: "fa-calendar-check",  label: "Plan" },
   { to: "/admin/reminders", icon: "fa-bell",            label: "Reminders" },
   { to: "/admin/work",      icon: "fa-briefcase",       label: "Work" },
-  { to: "/admin/finance",  icon: "fa-wallet",           label: "Money" },
-  { to: "/admin/school",   icon: "fa-graduation-cap",   label: "School" },
-  { to: "/admin/life",     icon: "fa-heart-pulse",      label: "Life" },
-  { to: "/admin/mission",  icon: "fa-satellite-dish",   label: "Mission Control" },
-  { to: "/admin/vault",    icon: "fa-vault",            label: "Vault" },
+  { to: "/admin/finance",   icon: "fa-wallet",          label: "Money" },
+  { to: "/admin/school",    icon: "fa-graduation-cap",  label: "School" },
+  { to: "/admin/life",      icon: "fa-heart-pulse",     label: "Life" },
+  { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
+  { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
 ];
 
+const COLLAPSE_KEY = "adminRailCollapsed";
+const readCollapsed = () => { try { return localStorage.getItem(COLLAPSE_KEY) === "1"; } catch { return false; } };
+
+function NavItem({ to, icon, label, onNavigate }) {
+  return (
+    <NavLink to={to} className={({ isActive }) => `nav-item${isActive ? " active" : ""}`} title={label} onClick={onNavigate}>
+      <i className={`fa-solid ${icon}`} aria-hidden="true" />
+      <span className="nav-label">{label}</span>
+    </NavLink>
+  );
+}
+
 export default function AdminLayout() {
-  const theme = useTheme();
-  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.innerWidth > 900);
-  useEffect(() => { const f = () => setWide(window.innerWidth > 900); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
-  const desktopMode = theme === "xp" && wide;
   const navigate = useNavigate();
   const location = useLocation();
   const outlet = useOutlet();
-  // Desktop mode: the URL mirrors the focused window so a refresh restores it.
-  const syncUrl = (path) => { if (path && location.pathname + location.search !== path) navigate(path, { replace: true }); };
-
-  const [railCollapsed, setRailCollapsed] = useState(
-    () => localStorage.getItem("adminRailCollapsed") === "1"
-  );
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-
-  // Smoke Tracker's own hide toggle filters inside LifePage; whole-space
-  // hiding (Settings › Hidden pages) filters the rail itself here — hiding
-  // is soft (the page still opens by URL, it's just off the nav).
   const hiddenPages = useHiddenPages();
   const navItems = NAV_ITEMS.filter((item) => !hiddenPages.includes(item.to));
 
-  // Compact density only inside the admin (the public landing keeps its own scale).
-  useEffect(() => {
-    document.documentElement.setAttribute("data-density", "compact");
-    return () => document.documentElement.removeAttribute("data-density");
-  }, []);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [drawerOpen, setDrawerOpen] = useState(false);   // phone/tablet sidebar
+  const [chatOpen, setChatOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  const toggleCollapsed = () => setCollapsed((v) => {
+    const next = !v;
+    try { localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0"); } catch { /* private mode: per-session only */ }
+    return next;
+  });
+
+  // Close the drawer whenever the page changes.
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname, location.search]);
+
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setPaletteOpen((o) => !o); }
+      if (e.key === "Escape") setDrawerOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const hidden = railCollapsed;
-
-  const toggleRail = () => setRailCollapsed((v) => { const n = !v; localStorage.setItem("adminRailCollapsed", n ? "1" : "0"); return n; });
-  const showAll    = () => {
-    setRailCollapsed(false);
-    localStorage.setItem("adminRailCollapsed", "0");
-  };
-
   const handleLogout = async () => { await logout(); navigate("/admin/login", { replace: true }); };
+  const closeDrawer = () => setDrawerOpen(false);
 
-  const railClass  = ({ isActive }) => (isActive ? "admin-rail-link active" : "admin-rail-link");
-  const popClass   = ({ isActive }) => (isActive ? "admin-sub-link active" : "admin-sub-link");
+  const shellClass = ["admin-shell", collapsed && "is-collapsed", drawerOpen && "drawer-open", chatOpen && "chat-open"].filter(Boolean).join(" ");
 
-  // The contextual sub-sidebar was removed (Phase 0) — sub-hidden is permanent.
-  const shellClass = (hidden ? "admin-shell menu-hidden" : "admin-shell sub-hidden") + (desktopMode ? " xp-desktop" : "") + (chatOpen ? " chat-open" : "");
-
-  const shell = (
+  return (
     <div className={shellClass}>
-      {/* Fully-collapsed burger */}
-      {hidden && (
-        <>
-          <button className="admin-rail-reopen" onClick={() => setMenuOpen((o) => !o)} title="Menu" aria-label="Menu">
-            <i className="fa-solid fa-bars" />
-          </button>
-          {menuOpen && (
-            <>
-              <div className="admin-pop-backdrop" onClick={() => setMenuOpen(false)} />
-              <div className="admin-rail-pop">
-                <RailLink to="/admin/today" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-house" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Today</div></span>
-                </RailLink>
-                {navItems.map((item) => (
-                  <RailLink key={item.to} to={item.to} className={popClass} onClick={() => setMenuOpen(false)}>
-                    <i className={`fa-solid ${item.icon}`} />
-                    <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-                  </RailLink>
-                ))}
-                <RailLink to="/admin/settings" className={popClass} onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-gear" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Settings</div></span>
-                </RailLink>
-                <div className="admin-pop-divider" />
-                <button className="admin-sub-link" onClick={() => { showAll(); setMenuOpen(false); }}>
-                  <i className="fa-solid fa-table-columns" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Show full menu</div></span>
-                </button>
-                <RailLink to="/" className="admin-sub-link" onClick={() => setMenuOpen(false)}>
-                  <i className="fa-solid fa-globe" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
-                </RailLink>
-                <button className="admin-sub-link admin-side-logout" onClick={handleLogout}>
-                  <i className="fa-solid fa-right-from-bracket" />
-                  <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
-                </button>
-              </div>
-            </>
-          )}
-        </>
-      )}
+      <a className="skip-link" href="#main">Skip to content</a>
 
-      {/* Main nav rail */}
-      <aside className="admin-rail">
-        <div className="admin-rail-head">
-          <NavLink to="/admin/today" className="admin-rail-mark" title="heyScottyBro"><span>S</span></NavLink>
-          <span className="admin-rail-word">hey<span>Scotty</span>Bro</span>
+      {/* Phone/tablet top bar */}
+      <header className="topbar">
+        <button type="button" className="icon-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu" aria-expanded={drawerOpen}>
+          <i className="fa-solid fa-bars" aria-hidden="true" />
+        </button>
+        <NavLink to="/admin/today" className="brand" aria-label="heyScottyBro, Today">
+          <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
+          <span className="brand-word">heyScottyBro</span>
+        </NavLink>
+        <button type="button" className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search and jump (⌘K)">
+          <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+        </button>
+      </header>
+      {drawerOpen && <button type="button" className="drawer-backdrop" onClick={closeDrawer} aria-label="Close menu" />}
+
+      <aside className="sidebar" aria-label="Main">
+        <div className="sidebar-head">
+          <NavLink to="/admin/today" className="brand" aria-label="heyScottyBro, Today" onClick={closeDrawer}>
+            <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
+            <span className="brand-word">heyScottyBro</span>
+          </NavLink>
+          <button type="button" className="sidebar-toggle" onClick={toggleCollapsed} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+          </button>
+          <button type="button" className="icon-btn drawer-close" onClick={closeDrawer} aria-label="Close menu">
+            <i className="fa-solid fa-xmark" aria-hidden="true" />
+          </button>
         </div>
 
-        <button className="admin-rail-link" onClick={toggleRail} title="Collapse menu">
-          <i className="fa-solid fa-angles-right" />
-          <span className="admin-rail-label">Collapse menu</span>
-        </button>
+        <div className="sidebar-profile">
+          <span className="avatar" aria-hidden="true">SA</span>
+          <span className="sidebar-profile-text">
+            <span className="sidebar-name">Scott Adams</span>
+            <span className="sidebar-role">Personal HQ</span>
+          </span>
+        </div>
 
-        {/* Dashboard — always pinned */}
-        <RailLink to="/admin/today" className={railClass} title="Today">
-          <i className="fa-solid fa-house" />
-          <span className="admin-rail-label">Today</span>
-        </RailLink>
+        <nav className="sidebar-nav" aria-label="Spaces">
+          <NavItem to="/admin/today" icon="fa-house" label="Today" onNavigate={closeDrawer} />
+          {navItems.map((item) => <NavItem key={item.to} {...item} onNavigate={closeDrawer} />)}
+        </nav>
 
-        {navItems.map((item) => (
-          <RailLink key={item.to} to={item.to} className={railClass} title={item.label}>
-            <i className={`fa-solid ${item.icon}`} />
-            <span className="admin-rail-label">{item.label}</span>
-          </RailLink>
-        ))}
-
-        <div className="admin-rail-spacer" />
-        <RailLink to="/admin/settings" className={railClass} title="Settings">
-          <i className="fa-solid fa-gear" />
-          <span className="admin-rail-label">Settings</span>
-        </RailLink>
-        <RailLink to="/" className="admin-rail-link" title="View Site">
-          <i className="fa-solid fa-globe" />
-          <span className="admin-rail-label">View Site</span>
-        </RailLink>
-        <button className="admin-rail-link admin-rail-logout" onClick={handleLogout} title="Logout">
-          <i className="fa-solid fa-right-from-bracket" />
-          <span className="admin-rail-label">Logout</span>
-        </button>
+        <div className="sidebar-foot">
+          <button type="button" className="nav-item" onClick={() => setPaletteOpen(true)} title="Search and jump">
+            <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+            <span className="nav-label">Search</span>
+            <kbd className="nav-kbd">⌘K</kbd>
+          </button>
+          <NavItem to="/admin/settings" icon="fa-gear" label="Settings" onNavigate={closeDrawer} />
+          <a className="nav-item" href="/" target="_blank" rel="noopener" title="View site">
+            <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" />
+            <span className="nav-label">View site</span>
+          </a>
+          <button type="button" className="nav-item nav-item-logout" onClick={handleLogout} title="Log out">
+            <i className="fa-solid fa-arrow-right-from-bracket" aria-hidden="true" />
+            <span className="nav-label">Log out</span>
+          </button>
+        </div>
       </aside>
 
-      <header className="admin-topbar">
-        <NavLink to="/admin/today" className="admin-logo">hey<span>Scotty</span>Bro</NavLink>
-      </header>
-
-      {desktopMode ? (
-        <>
-          <DesktopArea />
-          <Taskbar />
-        </>
-      ) : (
-        <main className="admin-main">
-          <ErrorBoundary>
-            <AnimatePresence mode="wait" initial={false}>
-              <PageTransition key={location.pathname}>{outlet}</PageTransition>
-            </AnimatePresence>
-          </ErrorBoundary>
-        </main>
-      )}
+      <main className="admin-main" id="main" tabIndex={-1}>
+        <ErrorBoundary>
+          <AnimatePresence mode="wait" initial={false}>
+            <PageTransition key={location.pathname}>{outlet}</PageTransition>
+          </AnimatePresence>
+        </ErrorBoundary>
+      </main>
 
       <ChatBot onOpenChange={setChatOpen} />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
-
-      {/* Mobile FAB + sheet */}
-      <button className={`admin-mobile-fab${mobileMenuOpen ? " open" : ""}`} onClick={() => setMobileMenuOpen((o) => !o)} aria-label="Menu">
-        {mobileMenuOpen ? <i className="fa-solid fa-xmark" /> : <i className="fa-solid fa-bars" />}
-      </button>
-      {mobileMenuOpen && (
-        <>
-          <div className="admin-pop-backdrop" onClick={() => setMobileMenuOpen(false)} />
-          <div className="admin-mobile-sheet admin-rolodex">
-            <div className="admin-sub-label">Menu</div>
-            {[
-              { to: "/admin/today", icon: "fa-house", label: "Today" },
-              ...navItems,
-              { to: "/admin/settings", icon: "fa-gear", label: "Settings" },
-            ].map((item, i) => (
-              <RailLink key={item.to} to={item.to} className={popClass} onClick={() => setMobileMenuOpen(false)} style={{ "--roll": i }}>
-                <i className={`fa-solid ${item.icon}`} />
-                <span className="admin-sub-link-body"><div className="admin-sub-link-title">{item.label}</div></span>
-              </RailLink>
-            ))}
-            <div className="admin-pop-divider" />
-            <RailLink to="/" className="admin-sub-link" onClick={() => setMobileMenuOpen(false)} style={{ "--roll": navItems.length + 2 }}>
-              <i className="fa-solid fa-globe" />
-              <span className="admin-sub-link-body"><div className="admin-sub-link-title">View Site</div></span>
-            </RailLink>
-            <button className="admin-sub-link admin-side-logout" onClick={handleLogout} style={{ "--roll": navItems.length + 3 }}>
-              <i className="fa-solid fa-right-from-bracket" />
-              <span className="admin-sub-link-body"><div className="admin-sub-link-title">Logout</div></span>
-            </button>
-          </div>
-        </>
-      )}
     </div>
-  );
-
-  if (!desktopMode) return shell;
-  return (
-    <DesktopProvider initialPath={location.pathname + location.search} onFocusPath={syncUrl}>
-      {shell}
-    </DesktopProvider>
   );
 }

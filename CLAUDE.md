@@ -42,14 +42,26 @@ them by hand. Only UI-1 (hex literals), UI-5 (repeated classNames) and UI-7
 (the remaining UI-1 hits are JSX inline colours, mostly user data / chart
 palettes tagged `theme-fixed`). Do not claim a check that does not exist.
 
-## Themes (2026-08-25, DR-011)
+## Design system (2026-09-14, DR-013 — supersedes DR-011)
 
-`<html data-theme="light|dark|xp">` is set before first paint by
-`src/utils/theme.js`; tokens live in `src/styles/globals.css` under `:root`,
-`:root[data-theme="dark"]`, `:root[data-theme="xp"]` with identical names.
-Light (Apple-esque) is the default. XP chrome is `src/styles/theme-xp.css`,
-scoped so the UI-3/UI-4 floors still hold in light/dark. A new colour must be
-added to all three scopes; a component must never carry a literal.
+One system, two scopes. `<html data-theme="light|dark">` is set before first
+paint by `src/utils/theme.js` (the stored choice may also be `auto`, which
+follows the OS live). The XP desktop and the nine novelty themes are gone —
+do not reintroduce theme packs.
+
+- **Tokens** — `src/styles/globals.css` only: `:root` + `:root[data-theme="dark"]`,
+  identical names. A new colour goes in both scopes; a component never
+  carries a literal.
+- **Components** — `src/styles/system.css` is the single component layer
+  (shell, buttons, fields, cards, lists, tabs, overlays, states), scoped
+  under `.admin-shell`. Do not add skin/"polish" layers on top of it; change
+  the rule in place. Page-specific CSS (e.g. `pages/admin/today.css`) may
+  compose tokens but not redefine primitives.
+- **The rules** — 8-pt spacing (4·8·12·16·24·32·48·64); type 11/12/13/14/16/
+  20/24/32/40, body 14/20; Roboto Slab for titles and headline numbers,
+  system SF for reading; radii 6/8/12/16/24 + capsule buttons/tabs;
+  controls 32/40/48 (44 on touch); every text colour ≥ 4.5:1; no uppercase
+  tracked micro-labels; page titles carry no icons.
 
 ## The escalation rule (QF-8) — verbatim
 
