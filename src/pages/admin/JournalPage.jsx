@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
 import DatePicker from "../../components/DatePicker";
@@ -9,6 +9,8 @@ import { loadDraft, saveDraft, clearDraft, JOURNAL_NEW_DRAFT, journalEditDraft }
 import { journalToMarkdown, journalExportFilename } from "../../utils/journalExport";
 import { downloadMarkdown } from "../../lib/exporter";
 
+const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
+const shortDay = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 const savedTime = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export default function JournalPage() {
@@ -158,8 +160,10 @@ export default function JournalPage() {
     }
   };
 
+  const hasMain = showForm || showEntry || hasDraft;
+
   return (
-    <div className="module-page">
+    <div className="module-page journal">
       <div className="module-header">
         <h1>Journal</h1>
         <div className="header-actions">
@@ -168,49 +172,11 @@ export default function JournalPage() {
               <i className="fa-solid fa-file-arrow-down" aria-hidden="true" /> Export .md
             </button>
           )}
-          <button className="btn btn-sm" onClick={openCompose}>
-            <i className={`fa-solid ${hasDraft ? "fa-pen-to-square" : "fa-plus"}`} aria-hidden="true" /> {hasDraft ? "Resume Draft" : "New Entry"}
+          <button type="button" className="btn btn-sm" onClick={openCompose}>
+            <i className={`fa-solid ${hasDraft ? "fa-pen-to-square" : "fa-plus"}`} aria-hidden="true" /> {hasDraft ? "Resume draft" : "New entry"}
           </button>
         </div>
       </div>
-
-      {/* Compose form — every keystroke is cached as a draft */}
-      {showForm && (
-        <form className="form-card" onSubmit={submit} style={{ marginBottom: "var(--space-lg)" }}>
-          <input value={title} onChange={(e) => updateCompose({ title: e.target.value })} placeholder={`Title (defaults to "${todayLong}")`} aria-label="Title" />
-          <textarea
-            value={entry}
-            onChange={(e) => updateCompose({ entry: e.target.value })}
-            rows={8}
-            placeholder="Write your thoughts..."
-            style={{ resize: "vertical" }}
-            aria-label="Entry"
-            required
-            autoFocus
-          />
-          {draftFailed ? (
-            <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>
-          ) : hasDraft ? (
-            <p className="draft-status" role="status">
-              <i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Draft auto-saved on this device
-              {restoredDraft?.savedAt ? ` · restored from ${savedTime(restoredDraft.savedAt)}` : ""}
-            </p>
-          ) : null}
-          <div className="form-actions">
-            <button className="btn" type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Entry"}</button>
-            {hasDraft && <button className="btn btn-secondary-sm" type="button" onClick={discardDraft}>Discard draft</button>}
-          </div>
-        </form>
-      )}
-
-      {/* Draft reminder while reading other entries — the text is never just hidden */}
-      {!showForm && hasDraft && (
-        <div className="draft-banner" role="status">
-          <i className="fa-solid fa-pen-to-square" aria-hidden="true" />
-          <span className="draft-banner-preview"><strong>Unsaved draft:</strong> {title.trim() || entry.trim()}</span>
-          <button type="button" className="btn btn-sm" onClick={openCompose}>Continue writing</button>
-        </div>
-      )}
 
       {loadError && (
         <div className="load-error" role="alert">
@@ -219,72 +185,138 @@ export default function JournalPage() {
         </div>
       )}
 
-      {/* Single entry view */}
-      {showEntry && (
-        <div className="db-card" style={{ marginBottom: "var(--space-lg)" }}>
-          <div className="db-card-header">
-            <h3 className="db-card-title">{selectedEntry.title}</h3>
-            <div className="header-actions">
-              <span className="journal-date">{formatDisplayDate(selectedEntry.date)}</span>
-              {!editing && (
-                <button type="button" className="btn-mini" onClick={() => startEdit(selectedEntry)} title={hasEditDraft ? "You have unsaved edits to this entry" : "Edit entry"}>
-                  <i className="fa-solid fa-pen" aria-hidden="true" /> {hasEditDraft ? "Resume edits" : "Edit"}
-                </button>
-              )}
-              <button className="btn-sm btn-delete" onClick={() => handleDelete(selectedEntry)} title="Delete entry" style={{ fontSize: 12, padding: "4px 10px" }}>
-                <i className="fa-solid fa-trash" style={{ marginRight: 4 }} /> Delete
-              </button>
-            </div>
-          </div>
-          {editing && editForm ? (
-            <form className="form-card" onSubmit={saveEdit}>
-              <div className="form-row">
-                <input className="field-grow" value={editForm.title} onChange={(e) => updateEdit({ title: e.target.value })} placeholder="Title" aria-label="Title" />
-                <DatePicker value={editForm.date} onChange={(v) => updateEdit({ date: v })} placeholder="Date" />
-              </div>
-              <textarea className="edit-body" value={editForm.entry} onChange={(e) => updateEdit({ entry: e.target.value })} rows={8} required aria-label="Entry" />
-              {draftFailed && <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>}
-              <div className="form-actions">
-                <button className="btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
-                <button className="btn btn-secondary-sm" type="button" onClick={cancelEdit}>Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <p style={{ whiteSpace: "pre-wrap", padding: 0, margin: 0, lineHeight: "var(--leading-relaxed)", fontSize: "var(--text-sm)" }}>{selectedEntry.entry}</p>
-          )}
-        </div>
-      )}
+      <div className={`journal-layout${hasMain ? "" : " is-index-only"}`}>
+        {hasMain && (
+          <div className="journal-main">
+            {/* Compose — a quiet writing surface; every keystroke is cached as a draft */}
+            {showForm && (
+              <form className="journal-sheet" onSubmit={submit}>
+                <p className="journal-sheet-date">{todayLong}</p>
+                <input className="journal-title-field" value={title} onChange={(e) => updateCompose({ title: e.target.value })} placeholder={`Title (defaults to "${todayLong}")`} aria-label="Title" />
+                <textarea
+                  className="journal-body-field"
+                  value={entry}
+                  onChange={(e) => updateCompose({ entry: e.target.value })}
+                  rows={12}
+                  placeholder="Write your thoughts..."
+                  aria-label="Entry"
+                  required
+                  autoFocus
+                />
+                <div className="journal-sheet-foot">
+                  {draftFailed ? (
+                    <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>
+                  ) : hasDraft ? (
+                    <p className="draft-status" role="status">
+                      <i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Draft auto-saved on this device
+                      {restoredDraft?.savedAt ? ` · restored from ${savedTime(restoredDraft.savedAt)}` : ""}
+                    </p>
+                  ) : <span className="draft-status" aria-hidden="true" />}
+                  <div className="form-actions">
+                    {hasDraft && <button className="btn btn-ghost" type="button" onClick={discardDraft}>Discard draft</button>}
+                    <button className="btn" type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save entry"}</button>
+                  </div>
+                </div>
+              </form>
+            )}
 
-      {/* Entries list — always shown once loaded (a load error is rendered above, never as "no entries") */}
-      {!ready ? (
-        <p className="no-entries">Loading…</p>
-      ) : loadError ? null : sortedEntries.length === 0 ? (
-        <p className="no-entries">No journal entries yet. Start writing!</p>
-      ) : (
-        <div className="journal-list">
-          <div className="journal-list-head">
-            {sortedEntries.length} {sortedEntries.length === 1 ? "entry" : "entries"}
+            {/* Draft reminder while reading other entries — the text is never just hidden */}
+            {!showForm && hasDraft && (
+              <div className="draft-banner" role="status">
+                <i className="fa-solid fa-pen-to-square" aria-hidden="true" />
+                <span className="draft-banner-preview"><strong>Unsaved draft:</strong> {title.trim() || entry.trim()}</span>
+                <button type="button" className="btn btn-sm btn-secondary-sm" onClick={openCompose}>Continue writing</button>
+              </div>
+            )}
+
+            {/* Single entry — read like a page */}
+            {showEntry && (
+              <article className="journal-sheet is-reading">
+                {!editing && (
+                  <div className="journal-sheet-head">
+                    <p className="journal-sheet-date">{formatDisplayDate(selectedEntry.date)}</p>
+                    <div className="journal-sheet-actions">
+                      <button type="button" className="btn-sm btn-secondary-sm" onClick={() => startEdit(selectedEntry)} title={hasEditDraft ? "You have unsaved edits to this entry" : "Edit entry"}>
+                        <i className="fa-solid fa-pen" aria-hidden="true" /> {hasEditDraft ? "Resume edits" : "Edit"}
+                      </button>
+                      <button type="button" className="btn-delete" onClick={() => handleDelete(selectedEntry)} title="Delete entry">
+                        <i className="fa-solid fa-trash" aria-hidden="true" /> Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {editing && editForm ? (
+                  <form className="journal-edit" onSubmit={saveEdit}>
+                    <div className="journal-edit-row">
+                      <input className="journal-title-field" value={editForm.title} onChange={(e) => updateEdit({ title: e.target.value })} placeholder="Title" aria-label="Title" />
+                      <DatePicker value={editForm.date} onChange={(v) => updateEdit({ date: v })} placeholder="Date" className="journal-edit-date" />
+                    </div>
+                    <textarea className="journal-body-field" value={editForm.entry} onChange={(e) => updateEdit({ entry: e.target.value })} rows={12} required aria-label="Entry" />
+                    <div className="journal-sheet-foot">
+                      {draftFailed ? <p className="draft-status is-error" role="alert">{draftFailedMsg}</p> : <span className="draft-status" aria-hidden="true" />}
+                      <div className="form-actions">
+                        <button className="btn btn-ghost" type="button" onClick={cancelEdit}>Cancel</button>
+                        <button className="btn" type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <h2 className="journal-sheet-title">{selectedEntry.title}</h2>
+                    <p className="journal-sheet-body">{selectedEntry.entry}</p>
+                  </>
+                )}
+              </article>
+            )}
           </div>
-          {sortedEntries.map((e) => (
-            <button
-              key={e.id}
-              className={`journal-list-item${String(e.id) === String(selectedId) ? " active" : ""}`}
-              onClick={() => {
-                // Preserve other params (e.g. tab=journal when embedded in Life)
-                const next = new URLSearchParams(params);
-                next.set("id", String(e.id));
-                next.delete("new");
-                setParams(next);
-                closeEdit(); // any in-progress edit stays cached as a draft
-              }}
-            >
-              <div className="journal-list-title">{e.title}</div>
-              <div className="journal-list-date">{formatDisplayDate(e.date)}</div>
-              <div className="journal-list-preview">{e.entry.slice(0, 90)}{e.entry.length > 90 ? "…" : ""}</div>
-            </button>
-          ))}
-        </div>
-      )}
+        )}
+
+        {/* Entries index — always shown once loaded (a load error is rendered above, never as "no entries") */}
+        {(!ready || !loadError) && (
+          <aside className="journal-index" aria-label="Journal entries">
+            <div className="journal-index-head">
+              <h2 className="db-card-title">Entries</h2>
+              {ready && <span className="db-count">{sortedEntries.length}<span className="visually-hidden"> {sortedEntries.length === 1 ? "entry" : "entries"}</span></span>}
+            </div>
+            {!ready ? (
+              <p className="no-entries">Loading…</p>
+            ) : sortedEntries.length === 0 ? (
+              <p className="no-entries">No journal entries yet. Start writing!</p>
+            ) : (
+              <div className="journal-list">
+                {sortedEntries.map((e, i) => {
+                  const month = monthLabel(e.date);
+                  const isActive = String(e.id) === String(selectedId);
+                  return (
+                    <Fragment key={e.id}>
+                      {(i === 0 || monthLabel(sortedEntries[i - 1].date) !== month) && <h3 className="journal-month">{month}</h3>}
+                      <button
+                        type="button"
+                        className={`journal-list-item${isActive ? " active" : ""}`}
+                        aria-current={isActive ? "true" : undefined}
+                        onClick={() => {
+                          // Preserve other params (e.g. tab=journal when embedded in Life)
+                          const next = new URLSearchParams(params);
+                          next.set("id", String(e.id));
+                          next.delete("new");
+                          setParams(next);
+                          closeEdit(); // any in-progress edit stays cached as a draft
+                        }}
+                      >
+                        <span className="journal-list-top">
+                          <span className="journal-list-title">{e.title}</span>
+                          <span className="journal-list-date">{shortDay(e.date)}</span>
+                        </span>
+                        <span className="journal-list-preview">{e.entry.slice(0, 90)}{e.entry.length > 90 ? "…" : ""}</span>
+                      </button>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+        )}
+      </div>
       {dialog}
     </div>
   );

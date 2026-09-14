@@ -24,7 +24,9 @@ function AskRecipe({ recipe }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
+  // Only follow the thread once there is one — on mount this used to scroll the
+  // whole page down to the chat, past the recipe.
+  useEffect(() => { if (msgs.length || busy) endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [msgs, busy]);
 
   const ask = async () => {
     const q = input.trim();
@@ -68,15 +70,15 @@ function AskRecipe({ recipe }) {
       {msgs.length === 0 && (
         <div className="recipe-ask-hints">
           {["Can I make this without bacon?", "Scale it to 4 servings", "What can replace chipotle peppers?"].map((h) => (
-            <button key={h} type="button" onClick={() => setInput(h)}>{h}</button>
+            <button key={h} type="button" className="chip" onClick={() => setInput(h)}>{h}</button>
           ))}
         </div>
       )}
-      <div className="recipe-ask-thread">
+      <div className="recipe-ask-thread" aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={`recipe-ask-msg ${m.role}`}>{m.text}</div>
         ))}
-        {busy && <div className="recipe-ask-msg assistant recipe-ask-typing"><span /><span /><span /></div>}
+        {busy && <div className="recipe-ask-msg assistant recipe-ask-typing" aria-label="Thinking"><span /><span /><span /></div>}
         <div ref={endRef} />
       </div>
       <div className="recipe-ask-row">
@@ -85,9 +87,10 @@ function AskRecipe({ recipe }) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") ask(); }}
           placeholder="Substitutions, scaling, technique…"
+          aria-label="Ask about this recipe"
         />
-        <button className="btn btn-sm" onClick={ask} disabled={busy || !input.trim()}>
-          {busy ? <i className="fa-solid fa-spinner fa-spin" /> : <i className="fa-solid fa-paper-plane" />}
+        <button type="button" className="btn" onClick={ask} disabled={busy || !input.trim()} aria-label="Send">
+          {busy ? <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> : <i className="fa-solid fa-paper-plane" aria-hidden="true" />}
         </button>
       </div>
     </Card>
@@ -136,11 +139,14 @@ export default function RecipePage() {
       <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate("/admin/life?tab=recipes")}>Back to recipes</button>
     </div>
   );
-  if (recipe === undefined) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading recipe…</p></div>;
+  if (recipe === undefined) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading recipe…</p></div>;
   if (recipe === null) return (
     <div className="module-page">
-      <p className="no-entries">Recipe not found — it may have been deleted.</p>
-      <button className="btn btn-sm" onClick={() => navigate("/admin/life?tab=recipes")}>Back to recipes</button>
+      <div className="empty-state">
+        <i className="fa-solid fa-utensils empty-state-icon" aria-hidden="true" />
+        <p className="empty-state-title">Recipe not found — it may have been deleted.</p>
+        <button type="button" className="btn btn-sm empty-state-action" onClick={() => navigate("/admin/life?tab=recipes")}>Back to recipes</button>
+      </div>
     </div>
   );
 
@@ -202,16 +208,16 @@ export default function RecipePage() {
     <div className="module-page recipe-page">
       {dialog}
       <div className="recipe-topbar">
-        <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate(-1)}>
-          <i className="fa-solid fa-arrow-left" /> Back
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => navigate(-1)}>
+          <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back
         </button>
         <div className="recipe-topbar-actions">
-          <button className="btn btn-sm btn-secondary-sm" onClick={toggleFav} title={recipe.favorite ? "Unfavourite" : "Favourite"}>
-            <i className={`fa-${recipe.favorite ? "solid" : "regular"} fa-star`} style={recipe.favorite ? { color: "var(--orange)" } : undefined} />
+          <button type="button" className={`btn btn-sm btn-secondary-sm recipe-fav${recipe.favorite ? " is-on" : ""}`} onClick={toggleFav} title={recipe.favorite ? "Unfavourite" : "Favourite"} aria-label={recipe.favorite ? "Unfavourite" : "Favourite"} aria-pressed={Boolean(recipe.favorite)}>
+            <i className={`fa-${recipe.favorite ? "solid" : "regular"} fa-star`} aria-hidden="true" />
           </button>
-          <button className="btn btn-sm btn-secondary-sm" onClick={() => setEditing(true)} title="Edit recipe"><i className="fa-solid fa-pen" /> Edit</button>
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setEditing(true)} title="Edit recipe"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
           <ExportKit exporter={exporter} />
-          <button className="btn btn-sm btn-secondary-sm recipe-del" onClick={onDelete}><i className="fa-solid fa-trash" /></button>
+          <button type="button" className="btn-delete recipe-del" onClick={onDelete} title="Delete recipe" aria-label="Delete recipe"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
         </div>
       </div>
 
@@ -219,47 +225,49 @@ export default function RecipePage() {
         <h1>{recipe.title}</h1>
         {recipe.description && <p className="recipe-desc">{recipe.description}</p>}
         <div className="nut-recipe-meta">
-          <span><i className="fa-solid fa-fire" /> {round(recipe.calories_per_serving)} kcal/serving</span>
-          <span><i className="fa-solid fa-drumstick-bite" /> {round(recipe.protein_g)}P · {round(recipe.carbs_g)}C · {round(recipe.fat_g)}F</span>
-          <span><i className="fa-solid fa-users" /> {recipe.servings} serving{recipe.servings !== 1 ? "s" : ""}</span>
-          {totalMin ? <span><i className="fa-solid fa-clock" /> {totalMin} min</span> : null}
-          {recipe.source === "ai" && <span className="nut-ai-pill"><i className="fa-solid fa-wand-magic-sparkles" /> AI</span>}
+          <span><i className="fa-solid fa-fire" aria-hidden="true" /> {round(recipe.calories_per_serving)} kcal/serving</span>
+          <span><i className="fa-solid fa-drumstick-bite" aria-hidden="true" /> {round(recipe.protein_g)}P · {round(recipe.carbs_g)}C · {round(recipe.fat_g)}F</span>
+          <span><i className="fa-solid fa-users" aria-hidden="true" /> {recipe.servings} serving{recipe.servings !== 1 ? "s" : ""}</span>
+          {totalMin ? <span><i className="fa-solid fa-clock" aria-hidden="true" /> {totalMin} min</span> : null}
+          {recipe.source === "ai" && <span className="uik-badge tone-accent nut-ai-pill"><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> AI</span>}
         </div>
         {recipe.tags?.length > 0 && <div className="nut-tags">{recipe.tags.map((t) => <span className="nut-tag" key={t}>{t}</span>)}</div>}
       </header>
 
       <div className="nut-recipe-cols recipe-cols">
-        <div>
-          <h4>Ingredients</h4>
+        <section className="uik-card">
+          <h2 className="recipe-col-title">Ingredients</h2>
           <ul className="nut-ing-list">
             {ing.map((i2, idx) => <li key={idx}><strong>{i2.quantity}</strong> {i2.item}</li>)}
           </ul>
-        </div>
-        <div>
-          <h4>Method</h4>
+        </section>
+        <section className="uik-card">
+          <h2 className="recipe-col-title">Method</h2>
           <ol className="nut-step-list">
             {steps.map((s, idx) => <li key={idx}>{s}</li>)}
           </ol>
-        </div>
+        </section>
       </div>
 
       {/* Log to my day */}
-      <Card title="Log to my day" icon="fa-plus">
+      <Card title="Log to my day" className="recipe-log-card">
         {!logging ? (
-          <button className="btn btn-sm" onClick={() => setLogging(true)}><i className="fa-solid fa-plus" /> Log this to my day</button>
+          <button type="button" className="btn btn-sm" onClick={() => setLogging(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Log this to my day</button>
         ) : (
           <div className="recipe-log">
-            <select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
+            <label className="nut-qty">Who<select value={profileId} onChange={(e) => setProfileId(e.target.value)}>
               {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={mealType} onChange={(e) => setMealType(e.target.value)}>
+            </select></label>
+            <label className="nut-qty">Meal<select value={mealType} onChange={(e) => setMealType(e.target.value)}>
               {MEAL_TYPES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-            </select>
+            </select></label>
             <label className="nut-qty">Servings<input type="number" step="0.5" min="0.5" value={servingsEaten} onChange={(e) => setServingsEaten(e.target.value)} /></label>
-            <button className="btn btn-sm" onClick={logIt} disabled={busy}>
-              {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Logging…</> : `Log ${round((recipe.calories_per_serving || 0) * (Number(servingsEaten) || 1))} kcal`}
-            </button>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => setLogging(false)}>Cancel</button>
+            <div className="recipe-log-actions">
+              <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setLogging(false)}>Cancel</button>
+              <button type="button" className="btn btn-sm" onClick={logIt} disabled={busy}>
+                {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Logging…</> : `Log ${round((recipe.calories_per_serving || 0) * (Number(servingsEaten) || 1))} kcal`}
+              </button>
+            </div>
           </div>
         )}
       </Card>

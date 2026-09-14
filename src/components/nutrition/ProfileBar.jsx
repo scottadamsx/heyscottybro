@@ -24,30 +24,35 @@ export default function ProfileBar({ profiles, activeId, onSelect, onChanged, un
   return (
     <>
       <div className="nut-profilebar">
-        <div className="nut-profiles">
+        <div className="nut-profiles" role="group" aria-label="Profiles">
           {profiles.map((p) => (
             <button
               key={p.id}
-              className={`nut-profile-chip ${p.id === activeId ? "active" : ""}`}
-              style={p.id === activeId ? { borderColor: p.color, boxShadow: `0 0 0 1px ${p.color}` } : undefined}
+              type="button"
+              className={`chip nut-profile-chip${p.id === activeId ? " active" : ""}`}
+              aria-pressed={p.id === activeId}
               onClick={() => onSelect(p.id)}
             >
+              {/* the profile's own colour — user data, so it stays dynamic */}
+              <span className="nut-profile-dot" style={{ background: p.color }} aria-hidden="true" />
               {p.name}
             </button>
           ))}
-          <button className="nut-profile-chip ghost" onClick={() => setEditing(blank())} title="Add profile">
-            <i className="fa-solid fa-plus" />
+          <button type="button" className="chip nut-profile-add" onClick={() => setEditing(blank())} title="Add profile" aria-label="Add profile">
+            <i className="fa-solid fa-plus" aria-hidden="true" />
           </button>
         </div>
         <div className="nut-profilebar-right">
-          <button className="btn-tiny-blue" onClick={onToggleUnit} title="Toggle weight unit">{unit.toUpperCase()}</button>
+          <button type="button" className="btn-mini" onClick={onToggleUnit} title="Toggle weight unit" aria-label={`Weight unit: ${unit}. Switch unit`}>{unit.toUpperCase()}</button>
           {activeId && (
             <button
-              className="btn-tiny-blue"
+              type="button"
+              className="btn-mini"
               onClick={() => setEditing(profiles.find((p) => p.id === activeId))}
               title="Edit this profile"
+              aria-label="Edit this profile"
             >
-              <i className="fa-solid fa-gear" />
+              <i className="fa-solid fa-gear" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -123,51 +128,51 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
   return (
     <>
     <div className="doc-viewer-overlay" onClick={onClose}>
-      <div className="doc-viewer-modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+      <div className="doc-viewer-modal nut-modal is-sm" role="dialog" aria-modal="true" aria-label={isNew ? "New profile" : `Edit ${initial.name}`} onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
           <span className="doc-viewer-title">{isNew ? "New profile" : `Edit ${initial.name}`}</span>
-          <button className="icon-x" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
+          <button type="button" className="icon-x" onClick={onClose} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </div>
-        <form className="doc-viewer-body" style={{ alignItems: "stretch", gap: "0.75rem" }} onSubmit={handleSave}>
-          <div className="form-row">
-            <input className="field-grow" placeholder="Name" value={form.name} onChange={(e) => set("name", e.target.value)} required />
-            <select value={form.sex} onChange={(e) => set("sex", e.target.value)}>
+        <form className="doc-viewer-body nut-modal-body" onSubmit={handleSave}>
+          <div className="nut-field-row">
+            <label className="nut-qty field-grow">Name<input placeholder="Name" value={form.name} onChange={(e) => set("name", e.target.value)} required /></label>
+            <label className="nut-qty is-narrow">Sex<select value={form.sex} onChange={(e) => set("sex", e.target.value)}>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
-            </select>
+            </select></label>
           </div>
 
-          <div className="nut-pick-row">
+          <div className="nut-pick-row" role="group" aria-label="Profile colour">
             {COLORS.map((c) => (
-              <button type="button" key={c} className={`nut-pick-color ${form.color === c ? "on" : ""}`} style={{ background: c }} onClick={() => set("color", c)} />
+              <button type="button" key={c} className={`nut-pick-color ${form.color === c ? "on" : ""}`} style={{ background: c }} onClick={() => set("color", c)} aria-label={`Colour ${c}`} aria-pressed={form.color === c} />
             ))}
           </div>
 
-          <div className="form-row">
-            <input type="number" placeholder="Height (cm)" value={form.height_cm} onChange={(e) => set("height_cm", e.target.value)} />
-            <input type="number" placeholder="Birth year" value={form.birth_year} onChange={(e) => set("birth_year", e.target.value)} />
+          <div className="nut-field-row">
+            <label className="nut-qty">Height (cm)<input type="number" placeholder="Height (cm)" value={form.height_cm} onChange={(e) => set("height_cm", e.target.value)} /></label>
+            <label className="nut-qty">Birth year<input type="number" placeholder="Birth year" value={form.birth_year} onChange={(e) => set("birth_year", e.target.value)} /></label>
           </div>
-          <div className="form-row">
-            <input type="number" step="0.1" placeholder={`Current weight (${unit})`} value={form.start_weight_kg} onChange={(e) => set("start_weight_kg", e.target.value)} />
-            <input type="number" step="0.1" placeholder={`Goal weight (${unit})`} value={form.goal_weight_kg} onChange={(e) => set("goal_weight_kg", e.target.value)} />
+          <div className="nut-field-row">
+            <label className="nut-qty">Current weight ({unit})<input type="number" step="0.1" placeholder={`Current weight (${unit})`} value={form.start_weight_kg} onChange={(e) => set("start_weight_kg", e.target.value)} /></label>
+            <label className="nut-qty">Goal weight ({unit})<input type="number" step="0.1" placeholder={`Goal weight (${unit})`} value={form.goal_weight_kg} onChange={(e) => set("goal_weight_kg", e.target.value)} /></label>
           </div>
-          <div className="form-row">
-            <select value={form.activity_level} onChange={(e) => set("activity_level", e.target.value)}>
+          <div className="nut-field-row">
+            <label className="nut-qty">Activity<select value={form.activity_level} onChange={(e) => set("activity_level", e.target.value)}>
               {ACTIVITY.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
-            </select>
-            <select value={form.goal} onChange={(e) => set("goal", e.target.value)}>
+            </select></label>
+            <label className="nut-qty">Goal<select value={form.goal} onChange={(e) => set("goal", e.target.value)}>
               <option value="lose">Lose weight</option>
               <option value="maintain">Maintain</option>
               <option value="gain">Gain weight</option>
-            </select>
+            </select></label>
           </div>
-          <input type="number" placeholder="Daily calorie target (optional — auto-calculated if blank)" value={form.target_calories} onChange={(e) => set("target_calories", e.target.value)} />
+          <label className="nut-qty">Daily calorie target<input type="number" placeholder="Optional — auto-calculated if blank" value={form.target_calories} onChange={(e) => set("target_calories", e.target.value)} /></label>
 
-          {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
-          <div className="form-row" style={{ justifyContent: "space-between" }}>
+          {error && <p className="nut-error" role="alert">{error}</p>}
+          <div className="nut-modal-actions is-split">
             <button className="btn" type="submit" disabled={saving}>
-              {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : (isNew ? "Create profile" : "Save")}
+              {saving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : (isNew ? "Create profile" : "Save")}
             </button>
             {!isNew && <button type="button" className="btn danger" onClick={handleDelete}>Delete</button>}
           </div>

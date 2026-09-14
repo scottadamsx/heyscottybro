@@ -108,10 +108,13 @@ export default function MealHelper({ recipes }) {
 
   return (
     <div className={`mh${open ? " open" : ""}`}>
-      <button type="button" className="mh-toggle" onClick={() => setOpen((o) => !o)}>
-        <span className="mh-toggle-title"><i className="fa-solid fa-utensils" /> Scotty's Meal Helper</span>
-        <span className="mh-toggle-sub">Dump what's in the kitchen → find out what's for supper</span>
-        <i className={`fa-solid fa-chevron-${open ? "up" : "down"} mh-chev`} />
+      <button type="button" className="mh-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="mh-icon" aria-hidden="true"><i className="fa-solid fa-utensils" /></span>
+        <span className="mh-toggle-text">
+          <span className="mh-toggle-title">Scotty's Meal Helper</span>
+          <span className="mh-toggle-sub">Dump what's in the kitchen → find out what's for supper</span>
+        </span>
+        <i className={`fa-solid fa-chevron-${open ? "up" : "down"} mh-chev`} aria-hidden="true" />
       </button>
 
       {open && (
@@ -120,35 +123,36 @@ export default function MealHelper({ recipes }) {
             rows={3}
             value={have}
             onChange={(e) => setHave(e.target.value)}
+            aria-label="What's in the kitchen"
             placeholder="chicken thighs, half a bag of potatoes, garlic, cheddar, an onion going soft, frozen peas…"
           />
-          <button className="btn btn-sm" onClick={find} disabled={busy}>
-            {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Checking the cookbook…</> : <><i className="fa-solid fa-magnifying-glass" /> What can I make?</>}
+          <button type="button" className="btn btn-sm" onClick={find} disabled={busy}>
+            {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Checking the cookbook…</> : <><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /> What can I make?</>}
           </button>
 
           {result && (
             <div className="mh-results">
               <div className="mh-group">
-                <div className="mh-group-title good"><i className="fa-solid fa-circle-check" /> You can make tonight</div>
+                <div className="mh-group-title good"><i className="fa-solid fa-circle-check" aria-hidden="true" /> You can make tonight</div>
                 {(result.can_make || []).filter((m) => byId[m.id]).length === 0
                   ? <p className="mh-empty">Nothing in the cookbook fully matches — see the suggestion below.</p>
                   : (result.can_make || []).filter((m) => byId[m.id]).map((m) => (
                     <button key={m.id} type="button" className="mh-hit" onClick={() => navigate(`/admin/recipe/${m.id}`)}>
                       <span className="mh-hit-title">{byId[m.id].title}</span>
                       {m.note && <span className="mh-hit-note">{m.note}</span>}
-                      <i className="fa-solid fa-arrow-right" />
+                      <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </button>
                   ))}
               </div>
 
               {(result.almost || []).filter((m) => byId[m.id]).length > 0 && (
                 <div className="mh-group">
-                  <div className="mh-group-title warn"><i className="fa-solid fa-basket-shopping" /> One quick shop away</div>
+                  <div className="mh-group-title warn"><i className="fa-solid fa-basket-shopping" aria-hidden="true" /> One quick shop away</div>
                   {(result.almost || []).filter((m) => byId[m.id]).map((m) => (
                     <button key={m.id} type="button" className="mh-hit" onClick={() => navigate(`/admin/recipe/${m.id}`)}>
                       <span className="mh-hit-title">{byId[m.id].title}</span>
                       <span className="mh-missing">needs {m.missing.join(", ")}</span>
-                      <i className="fa-solid fa-arrow-right" />
+                      <i className="fa-solid fa-arrow-right" aria-hidden="true" />
                     </button>
                   ))}
                 </div>
@@ -156,15 +160,15 @@ export default function MealHelper({ recipes }) {
 
               {result.suggestion?.title && (
                 <div className="mh-group">
-                  <div className="mh-group-title accent"><i className="fa-solid fa-wand-magic-sparkles" /> Or, from what you have</div>
+                  <div className="mh-group-title accent"><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Or, from what you have</div>
                   <div className="mh-suggest">
                     <div className="mh-suggest-title">{result.suggestion.title}</div>
                     <p className="mh-suggest-desc">{result.suggestion.description}</p>
                     {result.suggestion.uses?.length > 0 && (
                       <div className="mh-uses">{result.suggestion.uses.map((u) => <span key={u}>{u}</span>)}</div>
                     )}
-                    <button className="btn btn-sm" onClick={makeSuggestion} disabled={saving}>
-                      {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Writing the recipe…</> : <><i className="fa-solid fa-plus" /> Generate & save this recipe</>}
+                    <button type="button" className="btn btn-sm" onClick={makeSuggestion} disabled={saving}>
+                      {saving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Writing the recipe…</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Generate & save this recipe</>}
                     </button>
                   </div>
                 </div>

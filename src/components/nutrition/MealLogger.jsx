@@ -116,47 +116,49 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
 
   return (
     <div className="doc-viewer-overlay" onClick={onClose}>
-      <div className="doc-viewer-modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+      <div className="doc-viewer-modal nut-modal" role="dialog" aria-modal="true" aria-label="Log a meal" onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
-          <span className="doc-viewer-title"><i className="fa-solid fa-plus" /> Log a meal</span>
-          <button className="icon-x" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
+          <span className="doc-viewer-title">Log a meal</span>
+          <button type="button" className="icon-x" onClick={onClose} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </div>
 
         {!estimated && (
-          <div className="nut-mode-tabs">
-            {MODES.map((m) => (
-              <button key={m.key} className={`nut-mode-tab ${mode === m.key ? "active" : ""}`}
-                onClick={() => { setMode(m.key); if (m.key === "manual") startManual(); }}>
-                <i className={`fa-solid ${m.icon}`} /> {m.label}
-              </button>
-            ))}
+          <div className="nut-mode-bar">
+            <div className="segmented nut-mode-tabs" role="radiogroup" aria-label="How to log">
+              {MODES.map((m) => (
+                <button key={m.key} type="button" role="radio" aria-checked={mode === m.key} className={`segmented-opt nut-mode-tab${mode === m.key ? " active" : ""}`}
+                  onClick={() => { setMode(m.key); if (m.key === "manual") startManual(); }}>
+                  <i className={`fa-solid ${m.icon}`} aria-hidden="true" /> {m.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="doc-viewer-body" style={{ alignItems: "stretch", gap: "0.75rem" }}>
+        <div className="doc-viewer-body nut-modal-body">
           {/* INPUT STAGE */}
           {!estimated && mode === "ai" && (
             <>
               <p className="nut-hint">Describe what you ate — the AI estimates calories &amp; macros. e.g. <em>"two scrambled eggs, toast with butter, and a flat white"</em>.</p>
-              <textarea rows={3} placeholder="What did you eat?" value={text} onChange={(e) => setText(e.target.value)} style={{ resize: "vertical" }} autoFocus />
-              <button className="btn" onClick={runText} disabled={busy || !text.trim()}>
-                {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Estimating…</> : <><i className="fa-solid fa-wand-magic-sparkles" /> Estimate</>}
+              <textarea rows={3} placeholder="What did you eat?" aria-label="What did you eat?" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+              <button type="button" className="btn nut-modal-go" onClick={runText} disabled={busy || !text.trim()}>
+                {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Estimating…</> : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Estimate</>}
               </button>
             </>
           )}
 
           {!estimated && mode === "photo" && (
             <>
-              <div className="doc-dropzone" onClick={() => fileRef.current.click()}>
+              <button type="button" className="doc-dropzone nut-dropzone" onClick={() => fileRef.current.click()}>
                 {photoPreview
-                  ? <img src={photoPreview} alt="meal" className="nut-photo-preview" />
-                  : <><i className="fa-solid fa-camera" /><span>Tap to take or choose a photo of your meal</span></>}
-                <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
-                  onChange={(e) => pickPhoto(e.target.files[0])} />
-              </div>
-              <input placeholder="Optional hint (e.g. 'large portion, no sauce')" value={text} onChange={(e) => setText(e.target.value)} />
-              <button className="btn" onClick={runPhoto} disabled={busy || !photoFile}>
-                {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Analysing…</> : <><i className="fa-solid fa-camera" /> Analyse photo</>}
+                  ? <img src={photoPreview} alt="Your meal" className="nut-photo-preview" />
+                  : <><i className="fa-solid fa-camera" aria-hidden="true" /><span>Tap to take or choose a photo of your meal</span></>}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden
+                onChange={(e) => pickPhoto(e.target.files[0])} />
+              <input placeholder="Optional hint (e.g. 'large portion, no sauce')" aria-label="Optional hint" value={text} onChange={(e) => setText(e.target.value)} />
+              <button type="button" className="btn nut-modal-go" onClick={runPhoto} disabled={busy || !photoFile}>
+                {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Analysing…</> : <><i className="fa-solid fa-camera" aria-hidden="true" /> Analyse photo</>}
               </button>
             </>
           )}
@@ -164,13 +166,13 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
           {/* CONFIRM / EDIT STAGE */}
           {estimated && (
             <form onSubmit={save} className="nut-meal-form">
-              {source === "photo" && photoPreview && <img src={photoPreview} alt="meal" className="nut-photo-preview lg" />}
+              {source === "photo" && photoPreview && <img src={photoPreview} alt="Your meal" className="nut-photo-preview lg" />}
               {source !== "manual" && (
-                <p className="nut-ai-badge"><i className="fa-solid fa-wand-magic-sparkles" /> AI estimate — tweak anything below before saving.</p>
+                <p className="nut-ai-badge"><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> AI estimate — tweak anything below before saving.</p>
               )}
-              <div className="form-row">
-                <input className="field-grow" placeholder="Meal name" value={entry.name} onChange={(e) => set("name", e.target.value)} required autoFocus />
-                <select value={entry.meal_type} onChange={(e) => set("meal_type", e.target.value)}>
+              <div className="nut-field-row">
+                <input className="field-grow" placeholder="Meal name" aria-label="Meal name" value={entry.name} onChange={(e) => set("name", e.target.value)} required autoFocus />
+                <select className="is-narrow" value={entry.meal_type} onChange={(e) => set("meal_type", e.target.value)} aria-label="Meal">
                   {MEAL_TYPES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                 </select>
               </div>
@@ -180,9 +182,12 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
                 <label>Carbs g<input type="number" value={entry.carbs_g} onChange={(e) => set("carbs_g", e.target.value)} /></label>
                 <label>Fat g<input type="number" value={entry.fat_g} onChange={(e) => set("fat_g", e.target.value)} /></label>
               </div>
-              <div className="form-row">
-                <label className="nut-qty">Servings<input type="number" step="0.5" min="0.5" value={entry.quantity} onChange={(e) => set("quantity", e.target.value)} /></label>
-                <DatePicker value={entry.date} onChange={(v) => set("date", v)} />
+              <div className="nut-field-row">
+                <label className="nut-qty is-narrow">Servings<input type="number" step="0.5" min="0.5" value={entry.quantity} onChange={(e) => set("quantity", e.target.value)} /></label>
+                <div className="nut-qty">
+                  <span>Date</span>
+                  <DatePicker value={entry.date} onChange={(v) => set("date", v)} />
+                </div>
               </div>
               {entry.items?.length > 0 && (
                 <details className="nut-items">
@@ -194,19 +199,19 @@ export default function MealLogger({ profileId, date, onClose, onLogged }) {
                   </ul>
                 </details>
               )}
-              {error && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
-              <div className="form-row">
+              {error && <p className="nut-error" role="alert">{error}</p>}
+              <div className="nut-modal-actions">
                 {source !== "manual" && (
                   <button type="button" className="btn btn-ghost" onClick={() => setEstimated(false)}>Back</button>
                 )}
                 <button className="btn" type="submit" disabled={busy}>
-                  {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save to log"}
+                  {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : "Save to log"}
                 </button>
               </div>
             </form>
           )}
 
-          {error && !estimated && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{error}</p>}
+          {error && !estimated && <p className="nut-error" role="alert">{error}</p>}
         </div>
       </div>
     </div>

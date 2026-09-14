@@ -8,6 +8,7 @@ import AccountabilityPage from "./AccountabilityPage";
 import WeedTrackerPage from "./WeedTrackerPage";
 import ArcadePage from "./ArcadePage";
 import { HIDE_SMOKE_TRACKER, useSetting } from "../../utils/settings";
+import "./life.css";
 
 /**
  * LIFE — health & happiness in one space: Journal (moved here from Plan —
@@ -36,9 +37,7 @@ export default function LifePage() {
   return (
     <div className="combined-page">
       <div className="combined-page-header">
-        <h1 className="combined-page-title">
-          <i className="fa-solid fa-heart-pulse" /> Life
-        </h1>
+        <h1 className="combined-page-title">Life</h1>
         <PageTabs tabs={TABS} active={tab} onChange={setTab} />
       </div>
       <div className="combined-embed">
