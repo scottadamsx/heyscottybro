@@ -4,6 +4,7 @@ import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHike
 import { toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import "./mission.css";
+import { RowChevron } from "../../components/ui";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -326,7 +327,7 @@ export default function HikerPage() {
                     {h.first_timers > 0 && ` · ${h.first_timers} new`}
                   </span>
                 </span>
-                <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
+                <RowChevron />
               </button>
             ))}
           </div>

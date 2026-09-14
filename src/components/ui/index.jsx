@@ -9,6 +9,11 @@ import "./ui.css";
 
 export { ExportKit };
 
+/** The trailing "opens something" chevron on a clickable list row. */
+export function RowChevron() {
+  return <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />;
+}
+
 export function Card({ title, icon, actions, className = "", children }) {
   return (
     <section className={`uik-card ${className}`}>

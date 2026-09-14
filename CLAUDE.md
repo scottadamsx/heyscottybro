@@ -40,7 +40,10 @@ them by hand. Only UI-1 (hex literals), UI-5 (repeated classNames) and UI-7
 (reduced-motion) are real signals here. Baseline 2026-07-26: **UI-1 176 · UI-5 2
 · UI-7 missing**. After the 2026-08-25 theme sweep: **UI-1 108 · UI-5 2 · UI-7 ✓**
 (the remaining UI-1 hits are JSX inline colours, mostly user data / chart
-palettes tagged `theme-fixed`). Do not claim a check that does not exist.
+palettes tagged `theme-fixed`). After the 2026-09-14 redesign (DR-013):
+**UI-1 47 · UI-5 0 · UI-7 ✓** — the 47 are user-chosen palettes (project,
+tracker, profile colours that get saved) and data-coloured charts. Do not
+claim a check that does not exist.
 
 ## Design system (2026-09-14, DR-013 — supersedes DR-011)
 

@@ -19,6 +19,7 @@ import RescheduleSheet from "../../components/RescheduleSheet";
 import { overdueReminders } from "../../utils/reschedule";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
 import "./plan.css";
+import { RowChevron } from "../../components/ui";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -516,7 +517,7 @@ export default function CalendarPage() {
                       <div className="db-list-item-title">{e.title}{e.span_total ? ` (${e.span_day}/${e.span_total})` : ""}</div>
                       <div className="db-list-item-subtitle">{dayLabel(e.date)}{e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : ""}</div>
                     </div>
-                    <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
+                    <RowChevron />
                   </div>
                 ))}
               </div>
@@ -532,7 +533,7 @@ export default function CalendarPage() {
                       <div className="db-list-item-title">{t.name}</div>
                       <div className="db-list-item-subtitle">{dayLabel(t.date)}{t.time ? ` · ${formatTime12(t.time)}` : ""}{t.recurrence && t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
                     </div>
-                    <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
+                    <RowChevron />
                   </div>
                 ))}
               </div>
