@@ -24,7 +24,8 @@ persistence change. The ones this codebase has actually broken before:
   currency, never a display string as stored time.
 - **QF-5 · No dead controls ship.** A rendered button either acts or doesn't render.
 - **QF-6 · Displayed metrics update** or are tagged `static-display`.
-- **QF-7 · One styling source of truth.** Tokens live in `src/index.css`.
+- **QF-7 · One styling source of truth.** Tokens live in `src/styles/globals.css`,
+  components in `src/styles/system.css`.
   Inline styles only for truly local layout; the sweep threshold is 20 blocks
   per app. This repo is the origin of that floor too (125 inline blocks).
 - **QF-9 · Accessibility.** Real buttons/links, visible focus, colour is never
@@ -89,8 +90,9 @@ blocked-task: <T-x>
 - **Errors** — surface real messages. A tool that failed says so; never report
   an optimistic result. Storage/API errors get context added before they reach a
   toast.
-- **Styling** — `src/index.css` tokens (`--bg-*`, `--text-*`, `--accent`,
-  `--space-*`, `--radius-*`); compose from `src/components/ui/`. New pages do not
+- **Styling** — `src/styles/globals.css` tokens (`--bg-*`, `--text-*`, `--accent`,
+  `--space-*`, `--radius-*`); compose from `src/styles/system.css` classes and
+  `src/components/ui/`. New pages do not
   ship inline-style blocks.
 - **Agents** — one loop core (`agents/loop.js`); the Brain is single-writer
   (Bilbo) and the policy lives in `aiTools.brainWriteDenial`; conversations
