@@ -59,7 +59,7 @@ export function renderMarkdown(text) {
       continue;
     }
 
-    const heading = line.match(/^(#{1,3})\s+(.*)$/);
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
     if (heading) { closeLists(); const lvl = Math.min(heading[1].length + 3, 6); html += `<h${lvl}>${inline(escapeHtml(heading[2]))}</h${lvl}>`; i++; continue; }
 
     const ul = line.match(/^\s*[-*]\s+(.*)$/);

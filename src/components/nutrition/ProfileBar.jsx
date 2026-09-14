@@ -121,8 +121,12 @@ function ProfileEditor({ initial, unit, onClose, onSaved, onDeleted }) {
 
   const handleDelete = async () => {
     if (!await confirm(`Delete profile "${initial.name}" and ALL its food + weight logs? This cannot be undone.`, { title: "Delete profile", confirmLabel: "Delete" })) return;
-    await deleteProfile(initial.id);
-    onDeleted(initial.id);
+    try {
+      await deleteProfile(initial.id);
+      onDeleted(initial.id);
+    } catch (err) {
+      setError(`Couldn't delete this profile: ${err?.message || "unknown error"}`); // shown in the dialog
+    }
   };
 
   return (

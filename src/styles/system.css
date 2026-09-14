@@ -232,6 +232,9 @@
 .admin-shell .planner-panel > .module-page > .module-header > h1 { display: none; }
 .admin-shell .combined-embed > .module-page > .module-header:empty,
 .admin-shell .planner-panel > .module-page > .module-header:empty { display: none; }
+/* …and when all it holds is the (hidden) title, drop the row too */
+.admin-shell .combined-embed > .module-page > .module-header:not(:has(> :not(h1))),
+.admin-shell .planner-panel > .module-page > .module-header:not(:has(> :not(h1))) { display: none; }
 
 /* Section header on the canvas: slab title · meta · controls */
 .section-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-sm) var(--space-md); min-height: var(--control-h); }

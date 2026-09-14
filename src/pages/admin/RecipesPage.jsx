@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadRecipes, updateRecipe } from "../../api/recipesApi";
 import RecipeBuilder from "../../components/recipes/RecipeBuilder";
 import MealHelper from "../../components/recipes/MealHelper";
+import { useToast } from "../../contexts/ToastContext";
 import { round } from "../../utils/nutrition";
 
 export default function RecipesPage() {
@@ -13,6 +14,7 @@ export default function RecipesPage() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addToast } = useToast();
   const [showBuilder, setShowBuilder] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -26,8 +28,12 @@ export default function RecipesPage() {
 
   const toggleFav = async (r, e) => {
     e.stopPropagation();
-    const updated = await updateRecipe(r.id, { favorite: !r.favorite });
-    setRecipes((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
+    try {
+      const updated = await updateRecipe(r.id, { favorite: !r.favorite });
+      setRecipes((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
+    } catch (err) {
+      addToast(`Couldn't update “${r.title || "recipe"}”: ${err?.message || "unknown error"}`, "error");
+    }
   };
 
   const filtered = useMemo(() => {

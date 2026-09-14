@@ -52,12 +52,17 @@ export default function BugsPage() {
   const { confirm, dialog }     = useConfirm();
   const { addToast }            = useToast();
 
-  useEffect(() => {
+  // A failed load is an error state with Retry — never "Nothing here yet" (QF-3).
+  const [loadError, setLoadError] = useState(null);
+  const loadAll = () => {
+    setLoading(true);
+    setLoadError(null);
     loadBugs()
       .then(setBugs)
-      .catch(() => addToast("Couldn't load — run MIGRATION_2026-06-14-bugs.sql first.", "error"))
+      .catch((err) => setLoadError(`Couldn't load the bug list: ${err?.message || err}. If it's a new database, run MIGRATION_2026-06-14-bugs.sql.`))
       .finally(() => setLoading(false));
-  }, []);
+  };
+  useEffect(() => { loadAll(); }, []);
 
   const ensureUrls = async (paths = []) => {
     const missing = paths.filter(p => !(p in shotUrls));
@@ -256,7 +261,13 @@ export default function BugsPage() {
       </div>
 
       {loading && <p className="no-entries">Loading…</p>}
-      {!loading && filtered.length === 0 && (
+      {!loading && loadError && (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn btn-sm" onClick={loadAll}>Retry</button>
+        </div>
+      )}
+      {!loading && !loadError && filtered.length === 0 && (
         <p className="no-entries">Nothing here{filter !== "all" || kind !== "all" ? " — try another filter" : " yet"}.</p>
       )}
 
