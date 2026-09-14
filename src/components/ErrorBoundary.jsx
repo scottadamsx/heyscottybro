@@ -52,25 +52,14 @@ export default class ErrorBoundary extends Component {
     const preview = isLong ? `${msg.slice(0, PREVIEW_CHARS).trimEnd()}…` : msg;
 
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p style={{ color: "var(--danger, var(--red))", marginBottom: "0.75rem", fontWeight: 600 }}>
-          Something went wrong in this section.
-        </p>
-        <p style={{
-          fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "1rem",
-          whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: "560px",
-          marginLeft: "auto", marginRight: "auto", textAlign: "left",
-        }}>
-          {preview}
-        </p>
-        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
-          <button className="btn" onClick={() => this.reset()}>Reload section</button>
-          <button
-            className="btn"
-            style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }}
-            onClick={() => this.copyFull()}
-          >
-            <i className="fa-solid fa-copy" /> {this.state.copied ? "Copied" : "Copy full error"}
+      <div className="crash" role="alert">
+        <span className="crash-icon" aria-hidden="true"><i className="fa-solid fa-triangle-exclamation" /></span>
+        <p className="crash-title">Something went wrong in this section.</p>
+        <p className="crash-detail">{preview}</p>
+        <div className="crash-actions">
+          <button type="button" className="btn" onClick={() => this.reset()}>Reload section</button>
+          <button type="button" className="btn btn-secondary-sm" onClick={() => this.copyFull()}>
+            <i className="fa-solid fa-copy" aria-hidden="true" /> {this.state.copied ? "Copied" : "Copy full error"}
           </button>
         </div>
       </div>
