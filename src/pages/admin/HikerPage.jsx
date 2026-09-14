@@ -125,7 +125,7 @@ export default function HikerPage() {
   const ariaSort = (col) => sortCol === col ? (sortDir === "asc" ? "ascending" : "descending") : "none";
 
   return (
-    <div className="module-page">
+    <div className="module-page hiker-page">
       <div className="module-header">
         <h1>SJHC Hiker Database</h1>
       </div>

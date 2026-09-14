@@ -4,6 +4,8 @@
    ═══════════════════════════════════════════ */
 
 .admin-shell .segmented.brain-tabs { align-self: flex-start; }
+/* Off the Graph tab the embedded header has only the hidden h1 — drop the empty row. */
+.admin-shell .combined-embed > .brain-page > .module-header:not(:has(.header-actions)) { display: none; }
 
 /* ── Graph ── */
 .brain-layout {
