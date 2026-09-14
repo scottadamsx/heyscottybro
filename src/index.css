@@ -1021,52 +1021,33 @@ input, textarea, select { font-family: inherit; }
   .footer-grid { grid-template-columns: 1fr; }
 }
 
-/* Tasks page: form panel (left) + list (right) */
-.tasks-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
-.tasks-list { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1rem; }
-.tasks-form-panel {
-  flex: 0 0 clamp(260px, 30vw, 340px);
-  min-width: 0;
-  position: sticky;
-  top: 0.5rem;
-  animation: slide-in-left 0.24s cubic-bezier(.2,.8,.2,1) both;
-}
-@keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-22px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+/* (Tasks page layout — .tasks-layout / .tasks-form-panel — lives in
+   pages/admin/plan.css with the rest of Plan.) */
 
-/* ═══ Calendar day modal ═══ */
+/* ═══ Day sheet (Plan calendar day + Today's "This week") ═══
+   Title left, day nav + close right; sections are clean hover rows. */
 .day-modal {
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
   background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--shadow-modal);
-  animation: picker-rise 0.18s cubic-bezier(.2,.8,.2,1) both;
+  animation: picker-rise var(--dur) var(--ease) both;
 }
 .day-modal-head {
-  display: flex; align-items: center; gap: 0.4rem;
-  padding: 0.9rem 1rem;
+  display: flex; align-items: center; gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
   border-bottom: 1px solid var(--border-subtle);
 }
-.day-modal-titles { flex: 1; min-width: 0; text-align: center; }
-.day-modal-dow { font-size: var(--text-xs); font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--accent); }
-.day-modal-date { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; overflow-wrap: anywhere; }
-.day-nav {
-  width: 34px; height: 34px; flex-shrink: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-subtle); background: var(--bg-raised);
-  color: var(--text-secondary); border-radius: 9px; cursor: pointer; font-size: 0.8rem;
-  transition: background 0.15s, color 0.15s;
-}
-.day-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
-.day-modal-body { padding: 1rem 1.2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; flex: 1; min-height: 0; }
+.day-modal-titles { order: -1; flex: 1; min-width: 0; text-align: left; }
+.day-modal-dow { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
+.day-modal-date { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); overflow-wrap: anywhere; }
+.day-modal-body { padding: var(--space-md) var(--space-lg) var(--space-lg); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-lg); flex: 1; min-height: 0; }
 
 /* Phone: the day view is a full-screen sheet, not a floating card. Head and
    the add-bar are pinned; only the body scrolls. Safe-area insets keep the
@@ -1085,25 +1066,25 @@ input, textarea, select { font-family: inherit; }
   }
   .day-modal-head {
     flex-shrink: 0;
-    padding-top: calc(0.9rem + env(safe-area-inset-top));
-    background: var(--bg-surface);
+    padding: calc(var(--space-sm) + env(safe-area-inset-top)) var(--space-md) var(--space-sm);
+    background: var(--bg-card);
   }
   .day-modal-body {
     flex: 1;
     min-height: 0;
+    padding-inline: var(--space-md);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
   .day-add {
     flex-shrink: 0;
-    padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
+    padding: var(--space-sm) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom));
   }
   /* 16px keeps iOS Safari from zooming (and scroll-jumping) on focus. */
   .day-add-form input,
   .day-add-form select,
-  .day-add-form textarea { font-size: 16px; }
-  .day-modal-date { font-size: 1.05rem; }
+  .day-add-form textarea { font-size: var(--text-md); }
 }
 /* Older WebKit without :has(): the overlay still gets the sheet treatment via
    the explicit .day-overlay class the calendar sets. */
@@ -1111,48 +1092,41 @@ input, textarea, select { font-family: inherit; }
   .event-overlay.day-overlay { padding: 0; align-items: stretch; }
 }
 
-.day-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.55rem; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
-.day-section-head i { color: var(--text-muted); margin-right: 0.35rem; }
-.day-count { background: var(--bg-raised); color: var(--text-muted); font-size: 0.7rem; font-weight: 700; padding: 1px 8px; border-radius: 99px; }
-.day-empty { font-size: 0.82rem; color: var(--text-muted); padding: 0.15rem 0; }
+.day-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xs); margin-bottom: var(--space-2xs); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+.day-count { display: inline-flex; align-items: center; min-width: 20px; height: 20px; padding: 0 var(--space-xs); border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.day-empty { margin: 0; padding: var(--space-2xs) 0; font-size: var(--text-sm); color: var(--text-secondary); }
 
-.day-item { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0.7rem; background: var(--bg-raised); border-radius: 10px; margin-bottom: 5px; }
-.day-item-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+/* Rows: flat on the sheet, a quiet hover — no raised boxes */
+.day-item { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--control-h); padding: var(--space-xs); margin-inline: calc(var(--space-xs) * -1); border-radius: var(--radius-md); background: transparent; }
+.day-item-dot { width: 8px; height: 8px; border-radius: var(--radius-full); flex-shrink: 0; }
 .day-item-body { flex: 1; min-width: 0; }
-.day-item-title { font-size: 0.88rem; font-weight: 600; }
-.day-item-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 1px; }
-.day-check { width: 26px; height: 26px; border: none; background: none; color: var(--text-muted); cursor: pointer; border-radius: 50%; flex-shrink: 0; transition: color 0.15s; display: inline-flex; align-items: center; justify-content: center; }
+.day-item-title { font-size: var(--text-base); font-weight: 500; color: var(--text-primary); overflow-wrap: anywhere; }
+.day-item-sub { margin-top: 2px; font-size: var(--text-sm); color: var(--text-secondary); }
+.day-check { width: 28px; height: 28px; border: none; background: none; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-full); flex-shrink: 0; transition: color var(--dur-fast); display: inline-flex; align-items: center; justify-content: center; font-size: var(--text-md); }
 .day-check:hover { color: var(--green); }
 .day-check.done { color: var(--green); cursor: default; }
-.day-item.done { opacity: 0.65; }
-.day-item.done .day-item-title { text-decoration: line-through; }
-.day-item--clickable { cursor: pointer; transition: background 0.15s; }
-.day-item--clickable:hover { background: var(--bg-hover); }
-.day-item--clickable:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+.day-item.done .day-item-title { color: var(--text-secondary); text-decoration: line-through; }
+.day-item--clickable { cursor: pointer; transition: background-color var(--dur-fast); }
+.day-item--clickable:hover { background: var(--bg-raised); }
 .icon-x.sm { width: 24px; height: 24px; font-size: 0.76rem; }
 
-.day-add { border-top: 1px solid var(--border-subtle); padding: 0.9rem 1.2rem 1.1rem; background: var(--bg-surface); }
-.day-add-trigger { width: 100%; justify-content: center; }
-.day-add-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
-.day-add-label { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
-.day-seg { display: flex; gap: 4px; background: var(--bg-raised); border-radius: 10px; padding: 3px; margin-bottom: 0.7rem; }
+/* Two-way switch (Life › Accountability still uses it) — the segmented look */
+.day-seg { display: flex; gap: 2px; padding: var(--space-2xs); margin-bottom: var(--space-sm); background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); }
 .day-seg button {
-  flex: 1; border: none; background: none; color: var(--text-muted);
-  font-weight: 600; font-size: 0.84rem; padding: 0.45rem; border-radius: 8px;
-  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-  transition: background 0.15s, color 0.15s;
+  flex: 1; height: var(--control-h-sm); padding: 0 var(--space-md);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);
+  border: none; border-radius: var(--radius-full); background: none; color: var(--text-secondary);
+  font: inherit; font-size: var(--text-sm); font-weight: 500; cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
-.day-seg button.active { background: var(--accent); color: var(--text-on-accent); }
-.day-add-form { display: flex; flex-direction: column; gap: 0.5rem; }
-.day-add-form input, .day-add-form select, .day-add-form textarea {
-  width: 100%; padding: 0.55rem 0.7rem; border-radius: 8px;
-  border: 1px solid var(--border-subtle); background: var(--bg-raised);
-  color: var(--text-primary); font-size: 0.85rem; outline: none; font-family: inherit;
-}
-.day-add-form input:focus, .day-add-form select:focus, .day-add-form textarea:focus {
-  border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow);
-}
-.day-add-form .btn { margin-top: 0.2rem; }
+.day-seg button:hover { color: var(--text-primary); }
+.day-seg button.active { background: var(--bg-card); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-raised); }
+
+.day-add { border-top: 1px solid var(--border-subtle); padding: var(--space-md) var(--space-lg) var(--space-lg); background: var(--bg-card); }
+.day-add-trigger { width: 100%; justify-content: center; }
+.day-add-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+.day-add-label { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
+.day-add-form { display: flex; flex-direction: column; gap: var(--space-xs); }
 
 /* ═══ Accountability trackers ═══ */
 .emoji-select { flex: 0 0 64px !important; min-width: 64px !important; text-align: center; font-size: 1.05rem; }
@@ -1523,113 +1497,117 @@ input, textarea, select { font-family: inherit; }
 }
 .icon-x:hover { background: var(--bg-raised); color: var(--text-primary); }
 
-@media (max-width: 860px) {
-  .tasks-layout { flex-direction: column; }
-  .tasks-form-panel { flex: none; width: 100%; position: static; }
-}
-
-/* ═══ Custom date / time pickers ═══ */
+/* ═══ Custom date / time pickers ═══
+   The trigger is a field (same height, radius and hairline as an input);
+   the popover is a floating card. Selection is ink; today is the accent. */
 .picker { position: relative; flex: 1; min-width: 0; }
 
 .picker-trigger {
   width: 100%;
-  height: 36px;
+  height: var(--control-h);
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0 0.65rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-raised);
+  gap: var(--space-xs);
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-card);
   color: var(--text-primary);
-  font-size: 0.85rem;
-  font-family: inherit;
+  font: inherit;
+  font-size: var(--text-base);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
-.picker-trigger:hover { border-color: var(--border-primary); }
+.picker-trigger:hover { border-color: var(--border-strong); }
+.picker-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 .picker-trigger.is-placeholder .picker-value { color: var(--text-muted); }
-.picker-lead { font-size: 0.8rem; color: var(--accent); flex-shrink: 0; }
+.picker-lead { flex-shrink: 0; width: 16px; text-align: center; font-size: var(--text-sm); color: var(--text-secondary); }
 .picker-value { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.picker-caret { font-size: 0.7rem; color: var(--text-muted); }
-.picker-clear { font-size: 0.78rem; color: var(--text-muted); border-radius: 4px; }
+.picker-caret { font-size: var(--text-2xs); color: var(--text-muted); }
+.picker-clear { padding: var(--space-2xs); font-size: var(--text-xs); color: var(--text-muted); border-radius: var(--radius-full); }
 .picker-clear:hover { color: var(--red); }
 
 .picker-pop {
   position: relative;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-primary);
-  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-floating);
-  padding: 0.7rem;
-  animation: picker-rise 0.15s cubic-bezier(.2,.8,.2,1) both;
+  padding: var(--space-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  animation: picker-rise var(--dur-fast) var(--ease) both;
 }
-@keyframes picker-rise { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes picker-rise { from { opacity: 0; transform: translateY(calc(var(--space-xs) * -1)) scale(0.98); } to { opacity: 1; transform: none; } }
 
 /* — Date — */
-.dtp-pop { width: 264px; }
-.dtp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
-.dtp-month { font-weight: 700; font-size: 0.9rem; }
+.dtp-pop { width: 280px; }
+.dtp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-xs); }
+.dtp-month { font-family: var(--font-display); font-size: var(--text-base); font-weight: 600; }
 .dtp-nav {
-  width: 30px; height: 30px;
+  width: var(--control-h-sm); height: var(--control-h-sm);
   display: flex; align-items: center; justify-content: center;
-  border: none; background: none; border-radius: 8px;
-  color: var(--text-secondary); cursor: pointer; font-size: 0.8rem;
-  transition: background 0.15s, color 0.15s;
+  border: none; background: none; border-radius: var(--radius-full);
+  color: var(--text-secondary); cursor: pointer; font-size: var(--text-xs);
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
-.dtp-nav:hover { background: var(--bg-raised); color: var(--text-primary); }
+.dtp-nav:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .dtp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .dtp-dow {
-  text-align: center; font-size: var(--text-xs); font-weight: 700;
-  color: var(--text-muted); text-transform: none; letter-spacing: 0;
-  padding-bottom: 0.35rem;
+  text-align: center; font-size: var(--text-xs); font-weight: 500;
+  color: var(--text-secondary); padding-bottom: var(--space-2xs);
 }
 .dtp-day {
   aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
-  border: none; background: none; border-radius: 9px;
-  color: var(--text-primary); font-size: 0.82rem; cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  border: none; background: none; border-radius: var(--radius-full);
+  color: var(--text-primary); font: inherit; font-size: var(--text-sm); font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
-.dtp-day:hover { background: var(--bg-raised); }
+.dtp-day:hover { background: var(--bg-hover); }
+/* Today: accent text + ring — shape as well as colour */
 .dtp-day.today { color: var(--accent); font-weight: 700; box-shadow: inset 0 0 0 1px var(--border-accent); }
 .dtp-day.off { color: var(--text-muted); opacity: 0.45; cursor: default; }
-.dtp-day.sel { background: var(--accent); color: var(--text-on-accent); font-weight: 700; }
-.dtp-day.sel:hover { background: var(--accent-deep); }
+.dtp-day.off:hover { background: none; }
+.dtp-day.sel { background: var(--bg-inverse); color: var(--text-inverse); font-weight: 700; box-shadow: none; }
+.dtp-day.sel:hover { background: var(--bg-inverse-hover); }
 
-.dtp-foot { display: flex; gap: 0.5rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border-subtle); }
+.dtp-foot { display: flex; gap: var(--space-xs); margin-top: var(--space-xs); padding-top: var(--space-xs); border-top: 1px solid var(--border-subtle); }
 .dtp-foot-btn {
-  flex: 1; padding: 0.4rem; border: 1px solid var(--border-subtle);
-  background: none; border-radius: 8px; color: var(--text-secondary);
-  font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+  flex: 1; min-height: var(--control-h-sm); padding: 0 var(--space-sm);
+  border: 1px solid var(--border-primary); background: var(--bg-card); border-radius: var(--radius-full);
+  color: var(--text-primary); font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast);
 }
-.dtp-foot-btn:hover { background: var(--bg-raised); color: var(--text-primary); }
+.dtp-foot-btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
 
 /* — Time — */
-.tmp-pop { width: 220px; }
-.tmp-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 0.55rem; }
+.tmp-pop { width: 240px; }
+.tmp-presets { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xs); margin-bottom: var(--space-sm); }
 .tmp-preset {
-  padding: 0.35rem; border: 1px solid var(--border-subtle); background: none;
-  border-radius: 8px; color: var(--text-secondary); font-size: 0.74rem; font-weight: 600;
-  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-height: var(--control-h-sm); padding: 0 var(--space-xs);
+  border: 1px solid var(--border-primary); background: var(--bg-card); border-radius: var(--radius-full);
+  color: var(--text-primary); font: inherit; font-size: var(--text-sm); font-weight: 500; font-variant-numeric: tabular-nums;
+  cursor: pointer; transition: background-color var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
 }
-.tmp-preset:hover { background: var(--bg-raised); color: var(--text-primary); }
-.tmp-preset.sel { border-color: var(--accent); color: var(--accent); }
+.tmp-preset:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.tmp-preset.sel { background: var(--bg-inverse); border-color: var(--bg-inverse); color: var(--text-inverse); }
 
-.tmp-cols { display: flex; gap: 0.5rem; }
-.tmp-ap { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; }
-.tmp-ap .tmp-opt { padding: 0.3rem 0.55rem; }
+.tmp-cols { display: flex; gap: var(--space-xs); }
+.tmp-ap { flex: 0 0 auto; display: flex; flex-direction: column; gap: var(--space-2xs); }
+.tmp-ap .tmp-opt { padding: var(--space-2xs) var(--space-xs); }
 .tmp-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.tmp-col-head { text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin-bottom: 0.3rem; }
-.tmp-col-scroll { height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; padding-right: 2px; }
+.tmp-col-head { text-align: center; font-size: var(--text-xs); font-weight: 500; color: var(--text-secondary); margin-bottom: var(--space-2xs); }
+.tmp-col-scroll { height: 152px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; padding-right: 2px; }
 .tmp-opt {
-  padding: 0.4rem; border: none; background: none; border-radius: 8px;
-  color: var(--text-secondary); font-size: 0.85rem; font-variant-numeric: tabular-nums;
-  cursor: pointer; text-align: center; transition: background 0.12s, color 0.12s;
+  min-height: 28px; padding: var(--space-2xs); border: none; background: none; border-radius: var(--radius-sm);
+  color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-variant-numeric: tabular-nums;
+  cursor: pointer; text-align: center; transition: background-color var(--dur-fast), color var(--dur-fast);
 }
-.tmp-opt:hover { background: var(--bg-raised); color: var(--text-primary); }
-.tmp-opt.sel { background: var(--accent); color: var(--text-on-accent); font-weight: 700; }
+.tmp-opt:hover { background: var(--bg-hover); color: var(--text-primary); }
+.tmp-opt.sel { background: var(--bg-inverse); color: var(--text-inverse); font-weight: 600; }
 
 /* ═══ Themed scrollbars (command center) ═══ */
 .admin-shell,
@@ -1659,17 +1637,14 @@ input, textarea, select { font-family: inherit; }
 .tmp-col-scroll::-webkit-scrollbar { width: 6px; }
 .tmp-col-scroll::-webkit-scrollbar-thumb {
   background: var(--border-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   border: none;
 }
-.tmp-col-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+.tmp-col-scroll::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
 
-/* Completed / Journal items */
-.completed-item { display: flex; justify-content: space-between; align-items: center; padding: 0.625rem 0.75rem; background: var(--bg-raised); border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.875rem; flex-wrap: wrap; gap: 0.5rem; }
-/* Clickable task title region → task detail page */
-.task-row-main { flex: 1; border-radius: var(--radius-sm); transition: color 0.15s; }
-.task-row-main:hover strong { color: var(--accent); }
-.task-row-main:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 2px; }
+/* Completed items (Hikers still uses this row; Plan's task rows live in
+   pages/admin/plan.css as .task-row) */
+.completed-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-xs) var(--space-sm); background: var(--bg-raised); border-radius: var(--radius-sm); margin-bottom: var(--space-xs); font-size: var(--text-base); flex-wrap: wrap; gap: var(--space-xs); }
 
 .journal-card { background: var(--bg-raised); border-radius: var(--radius-sm); margin-bottom: 0.625rem; overflow: hidden; }
 .journal-card-header { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; cursor: pointer; list-style: none; }
@@ -1706,31 +1681,14 @@ input, textarea, select { font-family: inherit; }
 .draft-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-lg); padding: var(--space-sm) var(--space-md); background: var(--accent-bg); border: 1px dashed var(--border-accent); border-radius: var(--radius-md); color: var(--text-primary); font-size: var(--text-sm); }
 .draft-banner-preview { color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 12rem; }
 
-/* Calendar */
-.calendar-grid-react { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-.calendar-day-name { text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); padding: 0.375rem 0; text-transform: none; letter-spacing: 0; }
-.calendar-cell { min-height: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.375rem; text-align: left; background: var(--bg-raised); cursor: pointer; transition: border-color 0.2s; font-size: 0.75rem; color: var(--text-primary); }
-.calendar-cell:hover { border-color: var(--border-accent); }
-.calendar-cell.empty { background: transparent; border-color: transparent; cursor: default; }
-.day-number { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; display: block; }
-.calendar-item { display: block; font-size: 0.68rem; padding: 1px 3px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.reminder-item { background: var(--accent-bg); color: var(--accent-light); }
-.event-item { background: var(--info-bg); color: var(--cyan); }
+/* (Calendar grid rules live in pages/admin/plan.css + styles/system.css.) */
 .future-item { background: var(--warn-bg); color: var(--orange); }
-.calendar-count { display: block; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; width: 100%; box-sizing: border-box; }
-.calendar-count.event-count { background: var(--info-bg); color: var(--cyan); }
-.calendar-count.task-count { background: var(--accent-bg); color: var(--accent-light); }
-.calendar-count.habit-count { background: var(--warn-bg); color: var(--orange); }
-.calendar-count.journal-count { background: var(--bg-hover); color: var(--text-secondary); }
-.calendar-count.done-count { background: var(--success-bg); color: var(--green); }
 
 /* Event overlay */
-.event-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 200; }
-.event-card { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); padding: 1.5rem; }
-.event-card h3 { font-size: 1rem; font-weight: 700; }
-.event-card input, .event-card textarea { width: 100%; padding: 0.6rem 0.875rem; border-radius: 10px; border: none; background: var(--bg-raised); color: var(--text-primary); font-size: 0.875rem; outline: none; transition: box-shadow 0.2s; }
-.event-card input:focus, .event-card textarea:focus { box-shadow: 0 0 0 2px var(--accent); }
-.event-card textarea { min-height: 80px; resize: vertical; }
+.event-overlay { position: fixed; inset: 0; background: var(--overlay); display: flex; align-items: center; justify-content: center; padding: var(--space-md); z-index: 200; }
+/* A dialog card; its fields come from the shell's field rules. */
+.event-card { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: var(--space-sm); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-lg); }
+.event-card h3 { margin: 0; font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; }
 .budget-widget-actions { display: flex; gap: 0.5rem; }
 
 /* Budget */
@@ -1766,14 +1724,6 @@ input, textarea, select { font-family: inherit; }
 .auth-back:hover { color: var(--text-primary); }
 .error-message { color: var(--red); font-size: 0.82rem; margin-bottom: 0.5rem; }
 
-/* ── Project Filter Bar ───────────────────── */
-.project-filter-bar {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.25rem 0;
-}
-
 .filter-chip {
   padding: 0.3rem 0.875rem;
   border-radius: 100px;
@@ -1800,70 +1750,8 @@ input, textarea, select { font-family: inherit; }
   color: var(--chip-color);
 }
 
-/* ── Limited Recurrence Form ──────────────── */
-.recur-limit-row { gap: 0.75rem; }
-
-.recur-limit-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.recur-limit-group label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text-muted);
-}
-
-/* ── Projects Page ────────────────────────── */
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.875rem;
-}
-
-.project-tile {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  background: var(--bg-card);
-  border: none;
-  border-left: 3px solid var(--project-color, var(--accent));
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.15s;
-  width: 100%;
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.project-tile:hover { background: var(--bg-raised); }
-
-.project-tile-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.project-tile-body { flex: 1; min-width: 0; }
-.project-tile-name { font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.project-tile-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.project-detail-header {
-  padding: 1rem 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius-md);
-}
-
-/* Keep the title block from forcing horizontal overflow on narrow screens */
-.project-detail-header > div { min-width: 0; }
-.project-detail-header h2 { font-size: 1.3rem; font-weight: 800; word-break: break-word; overflow-wrap: anywhere; }
+/* (Repeat limits, project tiles and the project header live in
+   pages/admin/plan.css.) */
 
 /* Project "quick add task" toolbar: stack cleanly (full-width fields) on phones.
    The shared .form-inline centres its row, which leaves cramped ~140px fields
@@ -1873,59 +1761,7 @@ input, textarea, select { font-family: inherit; }
   .proj-quick-form .form-row > * { width: 100%; min-width: 0; flex: 1 1 auto; }
 }
 
-/* ── Task Detail page ── */
-.task-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius-md);
-}
-.task-detail-project {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-decoration: none;
-  margin-bottom: 0.35rem;
-}
-.task-detail-project:hover { text-decoration: underline; }
-.task-detail-project-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.task-detail-title { font-size: 1.4rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
-.task-detail-title.is-done { text-decoration: line-through; color: var(--text-muted); }
-.task-detail-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
-.task-badge {
-  font-size: var(--text-xs); font-weight: 700; text-transform: none; letter-spacing: 0;
-  padding: 0.15rem 0.5rem; border-radius: 100px;
-  background: var(--bg-hover); color: var(--text-secondary);
-}
-.task-badge--today { background: var(--accent-bg); color: var(--accent); }
-.task-badge--overdue { background: var(--danger-bg); color: var(--red); }
-.task-badge--done { background: var(--success-bg); color: var(--green); }
-.task-detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
-
-.task-detail-grid {
-  display: grid;
-  grid-template-columns: 130px 1fr;
-  gap: 0.6rem 1rem;
-  margin: 0;
-}
-.task-detail-grid dt { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
-.task-detail-grid dd { font-size: 0.875rem; margin: 0; word-break: break-word; }
-.task-detail-notes { font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-.task-detail-danger { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-
-@media (max-width: 600px) {
-  .task-detail-header { flex-direction: column; }
-  .task-detail-actions { width: 100%; justify-content: flex-start; }
-  .task-detail-grid { grid-template-columns: 1fr; gap: 0.15rem 0; }
-  .task-detail-grid dd { margin-bottom: 0.5rem; }
-}
+/* (Task detail page styles live in pages/admin/plan.css.) */
 
 /* Color Picker */
 .color-picker { display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -1941,25 +1777,7 @@ input, textarea, select { font-family: inherit; }
 .color-swatch.selected { border-color: var(--text-primary); transform: scale(1.2); }
 .color-swatch:hover { transform: scale(1.1); }
 
-/* Event Types */
-.event-type-card {
-  background: var(--bg-raised);
-  border-radius: var(--radius-sm);
-  padding: 0.75rem;
-  margin-bottom: 0.625rem;
-}
-
-.event-type-header {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  margin-bottom: 0.375rem;
-  flex-wrap: wrap;
-}
-
-.event-type-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.event-type-name { font-weight: 700; font-size: 0.9rem; flex: 1; }
-
+/* Event types: rows live in pages/admin/plan.css (.event-type-*). */
 .auto-tasks-list { display: flex; flex-direction: column; gap: 4px; margin-top: 0.5rem; padding-left: 0.5rem; }
 
 .auto-task-item {
@@ -2647,9 +2465,6 @@ input, textarea, select { font-family: inherit; }
 /* ── Mobile tweaks ────────────────────────── */
 @media (max-width: 480px) {
   .form-row { flex-direction: column; }
-  .calendar-cell { min-height: 52px; }
-  .calendar-item { font-size: 0.6rem; }
-  .projects-grid { grid-template-columns: 1fr; }
   .ai-briefing-text { font-size: 0.9rem; }
   .module-header h1 { font-size: 1.25rem; }
   .db-card-title { font-size: 0.9rem; }
@@ -3972,7 +3787,6 @@ input, textarea, select { font-family: inherit; }
 
 @media (max-width: 768px) {
   /* ── Grids → single column ── */
-  .projects-grid,
   .acc-grid,
   .snip-grid,
   .doc-grid,
@@ -4002,13 +3816,8 @@ input, textarea, select { font-family: inherit; }
   .nut-tabs { flex-wrap: wrap; }
   .nut-tabs button { flex: 1 1 auto; }
 
-  /* ── Reminders / Tasks ── */
-  /* tasks-layout already handled at 860px — just ensure panel is full-width */
-  .tasks-form-panel { width: 100% !important; max-width: 100% !important; }
-
-  /* ── Calendar ── */
-  .calendar-cell { min-height: 60px; }
-  /* (The day sheet's mobile rules live with the .day-modal block above — a
+  /* (Tasks, calendar and the day sheet carry their own phone rules — Plan's
+     in pages/admin/plan.css, the day sheet with the .day-modal block above. A
      duplicate `max-height: 75vh; overflow-y: auto` here used to override them
      and break the full-screen sheet on phones.) */
 
@@ -4017,12 +3826,6 @@ input, textarea, select { font-family: inherit; }
      page's stylesheet was orphaned. It now lives in pages/admin/dates.css,
      which carries its own phone block — so these !important overrides are gone
      rather than fighting it. */
-
-  /* ── Project detail header ── */
-  .project-detail-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-  }
 
   /* ── Forms ── */
   .form-row { flex-wrap: wrap; }
@@ -4049,10 +3852,6 @@ input, textarea, select { font-family: inherit; }
 
   /* ── Accountability weekly dots ── */
   .acc-week { flex-wrap: wrap; gap: 4px; }
-
-  /* ── Calendar ── */
-  .calendar-item { font-size: 0.55rem; }
-  .calendar-day-name { font-size: 0.65rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4063,69 +3862,14 @@ input, textarea, select { font-family: inherit; }
   .btn:active, .admin-rail-link:active, .admin-sub-link:active { transform: none; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PLANNER SPLIT-SCREEN
-   ═══════════════════════════════════════════════════════════════ */
-.planner-overview {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 0;
-}
-
-/* Panel label shown only on mobile between swipe panels */
-.planner-panel {
-  position: relative;
-  flex: 1;
-}
-.planner-panel + .planner-panel {
-  border-top: 1px solid var(--border);
-}
-
-/* Inline swipe hint dots (mobile only) */
-.mobile-only { display: none; }
-
-/* Desktop: calendar takes its natural height, tasks fill the rest */
-@media (min-width: 769px) {
-  .planner-cal   { flex: 0 0 auto; }
-  .planner-tasks { flex: 1; overflow-y: auto; }
-}
-
-/* Mobile: one panel at a time, chosen by a visible segmented switch.
-   (The previous horizontal snap-scroller hid the Tasks panel off-screen with
-   only two 6px dots as a hint — reported as "reminders gone on mobile".) */
+/* (Plan's calendar/tasks split lives in pages/admin/plan.css.) */
 @media (max-width: 768px) {
-  .planner-overview { flex-direction: column; }
-  .planner-panel + .planner-panel { border-top: none; }
-  .planner-overview.show-cal .planner-tasks,
-  .planner-overview.show-tasks .planner-cal { display: none; }
-  .mobile-only { display: flex; }
-  .planner-switch {
-    gap: 4px; padding: 4px; margin: 0.5rem 0 0.25rem;
-    background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-  }
-  .planner-switch button {
-    flex: 1; height: 40px; border: none; border-radius: var(--radius-sm);
-    background: transparent; color: var(--text-secondary); font: inherit; font-weight: 600; font-size: 0.85rem;
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-  .planner-switch button.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.15); } /* theme-fixed */
-  .planner-switch button:focus-visible { outline: 3px solid var(--accent-glow); outline-offset: 2px; }
-
   /* Combined header stacks on mobile */
   .combined-page-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 }
 
 /* ── 2026-09-06 Phase 1: shared states for tasks/projects (tokens only) ── */
 /* Inline helper under a form field (e.g. "a repeating task needs a start date"). */
-.field-hint { font-size: 0.75rem; color: var(--text-muted); margin: -0.25rem 0 0; }
+.field-hint { font-size: var(--text-xs); color: var(--text-muted); margin: calc(var(--space-2xs) * -1) 0 0; }
 /* An overdue due-date label — colour plus the word "Overdue", never colour alone (QF-9). */
 .task-overdue { color: var(--red); font-weight: 600; }
-/* Active-task count on a project tile. */
-.project-tile-count {
-  flex-shrink: 0; min-width: 1.5rem; padding: 0 0.4rem; height: 1.5rem;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-sm); background: var(--bg-raised); color: var(--text-secondary);
-  font-size: 0.72rem; font-weight: 700;
-}

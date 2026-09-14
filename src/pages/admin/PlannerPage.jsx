@@ -13,6 +13,7 @@ import CalendarPage from "./CalendarPage";
 import RemindersPage from "./RemindersPage";
 import ProjectsPage from "./ProjectsPage";
 import WorkLogPage from "./WorkLogPage";
+import "./plan.css";
 
 const emptyQuickReminder = { name: "", date: toDateStr(new Date()), recurrence: "none" };
 
@@ -82,9 +83,7 @@ export default function PlannerPage() {
   return (
     <div className="combined-page">
       <div className="combined-page-header">
-        <h1 className="combined-page-title">
-          <i className="fa-solid fa-calendar-check" /> Plan
-        </h1>
+        <h1 className="combined-page-title">Plan</h1>
         <div className="combined-page-toolbar">
           <PageTabs tabs={TABS} active={tab} onChange={setTab} />
           <PageActions actions={toolbarActions} />
@@ -120,10 +119,10 @@ export default function PlannerPage() {
               gone on mobile"). A visible segmented switch replaces it. */}
           <div className="planner-switch mobile-only" role="tablist" aria-label="Plan panel">
             <button type="button" role="tab" aria-selected={mobilePanel === "cal"} className={mobilePanel === "cal" ? "active" : ""} onClick={() => setMobilePanel("cal")}>
-              <i className="fa-regular fa-calendar" /> Calendar
+              <i className="fa-regular fa-calendar" aria-hidden="true" /> Calendar
             </button>
             <button type="button" role="tab" aria-selected={mobilePanel === "tasks"} className={mobilePanel === "tasks" ? "active" : ""} onClick={() => setMobilePanel("tasks")}>
-              <i className="fa-solid fa-list-check" /> Tasks
+              <i className="fa-solid fa-list-check" aria-hidden="true" /> Tasks
             </button>
           </div>
           <div className="planner-panel planner-cal" data-label="Calendar">
@@ -152,8 +151,8 @@ export default function PlannerPage() {
 
       {showReminderModal && (
         <Modal title="New reminder" onClose={() => setShowReminderModal(false)} width={420}>
-          <form className="form-card" onSubmit={addQuickReminder}>
-            <input placeholder="Reminder name" value={quickReminder.name} onChange={(e) => setQuickReminder({ ...quickReminder, name: e.target.value })} required autoFocus />
+          <form className="form-card plan-quick-reminder" onSubmit={addQuickReminder}>
+            <input placeholder="Reminder name" aria-label="Reminder name" value={quickReminder.name} onChange={(e) => setQuickReminder({ ...quickReminder, name: e.target.value })} required autoFocus />
             <div className="form-row">
               <DatePicker value={quickReminder.date} onChange={(v) => setQuickReminder({ ...quickReminder, date: v })} placeholder="Due date" />
               <select value={quickReminder.recurrence} onChange={(e) => setQuickReminder({ ...quickReminder, recurrence: e.target.value })} aria-label="Recurrence">
@@ -165,7 +164,7 @@ export default function PlannerPage() {
             </div>
             <div className="form-actions">
               <button className="btn" type="submit" disabled={savingReminder}>{savingReminder ? "Saving…" : "Add reminder"}</button>
-              <button className="btn btn-secondary-sm" type="button" onClick={() => setShowReminderModal(false)}>Cancel</button>
+              <button className="btn btn-secondary" type="button" onClick={() => setShowReminderModal(false)}>Cancel</button>
             </div>
           </form>
         </Modal>

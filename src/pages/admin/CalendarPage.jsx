@@ -15,6 +15,7 @@ import DocLinks from "../../components/docs/DocLinks";
 import DatePicker from "../../components/DatePicker";
 import EventForm from "../../components/EventForm";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
+import "./plan.css";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -206,6 +207,8 @@ export default function CalendarPage() {
 
   const prevMonth = () => month === 0 ? (setMonth(11), setYear(year - 1)) : setMonth(month - 1);
   const nextMonth = () => month === 11 ? (setMonth(0), setYear(year + 1)) : setMonth(month + 1);
+  const onThisMonth = year === now.getFullYear() && month === now.getMonth();
+  const goToday = () => { setYear(now.getFullYear()); setMonth(now.getMonth()); };
 
   const resetForms = () => {
     setSelectedProject("");
@@ -319,70 +322,75 @@ export default function CalendarPage() {
     : "";
 
   return (
-    <div className="module-page">
+    <div className="module-page cal-page">
       {dialog}
       {loadErrors.length > 0 && (
-        <p className="error-message" role="alert">
-          Couldn't load {loadErrors.length} of {LOAD_SOURCES.length}: {loadErrors.join(", ")}
-          {" — "}
-          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">Couldn't load {loadErrors.length} of {LOAD_SOURCES.length}: {loadErrors.join(", ")}</p>
+          <button type="button" className="btn-secondary-sm" onClick={load}>Retry</button>
+        </div>
       )}
-      <div className="module-header">
+      {/* Only ever shown inside Plan, whose own header already names the page. */}
+      <div className="module-header cal-page-header">
         <h1>Calendar</h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="btn-sm btn-secondary-sm btn" onClick={prevMonth}>← Prev</button>
-          <button className="btn-sm btn-secondary-sm btn" onClick={nextMonth}>Next →</button>
-        </div>
       </div>
 
-      {/* Filter bar */}
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", marginBottom: "0.75rem" }}>
-        <select
-          className="form-select"
-          style={{ flex: "1", minWidth: "140px", maxWidth: "200px" }}
-          value={filterProject}
-          onChange={(e) => setFilter("fp", e.target.value)}
-        >
-          <option value="">All projects</option>
-          {projects.map((p) => (
-            <option key={p.id} value={String(p.id)}>{p.name}</option>
-          ))}
-        </select>
-
-        <div style={{ display: "flex", gap: "0.25rem" }}>
-          {[["all", "All"], ["events", "Events"], ["tasks", "Tasks"], ["habits", "Habits"], ["journal", "Journal"]].map(([val, label]) => (
-            <button
-              key={val}
-              className={`btn-sm ${filterKind === val ? "btn" : "btn-secondary-sm btn"}`}
-              style={filterKind === val ? { background: "var(--accent)", color: "#fff", border: "none" } : {}}
-              onClick={() => setFilter("fk", val)}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="db-card cal-card">
+        {/* One header: month · Today · prev/next */}
+        <div className="cal-head">
+          <h2 className="cal-month" aria-live="polite">{monthLabel(year, month)}</h2>
+          <div className="cal-nav">
+            <button type="button" className="btn-secondary-sm" onClick={goToday} disabled={onThisMonth}>Today</button>
+            <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={prevMonth} aria-label="Previous month"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
+            <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={nextMonth} aria-label="Next month"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
+          </div>
         </div>
 
-        <button
-          className={`btn-sm ${showCompleted ? "btn" : "btn-secondary-sm btn"}`}
-          style={showCompleted ? { background: "var(--accent)", color: "#fff", border: "none" } : {}}
-          onClick={() => setFilter("fc", showCompleted ? "0" : "1")}
-        >
-          Done
-        </button>
-
-        {(filterProject || filterKind !== "all" || !showCompleted) && (
-          <button
-            onClick={clearFilters}
-            style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: "0.25rem 0" }}
+        {/* Filters */}
+        <div className="cal-filters" role="group" aria-label="Calendar filters">
+          <select
+            className="cal-filter-project"
+            value={filterProject}
+            onChange={(e) => setFilter("fp", e.target.value)}
+            aria-label="Filter by project"
           >
-            Clear filters
-          </button>
-        )}
-      </div>
+            <option value="">All projects</option>
+            {projects.map((p) => (
+              <option key={p.id} value={String(p.id)}>{p.name}</option>
+            ))}
+          </select>
 
-      <div className="db-card">
-        <h3 className="db-card-title" style={{ marginBottom: "1rem" }}>{monthLabel(year, month)}</h3>
+          <div className="segmented" role="radiogroup" aria-label="Show">
+            {[["all", "All"], ["events", "Events"], ["tasks", "Tasks"], ["habits", "Habits"], ["journal", "Journal"]].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                role="radio"
+                aria-checked={filterKind === val}
+                className={`segmented-opt${filterKind === val ? " active" : ""}`}
+                onClick={() => setFilter("fk", val)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={`chip${showCompleted ? " active" : ""}`}
+            aria-pressed={showCompleted}
+            onClick={() => setFilter("fc", showCompleted ? "0" : "1")}
+          >
+            <i className={`fa-solid ${showCompleted ? "fa-check" : "fa-plus"}`} aria-hidden="true" /> Done
+          </button>
+
+          {(filterProject || filterKind !== "all" || !showCompleted) && (
+            <button type="button" className="btn-ghost btn-sm cal-clear" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
+        </div>
+
         <div className="calendar-grid-react">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
             <div key={name} className="calendar-day-name">{name}</div>
@@ -396,6 +404,7 @@ export default function CalendarPage() {
                 key={date}
                 type="button"
                 className={`calendar-cell${isToday ? " today" : ""}`}
+                aria-current={isToday ? "date" : undefined}
                 onClick={() => openDay(date)}
               >
                 <span className="day-number">{day}</span>
@@ -432,62 +441,63 @@ export default function CalendarPage() {
         const upTasks = expandReminders(reminders.filter((r) => !r.completed && byProject(r)), todayS, horizon)
           .sort((a, b) => a.date.localeCompare(b.date) || String(a.time || "99").localeCompare(String(b.time || "99"))).slice(0, 8);
         const dayLabel = (d) => (d === todayS ? "Today" : formatDisplayDate(d));
+        const activate = (fn) => (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); fn(); } };
         return (
           <div className="calendar-upcoming">
-            <div className="db-card">
-              <div className="db-card-header"><h3 className="db-card-title"><i className="fa-regular fa-calendar" /> Upcoming events</h3><span className="db-count">{upEvents.length}</span></div>
+            <section className="db-card" aria-label="Upcoming events">
+              <div className="db-card-header"><h3 className="db-card-title">Upcoming events</h3><span className="db-count">{upEvents.length}</span></div>
               {upEvents.length === 0 && <p className="no-entries">Nothing in the next 30 days.</p>}
-              <div className="db-list">
+              <div className="db-list plan-list">
                 {upEvents.map((e) => (
-                  <div className="db-list-item db-list-item--clickable" key={`${e.id}-${e.date}`} role="button" tabIndex={0} onClick={() => openDay(e.date)} onKeyDown={(ev) => { if (ev.key === "Enter") openDay(e.date); }}>
-                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
+                  <div className="db-list-item db-list-item--clickable" key={`${e.id}-${e.date}`} role="button" tabIndex={0} onClick={() => openDay(e.date)} onKeyDown={activate(() => openDay(e.date))}>
+                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{e.title}{e.span_total ? ` (${e.span_day}/${e.span_total})` : ""}</div>
                       <div className="db-list-item-subtitle">{dayLabel(e.date)}{e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : ""}</div>
                     </div>
-                    <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                    <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
                   </div>
                 ))}
               </div>
-            </div>
-            <div className="db-card">
-              <div className="db-card-header"><h3 className="db-card-title"><i className="fa-solid fa-list-check" /> Upcoming reminders</h3><span className="db-count">{upTasks.length}</span></div>
+            </section>
+            <section className="db-card" aria-label="Upcoming reminders">
+              <div className="db-card-header"><h3 className="db-card-title">Upcoming reminders</h3><span className="db-count">{upTasks.length}</span></div>
               {upTasks.length === 0 && <p className="no-entries">Nothing due in the next 30 days.</p>}
-              <div className="db-list">
+              <div className="db-list plan-list">
                 {upTasks.map((t) => (
-                  <div className="db-list-item db-list-item--clickable" key={`${t.id}-${t.date}`} role="button" tabIndex={0} onClick={() => navigate(`/admin/tasks/${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/tasks/${t.id}`); }}>
-                    <span className="day-item-dot" style={{ background: projectColor(t.project_id) || "var(--text-muted)" }} />
+                  <div className="db-list-item db-list-item--clickable" key={`${t.id}-${t.date}`} role="button" tabIndex={0} onClick={() => navigate(`/admin/tasks/${t.id}`)} onKeyDown={activate(() => navigate(`/admin/tasks/${t.id}`))}>
+                    <span className="day-item-dot" style={{ background: projectColor(t.project_id) || "var(--text-muted)" }} aria-hidden="true" />
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{t.name}</div>
                       <div className="db-list-item-subtitle">{dayLabel(t.date)}{t.time ? ` · ${formatTime12(t.time)}` : ""}{t.recurrence && t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
                     </div>
-                    <i className="fa-solid fa-chevron-right db-list-item-chevron" />
+                    <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           </div>
         );
       })()}
 
       {selectedDate && (
         <div className="event-overlay day-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
-          <div className="day-modal" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <div className="day-modal" role="dialog" aria-modal="true" aria-label={longDate} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="day-modal-head">
-              <button className="day-nav" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" /></button>
+              <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
               <div className="day-modal-titles">
                 <div className="day-modal-dow">{longDate.split(",")[0]}</div>
                 <div className="day-modal-date" data-dow={longDate.split(",")[0]}>{longDate.split(", ").slice(1).join(", ") || longDate}</div>
               </div>
-              <button className="day-nav" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" /></button>
-              <button className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
+              <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
+              <button type="button" className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
             </div>
 
             <div className="day-modal-body">
               {/* Events */}
               <div className="day-section">
                 <div className="day-section-head">
-                  <span><i className="fa-regular fa-calendar" /> Events</span>
+                  <span>Events</span>
                   <span className="day-count">{dayEvents.length}</span>
                 </div>
                 {dayEvents.length === 0 && <p className="day-empty">Nothing scheduled.</p>}
@@ -496,16 +506,16 @@ export default function CalendarPage() {
                     <EventForm initial={events.find((x) => x.id === e.id) || e} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={(v) => saveEventEdit(e.id, v)} onCancel={() => setEditingEventId(null)} />
                   </div>
                 ) : (
-                  <div className="day-item" key={e.id}>
-                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} />
+                  <div className="day-item day-item--top" key={e.id}>
+                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
                     <span className="day-item-time">{e.span_total ? "Day " + e.span_day + " of " + e.span_total : timeRange(e)}</span>
                     <div className="day-item-body">
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
                       <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
                     </div>
-                    <button className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event"><i className="fa-solid fa-pen" /></button>
-                    <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" /></button>
+                    <button type="button" className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event" aria-label={`Edit ${e.title}`}><i className="fa-solid fa-pen" aria-hidden="true" /></button>
+                    <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                   </div>
                 ))}
               </div>
@@ -513,7 +523,7 @@ export default function CalendarPage() {
               {/* Tasks */}
               <div className="day-section">
                 <div className="day-section-head">
-                  <span><i className="fa-solid fa-list-check" /> Tasks</span>
+                  <span>Tasks</span>
                   <span className="day-count">
                     {dayTasks.length} active{dayDone.length > 0 ? ` · ${dayDone.length} done` : ""}
                   </span>
@@ -532,17 +542,17 @@ export default function CalendarPage() {
                   groups.sort((a, b) => (a.key === "" ? 1 : b.key === "" ? -1 : a.name.localeCompare(b.name)));
                   return groups.map((g) => (
                     <div className="day-group" key={g.key || "none"}>
-                      {g.name && <div className="day-group-title"><span className="day-item-dot" style={{ background: g.color || "var(--accent)" }} />{g.name}</div>}
+                      {g.name && <div className="day-group-title"><span className="day-item-dot" style={{ background: g.color || "var(--accent)" }} aria-hidden="true" />{g.name}</div>}
                       {g.items.map((t) => (
                   <div className="day-item" key={`${t.id}-${t.date}`}>
-                    <button className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete"><i className="fa-regular fa-circle" /></button>
+                    <button type="button" className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete" aria-label={`Complete ${t.name}`}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
                     <div className="day-item-body">
                       <button type="button" className="day-item-title day-item-link" onClick={() => navigate(`/admin/tasks/${t.id}`)} title="Open task">{t.name}</button>
                       {(t.time || (t.recurrence && t.recurrence !== "none")) && (
                         <div className="day-item-sub">{[t.time ? formatTime12(t.time) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
                       )}
                     </div>
-                    <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                    <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                   </div>
                       ))}
                     </div>
@@ -551,14 +561,14 @@ export default function CalendarPage() {
 
                 {dayDone.map((t) => (
                   <div className="day-item done" key={`done-${t.id}`}>
-                    <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" /></span>
+                    <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" aria-hidden="true" /><span className="visually-hidden">Completed</span></span>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
                       <div className="day-item-sub">Completed{t.completed_date ? ` · ${formatDisplayDate(t.completed_date)}` : ""}</div>
                     </div>
-                    <span style={{ display: "flex", gap: "0.25rem" }}>
-                      <button className="btn-sm" onClick={() => handleUncomplete(t.id)} title="Undo completion">↩ Undo</button>
-                      <button className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" /></button>
+                    <span className="day-item-actions">
+                      <button type="button" className="btn-mini" onClick={() => handleUncomplete(t.id)} title="Undo completion"><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Undo</button>
+                      <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                     </span>
                   </div>
                 ))}
@@ -568,12 +578,12 @@ export default function CalendarPage() {
               {dayJournal.length > 0 && (
                 <div className="day-section">
                   <div className="day-section-head">
-                    <span><i className="fa-solid fa-book" /> Journal</span>
+                    <span>Journal</span>
                     <span className="day-count">{dayJournal.length}</span>
                   </div>
                   {dayJournal.map((j) => (
                     <button type="button" className="day-item day-item--clickable day-journal" key={j.id} onClick={() => navigate("/admin/life?tab=journal")} title="Open in Journal">
-                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
+                      <span className="day-item-dot tone-accent" aria-hidden="true" />
                       <div className="day-item-body">
                         {j.title && <div className="day-item-title">{j.title}</div>}
                         {j.entry && <div className="day-item-sub day-journal-body">{j.entry}</div>}
@@ -587,7 +597,7 @@ export default function CalendarPage() {
               {dayTx.length > 0 && (
                 <div className="day-section">
                   <div className="day-section-head">
-                    <span><i className="fa-solid fa-wallet" /> Money</span>
+                    <span>Money</span>
                     <span className="day-count">
                       {daySpent > 0 ? `${formatMoney(daySpent)} spent` : ""}
                       {daySpent > 0 && dayIncome > 0 ? " · " : ""}
@@ -598,12 +608,12 @@ export default function CalendarPage() {
                     const neg = Number(t.amount) < 0;
                     return (
                       <div className="day-item" key={t.id}>
-                        <span className="day-item-dot" style={{ background: neg ? "var(--red)" : "var(--green)" }} />
+                        <span className={`day-item-dot ${neg ? "tone-neg" : "tone-pos"}`} aria-hidden="true" />
                         <div className="day-item-body">
                           <div className="day-item-title">{t.description || "(no description)"}</div>
                           {t.category && <div className="day-item-sub">{t.category}</div>}
                         </div>
-                        <span style={{ color: neg ? "var(--red)" : "var(--green)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                        <span className={`day-amt ${neg ? "is-neg" : "is-pos"}`}>
                           {neg ? "−" : "+"}{formatMoney(t.amount)}
                         </span>
                       </div>
@@ -616,18 +626,18 @@ export default function CalendarPage() {
               {dayHabits.length > 0 && (
                 <div className="day-section">
                   <div className="day-section-head">
-                    <span><i className="fa-solid fa-fire" /> Habits</span>
+                    <span>Habits</span>
                     <span className="day-count">{dayHabits.length}</span>
                   </div>
                   {dayHabits.map(({ tracker, count }) => (
                     <div className="day-item" key={tracker.id}>
-                      <span className="day-item-dot" style={{ background: tracker.color || "var(--accent)" }} />
+                      <span className="day-item-dot" style={{ background: tracker.color || "var(--accent)" }} aria-hidden="true" />
                       <div className="day-item-body">
                         <div className="day-item-title">{tracker.name}</div>
                       </div>
                       {count > 1
                         ? <span className="day-count">{count}×</span>
-                        : <span className="day-check done"><i className="fa-solid fa-circle-check" /></span>}
+                        : <span className="day-check done"><i className="fa-solid fa-circle-check" aria-hidden="true" /><span className="visually-hidden">Done</span></span>}
                     </div>
                   ))}
                 </div>
@@ -637,12 +647,12 @@ export default function CalendarPage() {
               {dayWorkouts.length > 0 && (
                 <div className="day-section">
                   <div className="day-section-head">
-                    <span><i className="fa-solid fa-dumbbell" /> Workouts</span>
+                    <span>Workouts</span>
                     <span className="day-count">{dayWorkouts.length}</span>
                   </div>
                   {dayWorkouts.map((w) => (
                     <div className="day-item" key={w.id}>
-                      <span className="day-item-dot" style={{ background: "var(--accent)" }} />
+                      <span className="day-item-dot tone-accent" aria-hidden="true" />
                       <div className="day-item-body">
                         <div className="day-item-title">{w.exercise}</div>
                         <div className="day-item-sub">
@@ -660,40 +670,40 @@ export default function CalendarPage() {
             {/* Add */}
             <div className="day-add">
               {!showAdd ? (
-                <button className="btn day-add-trigger" onClick={() => setShowAdd(true)}>
-                  <i className="fa-solid fa-plus" /> Add event or task
+                <button type="button" className="btn day-add-trigger" onClick={() => setShowAdd(true)}>
+                  <i className="fa-solid fa-plus" aria-hidden="true" /> Add event or task
                 </button>
               ) : (
               <>
               <div className="day-add-top">
                 <span className="day-add-label">Add to this day</span>
-                <button className="icon-x sm" onClick={() => setShowAdd(false)} aria-label="Close add"><i className="fa-solid fa-xmark" /></button>
+                <button type="button" className="icon-x sm" onClick={() => setShowAdd(false)} aria-label="Close add"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
-              <div className="day-seg">
-                <button className={addMode === "event" ? "active" : ""} onClick={() => setAddMode("event")}><i className="fa-regular fa-calendar" /> Event</button>
-                <button className={addMode === "task" ? "active" : ""} onClick={() => setAddMode("task")}><i className="fa-solid fa-list-check" /> Task</button>
+              <div className="segmented day-add-seg" role="radiogroup" aria-label="What to add">
+                <button type="button" role="radio" aria-checked={addMode === "event"} className={`segmented-opt${addMode === "event" ? " active" : ""}`} onClick={() => setAddMode("event")}>Event</button>
+                <button type="button" role="radio" aria-checked={addMode === "task"} className={`segmented-opt${addMode === "task" ? " active" : ""}`} onClick={() => setAddMode("task")}>Task</button>
               </div>
 
               {addMode === "event" ? (
                 <EventForm fixedDate={selectedDate} projects={projects} eventTypes={eventTypes} initial={{ project_id: selectedProject }} onSubmit={saveEvent} />
               ) : (
                 <div className="day-add-form">
-                  <input placeholder="Task name" value={taskName} onChange={(e) => setTaskName(e.target.value)} />
+                  <input placeholder="Task name" value={taskName} onChange={(e) => setTaskName(e.target.value)} aria-label="Task name" />
                   <div className="form-row">
-                    <select value={taskRecur} onChange={(e) => setTaskRecur(e.target.value)}>
+                    <select value={taskRecur} onChange={(e) => setTaskRecur(e.target.value)} aria-label="Repeats">
                       <option value="none">One-time</option>
                       <option value="daily">Daily</option>
                       <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
                     </select>
                     {projects.length > 0 && (
-                      <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
+                      <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} aria-label="Project">
                         <option value="">No project</option>
                         {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     )}
                   </div>
-                  <button className="btn" onClick={saveTask}><i className="fa-solid fa-plus" /> Add task</button>
+                  <button type="button" className="btn" onClick={saveTask}><i className="fa-solid fa-plus" aria-hidden="true" /> Add task</button>
                 </div>
               )}
               </>

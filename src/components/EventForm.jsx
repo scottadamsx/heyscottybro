@@ -81,10 +81,10 @@ export default function EventForm({
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       )}
-      {error && <p className="error-message">{error}</p>}
+      {error && <p className="error-message" role="alert">{error}</p>}
       <div className="event-form-actions">
-        {onCancel && <button type="button" className="btn btn-sm btn-secondary-sm" onClick={onCancel}>Cancel</button>}
-        <button type="submit" className="btn" disabled={busy}>{busy ? "Saving…" : <><i className="fa-solid fa-plus" /> {submitLabel}</>}</button>
+        {onCancel && <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
+        <button type="submit" className="btn" disabled={busy}>{busy ? "Saving…" : <><i className="fa-solid fa-plus" aria-hidden="true" /> {submitLabel}</>}</button>
       </div>
     </form>
   );
