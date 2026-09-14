@@ -16,7 +16,7 @@
 
 .research-card-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .research-card-title { flex: 1; min-width: 0; }
-.research-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid currentColor; }
+.research-status { display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--text-xs); text-transform: capitalize; letter-spacing: 0; padding: 0.12rem 0.45rem; border-radius: 999px; border: 1px solid currentColor; }
 .research-status.open      { color: var(--accent); }
 .research-status.progress  { color: var(--orange); }
 .research-status.delivered { color: var(--accent); }

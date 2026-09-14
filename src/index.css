@@ -1056,7 +1056,7 @@ input, textarea, select { font-family: inherit; }
   border-bottom: 1px solid var(--border-subtle);
 }
 .day-modal-titles { flex: 1; min-width: 0; text-align: center; }
-.day-modal-dow { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.day-modal-dow { font-size: var(--text-xs); font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--accent); }
 .day-modal-date { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; overflow-wrap: anywhere; }
 .day-nav {
   width: 34px; height: 34px; flex-shrink: 0;
@@ -1178,7 +1178,7 @@ input, textarea, select { font-family: inherit; }
 
 .acc-stats { display: flex; align-items: flex-end; gap: 1.3rem; }
 .acc-big b { font-size: 2rem; font-weight: 800; line-height: 1; color: var(--acc-color, var(--accent)); }
-.acc-big span, .acc-sub span { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 3px; }
+.acc-big span, .acc-sub span { display: block; font-size: var(--text-xs); text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-top: 3px; }
 .acc-sub b { font-size: 1.1rem; font-weight: 700; }
 
 .acc-week { display: flex; gap: 0.4rem; }
@@ -1200,7 +1200,7 @@ input, textarea, select { font-family: inherit; }
 .acc-detail-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .acc-stat-pill { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 0.5rem 1rem; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
 .acc-stat-pill b { font-size: 1.2rem; line-height: 1.2; }
-.acc-stat-pill span { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.acc-stat-pill span { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
 
 .acc-hist-grid { display: flex; gap: 3px; overflow-x: auto; padding-bottom: 0.25rem; }
 .acc-hist-dow-col { display: flex; flex-direction: column; gap: 2px; padding-top: 18px; /* offset for month label row */ }
@@ -1307,7 +1307,7 @@ input, textarea, select { font-family: inherit; }
   text-align: left;
   vertical-align: top;
 }
-.chat-grid th { background: var(--bg-hover); font-weight: 700; color: var(--text-primary); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.chat-grid th { background: var(--bg-hover); font-weight: 700; color: var(--text-primary); font-size: var(--text-xs); text-transform: none; letter-spacing: 0; }
 .chat-grid td { color: var(--text-secondary); }
 .chat-grid tr:nth-child(even) td { background: var(--bg-raised); }
 
@@ -1588,8 +1588,8 @@ input, textarea, select { font-family: inherit; }
 
 .dtp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .dtp-dow {
-  text-align: center; font-size: 0.66rem; font-weight: 700;
-  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+  text-align: center; font-size: var(--text-xs); font-weight: 700;
+  color: var(--text-muted); text-transform: none; letter-spacing: 0;
   padding-bottom: 0.35rem;
 }
 .dtp-day {
@@ -1628,7 +1628,7 @@ input, textarea, select { font-family: inherit; }
 .tmp-ap { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; }
 .tmp-ap .tmp-opt { padding: 0.3rem 0.55rem; }
 .tmp-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.tmp-col-head { text-align: center; font-size: 0.66rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+.tmp-col-head { text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin-bottom: 0.3rem; }
 .tmp-col-scroll { height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; padding-right: 2px; }
 .tmp-opt {
   padding: 0.4rem; border: none; background: none; border-radius: 8px;
@@ -1687,7 +1687,7 @@ input, textarea, select { font-family: inherit; }
 
 /* Journal entries list */
 .journal-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.journal-list-head { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0.25rem 0.25rem; }
+.journal-list-head { font-size: 0.75rem; color: var(--text-muted); text-transform: none; letter-spacing: 0; padding: 0 0.25rem 0.25rem; }
 .journal-list-item {
   display: flex;
   flex-direction: column;
@@ -1715,7 +1715,7 @@ input, textarea, select { font-family: inherit; }
 
 /* Calendar */
 .calendar-grid-react { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-.calendar-day-name { text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); padding: 0.375rem 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.calendar-day-name { text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); padding: 0.375rem 0; text-transform: none; letter-spacing: 0; }
 .calendar-cell { min-height: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.375rem; text-align: left; background: var(--bg-raised); cursor: pointer; transition: border-color 0.2s; font-size: 0.75rem; color: var(--text-primary); }
 .calendar-cell:hover { border-color: var(--border-accent); }
 .calendar-cell.empty { background: transparent; border-color: transparent; cursor: default; }
@@ -1743,7 +1743,7 @@ input, textarea, select { font-family: inherit; }
 /* Budget */
 .budget-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
 .budget-total-card { background: var(--bg-raised); border-radius: var(--radius-sm); padding: 0.875rem; text-align: center; }
-.budget-total-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.budget-total-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
 .budget-total-value { font-size: 1.3rem; font-weight: 800; margin-top: 0.25rem; }
 .income-val { color: var(--green); }
 .expense-val { color: var(--red); }
@@ -1759,7 +1759,7 @@ input, textarea, select { font-family: inherit; }
 .auth-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--flag-stripe); }
 .auth-card h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
 .auth-card p { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem; }
-.auth-card label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.375rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.auth-card label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.375rem; text-transform: none; letter-spacing: 0; }
 .auth-card input { width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: none; background: var(--bg-raised); color: var(--text-primary); font-size: 0.9rem; margin-bottom: 1rem; outline: none; transition: box-shadow 0.2s; }
 .auth-card input:focus { box-shadow: 0 0 0 2px var(--accent); }
 .auth-back { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; transition: color 0.2s; }
@@ -1811,10 +1811,10 @@ input, textarea, select { font-family: inherit; }
 }
 
 .recur-limit-group label {
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-muted);
 }
 
@@ -1900,7 +1900,7 @@ input, textarea, select { font-family: inherit; }
 .task-detail-title.is-done { text-decoration: line-through; color: var(--text-muted); }
 .task-detail-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
 .task-badge {
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: var(--text-xs); font-weight: 700; text-transform: none; letter-spacing: 0;
   padding: 0.15rem 0.5rem; border-radius: 100px;
   background: var(--bg-hover); color: var(--text-secondary);
 }
@@ -2018,8 +2018,8 @@ input, textarea, select { font-family: inherit; }
 .ai-briefing-date {
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--text-muted);
   margin-bottom: 0.25rem;
 }
@@ -2117,7 +2117,7 @@ input, textarea, select { font-family: inherit; }
 .hiker-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
 .hiker-stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
 .hiker-stat-num { font-size: 1.75rem; font-weight: 800; background: var(--grad-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.hiker-stat-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.hiker-stat-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.25rem; text-transform: none; letter-spacing: 0; }
 
 .hiker-search {
   flex: 1;
@@ -2138,8 +2138,8 @@ input, textarea, select { font-family: inherit; }
 .hiker-table th {
   text-align: left; padding: 0.625rem 0.875rem;
   background: var(--bg-raised); border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-muted); font-size: 0.72rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); font-size: var(--text-xs); font-weight: 700;
+  text-transform: none; letter-spacing: 0;
   cursor: pointer; user-select: none; white-space: nowrap;
 }
 .hiker-table th:hover { color: var(--text-secondary); }
@@ -2224,10 +2224,10 @@ input, textarea, select { font-family: inherit; }
 .bud-week-chev { display: none; }
 
 .bud-week-caption {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0;
   font-weight: 700;
 }
 
@@ -2331,11 +2331,11 @@ input, textarea, select { font-family: inherit; }
   border-radius: 100px;
   background: color-mix(in srgb, var(--green) 20%, transparent);
   color: var(--bud-green);
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   margin-left: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .bud-src-row.paid { border-left-color: var(--bud-green); opacity: 0.65; }
 
@@ -2382,7 +2382,7 @@ input, textarea, select { font-family: inherit; }
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
 }
-.bud-hero-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.bud-hero-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
 .bud-hero-value { font-family: var(--bud-mono); font-size: 1.65rem; font-weight: 700; margin-top: 0.35rem; letter-spacing: -0.01em; }
 .bud-status-line {
   grid-column: 1 / -1;
@@ -2447,7 +2447,7 @@ input, textarea, select { font-family: inherit; }
   transition: height 0.25s ease;
 }
 .bud-chart-label { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
-.bud-chart-phase { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.bud-chart-phase { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; font-weight: 700; }
 
 /* Month breakdown */
 .bud-breakdown {
@@ -2827,10 +2827,10 @@ input, textarea, select { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
   margin-bottom: 0.3rem;
   color: var(--text-muted);
 }
@@ -3318,7 +3318,7 @@ input, textarea, select { font-family: inherit; }
   padding: 1.25rem;
 }
 .wt-today-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-.wt-today-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.2rem; }
+.wt-today-label { font-size: var(--text-xs); font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin-bottom: 0.2rem; }
 .wt-today-limit { font-size: 1.7rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
 
 .wt-today-stats { display: flex; gap: 1.25rem; }

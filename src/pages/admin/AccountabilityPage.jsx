@@ -108,7 +108,8 @@ export default function AccountabilityPage() {
   // writes the blob. Nothing is ever auto-saved from here — every user action
   // is its own versioned write via updateAccountability().
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  // Re-arm on mount — StrictMode (dev) remounts with the same ref.
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const load = useCallback(() => {
     return loadAccountability()
       .then((d) => { if (mounted.current) { setData(d); setLoadError(null); setReady(true); } })

@@ -95,7 +95,10 @@ export default function BudgetPage() {
   // Load config (single row) + transactions (standalone table) together.
   // A failed config load is an error state, never a default config.
   const aliveRef = useRef(true);
-  useEffect(() => () => { aliveRef.current = false; }, []);
+  // Re-arm on mount: StrictMode (dev) mounts → unmounts → remounts with the
+  // same ref, so a cleanup-only effect left this false forever and the page
+  // sat on "Loading…".
+  useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
   const loadAll = useCallback(async () => {
     setLoadError(null);
     let cfg;
@@ -297,7 +300,7 @@ export default function BudgetPage() {
       </div>
     );
   }
-  if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
+  if (!ready) return <div className="module-page"><p className="no-entries">Loading…</p></div>;
 
   return (
     <div className="combined-page">

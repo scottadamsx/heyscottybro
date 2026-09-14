@@ -18,7 +18,7 @@
 .grocery-item-row {
   display: grid; grid-template-columns: 1fr 64px 80px 80px 32px; gap: 0.4rem; align-items: center;
 }
-.grocery-item-head { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 0 0.2rem; }
+.grocery-item-head { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; color: var(--text-muted); padding: 0 0.2rem; }
 .grocery-linesum { font-size: 0.8rem; color: var(--text-muted); margin: 0.3rem 0 0; }
 
 .grocery-check { flex-direction: row; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text); }

@@ -11,13 +11,13 @@
 
 .si-drop { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px dashed var(--border-primary); border-radius: 10px; padding: 18px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
 .si-drop:hover { border-color: var(--border-accent); color: var(--text-secondary); }
-.si-or { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); text-align: center; }
+.si-or { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; color: var(--text-muted); text-align: center; }
 .si-body textarea { width: 100%; box-sizing: border-box; resize: vertical; font-size: 13px; font-family: var(--font-mono, monospace); }
 .si-body > .btn { align-self: flex-start; }
 .si-busy, .si-note { font-size: 13px; color: var(--text-secondary); margin: 0; }
 .si-note i { color: var(--green); margin-right: 6px; }
 
-.si-group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 4px 0 7px; }
+.si-group-title { font-size: var(--text-xs); font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text-muted); margin: 4px 0 7px; }
 .si-group-title i { color: var(--accent); margin-right: 5px; }
 .si-group.muted .si-group-title i { color: var(--green); }
 
@@ -32,7 +32,7 @@
 .si-diff strong { color: var(--text-primary); }
 .si-reason { font-size: 11.5px; color: var(--text-muted); font-style: italic; }
 .si-warn { font-size: 11.5px; color: var(--orange); }
-.si-conf { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
+.si-conf { font-size: var(--text-xs); font-weight: 700; text-transform: capitalize; letter-spacing: 0; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
 .si-conf.high { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
 .si-conf.medium { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
 .si-conf.low { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }

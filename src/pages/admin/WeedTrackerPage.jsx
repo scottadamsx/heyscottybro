@@ -14,7 +14,8 @@ export default function WeedTrackerPage() {
   const [loadError, setLoadError] = useState(null);
   const dirty = useRef(false);                       // set by a user action; never by load
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  // Re-arm on mount — StrictMode (dev) remounts with the same ref.
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(() => {
     setReady(false);

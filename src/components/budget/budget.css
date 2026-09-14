@@ -5,7 +5,7 @@
    translations of the original inline styles — do not "clean up" numbers. */
 
 /* ── Section heading (was: const sh = {…}) ── */
-.bud-sh { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 16px 0 8px; font-weight: 500; }
+.bud-sh { font-size: var(--text-xs); text-transform: none; letter-spacing: 0; color: var(--text-muted); margin: 16px 0 8px; font-weight: 500; }
 .bud-sh-tight { margin: 14px 0 8px; }
 .bud-sh-an { font-size: 10px; letter-spacing: 0.1em; margin: 20px 0 10px; font-weight: 700; }
 
@@ -30,9 +30,9 @@
 .bud-muted-12 { font-size: 12px; color: var(--text-muted); }
 .bud-muted-13 { font-size: 13px; color: var(--text-muted); }
 .bud-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bud-caps-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-.bud-form-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
-.bud-tile-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.bud-caps-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; }
+.bud-form-title { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 10px; text-transform: none; letter-spacing: 0; }
+.bud-tile-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
 .bud-label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
 .bud-label-sm { font-size: 11px; margin-bottom: 3px; }
 
@@ -75,7 +75,7 @@
 .bud-table thead tr { border-bottom: 1px solid var(--border-subtle); }
 .bud-table tbody tr { border-bottom: 0.5px solid var(--border-subtle); }
 .bud-table tfoot tr { border-top: 1px solid var(--border-subtle); }
-.bud-table th { color: var(--text-muted); font-weight: 500; text-transform: uppercase; text-align: left; }
+.bud-table th { color: var(--text-muted); font-weight: 500; text-transform: none; text-align: left; }
 
 .bud-table-an { font-size: 12px; }                                /* Analytics trends */
 .bud-table-an th { padding: 7px 8px; font-size: 10px; letter-spacing: 0.06em; white-space: nowrap; }

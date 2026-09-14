@@ -147,7 +147,7 @@
 .macro-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
 
 .nut-meal-group { margin-bottom: 0.9rem; }
-.nut-meal-group-head { display: flex; justify-content: space-between; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 0 0.2rem 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem; }
+.nut-meal-group-head { display: flex; justify-content: space-between; font-size: 0.78rem; text-transform: none; letter-spacing: 0; color: var(--text-muted); padding: 0 0.2rem 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem; }
 .nut-log-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.45rem 0.2rem; }
 .nut-log-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .nut-log-name { color: var(--text-primary); font-size: 0.9rem; }

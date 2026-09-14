@@ -18,7 +18,8 @@ export default function AccountabilitySummary() {
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  // Re-arm on mount — StrictMode (dev) remounts with the same ref.
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const load = useCallback(() => {
     return loadAccountability()

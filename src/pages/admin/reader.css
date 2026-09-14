@@ -29,7 +29,7 @@
 }
 .reader-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
 .reader-pill {
-  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: var(--text-xs); font-weight: 700; text-transform: capitalize; letter-spacing: 0;
   background: var(--accent); color: #fff; border-radius: 99px; padding: 2px 9px;
 }
 .reader-tag { font-size: 0.78rem; color: var(--text-muted); }
@@ -50,7 +50,7 @@
 }
 .reader-body h4 { font-size: 1.32rem; }
 .reader-body h5 { font-size: 1.12rem; }
-.reader-body h6 { font-size: 0.98rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.reader-body h6 { font-size: 0.98rem; color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
 .reader-body ul, .reader-body ol { margin: 0 0 1.05rem; padding-left: 1.4rem; }
 .reader-body li { margin: 0.3rem 0; }
 .reader-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
