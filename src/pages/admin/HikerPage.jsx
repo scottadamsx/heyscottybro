@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
 import { toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
+import "./mission.css";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -124,7 +125,7 @@ export default function HikerPage() {
   const ariaSort = (col) => sortCol === col ? (sortDir === "asc" ? "ascending" : "descending") : "none";
 
   return (
-    <div className="module-page">
+    <div className="module-page hiker-page">
       <div className="module-header">
         <h1>SJHC Hiker Database</h1>
       </div>
@@ -132,109 +133,119 @@ export default function HikerPage() {
       {/* Hike Name Modal */}
       {hikeModal && (
         <div className="event-overlay" onClick={e => { if (e.target.className === "event-overlay") setHikeModal(false); }}>
-          <div className="event-card">
-            <h3>Name This Hike</h3>
+          <div className="event-card hiker-modal" role="dialog" aria-modal="true" aria-labelledby="hiker-modal-title">
+            <h3 id="hiker-modal-title" className="hiker-modal-title">Name this hike</h3>
             <input
+              aria-label="Hike name"
               placeholder="e.g. Blue Mountains Day Hike"
               value={hikeName}
               onChange={e => setHikeName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && hikeName.trim() && runImport()}
               autoFocus
             />
-            <label style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Hike date</label>
+            <span className="field-label">Hike date</span>
             <DatePicker value={hikeDate} onChange={(v) => setHikeDate(v)} />
-            <div className="budget-widget-actions">
-              <button className="btn" onClick={runImport} disabled={!hikeName.trim()}>Import</button>
-              <button className="btn" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => setHikeModal(false)}>Cancel</button>
+            <div className="form-actions hiker-modal-actions">
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setHikeModal(false)}>Cancel</button>
+              <button type="button" className="btn btn-sm" onClick={runImport} disabled={!hikeName.trim()}>Import</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Drop Zone */}
-      <div
+      <button
+        type="button"
         className={`hiker-drop-zone ${dragOver ? "dragover" : ""} ${importing ? "importing" : ""}`}
         onClick={() => fileRef.current?.click()}
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
       >
-        <input ref={fileRef} type="file" accept=".csv" multiple hidden onChange={e => handleFiles(e.target.files)} />
-        <div className="hiker-drop-icon"><i className={`fa-solid ${importing ? "fa-spinner fa-spin" : "fa-folder-open"}`} aria-hidden="true" /></div>
-        <div className="hiker-drop-text">{importing ? "Importing…" : "Drop CSV files here or tap to upload"}</div>
-        <div className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</div>
-      </div>
+        <span className="hiker-drop-icon"><i className={`fa-solid ${importing ? "fa-spinner fa-spin" : "fa-folder-open"}`} aria-hidden="true" /></span>
+        <span className="hiker-drop-text">{importing ? "Importing…" : "Drop CSV files here or tap to upload"}</span>
+        <span className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</span>
+      </button>
+      <input ref={fileRef} type="file" accept=".csv" multiple hidden onChange={e => handleFiles(e.target.files)} />
 
       {/* Import Error */}
       {importError && (
-        <p className="error-message" style={{ marginTop: "0.75rem" }}>{importError}</p>
+        <div className="load-error" role="alert"><p className="load-error-msg">{importError}</p></div>
       )}
 
       {/* Import Result */}
       {importResult && (
-        <div className="hiker-import-result">
-          <h3>Import Complete — {importResult.files} file{importResult.files !== 1 ? "s" : ""}</h3>
-          <div className="hiker-import-grid">
-            <div className="hiker-import-card">
-              <div className="hiker-import-num">{importResult.total}</div>
-              <div className="hiker-import-label">Total Processed</div>
+        <section className="db-card hiker-import-result">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Import complete — {importResult.files} file{importResult.files !== 1 ? "s" : ""}</h3>
+          </div>
+          <div className="stat-grid">
+            <div className="stat-item">
+              <span className="stat-label">Total processed</span>
+              <span className="stat-value">{importResult.total}</span>
             </div>
-            <div className="hiker-import-card">
-              <div className="hiker-import-num" style={{ color: "var(--green)" }}>{importResult.first_timers}</div>
-              <div className="hiker-import-label">First Timers</div>
+            <div className="stat-item">
+              <span className="stat-label">First timers</span>
+              <span className="stat-value hiker-num-good">{importResult.first_timers}</span>
             </div>
-            <div className="hiker-import-card">
-              <div className="hiker-import-num" style={{ color: "var(--orange)" }}>{importResult.returning}</div>
-              <div className="hiker-import-label">Returning</div>
+            <div className="stat-item">
+              <span className="stat-label">Returning</span>
+              <span className="stat-value hiker-num-warn">{importResult.returning}</span>
             </div>
           </div>
-          <button className="btn" style={{ marginTop: "0.75rem" }} onClick={() => { setView("members"); setImportResult(null); }}>
-            View Members →
-          </button>
-        </div>
+          <div className="hiker-import-foot">
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => { setView("members"); setImportResult(null); }}>
+              View members <i className="fa-solid fa-arrow-right" aria-hidden="true" />
+            </button>
+          </div>
+        </section>
       )}
 
       {/* Dashboard */}
       {view === "dashboard" && stats && (
         <>
-          <div className="hiker-stats-grid">
-            <div className="hiker-stat-card">
-              <div className="hiker-stat-num">{stats.total}</div>
-              <div className="hiker-stat-label">Total Members</div>
+          <div className="stat-grid hiker-stats-grid">
+            <div className="stat-item">
+              <span className="stat-label">Total members</span>
+              <span className="stat-value">{stats.total}</span>
             </div>
-            <div className="hiker-stat-card">
-              <div className="hiker-stat-num">{stats.returning}</div>
-              <div className="hiker-stat-label">Returning Hikers</div>
+            <div className="stat-item">
+              <span className="stat-label">Returning hikers</span>
+              <span className="stat-value">{stats.returning}</span>
             </div>
-            <div className="hiker-stat-card">
-              <div className="hiker-stat-num">{stats.withEmail}</div>
-              <div className="hiker-stat-label">Have Email</div>
+            <div className="stat-item">
+              <span className="stat-label">Have email</span>
+              <span className="stat-value">{stats.withEmail}</span>
             </div>
-            <div className="hiker-stat-card">
-              <div className="hiker-stat-num">{stats.totalCheckins}</div>
-              <div className="hiker-stat-label">Total Check-ins</div>
+            <div className="stat-item">
+              <span className="stat-label">Total check-ins</span>
+              <span className="stat-value">{stats.totalCheckins}</span>
             </div>
-            <div className="hiker-stat-card">
-              <div className="hiker-stat-num">{stats.totalImports}</div>
-              <div className="hiker-stat-label">CSVs Imported</div>
+            <div className="stat-item">
+              <span className="stat-label">CSVs imported</span>
+              <span className="stat-value">{stats.totalImports}</span>
             </div>
           </div>
 
           {stats.topHikers.length > 0 && (
-            <div className="db-card">
-              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Most Active Hikers</h3>
-              {stats.topHikers.map((h, i) => (
-                <div key={i} className="completed-item">
-                  <span style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <span style={{ fontWeight: 800, color: "var(--orange)", width: "28px" }}>#{i + 1}</span>
-                    <span>{h.first} {h.last}</span>
-                  </span>
-                  <span style={{ background: "var(--warn-bg)", color: "var(--orange)", padding: "2px 12px", borderRadius: "100px", fontSize: "0.78rem", fontWeight: 700 }}>
-                    {h.attendance}×
-                  </span>
-                </div>
-              ))}
-            </div>
+            <section className="db-card">
+              <div className="db-card-header">
+                <h3 className="db-card-title">Most active hikers</h3>
+              </div>
+              <ol className="db-list hiker-top">
+                {stats.topHikers.map((h, i) => (
+                  <li key={i} className="db-list-item">
+                    <span className="hiker-top-name">
+                      <span className="hiker-rank">#{i + 1}</span>
+                      <span>{h.first} {h.last}</span>
+                    </span>
+                    <span className="uik-badge tone-warn">
+                      {h.attendance}×<span className="visually-hidden"> check-ins</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
           )}
         </>
       )}
@@ -242,14 +253,16 @@ export default function HikerPage() {
       {/* Members Table */}
       {view === "members" && (
         <>
-          <div style={{ display: "flex", gap: "0.625rem", alignItems: "center" }}>
+          <div className="vault-toolbar">
             <input
-              className="hiker-search"
+              className="hiker-search vault-search"
+              type="search"
+              aria-label="Search by name or email"
               placeholder="Search by name or email…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+            <span className="vault-count">
               {sorted.length} result{sorted.length !== 1 ? "s" : ""}
             </span>
             <button className="btn-sm btn-secondary-sm btn" onClick={() => exportCSV(sorted)}>
@@ -270,7 +283,7 @@ export default function HikerPage() {
               </thead>
               <tbody>
                 {sorted.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                  <tr><td colSpan={5} className="hiker-empty">
                     No members yet. Upload a CSV to get started.
                   </td></tr>
                 )}
@@ -278,8 +291,8 @@ export default function HikerPage() {
                   <tr key={m.id}>
                     <td>{m.first}</td>
                     <td>{m.last}</td>
-                    <td style={{ color: m.email ? "var(--text-primary)" : "var(--text-muted)" }}>{m.email || "—"}</td>
-                    <td style={{ color: m.phone ? "var(--text-primary)" : "var(--text-muted)" }}>{m.phone || "—"}</td>
+                    <td className={m.email ? undefined : "is-muted"}>{m.email || "—"}</td>
+                    <td className={m.phone ? undefined : "is-muted"}>{m.phone || "—"}</td>
                     <td>
                       <span className={`hiker-badge ${m.attendance > 1 ? "hiker-badge-ret" : "hiker-badge-new"}`}>
                         {m.attendance}×
@@ -295,52 +308,57 @@ export default function HikerPage() {
 
       {/* Hike History List */}
       {view === "history" && (
-        <div className="db-card">
-          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Hike History</h3>
+        <section className="db-card">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Hike history</h3>
+          </div>
           {hikes.length === 0 && (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>No hikes recorded yet. Import a CSV to get started.</p>
+            <p className="no-entries">No hikes recorded yet. Import a CSV to get started.</p>
           )}
-          {hikes.map(h => (
-            <button key={h.id} className="hiker-hike-row" onClick={() => openHike(h)}>
-              <div>
-                <div className="hiker-hike-name">{h.hike_name || h.filename}</div>
-                <div className="hiker-hike-meta">
-                  {h.hike_date ? new Date(h.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : h.imported_at}
-                  {" · "}{h.total} hiker{h.total !== 1 ? "s" : ""}
-                  {h.first_timers > 0 && ` · ${h.first_timers} new`}
-                </div>
-              </div>
-              <span style={{ color: "var(--text-muted)", fontSize: "1.1rem" }}>›</span>
-            </button>
-          ))}
-        </div>
+          <div className="db-list">
+            {hikes.map(h => (
+              <button key={h.id} type="button" className="hiker-hike-row" onClick={() => openHike(h)}>
+                <span className="db-list-item-content">
+                  <span className="hiker-hike-name">{h.hike_name || h.filename}</span>
+                  <span className="hiker-hike-meta">
+                    {h.hike_date ? new Date(h.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : h.imported_at}
+                    {" · "}{h.total} hiker{h.total !== 1 ? "s" : ""}
+                    {h.first_timers > 0 && ` · ${h.first_timers} new`}
+                  </span>
+                </span>
+                <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Hike Detail */}
       {view === "hike-detail" && selectedHike && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-            <button className="btn-sm btn-secondary-sm btn" onClick={() => setView("history")}>← Back</button>
-            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{selectedHike.hike_name || selectedHike.filename}</h2>
+          <div className="hiker-detail-head">
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => setView("history")}><i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back</button>
+            <h2 className="section-title">{selectedHike.hike_name || selectedHike.filename}</h2>
           </div>
 
-          <div className="db-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
+          <section className="db-card">
+            <div className="hiker-detail-bar">
               <div>
-                <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                <div className="hiker-detail-date">
                   {selectedHike.hike_date ? new Date(selectedHike.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : selectedHike.imported_at}
                 </div>
-                <div style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                <div className="hiker-detail-meta">
                   {hikeAttendees.length} attendee{hikeAttendees.length !== 1 ? "s" : ""}
                   {" · "}{hikeAttendees.filter(m => m.email).length} with email
                 </div>
               </div>
               <button
-                className={`btn hiker-copy-btn ${copyAnim ? "copied" : ""}`}
+                type="button"
+                className={`btn btn-sm hiker-copy-btn ${copyAnim ? "copied" : ""}`}
                 onClick={copyEmails}
                 disabled={hikeAttendees.filter(m => m.email).length === 0}
               >
-                {copyAnim ? "Copied!" : "Copy Emails"}
+                <i className={`fa-solid ${copyAnim ? "fa-check" : "fa-copy"}`} aria-hidden="true" /> {copyAnim ? "Copied!" : "Copy emails"}
               </button>
             </div>
 
@@ -351,20 +369,20 @@ export default function HikerPage() {
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
-                    <th>Total Check-ins</th>
+                    <th>Total check-ins</th>
                   </tr>
                 </thead>
                 <tbody>
                   {hikeAttendees.length === 0 && (
-                    <tr><td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                    <tr><td colSpan={4} className="hiker-empty">
                       No attendee data for this hike.
                     </td></tr>
                   )}
                   {hikeAttendees.map(m => (
                     <tr key={m.id}>
                       <td>{m.first} {m.last}</td>
-                      <td style={{ color: m.email ? "var(--text-primary)" : "var(--text-muted)" }}>{m.email || "—"}</td>
-                      <td style={{ color: m.phone ? "var(--text-primary)" : "var(--text-muted)" }}>{m.phone || "—"}</td>
+                      <td className={m.email ? undefined : "is-muted"}>{m.email || "—"}</td>
+                      <td className={m.phone ? undefined : "is-muted"}>{m.phone || "—"}</td>
                       <td>
                         <span className={`hiker-badge ${m.attendance > 1 ? "hiker-badge-ret" : "hiker-badge-new"}`}>
                           {m.attendance}×
@@ -375,7 +393,7 @@ export default function HikerPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </>
       )}
     </div>

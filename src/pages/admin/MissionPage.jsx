@@ -6,6 +6,7 @@ import Inbox from "../../components/tools/Inbox";
 import BugsPage from "./BugsPage";
 import ResearchPage from "./ResearchPage";
 import UsagePage from "./UsagePage";
+import "./mission.css";
 
 /**
  * MISSION CONTROL — everything the AI staff does, in one space.
@@ -33,7 +34,7 @@ export default function MissionPage() {
     <div className="combined-page">
       <div className="combined-page-header">
         <h1 className="combined-page-title">
-          <i className="fa-solid fa-satellite-dish" /> Mission Control
+          Mission Control
         </h1>
         <PageTabs tabs={TABS} active={tab} onChange={setTab} />
       </div>

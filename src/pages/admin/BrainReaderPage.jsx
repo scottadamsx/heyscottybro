@@ -60,10 +60,10 @@ export default function BrainReaderPage() {
   return (
     <div className="reader-page">
       <div className="reader-bar">
-        <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={() => navigate(-1)}>
-          <i className="fa-solid fa-arrow-left" /> Back
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => navigate(-1)}>
+          <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back
         </button>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="reader-bar-actions">
           {node && (
             <ExportKit exporter={{
               title: node.title || node.slug,
@@ -72,20 +72,20 @@ export default function BrainReaderPage() {
             }} />
           )}
           <a className="btn btn-sm btn-secondary-sm" href="/admin/mission?tab=brain" title="Open the Brain graph">
-            <i className="fa-solid fa-diagram-project" /> Brain
+            <i className="fa-solid fa-diagram-project" aria-hidden="true" /> Brain
           </a>
         </div>
       </div>
 
       {node === undefined && (
-        <p className="no-entries" style={{ marginTop: "2rem" }}><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>
+        <p className="no-entries reader-loading"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>
       )}
 
       {node === null && (
         <div className="reader-article">
           <h1>Not in your Brain</h1>
           <p className="no-entries">
-            <i className="fa-solid fa-triangle-exclamation" /> No note found for <code>{slug || "(no id)"}</code>. It may have been renamed or removed since it was linked.
+            <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> No note found for <code>{slug || "(no id)"}</code>. It may have been renamed or removed since it was linked.
           </p>
         </div>
       )}

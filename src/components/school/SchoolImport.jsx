@@ -178,37 +178,37 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
     <Modal title="Import a school document" onClose={onClose} width={640}
       footer={phase === "review" ? (
         <>
-          <button className="btn btn-sm btn-secondary-sm" onClick={onClose}>Cancel</button>
-          <button className="btn btn-sm" onClick={apply}><i className="fa-solid fa-check" /> Apply selected</button>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-sm" onClick={apply}><i className="fa-solid fa-check" aria-hidden="true" /> Apply selected</button>
         </>
       ) : null}>
       {phase === "idle" && (
-        <div className="si-body" style={{ padding: 0 }}>
-          <p className="si-note" style={{ marginBottom: 4 }}>Announcements, syllabi, grade releases — deadlines land in School <em>and</em> Plan, grades update the tracker, and a summary is filed to the Brain so your agents know too.</p>
+        <div className="si-body school-si-body">
+          <p className="si-note is-lead">Announcements, syllabi, grade releases — deadlines land in School <em>and</em> Plan, grades update the tracker, and a summary is filed to the Brain so your agents know too.</p>
           <label className="si-drop">
             <input type="file" accept=".pdf,.txt,.md,image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-            <i className="fa-solid fa-cloud-arrow-up" /> Drop or choose a document (PDF · image · text)
+            <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a document (PDF · image · text)
           </label>
           <div className="si-or">or paste it</div>
-          <textarea rows={5} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the announcement / syllabus section…" />
-          <button className="btn btn-sm" disabled={!paste.trim()} onClick={() => analyze({ text: paste.trim().slice(0, 24000) })}>
-            <i className="fa-solid fa-graduation-cap" /> Analyze
+          <textarea rows={5} aria-label="Paste the document" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the announcement / syllabus section…" />
+          <button type="button" className="btn btn-sm" disabled={!paste.trim()} onClick={() => analyze({ text: paste.trim().slice(0, 24000) })}>
+            <i className="fa-solid fa-graduation-cap" aria-hidden="true" /> Analyze
           </button>
         </div>
       )}
 
-      {phase === "busy" && <p className="si-busy"><i className="fa-solid fa-spinner fa-spin" /> Reading the document…</p>}
+      {phase === "busy" && <p className="si-busy"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Reading the document…</p>}
 
       {phase === "review" && out && (
-        <div className="si-body" style={{ padding: 0 }}>
+        <div className="si-body school-si-body">
           <div className="si-group">
-            <div className="si-group-title"><i className="fa-solid fa-book" /> {out.title}</div>
-            <p className="si-note" style={{ fontStyle: "italic" }}>{out.summary}</p>
+            <div className="si-group-title"><i className="fa-solid fa-book" aria-hidden="true" /> {out.title}</div>
+            <p className="si-note is-summary">{out.summary}</p>
           </div>
 
           <div className="si-group">
-            <div className="si-group-title"><i className="fa-solid fa-graduation-cap" /> Course</div>
-            <select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+            <div className="si-group-title"><i className="fa-solid fa-graduation-cap" aria-hidden="true" /> Course</div>
+            <select aria-label="Course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
               <option value="">— pick the course —</option>
               {courses.map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
             </select>
@@ -216,14 +216,14 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
 
           {(out.deadlines || []).length > 0 && (
             <div className="si-group">
-              <div className="si-group-title"><i className="fa-solid fa-flag-checkered" /> Deadlines → School + Plan</div>
+              <div className="si-group-title"><i className="fa-solid fa-flag-checkered" aria-hidden="true" /> Deadlines → School + Plan</div>
               {(out.deadlines || []).map((d, i) => (
                 <label key={i} className="si-row">
                   <input type="checkbox" checked={!!checks[`d${i}`]} onChange={() => setChecks((c) => ({ ...c, [`d${i}`]: !c[`d${i}`] }))} />
                   <span className="si-row-main">
                     <span className="si-row-title">{d.name}</span>
                     <span className="si-diff">{d.date}{d.detail ? ` · ${d.detail}` : ""}</span>
-                    {d.already_tracked && <span className="si-warn"><i className="fa-solid fa-circle-info" /> looks already tracked — left unchecked</span>}
+                    {d.already_tracked && <span className="si-warn"><i className="fa-solid fa-circle-info" aria-hidden="true" /> looks already tracked — left unchecked</span>}
                   </span>
                 </label>
               ))}
@@ -232,7 +232,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
 
           {(out.grade_updates || []).length > 0 && (
             <div className="si-group">
-              <div className="si-group-title"><i className="fa-solid fa-percent" /> Grade tracker</div>
+              <div className="si-group-title"><i className="fa-solid fa-percent" aria-hidden="true" /> Grade tracker</div>
               {(out.grade_updates || []).map((g, i) => (
                 <label key={i} className="si-row">
                   <input type="checkbox" checked={!!checks[`g${i}`]} onChange={() => setChecks((c) => ({ ...c, [`g${i}`]: !c[`g${i}`] }))} />

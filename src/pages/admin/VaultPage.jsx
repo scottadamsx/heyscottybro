@@ -4,6 +4,7 @@ import SnippetsPage from "./SnippetsPage";
 import DocumentsPage from "./DocumentsPage";
 import StoragePage from "./StoragePage";
 import HikerPage from "./HikerPage";
+import "./mission.css";
 
 /**
  * VAULT — things you store: Secrets (passwords/keys/snippets), Documents,
@@ -27,7 +28,7 @@ export default function VaultPage() {
     <div className="combined-page">
       <div className="combined-page-header">
         <h1 className="combined-page-title">
-          <i className="fa-solid fa-vault" /> Vault
+          Vault
         </h1>
         <PageTabs tabs={TABS} active={tab} onChange={setTab} />
       </div>

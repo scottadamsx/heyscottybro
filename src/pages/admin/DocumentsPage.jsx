@@ -5,6 +5,7 @@ import DocumentUploader from "../../components/documents/DocumentUploader";
 import DocumentViewer from "../../components/documents/DocumentViewer";
 import ShareModal from "../../components/documents/ShareModal";
 import PdfViewer from "../../components/PdfViewer";
+import "./mission.css";
 
 // A document counts as "agent work" if it carries an `agent` tag (or `agent:<name>`).
 const isAgentDoc = (d) =>
@@ -87,53 +88,55 @@ export default function DocumentsPage() {
     <div className="module-page">
       <div className="module-header">
         <h1>Documents</h1>
-        <button className="btn" onClick={() => setShowUploader((s) => !s)}>
-          <i className={`fa-solid ${showUploader ? "fa-xmark" : "fa-plus"}`} /> {showUploader ? "Close" : "Upload"}
+        <button type="button" className="btn btn-sm" aria-expanded={showUploader} onClick={() => setShowUploader((s) => !s)}>
+          <i className={`fa-solid ${showUploader ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showUploader ? "Close" : "Upload"}
         </button>
       </div>
 
-      <p className="no-entries" style={{ marginTop: "-0.4rem" }}>
-        <i className="fa-solid fa-lock" /> Private storage. Agents drop deliverables here (tagged <code>agent</code>) and you review them in the PDF viewer.
+      <p className="vault-intro">
+        <i className="fa-solid fa-lock" aria-hidden="true" /> Private storage. Agents drop deliverables here (tagged <code>agent</code>) and you review them in the PDF viewer.
       </p>
 
       {showUploader && (
         <DocumentUploader onUploaded={handleUploaded} onClose={() => setShowUploader(false)} />
       )}
 
-      <div className="doc-toolbar" style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem", alignItems: "center", marginBottom: "1rem" }}>
+      <div className="vault-toolbar">
         <input
-          className="hiker-search"
+          className="hiker-search vault-search"
+          type="search"
+          aria-label="Search documents"
           placeholder="Search documents…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: 360, margin: 0 }}
         />
-        <div className="doc-filter-chips" style={{ display: "flex", gap: "0.35rem" }}>
+        <div className="vault-chips" role="group" aria-label="Filter">
           <button
             type="button"
-            className={`btn-tiny-blue${!onlyAgent ? " active" : ""}`}
+            className={`chip${!onlyAgent ? " active" : ""}`}
             onClick={() => setOnlyAgent(false)}
             aria-pressed={!onlyAgent}
           >
-            All ({docs.length})
+            All <span className="vault-chip-count">{docs.length}</span>
           </button>
           <button
             type="button"
-            className={`btn-tiny-blue${onlyAgent ? " active" : ""}`}
+            className={`chip${onlyAgent ? " active" : ""}`}
             onClick={() => setOnlyAgent(true)}
             aria-pressed={onlyAgent}
             title="Show only deliverables your agents produced"
           >
-            <i className="fa-solid fa-robot" /> Agent work ({agentCount})
+            <i className="fa-solid fa-robot" aria-hidden="true" /> Agent work <span className="vault-chip-count">{agentCount}</span>
           </button>
         </div>
       </div>
 
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
+      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
       {error && (
-        <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>
-          {error} <button className="btn-tiny-blue" onClick={load}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{error}</p>
+          <button type="button" className="btn btn-sm" onClick={load}>Retry</button>
+        </div>
       )}
       {!loading && !error && filtered.length === 0 && (
         <p className="no-entries">
@@ -157,11 +160,11 @@ export default function DocumentsPage() {
 
       {confirmDelete && (
         <div className="doc-viewer-overlay" onClick={() => setConfirmDelete(null)}>
-          <div className="form-card" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <p>Delete <strong>{confirmDelete.name}</strong>? This also revokes any share links and cannot be undone.</p>
-            <div className="form-row">
-              <button className="btn danger" onClick={() => handleDelete(confirmDelete)}>Yes, delete</button>
-              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>Cancel</button>
+          <div className="doc-confirm" role="alertdialog" aria-modal="true" aria-labelledby="doc-confirm-msg" onClick={(e) => e.stopPropagation()}>
+            <p id="doc-confirm-msg" className="doc-confirm-msg">Delete <strong>{confirmDelete.name}</strong>? This also revokes any share links and cannot be undone.</p>
+            <div className="doc-confirm-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button type="button" className="btn danger" onClick={() => handleDelete(confirmDelete)}>Yes, delete</button>
             </div>
           </div>
         </div>

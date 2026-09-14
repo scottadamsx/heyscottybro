@@ -73,46 +73,46 @@ export default function PdfViewer({ fileUrl, blob, title = "Document", filename 
 
   return (
     <div className="pdfv-overlay" onClick={onClose}>
-      <div className="pdfv-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="pdfv-modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="pdfv-toolbar">
           <div className="pdfv-title" title={title}>
-            <i className="fa-solid fa-file-pdf" /> <span>{title}</span>
+            <i className="fa-solid fa-file-pdf" aria-hidden="true" /> <span>{title}</span>
           </div>
 
           <div className="pdfv-tools">
             <div className="pdfv-group">
-              <button className="pdfv-btn" onClick={goPrev} disabled={pageNumber <= 1} title="Previous page (←)">
-                <i className="fa-solid fa-chevron-left" />
+              <button type="button" className="pdfv-btn" onClick={goPrev} disabled={pageNumber <= 1} title="Previous page (←)" aria-label="Previous page">
+                <i className="fa-solid fa-chevron-left" aria-hidden="true" />
               </button>
-              <span className="pdfv-pageno">{numPages ? `${pageNumber} / ${numPages}` : "—"}</span>
-              <button className="pdfv-btn" onClick={goNext} disabled={!numPages || pageNumber >= numPages} title="Next page (→)">
-                <i className="fa-solid fa-chevron-right" />
+              <span className="pdfv-pageno" aria-live="polite">{numPages ? `${pageNumber} / ${numPages}` : "—"}</span>
+              <button type="button" className="pdfv-btn" onClick={goNext} disabled={!numPages || pageNumber >= numPages} title="Next page (→)" aria-label="Next page">
+                <i className="fa-solid fa-chevron-right" aria-hidden="true" />
               </button>
             </div>
 
             <div className="pdfv-group">
-              <button className="pdfv-btn" onClick={zoomOut} disabled={scale <= MIN_SCALE} title="Zoom out (-)">
-                <i className="fa-solid fa-magnifying-glass-minus" />
+              <button type="button" className="pdfv-btn" onClick={zoomOut} disabled={scale <= MIN_SCALE} title="Zoom out (-)" aria-label="Zoom out">
+                <i className="fa-solid fa-magnifying-glass-minus" aria-hidden="true" />
               </button>
-              <button className="pdfv-btn pdfv-zoomlabel" onClick={fit} title="Fit width (0)">{Math.round(scale * 100)}%</button>
-              <button className="pdfv-btn" onClick={zoomIn} disabled={scale >= MAX_SCALE} title="Zoom in (+)">
-                <i className="fa-solid fa-magnifying-glass-plus" />
+              <button type="button" className="pdfv-btn pdfv-zoomlabel" onClick={fit} title="Fit width (0)" aria-label={`Zoom ${Math.round(scale * 100)}%, fit to width`}>{Math.round(scale * 100)}%</button>
+              <button type="button" className="pdfv-btn" onClick={zoomIn} disabled={scale >= MAX_SCALE} title="Zoom in (+)" aria-label="Zoom in">
+                <i className="fa-solid fa-magnifying-glass-plus" aria-hidden="true" />
               </button>
             </div>
 
             <div className="pdfv-group">
               {url && (
-                <a className="pdfv-btn" href={url} download={filename} title="Download">
-                  <i className="fa-solid fa-download" />
+                <a className="pdfv-btn" href={url} download={filename} title="Download" aria-label="Download">
+                  <i className="fa-solid fa-download" aria-hidden="true" />
                 </a>
               )}
               {url && (
-                <a className="pdfv-btn" href={url} target="_blank" rel="noreferrer" title="Open in new tab">
-                  <i className="fa-solid fa-up-right-from-square" />
+                <a className="pdfv-btn" href={url} target="_blank" rel="noreferrer" title="Open in new tab" aria-label="Open in new tab">
+                  <i className="fa-solid fa-up-right-from-square" aria-hidden="true" />
                 </a>
               )}
-              <button className="pdfv-btn pdfv-close" onClick={onClose} title="Close (Esc)" aria-label="Close">
-                <i className="fa-solid fa-xmark" />
+              <button type="button" className="pdfv-btn pdfv-close" onClick={onClose} title="Close (Esc)" aria-label="Close">
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -120,13 +120,13 @@ export default function PdfViewer({ fileUrl, blob, title = "Document", filename 
 
         <div className="pdfv-stage" ref={stageRef}>
           {!url && <div className="pdfv-msg">No file to display.</div>}
-          {error && <div className="pdfv-msg pdfv-error"><i className="fa-solid fa-triangle-exclamation" /> {error}</div>}
+          {error && <div className="pdfv-msg pdfv-error" role="alert"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {error}</div>}
           {url && !error && (
             <Document
               file={url}
               onLoadSuccess={({ numPages }) => { setNumPages(numPages); setError(null); }}
               onLoadError={(e) => setError(e?.message || "Could not load this PDF.")}
-              loading={<div className="pdfv-msg"><i className="fa-solid fa-spinner fa-spin" /> Loading…</div>}
+              loading={<div className="pdfv-msg"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</div>}
               error={<div className="pdfv-msg pdfv-error">Could not render this PDF.</div>}
             >
               <Page
@@ -135,7 +135,7 @@ export default function PdfViewer({ fileUrl, blob, title = "Document", filename 
                 className="pdfv-page"
                 renderAnnotationLayer
                 renderTextLayer
-                loading={<div className="pdfv-msg"><i className="fa-solid fa-spinner fa-spin" /></div>}
+                loading={<div className="pdfv-msg"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /><span className="visually-hidden">Loading page…</span></div>}
               />
             </Document>
           )}
