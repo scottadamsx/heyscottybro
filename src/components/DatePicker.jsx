@@ -64,17 +64,18 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         className={`picker-trigger ${selected ? "" : "is-placeholder"}`}
         onClick={() => setOpen((o) => !o)}
       >
-        <i className="fa-solid fa-calendar-day picker-lead" />
+        <i className="fa-solid fa-calendar-day picker-lead" aria-hidden="true" />
         <span className="picker-value">{selected ? fmtDisplay(selected) : placeholder}</span>
         {selected ? (
           <i
             className="fa-solid fa-xmark picker-clear"
+            aria-label="Clear date"
             role="button"
             tabIndex={-1}
             onClick={(e) => { e.stopPropagation(); onChange(""); }}
           />
         ) : (
-          <i className="fa-solid fa-chevron-down picker-caret" />
+          <i className="fa-solid fa-chevron-down picker-caret" aria-hidden="true" />
         )}
       </button>
 
@@ -82,11 +83,11 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
         <div className="picker-pop dtp-pop">
           <div className="dtp-head">
             <button type="button" className="dtp-nav" onClick={() => setView(new Date(y, m - 1, 1))} aria-label="Previous month">
-              <i className="fa-solid fa-chevron-left" />
+              <i className="fa-solid fa-chevron-left" aria-hidden="true" />
             </button>
             <span className="dtp-month">{MONTHS[m]} {y}</span>
             <button type="button" className="dtp-nav" onClick={() => setView(new Date(y, m + 1, 1))} aria-label="Next month">
-              <i className="fa-solid fa-chevron-right" />
+              <i className="fa-solid fa-chevron-right" aria-hidden="true" />
             </button>
           </div>
 

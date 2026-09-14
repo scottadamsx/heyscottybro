@@ -1,0 +1,302 @@
+/* ── Plan — calendar, tasks & reminders, projects, work log, task detail.
+   Page layer only: composes tokens (globals.css) and the primitives in
+   system.css; it never redefines a primitive. Rules that pages outside Plan
+   also rely on (the day sheet, date/time pickers, .event-overlay) stay in
+   index.css, because those pages never load this file. ── */
+
+
+/* ── Overview: calendar above tasks ──────────────────────────────────────── */
+
+.planner-overview { display: flex; flex-direction: column; gap: var(--space-2xl); min-width: 0; }
+.planner-panel { position: relative; min-width: 0; }
+
+@media (max-width: 768px) {
+  .planner-overview { gap: var(--space-lg); }
+  .planner-overview.show-cal .planner-tasks,
+  .planner-overview.show-tasks .planner-cal { display: none; }
+  /* The phone switch spans the column, two equal halves. */
+  .admin-shell .planner-switch { width: 100%; }
+  .admin-shell .planner-switch button { flex: 1 1 0; }
+}
+
+
+/* ── Calendar ────────────────────────────────────────────────────────────── */
+
+/* Calendar only ever renders inside Plan, whose header already names it. */
+.planner-panel .cal-page-header { display: none; }
+
+.admin-shell .cal-card { gap: var(--space-md); }
+
+/* One header: month title left; Today + prev/next right */
+.cal-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
+.admin-shell .cal-month {
+  margin: 0; font-size: var(--text-xl); line-height: 2rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cal-nav { display: flex; align-items: center; gap: var(--space-xs); }
+/* Icon-only secondary button: a 32px circle */
+.admin-shell .cal-nav-btn { width: var(--control-h-sm); padding: 0; flex-shrink: 0; }
+
+.cal-filters {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm);
+  padding-bottom: var(--space-md); border-bottom: 1px solid var(--border-subtle);
+}
+.admin-shell .cal-filter-project { width: auto; min-width: 160px; max-width: 224px; flex: 0 1 auto; }
+.admin-shell .cal-clear { margin-left: auto; }
+
+.calendar-grid-react { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-day-name { text-align: center; }
+.calendar-cell {
+  display: flex; flex-direction: column; align-items: flex-start; min-width: 0;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.calendar-cell.empty { cursor: default; }
+.day-number { display: block; margin-bottom: var(--space-2xs); }
+.calendar-count {
+  display: block; width: 100%; box-sizing: border-box;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .cal-head { flex-wrap: nowrap; gap: var(--space-xs); }
+  .cal-nav { gap: var(--space-2xs); }
+  .admin-shell .cal-month { min-width: 0; font-size: var(--text-md); line-height: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Row 1: project + Done. Row 2: the kind switch, full width, no clipping. */
+  .admin-shell .cal-filter-project { flex: 1 1 auto; max-width: none; }
+  .admin-shell .cal-filters .segmented { order: 3; width: 100%; }
+  .admin-shell .cal-filters .segmented-opt { flex: 1 1 auto; padding: 0 var(--space-xs); }
+  .admin-shell .cal-clear { order: 4; }
+}
+/* The day sheet is full-screen on phones (index.css): square edges, no frame
+   — the shell's modal radius would otherwise win. */
+@media (max-width: 768px) {
+  .admin-shell .day-overlay .day-modal { border: none; border-radius: 0; }
+}
+
+/* Under the grid: two lists, half and half */
+.plan-list .db-list-item-content { flex: 1 1 auto; }
+
+/* Day sheet — the calendar-only bits (shared bits live in index.css) */
+.day-item--top { align-items: flex-start; }
+.day-item-actions { display: flex; align-items: center; gap: var(--space-2xs); flex-shrink: 0; }
+.day-item-dot.tone-accent { background: var(--accent); }
+.day-item-dot.tone-neg { background: var(--red); }
+.day-item-dot.tone-pos { background: var(--green); }
+.day-amt { flex-shrink: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.day-amt.is-neg { color: var(--red); }
+.day-amt.is-pos { color: var(--green); }
+.admin-shell .day-add-seg { display: flex; width: 100%; margin-bottom: var(--space-sm); }
+.admin-shell .day-add-seg .segmented-opt { flex: 1 1 0; }
+
+/* The one event form (day sheet, New event dialog, project page): label
+   column of one width; pickers keep a readable minimum and the helper note
+   wraps under them instead of squeezing the date. */
+.event-form .day-time-row { flex-wrap: wrap; row-gap: var(--space-2xs); }
+.admin-shell .event-form .day-time-row > label { flex: 0 0 auto; min-width: 56px; }
+.event-form .day-time-row > .picker { flex: 1 1 140px; min-width: 140px; }
+.event-form .day-span-note { flex: 1 1 100%; padding-left: calc(56px + var(--space-xs)); }
+@media (max-width: 640px) {
+  /* One label + picker pair per line */
+  .event-form .day-time-row > .picker { flex-basis: calc(100% - 56px - var(--space-xs)); }
+}
+
+
+/* ── Tasks & reminders ───────────────────────────────────────────────────── */
+
+/* Inside Plan the page h1 is hidden; the section is named by this instead. */
+.tasks-embed-title { display: none; }
+.planner-panel .tasks-embed-title { display: block; margin-right: auto; }
+
+.tasks-layout { display: flex; gap: var(--space-lg); align-items: flex-start; }
+.tasks-list { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-lg); }
+.tasks-form-panel {
+  flex: 0 0 clamp(280px, 30vw, 360px);
+  min-width: 0;
+  position: sticky;
+  top: var(--space-md);
+  animation: tasks-panel-in var(--dur) var(--ease) both;
+}
+@keyframes tasks-panel-in {
+  from { opacity: 0; transform: translateX(calc(var(--space-md) * -1)); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Form panel heads (new/edit task, edit project) */
+.admin-shell .tasks-form-panel .form-panel-head h3,
+.admin-shell .task-edit-form .form-panel-head h3,
+.admin-shell .project-edit-form .form-panel-head h3 { margin: 0; font-size: var(--text-md); line-height: 1.5rem; font-weight: 600; }
+
+/* A task row: title + one meta line, actions on the right. Clean hover rows
+   inside the card — no raised boxes. */
+.admin-shell .task-row { gap: var(--space-md); }
+.task-row-main { cursor: pointer; border-radius: var(--radius-sm); }
+.task-row-main:hover .task-row-title { color: var(--accent); }
+.task-row-title { overflow-wrap: anywhere; }
+.task-row-meta { display: block; }
+.task-row-project { white-space: nowrap; }
+.task-row-dot {
+  display: inline-block; width: 8px; height: 8px; margin-right: var(--space-2xs);
+  border-radius: var(--radius-full); vertical-align: 1px;
+}
+.task-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
+.task-row.is-done .task-row-title { color: var(--text-secondary); text-decoration: line-through; }
+
+/* Repeat limits (new/edit task) */
+.admin-shell .recur-limit-row { gap: var(--space-sm); }
+.recur-limit-group { display: flex; flex-direction: column; gap: var(--space-2xs); flex: 1; min-width: 0; }
+.admin-shell .recur-limit-group label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
+
+@media (max-width: 860px) {
+  .tasks-layout { flex-direction: column; align-items: stretch; }
+  .tasks-form-panel { flex: none; width: 100%; position: static; }
+}
+@media (max-width: 640px) {
+  .admin-shell .task-row { flex-wrap: wrap; row-gap: var(--space-xs); }
+  .admin-shell .task-row .db-list-item-content { flex: 1 1 100%; }
+  .task-row-actions { margin-left: auto; }
+}
+
+
+/* ── Task detail ─────────────────────────────────────────────────────────── */
+
+.admin-shell .task-hero { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: var(--space-lg); }
+.task-hero-main { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xs); }
+.task-detail-project {
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+  font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary);
+  text-decoration: none; border-radius: var(--radius-xs);
+}
+.task-detail-project:hover { color: var(--text-primary); text-decoration: underline; }
+.task-detail-project-dot { width: 8px; height: 8px; border-radius: var(--radius-full); flex-shrink: 0; }
+.admin-shell .task-detail-title {
+  margin: 0; font-size: var(--text-xl); line-height: 2rem; font-weight: 700; overflow-wrap: anywhere;
+}
+.admin-shell .task-detail-title.is-done { color: var(--text-secondary); text-decoration: line-through; }
+.task-detail-badges { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.task-detail-badges:empty { display: none; }
+.task-badge {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 var(--space-xs);
+  border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary);
+  font-size: var(--text-xs); font-weight: 600;
+}
+.task-badge--today { background: var(--accent-bg); color: var(--accent); }
+.task-badge--overdue { background: var(--danger-bg); color: var(--red); }
+.task-badge--done { background: var(--success-bg); color: var(--green); }
+.task-detail-actions { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; flex-shrink: 0; }
+
+/* Details: label / value rows on hairlines */
+.task-detail-grid { display: flex; flex-direction: column; margin: 0; }
+.task-detail-row {
+  display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--space-md);
+  padding: var(--space-sm) 0; border-top: 1px solid var(--border-subtle);
+}
+.task-detail-row:first-child { padding-top: 0; border-top: none; }
+.task-detail-row:last-child { padding-bottom: 0; }
+.task-detail-row dt { font-size: var(--text-sm); color: var(--text-secondary); }
+.task-detail-row dd { margin: 0; overflow-wrap: anywhere; }
+.task-detail-notes { margin: 0; line-height: var(--leading-relaxed); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.admin-shell .task-detail-danger { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md); }
+.task-detail-danger-note { margin: var(--space-2xs) 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+
+@media (max-width: 640px) {
+  .admin-shell .task-hero { flex-direction: column; gap: var(--space-md); }
+  .task-detail-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); }
+}
+
+
+/* ── Projects ────────────────────────────────────────────────────────────── */
+
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: var(--space-md); }
+
+.project-tile {
+  display: flex; align-items: center; gap: var(--space-sm);
+  width: 100%; min-height: var(--control-h-lg); padding: var(--space-md);
+  background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  font: inherit; color: var(--text-primary); text-align: left; cursor: pointer;
+  transition: background-color var(--dur-fast), border-color var(--dur-fast);
+}
+.project-tile:hover { background: var(--bg-raised); border-color: var(--border-primary); }
+/* Inside a card (sub-projects): nested radius, no second shadow */
+.project-tile.is-nested { border-radius: var(--radius-md); box-shadow: none; }
+.project-tile-dot { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-full); flex-shrink: 0; }
+.project-tile-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.project-tile-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-tile-desc { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-tile-chevron { flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
+
+.project-crumbs { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-left: calc(var(--space-sm) * -1); }
+
+.admin-shell .project-detail-header { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: var(--space-lg); }
+.project-detail-main { min-width: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
+.project-detail-parent { font-size: var(--text-sm); color: var(--text-secondary); }
+.admin-shell .project-detail-title {
+  display: flex; align-items: center; gap: var(--space-sm); margin: 0;
+  font-size: var(--text-xl); line-height: 2rem; font-weight: 700; overflow-wrap: anywhere;
+}
+.project-detail-dot { width: 12px; height: 12px; border-radius: var(--radius-full); flex-shrink: 0; }
+.project-detail-desc { margin: 0; color: var(--text-secondary); }
+
+.admin-shell .project-card-head { margin-bottom: var(--space-xs); }
+.project-card-desc { margin: 0 0 var(--space-md); max-width: 64ch; font-size: var(--text-sm); color: var(--text-secondary); }
+.project-quick-form { margin-bottom: var(--space-md); }
+.project-event-form { margin-bottom: var(--space-md); }
+
+.project-task-link { text-decoration: none; }
+.project-task-link:hover { text-decoration: underline; }
+.project-task.is-done .project-task-link { color: var(--text-secondary); text-decoration: line-through; }
+.admin-shell .project-done-toggle { align-self: flex-start; margin-top: var(--space-sm); margin-left: calc(var(--space-sm) * -1); }
+
+/* Event types & auto-tasks: rows on hairlines, not raised boxes */
+.event-type-card { padding: var(--space-sm) 0; }
+.event-type-card + .event-type-card { border-top: 1px solid var(--border-subtle); }
+.event-type-card:last-child { padding-bottom: 0; }
+.event-type-header { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); min-height: var(--control-h-sm); }
+.event-type-dot { width: 10px; height: 10px; border-radius: var(--radius-full); flex-shrink: 0; }
+.event-type-name { flex: 1; min-width: 0; font-weight: 600; }
+.event-type-tasks { display: flex; flex-direction: column; gap: var(--space-2xs); margin-top: var(--space-xs); padding-left: calc(10px + var(--space-xs)); }
+.event-type-task { display: flex; align-items: center; gap: var(--space-sm); min-height: 28px; font-size: var(--text-sm); }
+.event-type-offset {
+  flex-shrink: 0; min-width: 88px; height: 24px; padding: 0 var(--space-xs);
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary);
+  font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.event-type-task-name { flex: 1; min-width: 0; }
+.event-type-add {
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs);
+  margin-top: var(--space-sm); padding-left: calc(10px + var(--space-xs));
+}
+/* Offset + name fields: flex-basis wins over the shell's width:100% */
+.admin-shell .event-type-add .auto-task-offset-input,
+.admin-shell .auto-task-edit .auto-task-offset-input { flex: 0 0 96px; }
+.admin-shell .event-type-add .auto-task-name-input,
+.admin-shell .auto-task-edit .auto-task-name-input { flex: 1 1 200px; }
+
+/* Create dialogs (project, sub-project, initiative, event type) */
+.admin-shell .event-card.project-modal { max-width: 480px; padding: var(--space-lg); border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); }
+.admin-shell .project-modal-actions { justify-content: flex-end; margin-top: var(--space-xs); }
+
+@media (max-width: 640px) {
+  .admin-shell .project-detail-header { flex-direction: column; gap: var(--space-md); }
+  .event-type-tasks, .event-type-add { padding-left: 0; }
+}
+
+
+/* ── Work log ────────────────────────────────────────────────────────────── */
+
+/* Embedded under Plan › Work, the h1 is hidden by the shell; drop its empty row. */
+.combined-embed .worklog-head { display: none; }
+/* Minutes: a short number field. flex-basis beats the shell's width:100%. */
+.admin-shell .form-row > .worklog-min { flex: 0 0 96px; }
+.worklog-form-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
+
+
+/* ── Phones: stacked form rows ───────────────────────────────────────────── */
+/* Under 480px index.css turns every .form-row into a column; the shell's
+   `flex: 1 1 120px` then becomes a 120px-tall field. Plan's forms stack at
+   their natural height instead. */
+@media (max-width: 480px) {
+  .admin-shell :is(.project-quick-form, .tasks-form-panel, .task-edit-form, .worklog-page, .day-add-form, .plan-quick-reminder) .form-row > * { flex: 0 0 auto; }
+}

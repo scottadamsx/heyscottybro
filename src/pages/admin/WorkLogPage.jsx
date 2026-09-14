@@ -10,6 +10,7 @@ import { onDataChange } from "../../utils/dataEvents";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
 import DatePicker from "../../components/DatePicker";
+import "./plan.css";
 
 const emptyForm = () => ({ date: toDateStr(new Date()), task: "", notes: "", project_id: "", minutes: "" });
 
@@ -102,11 +103,16 @@ export default function WorkLogPage() {
   const minutesFor = (list) => list.reduce((a, r) => a + (Number(r.minutes) || 0), 0);
 
   return (
-    <div className="module-page">
-      <div className="module-header"><h1><i className="fa-solid fa-briefcase" /> Work log</h1></div>
-      {error && <p className="error-message">{error}</p>}
+    <div className="module-page worklog-page">
+      <div className="module-header worklog-head"><h1>Work log</h1></div>
+      {error && (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{error}</p>
+          <button type="button" className="btn-secondary-sm" onClick={load}>Retry</button>
+        </div>
+      )}
 
-      <form className="form-card" onSubmit={submit}>
+      <form className="form-card worklog-form" onSubmit={submit} aria-label="Log work">
         <div className="form-row">
           <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
           <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
@@ -116,29 +122,31 @@ export default function WorkLogPage() {
           <input type="number" min="0" step="5" placeholder="min" value={form.minutes} onChange={(e) => setForm({ ...form, minutes: e.target.value })} aria-label="Minutes" className="worklog-min" />
         </div>
         <div className="form-row">
-          <input className="field-grow" placeholder="What did you do?" value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} autoFocus required />
+          <input className="field-grow" placeholder="What did you do?" aria-label="What did you do?" value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} autoFocus required />
         </div>
-        <textarea placeholder="Notes (optional)" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
-        <label className="checkbox-inline">
-          <input
-            type="checkbox"
-            checked={mirrorToReminders}
-            onChange={(e) => setMirrorToReminders(e.target.checked)}
-          />
-          Also add this to Reminders + Calendar
-        </label>
-        <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Log work"}</button>
+        <textarea placeholder="Notes (optional)" aria-label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+        <div className="worklog-form-foot">
+          <label className="checkbox-inline">
+            <input
+              type="checkbox"
+              checked={mirrorToReminders}
+              onChange={(e) => setMirrorToReminders(e.target.checked)}
+            />
+            Also add this to Reminders + Calendar
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Log work"}</button>
+        </div>
       </form>
 
       {byDay.length === 0 && !error && <p className="no-entries">Nothing logged yet. Add what you worked on today.</p>}
 
       {byDay.map(([date, list]) => (
-        <div className="db-card" key={date}>
+        <section className="db-card" key={date} aria-label={formatDisplayDate(date)}>
           <div className="db-card-header">
-            <div className="db-card-title">{formatDisplayDate(date)}</div>
+            <h3 className="db-card-title">{formatDisplayDate(date)}</h3>
             <span className="db-count">{list.length} {list.length === 1 ? "item" : "items"}{minutesFor(list) ? ` · ${minutesFor(list)} min` : ""}</span>
           </div>
-          <div className="db-list">
+          <div className="db-list plan-list">
             {list.map((r) => editingId === r.id && editForm ? (
               <form className="form-card" key={r.id} onSubmit={saveEdit}>
                 <div className="form-row">
@@ -150,12 +158,12 @@ export default function WorkLogPage() {
                   <input type="number" min="0" step="5" placeholder="min" value={editForm.minutes} onChange={(e) => setEditForm({ ...editForm, minutes: e.target.value })} aria-label="Minutes" className="worklog-min" />
                 </div>
                 <div className="form-row">
-                  <input className="field-grow" placeholder="What did you do?" value={editForm.task} onChange={(e) => setEditForm({ ...editForm, task: e.target.value })} autoFocus required />
+                  <input className="field-grow" placeholder="What did you do?" aria-label="What did you do?" value={editForm.task} onChange={(e) => setEditForm({ ...editForm, task: e.target.value })} autoFocus required />
                 </div>
-                <textarea placeholder="Notes (optional)" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2} />
+                <textarea placeholder="Notes (optional)" aria-label="Notes" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2} />
                 <div className="form-actions">
                   <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? "Saving…" : "Save changes"}</button>
-                  <button type="button" className="btn btn-secondary-sm" onClick={cancelEdit}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
                 </div>
               </form>
             ) : (
@@ -168,12 +176,12 @@ export default function WorkLogPage() {
                     {r.notes && <div className="worklog-notes">{r.notes}</div>}
                   </div>
                 </div>
-                <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit"><i className="fa-solid fa-pen" /> Edit</button>
-                <button className="icon-x sm" onClick={() => remove(r)} aria-label="Delete entry"><i className="fa-solid fa-xmark" /></button>
+                <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+                <button type="button" className="icon-x sm" onClick={() => remove(r)} aria-label="Delete entry"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       ))}
     </div>
   );

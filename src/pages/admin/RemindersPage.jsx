@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
-import { formatDisplayDate, toDateStr, nextOccurrence } from "../../utils/plannerUtils";
+import { formatDisplayDate, toDateStr, nextOccurrence, formatTime12 } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
@@ -10,6 +10,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { loadAccountability, logHabitDone } from "../../api/accountabilityApi";
 import { dueHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
+import "./plan.css";
 
 const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
 const toForm = (r) => ({
@@ -211,61 +212,74 @@ export default function RemindersPage() {
   const projectName = (id) => projects.find(p => p.id === id)?.name || "";
   const projectColor = (id) => projects.find(p => p.id === id)?.color || "var(--text-muted)";
 
-  const renderTask = (r) => (
-    <div className="completed-item" key={r.id}>
-      <span
-        className="task-row-main"
-        role="button"
-        tabIndex={0}
-        onClick={() => openTask(r.id)}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
-        style={{ display: "flex", flexDirection: "column", gap: "2px", cursor: "pointer", minWidth: 0 }}
-      >
-        <strong>{r.name}</strong>
-        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-          {r.date && (
-            <span className={r.next && r.next < todayStr ? "task-overdue" : undefined}>
-              {r.next && r.next < todayStr ? "Overdue · " : ""}{formatDisplayDate(r.next || r.date)}
+  const renderTask = (r) => {
+    const overdue = r.next && r.next < todayStr;
+    // Display-only formatting: the stored time stays "HH:MM" (QF-4).
+    const meta = [
+      r.time ? formatTime12(String(r.time).slice(0, 5)) : null,
+      r.show_on_calendar === false ? "off calendar" : null,
+      r.recurrence && r.recurrence !== "none" ? r.recurrence : null,
+      r.recur_until ? `until ${r.recur_until}` : null,
+      r.recur_times ? `${r.recur_times}×` : null,
+    ].filter(Boolean);
+    return (
+      <div className="db-list-item task-row" key={r.id}>
+        <span
+          className="db-list-item-content task-row-main"
+          role="button"
+          tabIndex={0}
+          onClick={() => openTask(r.id)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTask(r.id); } }}
+        >
+          <span className="db-list-item-title task-row-title">{r.name}</span>
+          {(r.date || meta.length > 0 || r.project_id) && (
+            <span className="db-list-item-subtitle task-row-meta">
+              {r.date && (
+                <span className={overdue ? "task-overdue" : undefined}>
+                  {overdue ? "Overdue · " : ""}{formatDisplayDate(r.next || r.date)}
+                </span>
+              )}
+              {meta.map((m, i) => <span key={i}>{(r.date || i > 0) ? " · " : ""}{m}</span>)}
+              {r.project_id && (
+                <span className="task-row-project">
+                  {(r.date || meta.length > 0) ? " · " : ""}
+                  <span className="task-row-dot" style={{ background: projectColor(r.project_id) }} aria-hidden="true" />
+                  {projectName(r.project_id)}
+                </span>
+              )}
             </span>
           )}
-          {r.time && <span>· {String(r.time).slice(0, 5)}</span>}
-          {r.show_on_calendar === false && <span>· off calendar</span>}
-          {r.recurrence !== "none" && <span>· {r.recurrence}</span>}
-          {r.recur_until && <span>· until {r.recur_until}</span>}
-          {r.recur_times && <span>· {r.recur_times}×</span>}
-          {r.project_id && (
-            <span style={{ color: projectColor(r.project_id) }}>· {projectName(r.project_id)}</span>
-          )}
         </span>
-      </span>
-      <span className="header-actions">
-        <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
-          <i className="fa-solid fa-pen" /> Edit
-        </button>
-        <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r)}>
-          Done
-        </button>
-        <button type="button" className="btn-sm btn-delete" onClick={() => handleDelete(r.id)}>
-          <i className="fa-solid fa-xmark" aria-hidden="true" />
-        </button>
-      </span>
-    </div>
-  );
+        <span className="task-row-actions">
+          <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
+            <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
+          </button>
+          <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r)}>
+            Done
+          </button>
+          <button type="button" className="icon-x sm" onClick={() => handleDelete(r.id)} aria-label={`Delete ${r.name}`}>
+            <i className="fa-solid fa-xmark" aria-hidden="true" />
+          </button>
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="module-page">
       {dialog}
       {loadErrors.length > 0 && (
-        <p className="error-message" role="alert">
-          Couldn't load {loadErrors.join(", ")}
-          {" — "}
-          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">Couldn't load {loadErrors.join(", ")}</p>
+          <button type="button" className="btn-secondary-sm" onClick={load}>Retry</button>
+        </div>
       )}
-      <div className="module-header">
-        <h1>Tasks &amp; Reminders</h1>
-        <button className="btn" onClick={() => (showForm ? closeForm() : setShowForm(true))}>
-          <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} /> {showForm ? "Close" : "New Task"}
+      <div className="module-header tasks-head">
+        <h1>Tasks &amp; reminders</h1>
+        {/* Inside Plan the page h1 is hidden (Plan owns it); this names the section instead. */}
+        <h2 className="section-title tasks-embed-title">Tasks &amp; reminders</h2>
+        <button type="button" className="btn" onClick={() => (showForm ? closeForm() : setShowForm(true))} aria-expanded={showForm}>
+          <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showForm ? "Close" : "New task"}
         </button>
       </div>
 
@@ -277,12 +291,13 @@ export default function RemindersPage() {
               <div className="form-panel-head">
                 <h3>{editing ? "Edit task" : "New task"}</h3>
                 <button type="button" className="icon-x" onClick={closeForm} aria-label="Close">
-                  <i className="fa-solid fa-xmark" />
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
                 </button>
               </div>
 
               <input
                 placeholder="Task name"
+                aria-label="Task name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 autoFocus
@@ -304,7 +319,7 @@ export default function RemindersPage() {
                 <option value="monthly">Monthly</option>
               </select>
 
-              <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })}>
+              <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
                 <option value="">No project</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
@@ -320,19 +335,19 @@ export default function RemindersPage() {
               {showDescription && (
                 <textarea
                   placeholder="Description (optional)"
+                  aria-label="Description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={3}
-                  style={{ resize: "vertical" }}
                 />
               )}
 
               <div className="form-meta-row">
-                <button type="button" className="btn-tiny-blue" onClick={() => setShowDateTime((s) => !s)}>
-                  <i className={`fa-solid ${showDateTime ? "fa-minus" : "fa-plus"}`} /> Date &amp; time
+                <button type="button" className="btn-mini" onClick={() => setShowDateTime((s) => !s)} aria-expanded={showDateTime}>
+                  <i className={`fa-solid ${showDateTime ? "fa-minus" : "fa-plus"}`} aria-hidden="true" /> Date &amp; time
                 </button>
-                <button type="button" className="btn-tiny-blue" onClick={() => setShowDescription((s) => !s)}>
-                  <i className={`fa-solid ${showDescription ? "fa-minus" : "fa-plus"}`} /> Description
+                <button type="button" className="btn-mini" onClick={() => setShowDescription((s) => !s)} aria-expanded={showDescription}>
+                  <i className={`fa-solid ${showDescription ? "fa-minus" : "fa-plus"}`} aria-hidden="true" /> Description
                 </button>
               </div>
 
@@ -369,8 +384,8 @@ export default function RemindersPage() {
               </label>
 
               <div className="form-actions">
-                <button className="btn" type="submit" disabled={saving || needsDate} title={needsDate ? "Pick a start date for the repeat" : undefined}>{editing ? (saving ? "Saving…" : "Save changes") : "Add Task"}</button>
-                {editing && <button className="btn btn-secondary-sm" type="button" onClick={closeForm}>Cancel</button>}
+                <button className="btn" type="submit" disabled={saving || needsDate} title={needsDate ? "Pick a start date for the repeat" : undefined}>{editing ? (saving ? "Saving…" : "Save changes") : "Add task"}</button>
+                {editing && <button className="btn btn-secondary" type="button" onClick={closeForm}>Cancel</button>}
               </div>
             </form>
           </aside>
@@ -382,35 +397,37 @@ export default function RemindersPage() {
             ? <DueHabitReminders rows={habitRows} busyId={habitSaving} onDone={completeHabit}
                 onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
             : <p className="field-hint" role="status">Loading due habits…</p>)}
-          <div className="db-card">
-            <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Active ({active.length})</h3>
+          <section className="db-card" aria-label="Active tasks">
+            <div className="db-card-header"><h3 className="db-card-title">Active ({active.length})</h3></div>
             {active.length === 0 && <p className="no-entries">No active tasks. All clear.</p>}
-            {active.map(renderTask)}
-          </div>
+            {active.length > 0 && <div className="db-list task-list">{active.map(renderTask)}</div>}
+          </section>
 
-          <div className="db-card">
-            <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>No due date ({noDate.length})</h3>
+          <section className="db-card" aria-label="Tasks with no due date">
+            <div className="db-card-header"><h3 className="db-card-title">No due date ({noDate.length})</h3></div>
             {noDate.length === 0 && <p className="no-entries">No undated tasks.</p>}
-            {noDate.map(renderTask)}
-          </div>
+            {noDate.length > 0 && <div className="db-list task-list">{noDate.map(renderTask)}</div>}
+          </section>
 
           {completed.length > 0 && (
-            <div className="db-card">
-              <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Completed ({completed.length})</h3>
-              {completed.map((r) => (
-                <div className="completed-item" key={r.id} style={{ opacity: 0.6 }}>
-                  <span style={{ textDecoration: "line-through" }}>{r.name}</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      {formatDisplayDate(r.completed_date || r.date)}
+            <section className="db-card" aria-label="Completed tasks">
+              <div className="db-card-header"><h3 className="db-card-title">Completed ({completed.length})</h3></div>
+              <div className="db-list task-list">
+                {completed.map((r) => (
+                  <div className="db-list-item task-row is-done" key={r.id}>
+                    <span className="db-list-item-content">
+                      <span className="db-list-item-title task-row-title">{r.name}</span>
+                      <span className="db-list-item-subtitle">{formatDisplayDate(r.completed_date || r.date)}</span>
                     </span>
-                    <button type="button" className="btn-sm" style={{ opacity: 0.7, fontSize: "0.7rem" }} onClick={() => handleUncomplete(r.id)} title="Undo completion">
-                      ↩ Undo
-                    </button>
-                  </span>
-                </div>
-              ))}
-            </div>
+                    <span className="task-row-actions">
+                      <button type="button" className="btn-mini" onClick={() => handleUncomplete(r.id)} title="Undo completion">
+                        <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Undo
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </div>

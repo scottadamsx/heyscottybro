@@ -7,6 +7,7 @@ import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./plan.css";
 
 const RECUR_LABEL = { none: "One-time", daily: "Daily", weekly: "Weekly", monthly: "Monthly" };
 
@@ -133,7 +134,7 @@ export default function TaskDetailPage() {
   if (loading) {
     return (
       <div className="module-page">
-        <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading task…</p>
+        <p className="no-entries" role="status"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading task…</p>
       </div>
     );
   }
@@ -143,13 +144,12 @@ export default function TaskDetailPage() {
       <div className="module-page">
         <div className="module-header">
           <h1>Couldn't load task</h1>
-          <button className="btn btn-sm" onClick={() => navigate("/admin/planner")}>← Back to tasks</button>
+          <button type="button" className="btn-secondary-sm" onClick={() => navigate("/admin/planner")}><i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to tasks</button>
         </div>
-        <p className="error-message" role="alert">
-          {loadError}
-          {" — "}
-          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={() => { setLoading(true); load(); }}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn-secondary-sm" onClick={() => { setLoading(true); load(); }}>Retry</button>
+        </div>
       </div>
     );
   }
@@ -159,7 +159,7 @@ export default function TaskDetailPage() {
       <div className="module-page">
         <div className="module-header">
           <h1>Task not found</h1>
-          <button className="btn btn-sm" onClick={() => navigate("/admin/planner")}>← Back to tasks</button>
+          <button type="button" className="btn-secondary-sm" onClick={() => navigate("/admin/planner")}><i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to tasks</button>
         </div>
         <p className="no-entries">No task with this id — it may have been deleted.</p>
       </div>
@@ -177,29 +177,27 @@ export default function TaskDetailPage() {
     <div className="module-page">
       {dialog}
       {loadError && (
-        <p className="error-message" role="alert">
-          {loadError}
-          {" — "}
-          <button type="button" className="btn-sm btn-secondary-sm btn" onClick={load}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn-secondary-sm" onClick={load}>Retry</button>
+        </div>
       )}
 
-      {/* Page header: becomes the window caption in XP; Back sits in it like a toolbar button */}
       <div className="module-header">
-        <h1><i className="fa-solid fa-list-check" /> Task</h1>
-        <button className="btn btn-sm btn-secondary-sm" onClick={() => navigate(-1)}><i className="fa-solid fa-arrow-left" /> Back</button>
+        <h1>Task</h1>
+        <button type="button" className="btn-secondary-sm" onClick={() => navigate(-1)}><i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back</button>
       </div>
 
-      {/* ── Header ── */}
-      <div className="task-detail-header" style={{ borderLeftColor: project?.color || "var(--accent)" }}>
-        <div style={{ minWidth: 0 }}>
+      {/* ── Summary: project · title · status ── */}
+      <section className="db-card task-hero" aria-label="Task summary">
+        <div className="task-hero-main">
           {project && (
-            <Link to={`/admin/planner?tab=projects&id=${project.id}`} className="task-detail-project" style={{ color: project.color }}>
-              <span className="task-detail-project-dot" style={{ background: project.color }} />
+            <Link to={`/admin/planner?tab=projects&id=${project.id}`} className="task-detail-project">
+              <span className="task-detail-project-dot" style={{ background: project.color }} aria-hidden="true" />
               {project.name}
             </Link>
           )}
-          <h1 className={`task-detail-title ${task.completed ? "is-done" : ""}`}>{task.name}</h1>
+          <h2 className={`task-detail-title ${task.completed ? "is-done" : ""}`}>{task.name}</h2>
           <div className="task-detail-badges">
             {task.completed && <span className="task-badge task-badge--done">Completed</span>}
             {overdue && <span className="task-badge task-badge--overdue">Overdue</span>}
@@ -211,104 +209,113 @@ export default function TaskDetailPage() {
         </div>
         {!editing && (
           <div className="task-detail-actions">
-            <button className="btn btn-sm" onClick={startEdit}><i className="fa-solid fa-pen" /> Edit</button>
+            <button type="button" className="btn-secondary-sm" onClick={startEdit}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
             {task.completed
-              ? <button className="btn btn-sm" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={handleReopen}>↩ Reopen</button>
-              : <button className="btn btn-sm btn-complete" onClick={handleComplete}>Done</button>}
+              ? <button type="button" className="btn-secondary-sm" onClick={handleReopen}><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Reopen</button>
+              : <button type="button" className="btn-sm btn-complete" onClick={handleComplete}><i className="fa-solid fa-check" aria-hidden="true" /> Done</button>}
           </div>
         )}
-      </div>
+      </section>
 
       {/* ── View mode ── */}
       {!editing && (
         <>
-          <div className="db-card">
-            <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Details</h3>
+          <section className="db-card" aria-label="Details">
+            <div className="db-card-header"><h3 className="db-card-title">Details</h3></div>
             <dl className="task-detail-grid">
-              <dt>{isRecurring ? "Next due" : "Due date"}</dt>
-              <dd className={overdue ? "task-overdue" : undefined}>
-                {!task.date ? "No due date"
-                  : isRecurring ? (next ? formatDisplayDate(next) : "Series finished")
-                  : formatDisplayDate(task.date)}
-                {task.time ? ` · ${formatTime12(task.time)}` : ""}
-                {overdue ? " · overdue" : ""}
-              </dd>
+              <div className="task-detail-row">
+                <dt>{isRecurring ? "Next due" : "Due date"}</dt>
+                <dd className={overdue ? "task-overdue" : undefined}>
+                  {!task.date ? "No due date"
+                    : isRecurring ? (next ? formatDisplayDate(next) : "Series finished")
+                    : formatDisplayDate(task.date)}
+                  {task.time ? ` · ${formatTime12(task.time)}` : ""}
+                  {overdue ? " · overdue" : ""}
+                </dd>
+              </div>
               {isRecurring && (
-                <>
+                <div className="task-detail-row">
                   <dt>Started</dt>
                   <dd>{formatDisplayDate(task.date)}{task.completed_date ? ` · last done ${formatDisplayDate(task.completed_date)}` : ""}</dd>
-                </>
+                </div>
               )}
 
-              <dt>Repeats</dt>
-              <dd>
-                {RECUR_LABEL[task.recurrence] || "One-time"}
-                {task.recur_until ? ` · until ${formatDisplayDate(task.recur_until)}` : ""}
-                {task.recur_times ? ` · ${task.recur_times}×` : ""}
-              </dd>
+              <div className="task-detail-row">
+                <dt>Repeats</dt>
+                <dd>
+                  {RECUR_LABEL[task.recurrence] || "One-time"}
+                  {task.recur_until ? ` · until ${formatDisplayDate(task.recur_until)}` : ""}
+                  {task.recur_times ? ` · ${task.recur_times}×` : ""}
+                </dd>
+              </div>
 
-              <dt>Project</dt>
-              <dd>{project ? project.name : "—"}</dd>
+              <div className="task-detail-row">
+                <dt>Project</dt>
+                <dd>{project ? project.name : "—"}</dd>
+              </div>
 
-              <dt>On calendar</dt>
-              <dd>{task.show_on_calendar === false ? "No" : "Yes"}</dd>
+              <div className="task-detail-row">
+                <dt>On calendar</dt>
+                <dd>{task.show_on_calendar === false ? "No" : "Yes"}</dd>
+              </div>
 
               {task.completed && (
-                <>
+                <div className="task-detail-row">
                   <dt>Completed</dt>
                   <dd>{formatDisplayDate(task.completed_date || task.date) || "—"}</dd>
-                </>
+                </div>
               )}
             </dl>
-          </div>
+          </section>
 
-          <div className="db-card">
-            <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Notes</h3>
+          <section className="db-card" aria-label="Notes">
+            <div className="db-card-header"><h3 className="db-card-title">Notes</h3></div>
             {task.description
               ? <p className="task-detail-notes">{task.description}</p>
               : <p className="no-entries">No description.</p>}
-          </div>
+          </section>
 
-          <div className="db-card">
-            <h3 className="db-card-title" style={{ marginBottom: "0.5rem" }}><i className="fa-solid fa-paperclip" /> Documents</h3>
+          <section className="db-card" aria-label="Documents">
+            <div className="db-card-header"><h3 className="db-card-title">Documents</h3></div>
             <DocLinks entityType="reminder" entityId={task.id} title="Linked documents" />
-          </div>
+          </section>
 
-          <div className="db-card task-detail-danger">
+          <section className="db-card task-detail-danger" aria-label="Delete this task">
             <div>
               <h3 className="db-card-title">Delete this task</h3>
-              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
+              <p className="task-detail-danger-note">
                 This permanently removes the task{task.recurrence !== "none" ? " and all its occurrences" : ""}.
               </p>
             </div>
-            <button className="btn-sm btn-delete" onClick={handleDelete}><i className="fa-solid fa-trash" /> Delete</button>
-          </div>
+            <button type="button" className="btn-delete" onClick={handleDelete}><i className="fa-solid fa-trash" aria-hidden="true" /> Delete</button>
+          </section>
         </>
       )}
 
       {/* ── Edit mode ── */}
       {editing && form && (
-        <form className="form-card" onSubmit={saveEdit}>
+        <form className="form-card task-edit-form" onSubmit={saveEdit}>
           <div className="form-panel-head">
             <h3>Edit task</h3>
-            <button type="button" className="icon-x" onClick={cancelEdit} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
+            <button type="button" className="icon-x" onClick={cancelEdit} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
           </div>
 
           <input
             placeholder="Task name"
+            aria-label="Task name"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
 
-          <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })}>
+          <select value={form.recurrence} onChange={(e) => setForm({ ...form, recurrence: e.target.value })} aria-label="Repeats">
             <option value="none">One-time</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
           </select>
 
-          <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })}>
+          <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
             <option value="">No project</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
@@ -321,10 +328,10 @@ export default function TaskDetailPage() {
 
           <textarea
             placeholder="Description (optional)"
+            aria-label="Description"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             rows={3}
-            style={{ resize: "vertical" }}
           />
 
           {showEndOptions && (
@@ -359,9 +366,9 @@ export default function TaskDetailPage() {
             Show on calendar
           </label>
 
-          <div className="budget-widget-actions">
+          <div className="form-actions">
             <button className="btn" type="submit" disabled={saving || editNeedsDate} title={editNeedsDate ? "Pick a start date for the repeat" : undefined}>{saving ? "Saving…" : "Save changes"}</button>
-            <button className="btn" type="button" style={{ background: "var(--bg-raised)", color: "var(--text-secondary)" }} onClick={cancelEdit}>Cancel</button>
+            <button className="btn btn-secondary" type="button" onClick={cancelEdit}>Cancel</button>
           </div>
         </form>
       )}
