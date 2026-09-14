@@ -48,29 +48,31 @@ export default function DocumentUploader({ onUploaded, onClose }) {
   };
 
   return (
-    <div className="form-card" style={{ maxWidth: 560 }}>
-      <div
+    <div className="form-card doc-uploader">
+      <button
+        type="button"
         className={`doc-dropzone ${dragOver ? "dragover" : ""}`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current.click()}
       >
-        <i className="fa-solid fa-cloud-arrow-up" />
+        <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" />
         <span>{file ? file.name : "Drop a file here or click to browse"}</span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPTED}
-          style={{ display: "none" }}
-          onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
-        />
-      </div>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED}
+        hidden
+        onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
+      />
       {file && (
-        <form onSubmit={handleSubmit}>
+        <form className="doc-uploader-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <input
               className="field-grow"
+              aria-label="Display name"
               placeholder="Display name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -78,35 +80,36 @@ export default function DocumentUploader({ onUploaded, onClose }) {
             />
           </div>
           <textarea
+            aria-label="Description"
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            style={{ resize: "vertical" }}
           />
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "0.5rem 0", fontSize: "0.85rem" }}>
+          <label className="checkbox-inline">
             <input type="checkbox" checked={agentWork} onChange={(e) => setAgentWork(e.target.checked)} />
-            <span><i className="fa-solid fa-robot" /> This is agent work (show under “Agent work”)</span>
+            <span><i className="fa-solid fa-robot" aria-hidden="true" /> This is agent work (show under “Agent work”)</span>
           </label>
           {agentWork && (
             <div className="form-row">
               <input
                 className="field-grow"
+                aria-label="Agent name"
                 placeholder="Agent name (optional, e.g. Aulë)"
                 value={agentName}
                 onChange={(e) => setAgentName(e.target.value)}
               />
             </div>
           )}
-          <div className="form-row">
-            <button className="btn" type="submit" disabled={uploading}>
-              {uploading ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading…</> : "Upload"}
+          <div className="form-actions">
+            <button className="btn btn-sm" type="submit" disabled={uploading}>
+              {uploading ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading…</> : "Upload"}
             </button>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>Cancel</button>
           </div>
         </form>
       )}
-      {error && <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>{error}</p>}
+      {error && <p className="doc-upload-error" role="alert">{error}</p>}
     </div>
   );
 }

@@ -61,7 +61,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
 
   return (
     <div className="doc-card">
-      <div className="doc-card-icon"><i className={`fa-solid ${getIcon(doc.mime_type)}`} /></div>
+      <div className="doc-card-icon" aria-hidden="true"><i className={`fa-solid ${getIcon(doc.mime_type)}`} /></div>
       <div className="doc-card-body">
         {editing ? (
           <div className="doc-card-edit" onKeyDown={onEditKey}>
@@ -79,13 +79,8 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
           <div className="doc-card-name">{doc.name}</div>
         )}
         {agentLabel && (
-          <div className="doc-card-agent" style={{
-            display: "inline-flex", alignItems: "center", gap: "0.3rem",
-            fontSize: "0.7rem", fontWeight: 600, padding: "0.1rem 0.45rem",
-            borderRadius: 999, marginBottom: "0.25rem",
-            color: "var(--blue, #3b82f6)", background: "color-mix(in srgb, var(--blue, #3b82f6) 14%, transparent)",
-          }}>
-            <i className="fa-solid fa-robot" /> {agentLabel}
+          <div className="doc-card-agent">
+            <i className="fa-solid fa-robot" aria-hidden="true" /> {agentLabel}
           </div>
         )}
         <div className="doc-card-meta">
@@ -97,22 +92,22 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
         )}
       </div>
       <div className="doc-card-actions">
-        <button className="btn-tiny-blue" onClick={() => onView(doc)} title="View">
-          <i className="fa-solid fa-eye" />
+        <button type="button" className="btn-mini doc-card-btn" onClick={() => onView(doc)} title="View" aria-label={`View ${doc.name}`}>
+          <i className="fa-solid fa-eye" aria-hidden="true" />
         </button>
-        <button className="btn-tiny-blue" onClick={handleDownload} disabled={downloading} title="Download">
-          <i className={`fa-solid ${downloading ? "fa-spinner fa-spin" : "fa-download"}`} />
+        <button type="button" className="btn-mini doc-card-btn" onClick={handleDownload} disabled={downloading} title="Download" aria-label={`Download ${doc.name}`}>
+          <i className={`fa-solid ${downloading ? "fa-spinner fa-spin" : "fa-download"}`} aria-hidden="true" />
         </button>
         {onUpdate && !editing && (
-          <button className="btn-tiny-blue" onClick={startEdit} title="Rename / tags" aria-label="Rename or edit tags">
-            <i className="fa-solid fa-pen" />
+          <button type="button" className="btn-mini doc-card-btn" onClick={startEdit} title="Rename / tags" aria-label="Rename or edit tags">
+            <i className="fa-solid fa-pen" aria-hidden="true" />
           </button>
         )}
-        <button className="btn-tiny-blue" onClick={() => onShare(doc)} title="Share">
-          <i className="fa-solid fa-share-nodes" />
+        <button type="button" className="btn-mini doc-card-btn" onClick={() => onShare(doc)} title="Share" aria-label={`Share ${doc.name}`}>
+          <i className="fa-solid fa-share-nodes" aria-hidden="true" />
         </button>
-        <button className="btn-tiny-blue danger" onClick={() => onDelete(doc)} title="Delete">
-          <i className="fa-solid fa-trash" />
+        <button type="button" className="btn-mini danger doc-card-btn" onClick={() => onDelete(doc)} title="Delete" aria-label={`Delete ${doc.name}`}>
+          <i className="fa-solid fa-trash" aria-hidden="true" />
         </button>
       </div>
     </div>

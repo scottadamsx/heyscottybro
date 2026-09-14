@@ -11,6 +11,7 @@ import {
   deleteSnippet,
   importSnippets,
 } from "../../api/snippetsApi";
+import "./mission.css";
 
 const TYPES = [
   { key: "code", label: "Code / Combo", icon: "fa-hashtag", secret: true },
@@ -214,6 +215,7 @@ export default function SnippetsPage() {
       <div className="form-row">
         <input
           className="field-grow"
+          aria-label="Label"
           placeholder="Label (e.g. Home Wi-Fi)"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -221,6 +223,7 @@ export default function SnippetsPage() {
           required
         />
         <select
+          aria-label="Type"
           value={form.type}
           onChange={(e) => setForm({ ...form, type: e.target.value, secret: typeInfo(e.target.value).secret })}
         >
@@ -228,15 +231,16 @@ export default function SnippetsPage() {
         </select>
       </div>
       <textarea
+        aria-label="Value"
         placeholder="Value to remember / copy"
         value={form.value}
         onChange={(e) => setForm({ ...form, value: e.target.value })}
         rows={2}
-        style={{ resize: "vertical" }}
         required
       />
       <input
         className="field-grow"
+        aria-label="Notes"
         placeholder="Notes (optional — never hidden)"
         value={form.notes}
         onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -257,50 +261,56 @@ export default function SnippetsPage() {
       <div className="module-header">
         <h1>Vault</h1>
         <button
-          className="btn"
+          type="button"
+          className="btn btn-sm"
+          aria-expanded={showAdd}
           onClick={() => { setShowAdd((s) => !s); setAddForm((f) => emptyForm(f.type)); }}
         >
-          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} /> {showAdd ? "Close" : "New Snippet"}
+          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showAdd ? "Close" : "New snippet"}
         </button>
       </div>
 
-      <p className="no-entries" style={{ marginTop: "-0.4rem" }}>
-        <i className="fa-solid fa-lock" /> Behind your admin login, stored encrypted-at-rest in Supabase. Secrets are hidden until you reveal them.
+      <p className="vault-intro">
+        <i className="fa-solid fa-lock" aria-hidden="true" /> Behind your admin login, stored encrypted-at-rest in Supabase. Secrets are hidden until you reveal them.
       </p>
 
       {importCount > 0 && (
         <div className="banner-info">
-          <i className="fa-solid fa-box-archive" />
+          <i className="fa-solid fa-box-archive" aria-hidden="true" />
           <span>You have {importCount} snippet{importCount !== 1 ? "s" : ""} saved locally from before.</span>
-          <button className="btn-tiny-blue" onClick={handleImport} disabled={importing}>
+          <button type="button" className="btn-mini accent" onClick={handleImport} disabled={importing}>
             {importing ? "Importing…" : "Import to vault"}
           </button>
-          <button className="btn-tiny-blue" onClick={dismissImport}>Discard</button>
+          <button type="button" className="btn-mini" onClick={dismissImport}>Discard</button>
         </div>
       )}
 
       {showAdd && (
-        <form className="form-card" onSubmit={handleAdd} style={{ maxWidth: 560 }}>
+        <form className="form-card vault-form" onSubmit={handleAdd}>
           {formFields(addForm, setAddForm)}
-          <button className="btn" type="submit" style={{ width: "fit-content" }} disabled={addSaving}>
-            {addSaving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save"}
-          </button>
+          <div className="form-actions">
+            <button className="btn btn-sm" type="submit" disabled={addSaving}>
+              {addSaving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : "Save"}
+            </button>
+          </div>
         </form>
       )}
 
       <input
-        className="hiker-search"
+        className="hiker-search vault-search"
+        type="search"
+        aria-label="Search the vault"
         placeholder="Search the vault…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ maxWidth: 360 }}
       />
 
       {loading && <SkeletonList rows={4} />}
       {error && (
-        <p className="no-entries" style={{ color: "var(--danger, var(--red))" }}>
-          {error} <button className="btn-tiny-blue" onClick={loadItems}>Retry</button>
-        </p>
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{error}</p>
+          <button type="button" className="btn btn-sm" onClick={loadItems}>Retry</button>
+        </div>
       )}
       {!loading && !error && filtered.length === 0 && (
         <EmptyState icon="fa-key" title="Vault is empty" description="Store passwords, codes, Wi-Fi credentials, and more. They're hidden until you reveal them." action={<button className="btn" onClick={() => setShowAdd(true)}>Add first snippet</button>} />
@@ -313,13 +323,13 @@ export default function SnippetsPage() {
 
           if (editId === item.id) {
             return (
-              <form className="snip-card" key={item.id} onSubmit={handleEdit}>
+              <form className="snip-card is-editing" key={item.id} onSubmit={handleEdit}>
                 {formFields(editForm, setEditForm)}
                 <div className="snip-actions">
-                  <button className="btn-tiny-blue" type="submit" disabled={editSaving}>
-                    <i className="fa-solid fa-check" /> {editSaving ? "Saving…" : "Save"}
+                  <button className="btn-mini accent" type="submit" disabled={editSaving}>
+                    <i className="fa-solid fa-check" aria-hidden="true" /> {editSaving ? "Saving…" : "Save"}
                   </button>
-                  <button className="btn-tiny-blue" type="button" onClick={() => setEditId(null)}>
+                  <button className="btn-mini" type="button" onClick={() => setEditId(null)}>
                     Cancel
                   </button>
                 </div>
@@ -330,31 +340,31 @@ export default function SnippetsPage() {
           return (
             <div className="snip-card" key={item.id}>
               <div className="snip-head">
-                <span className="snip-ic"><i className={`fa-solid ${info.icon}`} /></span>
+                <span className="snip-ic" title={info.label}><i className={`fa-solid ${info.icon}`} aria-hidden="true" /><span className="visually-hidden">{info.label}</span></span>
                 <span className="snip-title">{item.title}</span>
-                <button className="icon-x sm" onClick={() => startEdit(item)} aria-label="Edit">
-                  <i className="fa-solid fa-pen" />
+                <button type="button" className="icon-x sm" onClick={() => startEdit(item)} aria-label={`Edit ${item.title}`}>
+                  <i className="fa-solid fa-pen" aria-hidden="true" />
                 </button>
-                <button className="icon-x sm" onClick={() => handleDelete(item.id)} aria-label="Delete">
-                  <i className="fa-solid fa-xmark" />
+                <button type="button" className="icon-x sm" onClick={() => handleDelete(item.id)} aria-label={`Delete ${item.title}`}>
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
                 </button>
               </div>
-              <div className="snip-value">
+              <div className={`snip-value${info.secret ? " is-secret" : ""}`}>
                 {show
                   ? (isUrl(item.value)
                     ? <a href={item.value} target="_blank" rel="noreferrer" className="snip-link">{item.value}</a>
                     : <span className="snip-text">{item.value}</span>)
-                  : <span className="snip-dots">••••••••••••</span>}
+                  : <span className="snip-dots" aria-label="Hidden value">••••••••••••</span>}
               </div>
               {item.notes && <div className="snip-notes">{item.notes}</div>}
               <div className="snip-actions">
                 {item.secret && (
-                  <button className="btn-tiny-blue snip-btn" onClick={() => toggleReveal(item.id)}>
-                    <i className={`fa-solid ${show ? "fa-eye-slash" : "fa-eye"}`} /> {show ? "Hide" : "Reveal"}
+                  <button type="button" className="btn-mini snip-btn" onClick={() => toggleReveal(item.id)}>
+                    <i className={`fa-solid ${show ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" /> {show ? "Hide" : "Reveal"}
                   </button>
                 )}
-                <button className={`btn-tiny-blue snip-btn ${copiedId === item.id ? "copied" : ""}`} onClick={() => copy(item)}>
-                  <i className={`fa-solid ${copiedId === item.id ? "fa-check" : "fa-copy"}`} /> {copiedId === item.id ? "Copied" : "Copy"}
+                <button type="button" className={`btn-mini snip-btn ${copiedId === item.id ? "copied" : ""}`} onClick={() => copy(item)}>
+                  <i className={`fa-solid ${copiedId === item.id ? "fa-check" : "fa-copy"}`} aria-hidden="true" /> {copiedId === item.id ? "Copied" : "Copy"}
                 </button>
               </div>
             </div>

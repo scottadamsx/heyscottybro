@@ -35,23 +35,23 @@ export default function DocumentViewer({ doc, onClose }) {
 
   return (
     <div className="doc-viewer-overlay" onClick={onClose}>
-      <div className="doc-viewer-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="doc-viewer-modal" role="dialog" aria-modal="true" aria-label={doc.name} onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
           <span className="doc-viewer-title">{doc.name}</span>
-          <button className="icon-x" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
+          <button type="button" className="icon-x" onClick={onClose} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </div>
 
-        {loading && <div className="doc-viewer-body center"><i className="fa-solid fa-spinner fa-spin" /> Loading…</div>}
-        {error && <div className="doc-viewer-body center" style={{ color: "var(--danger, var(--red))" }}>{error}</div>}
+        {loading && <div className="doc-viewer-body center"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</div>}
+        {error && <div className="doc-viewer-body center doc-viewer-error" role="alert">{error}</div>}
 
         {!loading && !error && url && (
           <div className="doc-viewer-body">
-            {isImage && <img src={url} alt={doc.name} style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain" }} />}
+            {isImage && <img className="doc-viewer-img" src={url} alt={doc.name} />}
             {!isImage && (
               <div className="center">
-                <i className="fa-solid fa-file-lines" style={{ fontSize: "4rem", opacity: 0.4 }} />
+                <i className="fa-solid fa-file-lines doc-viewer-fileicon" aria-hidden="true" />
                 <p>Preview not available for this file type.</p>
-                <a className="btn" href={url} download={doc.filename}>Download to view</a>
+                <a className="btn btn-sm" href={url} download={doc.filename}>Download to view</a>
               </div>
             )}
           </div>
