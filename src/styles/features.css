@@ -101,132 +101,228 @@
 .shared-doc-center { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; color: var(--text-secondary); padding: 3rem 1rem; }
 .shared-doc-pdf { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%; }
 
-/* ═══ Nutrition ═══ */
-.nut-profilebar { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; margin: 0.4rem 0 0.9rem; }
-.nut-profiles { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-.nut-profilebar-right { display: flex; gap: 0.35rem; }
-.nut-profile-chip {
-  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem;
-  background: var(--surface2); border: 1px solid var(--border); border-radius: 999px;
-  color: var(--text-secondary); cursor: pointer; font-size: 0.85rem; font-family: var(--font-body); transition: all .15s;
-}
-.nut-profile-chip:hover { color: var(--text-primary); border-color: var(--border-accent); }
-.nut-profile-chip.active { color: var(--text-primary); background: var(--accent-bg); }
-.nut-profile-chip.ghost { color: var(--text-muted); }
-.nut-profile-emoji { font-size: 1rem; }
+/* ═══ Nutrition ═══ (DR-013 — tokens only; cards, lists and controls come
+   from system.css. Shared by Life › Food, Life › Recipes and /admin/recipe.) */
 
-.nut-tabs { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
-.nut-tab {
-  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.9rem;
-  background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer;
-  color: var(--text-muted); font-family: var(--font-body); font-size: 0.9rem;
-}
-.nut-tab:hover { color: var(--text-secondary); }
-/* Reset the filled background that index.css's .nut-tab.active applies (this
-   sheet loads last and only set color, leaving accent text on an accent fill —
-   invisible). Underline style wins. */
-.nut-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: none; }
+/* Profile bar: profile chips left, unit + profile settings right */
+.nut-profilebar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+.nut-profiles { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+.nut-profilebar-right { display: flex; align-items: center; gap: var(--space-xs); }
+.nut-profile-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: var(--radius-full); }
+.admin-shell .chip.nut-profile-chip { gap: var(--space-xs); }
+.admin-shell .nut-profile-add { width: var(--control-h-sm); justify-content: center; padding: 0; }
 
-.nut-daynav { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
-.nut-daynav-label { font-weight: 600; color: var(--text-primary); display: inline-flex; align-items: center; gap: 0.6rem; }
-.nut-today-jump { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.75rem; text-decoration: underline; font-family: var(--font-body); }
+.admin-shell .nut-tabs { align-self: flex-start; }
 
-.nut-day-summary { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
-.nut-day-stats { flex: 1; min-width: 180px; }
-.nut-big-cal { font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1; }
-.nut-big-cal span { font-size: 0.9rem; color: var(--text-muted); font-weight: 400; }
-.nut-progress { height: 8px; background: var(--bg-hover); border-radius: 999px; overflow: hidden; margin: 0.6rem 0 0.4rem; }
-.nut-progress-fill { height: 100%; background: var(--grad-accent); border-radius: 999px; transition: width .35s ease; }
-.nut-target-line { font-size: 0.82rem; color: var(--text-secondary); }
+/* Today */
+.nut-today, .nut-trends { display: flex; flex-direction: column; gap: var(--space-lg); }
+.nut-daynav { display: flex; align-items: center; gap: var(--space-2xs); }
+.admin-shell .nut-daynav .icon-x:disabled { opacity: 0.35; cursor: not-allowed; background: transparent; }
+
+.nut-day-summary { display: flex; align-items: center; gap: var(--space-2xl); }
+.nut-day-stats { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.nut-big-cal { font-family: var(--font-display); font-size: var(--text-3xl); line-height: 3rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.nut-big-cal span { margin-left: var(--space-2xs); font-family: var(--font-body); font-size: var(--text-base); font-weight: 500; letter-spacing: 0; color: var(--text-secondary); }
+.nut-progress { height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--bg-raised); }
+.nut-progress-fill { height: 100%; border-radius: var(--radius-full); background: var(--teal); transition: width var(--dur) var(--ease); }
+.nut-progress-fill.is-over { background: var(--red); }
+.nut-target-line { font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-target-line strong { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.nut-target-line strong.is-over { color: var(--red); }
 .nut-target-line.muted { color: var(--text-muted); }
 
-.macro-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-.macro-ring-cal { font-size: 1.4rem; font-weight: 700; fill: var(--text-primary); }
-.macro-ring-lbl { font-size: 0.7rem; fill: var(--text-muted); }
-.macro-legend { display: flex; gap: 0.7rem; font-size: 0.72rem; color: var(--text-secondary); }
-.macro-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; }
+/* Macro ring (series colours = chart tokens) */
+.macro-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
+.macro-ring { display: block; }
+.macro-track { stroke: var(--bg-raised); }
+.macro-seg.is-protein { stroke: var(--chart-2); }
+.macro-seg.is-carbs { stroke: var(--chart-4); }
+.macro-seg.is-fat { stroke: var(--chart-1); }
+.macro-ring-cal { fill: var(--text-primary); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+.macro-ring-lbl { fill: var(--text-secondary); font-family: var(--font-body); font-size: var(--text-xs); }
+.macro-legend { display: flex; gap: var(--space-sm); font-size: var(--text-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.macro-legend span { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+.nut-dot { display: inline-block; width: 8px; height: 8px; border-radius: var(--radius-full); }
+.nut-dot.is-protein { background: var(--chart-2); }
+.nut-dot.is-carbs { background: var(--chart-4); }
+.nut-dot.is-fat { background: var(--chart-1); }
 
-.nut-meal-group { margin-bottom: 0.9rem; }
-.nut-meal-group-head { display: flex; justify-content: space-between; font-size: 0.78rem; text-transform: none; letter-spacing: 0; color: var(--text-muted); padding: 0 0.2rem 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem; }
-.nut-log-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.45rem 0.2rem; }
-.nut-log-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.nut-log-name { color: var(--text-primary); font-size: 0.9rem; }
-.nut-log-name em { color: var(--text-muted); font-style: normal; }
-.nut-src { margin-left: 0.4rem; color: var(--accent); font-size: 0.72rem; opacity: 0.8; }
-.nut-log-macros { font-size: 0.72rem; color: var(--text-muted); }
-.nut-log-cal { font-weight: 600; color: var(--text-primary); min-width: 48px; text-align: right; }
+/* Meals list */
+.nut-meal-group + .nut-meal-group { margin-top: var(--space-md); }
+.nut-meal-group-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  margin-bottom: var(--space-2xs); padding-inline: var(--space-sm);
+  font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums;
+}
+.nut-meal-group-head i { width: 16px; margin-right: var(--space-2xs); text-align: center; color: var(--text-muted); }
+.nut-log-row {
+  display: flex; align-items: center; gap: var(--space-sm);
+  min-height: var(--control-h-lg); padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  transition: background-color var(--dur-fast);
+}
+.nut-log-row:hover { background: var(--bg-raised); }
+.nut-log-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nut-log-name { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); font-weight: 500; color: var(--text-primary); }
+.nut-log-name em { font-style: normal; font-weight: 400; color: var(--text-secondary); }
+.nut-src { font-size: 12px; color: var(--text-muted); }
+.nut-log-macros { font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.nut-log-cal { min-width: 48px; text-align: right; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.nut-log-date { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
 
-.nut-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 1rem; }
-.nut-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; }
-.nut-card-head h3 { margin: 0; font-size: 0.95rem; color: var(--text-primary); }
-.nut-card-sub { font-size: 0.74rem; color: var(--text-muted); }
-.nut-insights { color: var(--text-secondary); line-height: 1.55; font-size: 0.9rem; white-space: pre-wrap; }
+/* Trends */
+.admin-shell .nut-card-head { flex-wrap: wrap; }
+.nut-card-sub { font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-insights { margin: 0; max-width: 72ch; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--text-primary); white-space: pre-wrap; }
 
-.nut-chart { width: 100%; height: auto; }
-.chart-empty { color: var(--text-muted); font-size: 0.85rem; padding: 2rem; text-align: center; }
-.nut-grid { stroke: var(--border); stroke-width: 1; }
-.nut-axis { fill: var(--text-muted); font-size: 11px; font-family: var(--font-body); }
-.nut-axis-strong { fill: var(--accent); font-size: 12px; font-weight: 600; font-family: var(--font-body); }
-.nut-goal-line { stroke: var(--accent-light); stroke-width: 1.4; stroke-dasharray: 5 4; opacity: 0.7; }
-.nut-bar { fill: var(--accent-deep); }
-.nut-bar.over { fill: var(--danger); }
+/* Charts — marks stretch, text stays 12px HTML (see nutrition/Charts.jsx) */
+.nut-chart { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: var(--chart-h, 200px); column-gap: var(--space-sm); row-gap: var(--space-xs); }
+.nut-chart.has-x { grid-template-rows: var(--chart-h, 200px) auto; }
+.nut-chart-y { position: relative; min-width: 32px; }
+.nut-chart-y span { position: absolute; right: 0; transform: translateY(-50%); font-size: var(--text-xs); line-height: 1; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nut-chart-plot { position: relative; min-width: 0; }
+.nut-chart-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.nut-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid var(--chart-grid); }
+.nut-goal-line { position: absolute; left: 0; right: 0; z-index: 1; height: 0; border-top: 2px dashed var(--border-strong); }
+.nut-area { fill: var(--series, var(--accent)); fill-opacity: 0.1; stroke: none; }
+.nut-line { fill: none; stroke: var(--series, var(--accent)); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.nut-point { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: var(--radius-full); background: var(--series, var(--accent)); box-shadow: 0 0 0 2px var(--bg-card); }
+.nut-chart-last { position: absolute; right: 0; transform: translateY(calc(-100% - var(--space-xs))); padding: 2px var(--space-xs); border-radius: var(--radius-sm); background: var(--bg-card); font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nut-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; }
+.nut-bar-col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.nut-bar { display: block; width: min(60%, 32px); min-height: 0; border-radius: var(--radius-xs) var(--radius-xs) 0 0; background: var(--chart-2); }
+.nut-bar.over { background: var(--chart-3); }
+.nut-chart-x { grid-column: 2; display: flex; }
+.nut-chart-x span { flex: 1; min-width: 0; overflow: hidden; text-align: center; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
+.chart-empty { padding: var(--space-xl); text-align: center; font-size: var(--text-sm); color: var(--text-secondary); }
 
-.nut-goal-note { color: var(--text-secondary); font-size: 0.9rem; margin: 0.6rem 0 1rem; }
-.nut-weight-list { display: flex; flex-direction: column; }
+/* Weight */
+.nut-weight { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-lg); align-items: start; }
+.admin-shell .nut-weight-form { gap: var(--space-sm); }
+.admin-shell .nut-weight-form .db-card-header { margin-bottom: var(--space-xs); }
+/* Own row primitive for these forms: .form-row flips to a column on phones
+   (index.css), which turned flex-basis into height. This one only wraps. */
+.nut-field-row { display: flex; align-items: flex-end; gap: var(--space-sm); flex-wrap: wrap; }
+.nut-field-row > * { flex: 1 1 140px; min-width: 0; }
+.nut-field-row > .field-grow { flex: 2 1 220px; }
+.nut-field-row > .is-narrow { flex: 0 1 120px; }
+.nut-goal-note { margin: 0 0 var(--space-sm); padding-inline: var(--space-sm); font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-goal-note strong { font-weight: 600; color: var(--text-primary); }
+.nut-weight-list { display: flex; flex-direction: column; gap: 2px; }
 
-/* Meal logger + forms */
-.nut-mode-tabs { display: flex; gap: 0.3rem; padding: 0.6rem 1rem 0; }
-.nut-mode-tab { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.5rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); cursor: pointer; font-family: var(--font-body); font-size: 0.82rem; }
-.nut-mode-tab.active { color: var(--accent); border-color: var(--border-accent); background: var(--accent-bg); }
-.nut-hint { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
-.nut-hint em { color: var(--text-secondary); }
-.nut-ai-badge { font-size: 0.8rem; color: var(--accent); display: flex; align-items: center; gap: 0.4rem; }
-.nut-photo-preview { max-width: 100%; max-height: 160px; border-radius: var(--radius-md); object-fit: cover; }
+/* Modals: log a meal · new/edit recipe · profile editor (shell = system.css doc-viewer) */
+.admin-shell .doc-viewer-modal.nut-modal { max-width: 560px; }
+.admin-shell .doc-viewer-modal.nut-modal.is-sm { max-width: 520px; }
+.admin-shell .doc-viewer-modal.nut-modal.is-lg { max-width: 640px; }
+.nut-modal .doc-viewer-header { padding: var(--space-lg) var(--space-lg) var(--space-sm); border-bottom: none; }
+.nut-modal .doc-viewer-title { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; }
+.nut-mode-bar { padding: var(--space-xs) var(--space-lg) 0; }
+.admin-shell .nut-mode-tabs.segmented { display: flex; width: 100%; }
+.admin-shell .nut-mode-tabs .segmented-opt { flex: 1; }
+.nut-modal-body.doc-viewer-body { align-items: stretch; gap: var(--space-sm); padding: var(--space-md) var(--space-lg) var(--space-lg); }
+.admin-shell .nut-modal-go { align-self: flex-start; }
+.nut-modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); flex-wrap: wrap; margin-top: var(--space-xs); }
+.nut-modal-actions.is-split { justify-content: space-between; }
+.nut-hint { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-hint em { color: var(--text-primary); }
+.nut-ai-badge { display: flex; align-items: center; gap: var(--space-xs); margin: 0; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); background: var(--accent-bg); color: var(--accent); font-size: var(--text-sm); font-weight: 500; }
+.nut-error { margin: 0; font-size: var(--text-sm); color: var(--red); }
+.admin-shell .nut-dropzone { width: 100%; margin-bottom: 0; border-radius: var(--radius-lg); border-color: var(--border-primary); background: transparent; font: inherit; color: var(--text-secondary); }
+.admin-shell .nut-dropzone i { color: var(--text-muted); opacity: 1; }
+.nut-photo-preview { max-width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-md); }
 .nut-photo-preview.lg { max-height: 220px; align-self: center; }
-.nut-meal-form { display: flex; flex-direction: column; gap: 0.7rem; width: 100%; }
-.nut-macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-.nut-macro-grid.five { grid-template-columns: repeat(5, 1fr); }
-.nut-macro-grid label, .nut-qty { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.72rem; color: var(--text-muted); }
-.nut-qty { max-width: 120px; }
-.nut-items { font-size: 0.82rem; color: var(--text-secondary); }
-.nut-items summary { cursor: pointer; color: var(--text-muted); }
-.nut-items ul { list-style: none; padding: 0.4rem 0 0; margin: 0; }
-.nut-items li { display: flex; justify-content: space-between; padding: 0.15rem 0; border-bottom: 1px dashed var(--border); }
-.nut-pick-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.nut-pick { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.25rem 0.45rem; cursor: pointer; font-size: 1rem; }
-.nut-pick.on { border-color: var(--accent); background: var(--accent-bg); }
-.nut-pick-color { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
-.nut-pick-color.on { border-color: var(--text-primary); }
+.nut-meal-form { display: flex; flex-direction: column; gap: var(--space-sm); width: 100%; }
+.nut-macro-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-xs); }
+.nut-macro-grid.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.nut-macro-grid label, .nut-qty { display: flex; flex-direction: column; gap: var(--space-2xs); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
+.nut-items { font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-items summary { cursor: pointer; color: var(--text-secondary); }
+.nut-items ul { margin: 0; padding: var(--space-xs) 0 0; list-style: none; }
+.nut-items li { display: flex; justify-content: space-between; gap: var(--space-sm); padding: var(--space-2xs) 0; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
+.nut-pick-row { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.admin-shell .nut-pick-color { width: 28px; height: 28px; padding: 0; border: 2px solid var(--bg-card); border-radius: var(--radius-full); box-shadow: 0 0 0 1px var(--border-primary); cursor: pointer; }
+.admin-shell .nut-pick-color.on { box-shadow: 0 0 0 2px var(--text-primary); }
 
 /* ═══ Recipes ═══ */
-.nut-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.7rem; margin-top: 0.8rem; }
-.nut-recipe-card { text-align: left; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 0.4rem; font-family: var(--font-body); transition: border-color .15s, transform .15s; }
-.nut-recipe-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
-.nut-recipe-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
-.nut-recipe-title { font-weight: 600; color: var(--text-primary); }
-.nut-fav { color: var(--text-muted); cursor: pointer; }
-.nut-fav.on { color: var(--orange); }
-.nut-recipe-card-desc { font-size: 0.8rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.nut-recipe-card-meta { display: flex; gap: 0.7rem; flex-wrap: wrap; font-size: 0.74rem; color: var(--text-muted); }
-.nut-ai-pill { color: var(--accent); }
-.nut-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
-.nut-tag { font-size: 0.68rem; padding: 0.1rem 0.45rem; background: var(--bg-hover); border-radius: 999px; color: var(--text-secondary); }
-.nut-recipe-desc { color: var(--text-secondary); line-height: 1.5; }
-.nut-recipe-meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.82rem; color: var(--text-secondary); }
-.nut-recipe-meta i { color: var(--accent); margin-right: 0.2rem; }
-.nut-recipe-cols { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1.2rem; }
-.nut-recipe-cols h4 { margin: 0 0 0.5rem; color: var(--accent); font-size: 0.85rem; }
-.nut-ing-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
-.nut-ing-list li { padding: 0.2rem 0; border-bottom: 1px dashed var(--border); }
-.nut-step-list { padding-left: 1.1rem; margin: 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
-.nut-step-list li { margin-bottom: 0.5rem; }
-.nut-edit-block { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.6rem; }
-.nut-edit-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; color: var(--text-secondary); font-size: 0.82rem; }
-.nut-step-num { width: 22px; height: 22px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-bg); color: var(--accent); border-radius: 50%; font-size: 0.72rem; }
+.recipes-intro { display: flex; align-items: center; gap: var(--space-xs); margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.recipes-intro i { color: var(--text-muted); }
+.admin-shell .recipes-search:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) { max-width: 360px; }
+
+.nut-recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: var(--space-md); }
+.nut-recipe-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+  transition: border-color var(--dur-fast), background-color var(--dur-fast);
+}
+.nut-recipe-card:hover { border-color: var(--border-strong); }
+.nut-recipe-card:has(.nut-recipe-open:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nut-recipe-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-xs); }
+.admin-shell .nut-recipe-open { flex: 1; min-width: 0; padding: var(--space-2xs) 0 0; border: none; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.admin-shell .nut-recipe-open:focus-visible { outline: none; }
+.nut-recipe-open::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.nut-recipe-title { font-family: var(--font-display); font-size: var(--text-md); line-height: 1.5rem; font-weight: 600; color: var(--text-primary); }
+.admin-shell .nut-fav {
+  position: relative; z-index: 1; flex-shrink: 0;
+  width: var(--control-h-sm); height: var(--control-h-sm); margin-right: calc(var(--space-xs) * -1);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: var(--radius-full); background: transparent;
+  color: var(--text-muted); font-size: 14px; cursor: pointer;
+}
+.admin-shell .nut-fav:hover { background: var(--bg-raised); color: var(--text-primary); }
+.admin-shell .nut-fav.on { color: var(--amber); }
+.nut-recipe-card-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-recipe-card-meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); margin-top: auto; padding-top: var(--space-2xs); font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.nut-recipe-card-meta i { margin-right: var(--space-2xs); color: var(--text-muted); }
+.admin-shell .nut-recipe-card-meta .nut-ai-pill i { margin-right: 0; color: inherit; font-size: 12px; }
+.nut-tags { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.nut-tag { padding: 2px var(--space-xs); border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary); font-size: var(--text-xs); }
+
+/* Recipe page + builder */
+.nut-recipe-desc { color: var(--text-secondary); line-height: var(--leading-relaxed); }
+.nut-recipe-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-lg); font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.nut-recipe-meta i { margin-right: var(--space-2xs); color: var(--text-muted); }
+.admin-shell .nut-recipe-meta .nut-ai-pill i { margin-right: 0; color: inherit; font-size: 12px; }
+.nut-recipe-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-lg); }
+.nut-ing-list { margin: 0; padding: 0; list-style: none; font-size: var(--text-base); color: var(--text-primary); }
+.nut-ing-list li { padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-subtle); }
+.nut-ing-list li:last-child { border-bottom: none; }
+.nut-ing-list strong { font-weight: 600; }
+.nut-step-list { margin: 0; padding: 0; list-style: none; counter-reset: step; font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--text-primary); }
+.nut-step-list li { position: relative; padding: 0 0 var(--space-md) calc(28px + var(--space-sm)); counter-increment: step; }
+.nut-step-list li::before {
+  content: counter(step); position: absolute; left: 0; top: 0;
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary);
+  font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.nut-edit-block { display: flex; flex-direction: column; gap: var(--space-xs); padding: var(--space-sm); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
+.nut-edit-head { display: flex; align-items: center; justify-content: space-between; font-size: var(--text-sm); color: var(--text-secondary); }
+.nut-edit-head strong { font-weight: 600; color: var(--text-primary); }
+.nut-edit-row { display: flex; align-items: flex-start; gap: var(--space-xs); }
+.nut-edit-row > .field-grow { flex: 1; min-width: 0; }
+.admin-shell .nut-edit-row > .nut-qty-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) { flex: 0 0 110px; width: 110px; }
+.admin-shell .nut-edit-row textarea { min-height: var(--control-h); }
+.nut-step-num {
+  flex-shrink: 0; width: 28px; height: 28px; margin-top: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary);
+  font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums;
+}
 .nut-log-recipe { width: 100%; }
 
-@media (max-width: 620px) {
-  .nut-recipe-cols { grid-template-columns: 1fr; }
-  .nut-macro-grid, .nut-macro-grid.five { grid-template-columns: repeat(2, 1fr); }
-  .nut-day-summary { flex-direction: column; align-items: stretch; }
+@media (max-width: 900px) {
+  .nut-weight { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .nut-recipe-cols { grid-template-columns: minmax(0, 1fr); }
+  .nut-macro-grid, .nut-macro-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nut-day-summary { flex-direction: column; align-items: stretch; gap: var(--space-lg); }
+  .nut-big-cal { font-size: var(--text-2xl); line-height: 2.5rem; }
+  .nut-chart-x span { overflow: visible; }
+  .nut-chart-x span:nth-child(even) { visibility: hidden; }
+  .nut-modal .doc-viewer-header, .nut-mode-bar { padding-inline: var(--space-md); }
+  .nut-modal-body.doc-viewer-body { padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .admin-shell .recipes-search:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) { max-width: none; }
 }

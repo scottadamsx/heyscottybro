@@ -131,7 +131,7 @@ export default function NutritionPage() {
     setRangeLogs((d) => [log, ...d]);
   };
 
-  if (loading) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>;
+  if (loading) return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p></div>;
 
   if (profilesError) {
     return (
@@ -157,7 +157,7 @@ export default function NutritionPage() {
       <div className="module-header">
         <h1>Nutrition</h1>
         {active && (
-          <button className="btn" onClick={() => setShowLogger(true)}><i className="fa-solid fa-plus" /> Log meal</button>
+          <button type="button" className="btn btn-sm" onClick={() => setShowLogger(true)}><i className="fa-solid fa-plus" aria-hidden="true" /> Log meal</button>
         )}
       </div>
 
@@ -171,17 +171,20 @@ export default function NutritionPage() {
       />
 
       {!active && (
-        <p className="no-entries" style={{ marginTop: "1rem" }}>
-          Create a profile (the <i className="fa-solid fa-plus" /> button above) for you and your partner to start tracking.
-        </p>
+        <div className="empty-state">
+          <i className="fa-solid fa-apple-whole empty-state-icon" aria-hidden="true" />
+          <p className="empty-state-desc">
+            Create a profile (the <i className="fa-solid fa-plus" aria-hidden="true" /><span className="visually-hidden">Add profile</span> button above) for you and your partner to start tracking.
+          </p>
+        </div>
       )}
 
       {active && (
         <>
-          <div className="nut-tabs">
+          <div className="segmented nut-tabs" role="radiogroup" aria-label="View">
             {[["today", "Today", "fa-bowl-food"], ["trends", "Trends", "fa-chart-line"], ["weight", "Weight", "fa-weight-scale"]].map(([k, l, ic]) => (
-              <button key={k} className={`nut-tab ${view === k ? "active" : ""}`} onClick={() => setView(k)}>
-                <i className={`fa-solid ${ic}`} /> {l}
+              <button key={k} type="button" role="radio" aria-checked={view === k} className={`segmented-opt nut-tab${view === k ? " active" : ""}`} onClick={() => setView(k)}>
+                <i className={`fa-solid ${ic}`} aria-hidden="true" /> {l}
               </button>
             ))}
           </div>
@@ -242,69 +245,78 @@ function TodayView({ date, setDate, dayLogs, dayTotals, target, onRemove, onLog 
   const pct = target ? Math.min(100, Math.round((dayTotals.calories / target) * 100)) : null;
   const remaining = target ? Math.round(target - dayTotals.calories) : null;
 
+  const isToday = date === todayStr();
+
   return (
-    <>
-      <div className="nut-daynav">
-        <button className="btn-tiny-blue" onClick={() => setDate(addDaysStr(date, -1))}><i className="fa-solid fa-chevron-left" /></button>
-        <span className="nut-daynav-label">
-          {date === todayStr() ? "Today" : prettyDate(date)}
-          {date !== todayStr() && <button className="nut-today-jump" onClick={() => setDate(todayStr())}>jump to today</button>}
-        </span>
-        <button className="btn-tiny-blue" onClick={() => setDate(addDaysStr(date, 1))} disabled={date >= todayStr()}><i className="fa-solid fa-chevron-right" /></button>
-      </div>
-
-      <div className="nut-day-summary">
-        <MacroRing protein={dayTotals.protein_g} carbs={dayTotals.carbs_g} fat={dayTotals.fat_g} />
-        <div className="nut-day-stats">
-          <div className="nut-big-cal">{round(dayTotals.calories)}<span> kcal logged</span></div>
-          {target != null ? (
-            <>
-              <div className="nut-progress"><div className="nut-progress-fill" style={{ width: `${pct}%`, background: remaining < 0 ? "var(--danger,var(--red))" : undefined }} /></div>
-              <div className="nut-target-line">
-                {remaining >= 0
-                  ? <><strong>{remaining}</strong> kcal left of {target} target</>
-                  : <><strong>{Math.abs(remaining)}</strong> kcal over {target} target</>}
-              </div>
-            </>
-          ) : <div className="nut-target-line muted">Set height, weight, age &amp; sex on your profile for a calorie target.</div>}
-        </div>
-      </div>
-
-      {MEAL_TYPES.map((mt) => {
-        const logs = dayLogs.filter((l) => l.meal_type === mt.key);
-        if (logs.length === 0) return null;
-        const cal = round(sumMacros(logs).calories);
-        return (
-          <div className="nut-meal-group" key={mt.key}>
-            <div className="nut-meal-group-head"><span><i className={`fa-solid ${mt.icon}`} /> {mt.label}</span><span>{cal} kcal</span></div>
-            {logs.map((l) => (
-              <div className="nut-log-row" key={l.id}>
-                <div className="nut-log-info">
-                  <span className="nut-log-name">
-                    {l.name}
-                    {l.quantity > 1 && <em> ×{l.quantity}</em>}
-                    {l.source === "photo" && <i className="fa-solid fa-camera nut-src" title="From photo" />}
-                    {l.source === "ai" && <i className="fa-solid fa-wand-magic-sparkles nut-src" title="AI estimate" />}
-                    {l.source === "recipe" && <i className="fa-solid fa-book-open nut-src" title="From recipe" />}
-                  </span>
-                  <span className="nut-log-macros">P{round(l.protein_g * l.quantity)} · C{round(l.carbs_g * l.quantity)} · F{round(l.fat_g * l.quantity)}</span>
-                </div>
-                <span className="nut-log-cal">{round(l.calories * l.quantity)}</span>
-                <button className="icon-x sm" onClick={() => onRemove(l)} aria-label="Delete"><i className="fa-solid fa-xmark" /></button>
-              </div>
-            ))}
+    <div className="nut-today">
+      <section className="db-card nut-day" aria-label="Day summary">
+        <div className="db-card-header">
+          <h3 className="db-card-title">{isToday ? "Today" : prettyDate(date)}</h3>
+          <div className="nut-daynav">
+            {!isToday && <button type="button" className="btn-mini" onClick={() => setDate(todayStr())}>Jump to today</button>}
+            <button type="button" className="icon-x" onClick={() => setDate(addDaysStr(date, -1))} aria-label="Previous day"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
+            <button type="button" className="icon-x" onClick={() => setDate(addDaysStr(date, 1))} disabled={date >= todayStr()} aria-label="Next day"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
           </div>
-        );
-      })}
+        </div>
+        <div className="nut-day-summary">
+          <div className="nut-day-stats">
+            <div className="nut-big-cal">{round(dayTotals.calories)}<span> kcal logged</span></div>
+            {target != null ? (
+              <>
+                {/* width is the only inline value: today's share of the target */}
+                <div className="nut-progress"><div className={`nut-progress-fill${remaining < 0 ? " is-over" : ""}`} style={{ width: `${pct}%` }} /></div>
+                <div className="nut-target-line">
+                  {remaining >= 0
+                    ? <><strong>{remaining}</strong> kcal left of {target} target</>
+                    : <><strong className="is-over">{Math.abs(remaining)}</strong> kcal over {target} target</>}
+                </div>
+              </>
+            ) : <div className="nut-target-line muted">Set height, weight, age &amp; sex on your profile for a calorie target.</div>}
+          </div>
+          <MacroRing protein={dayTotals.protein_g} carbs={dayTotals.carbs_g} fat={dayTotals.fat_g} />
+        </div>
+      </section>
 
-      {dayLogs.length === 0 && <p className="no-entries">Nothing logged for this day.</p>}
+      <section className="db-card nut-meals" aria-label="Meals">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Meals</h3>
+          {/* Always-visible logger beside the list, so logging never depends
+              on where the module-header action happens to render. */}
+          <button type="button" className="btn-sm btn-secondary-sm nut-log-cta" onClick={onLog}>
+            <i className="fa-solid fa-plus" aria-hidden="true" /> Log {dayLogs.length === 0 ? "a meal" : "another meal"}
+          </button>
+        </div>
 
-      {/* Always-visible logger: the module-header "Log meal" button is hidden
-          inside the Life page, so keep one here too. */}
-      <button className="btn nut-log-cta" onClick={onLog} style={{ width: "100%", marginTop: "0.75rem" }}>
-        <i className="fa-solid fa-plus" /> Log {dayLogs.length === 0 ? "a meal" : "another meal"}
-      </button>
-    </>
+        {MEAL_TYPES.map((mt) => {
+          const logs = dayLogs.filter((l) => l.meal_type === mt.key);
+          if (logs.length === 0) return null;
+          const cal = round(sumMacros(logs).calories);
+          return (
+            <div className="nut-meal-group" key={mt.key}>
+              <div className="nut-meal-group-head"><span><i className={`fa-solid ${mt.icon}`} aria-hidden="true" /> {mt.label}</span><span>{cal} kcal</span></div>
+              {logs.map((l) => (
+                <div className="nut-log-row" key={l.id}>
+                  <div className="nut-log-info">
+                    <span className="nut-log-name">
+                      {l.name}
+                      {l.quantity > 1 && <em> ×{l.quantity}</em>}
+                      {l.source === "photo" && <i className="fa-solid fa-camera nut-src" title="From photo" role="img" aria-label="From photo" />}
+                      {l.source === "ai" && <i className="fa-solid fa-wand-magic-sparkles nut-src" title="AI estimate" role="img" aria-label="AI estimate" />}
+                      {l.source === "recipe" && <i className="fa-solid fa-book-open nut-src" title="From recipe" role="img" aria-label="From recipe" />}
+                    </span>
+                    <span className="nut-log-macros">P{round(l.protein_g * l.quantity)} · C{round(l.carbs_g * l.quantity)} · F{round(l.fat_g * l.quantity)}</span>
+                  </div>
+                  <span className="nut-log-cal">{round(l.calories * l.quantity)}</span>
+                  <button type="button" className="icon-x sm" onClick={() => onRemove(l)} aria-label={`Delete ${l.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+
+        {dayLogs.length === 0 && <p className="no-entries">Nothing logged for this day.</p>}
+      </section>
+    </div>
   );
 }
 
@@ -343,34 +355,38 @@ function TrendsView({ active, rangeLogs, weights, unit, target, tdeeVal, insight
   const trendWk = weightTrendPerWeek(weights);
 
   return (
-    <>
-      <div className="nut-card">
-        <div className="nut-card-head"><h3>Calories — last 14 days</h3><span className="nut-card-sub">avg {avg} kcal/day over 14 days ({loggedDays} logged){target ? ` · target ${target}` : ""}</span></div>
+    <div className="nut-trends">
+      <section className="db-card nut-card">
+        <div className="db-card-header nut-card-head">
+          <h3 className="db-card-title">Calories · last 14 days</h3>
+          <span className="nut-card-sub">avg {avg} kcal/day over 14 days ({loggedDays} logged){target ? ` · target ${target}` : ""}</span>
+        </div>
         <CalorieBars data={bars} target={target} />
-      </div>
+      </section>
 
-      <div className="nut-card">
-        <div className="nut-card-head">
-          <h3>Weight</h3>
+      <section className="db-card nut-card">
+        <div className="db-card-header nut-card-head">
+          <h3 className="db-card-title">Weight</h3>
           <span className="nut-card-sub">
             {trendWk != null ? `${trendWk > 0 ? "+" : ""}${(unit === "lb" ? toLb(trendWk) : trendWk).toFixed(2)} ${unit}/wk` : "need 2+ weigh-ins"}
             {tdeeVal ? ` · TDEE ≈ ${tdeeVal}` : ""}
           </span>
         </div>
         <LineChart data={weightSeries} goal={goalW} unit={unit} color={active.color} />
-      </div>
+      </section>
 
-      <div className="nut-card">
-        <div className="nut-card-head"><h3><i className="fa-solid fa-lightbulb" /> AI insights</h3>
-          <button className="btn-tiny-blue" onClick={onInsights} disabled={insightBusy}>
-            {insightBusy ? <><i className="fa-solid fa-spinner fa-spin" /> Thinking…</> : "Generate"}
+      <section className="db-card nut-card">
+        <div className="db-card-header nut-card-head">
+          <h3 className="db-card-title"><i className="fa-solid fa-lightbulb" aria-hidden="true" /> AI insights</h3>
+          <button type="button" className="btn-sm btn-secondary-sm" onClick={onInsights} disabled={insightBusy}>
+            {insightBusy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Thinking…</> : "Generate"}
           </button>
         </div>
         {insights
           ? <p className="nut-insights">{insights}</p>
           : <p className="no-entries">Get a friendly read on how your eating and weight are trending.</p>}
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
 
@@ -400,42 +416,52 @@ function WeightView({ active, weights, unit, onSaved, onDeleted }) {
   const latest = weights.length ? Number(weights[weights.length - 1].weight_kg) : null;
 
   return (
-    <>
-      <form className="form-card" onSubmit={submit} style={{ maxWidth: 520 }}>
-        <div className="form-row">
-          <label className="nut-qty">Weight ({unit})<input type="number" step="0.1" value={w} onChange={(e) => setW(e.target.value)} required autoFocus /></label>
-          <label className="nut-qty">Date<DatePicker value={d} onChange={(v) => setD(v)} max={todayStr()} /></label>
+    <div className="nut-weight">
+      <form className="db-card nut-weight-form" onSubmit={submit}>
+        <div className="db-card-header">
+          <h3 className="db-card-title">Log a weigh-in</h3>
         </div>
-        <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-        {err && <p className="no-entries" style={{ color: "var(--danger,var(--red))" }}>{err}</p>}
-        <button className="btn" type="submit" disabled={busy} style={{ width: "fit-content" }}>
-          {busy ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : "Save weigh-in"}
-        </button>
+        <div className="nut-field-row">
+          <label className="nut-qty">Weight ({unit})<input type="number" step="0.1" value={w} onChange={(e) => setW(e.target.value)} required autoFocus /></label>
+          <label className="nut-qty nut-qty-date">Date<DatePicker value={d} onChange={(v) => setD(v)} max={todayStr()} /></label>
+        </div>
+        <input placeholder="Note (optional)" aria-label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+        {err && <p className="nut-error" role="alert">{err}</p>}
+        <div className="form-actions">
+          <button className="btn" type="submit" disabled={busy}>
+            {busy ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : "Save weigh-in"}
+          </button>
+        </div>
       </form>
 
-      {latest != null && goalKg != null && (
-        <p className="nut-goal-note">
-          {formatWeight(latest, unit)} now · goal {formatWeight(goalKg, unit)} ·{" "}
-          <strong>{formatWeight(Math.abs(latest - goalKg), unit)}</strong> to go
-        </p>
-      )}
-
-      <div className="nut-weight-list">
-        {reversed.length === 0 && <p className="no-entries">No weigh-ins yet.</p>}
-        {reversed.map((row) => (
-          <div className="nut-log-row" key={row.id}>
-            <div className="nut-log-info">
-              <span className="nut-log-name">{formatWeight(Number(row.weight_kg), unit)}</span>
-              {row.note && <span className="nut-log-macros">{row.note}</span>}
+      <section className="db-card nut-weight-history" aria-label="Weigh-ins">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Weigh-ins</h3>
+          {reversed.length > 0 && <span className="db-count">{reversed.length}</span>}
+        </div>
+        {latest != null && goalKg != null && (
+          <p className="nut-goal-note">
+            {formatWeight(latest, unit)} now · goal {formatWeight(goalKg, unit)} ·{" "}
+            <strong>{formatWeight(Math.abs(latest - goalKg), unit)}</strong> to go
+          </p>
+        )}
+        <div className="nut-weight-list">
+          {reversed.length === 0 && <p className="no-entries">No weigh-ins yet.</p>}
+          {reversed.map((row) => (
+            <div className="nut-log-row" key={row.id}>
+              <div className="nut-log-info">
+                <span className="nut-log-name">{formatWeight(Number(row.weight_kg), unit)}</span>
+                {row.note && <span className="nut-log-macros">{row.note}</span>}
+              </div>
+              <span className="nut-log-date">{prettyDate(row.date)}</span>
+              <button type="button" className="icon-x sm" onClick={async () => {
+                try { await deleteWeight(row.id); onDeleted(row.id); }
+                catch (err) { console.error("[nutrition] delete weigh-in failed", err); addToast(`Couldn't delete weigh-in: ${err?.message || err}`, "error"); }
+              }} aria-label={`Delete weigh-in from ${prettyDate(row.date)}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
             </div>
-            <span className="nut-log-cal" style={{ fontWeight: 400, opacity: 0.7 }}>{prettyDate(row.date)}</span>
-            <button className="icon-x sm" onClick={async () => {
-              try { await deleteWeight(row.id); onDeleted(row.id); }
-              catch (err) { console.error("[nutrition] delete weigh-in failed", err); addToast(`Couldn't delete weigh-in: ${err?.message || err}`, "error"); }
-            }} aria-label="Delete"><i className="fa-solid fa-xmark" /></button>
-          </div>
-        ))}
-      </div>
-    </>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

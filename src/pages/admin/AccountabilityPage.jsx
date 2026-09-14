@@ -59,9 +59,9 @@ function monthLabels(weeks) {
 
 
 function ScheduleFields({ value, onChange }) {
-  return <fieldset className="form-card">
+  return <fieldset className="acc-schedule">
     <legend>Reminder schedule</legend>
-    <div className="form-row">
+    <div className="acc-schedule-row">
       <label>Repeat
         <select value={value.reminder} onChange={(e) => onChange({ ...value, reminder: e.target.value })}>
           <option value="none">No reminder</option>
@@ -230,78 +230,79 @@ export default function AccountabilityPage() {
     const maxCount = Math.max(1, ...Object.values(counts));
 
     return (
-      <div className="module-page" style={{ paddingTop: 0 }}>
-        <div className="module-header" style={{ marginBottom: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <button className="btn btn-sm btn-secondary-sm" onClick={() => { setDetailId(null); setTrackerEdit(null); }}>
-              <i className="fa-solid fa-arrow-left" /> Back
-            </button>
-            
-            <h2 style={{ margin: 0 }}>{t.name}</h2>
-          </div>
+      // --acc-color is the tracker's own (user-chosen) colour.
+      <div className="module-page habits acc-detail" style={{ "--acc-color": t.color }}>
+        <div className="acc-detail-head">
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => { setDetailId(null); setTrackerEdit(null); }}>
+            <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back
+          </button>
+          <span className="acc-swatch" aria-hidden="true" />
+          <h2 className="acc-detail-title">{t.name}</h2>
           {!trackerEdit && (
-            <div className="header-actions">
-              <button type="button" className="btn-mini" onClick={() => setTrackerEdit({ name: t.name || "", mode: t.mode || "count", color: t.color || COLORS[0], ...habitScheduleForm(t, todayStr) })} title="Edit tracker">
-                <i className="fa-solid fa-pen" /> Edit
+            <div className="acc-detail-actions">
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setTrackerEdit({ name: t.name || "", mode: t.mode || "count", color: t.color || COLORS[0], ...habitScheduleForm(t, todayStr) })} title="Edit tracker">
+                <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
               </button>
-              <button type="button" className="icon-x sm" onClick={() => { deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
+              <button type="button" className="icon-x" onClick={() => { deleteTracker(t.id); }} aria-label="Delete tracker" title="Delete tracker"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
             </div>
           )}
         </div>
+        <p className="acc-sched-note">{habitScheduleLabel(t)}</p>
 
         {trackerEdit && (
-          <form className="form-card" onSubmit={(e) => saveTrackerEdit(e, t.id)}>
-            <div className="form-panel-head">
-              <h3>Edit tracker</h3>
-              <button type="button" className="icon-x" onClick={() => setTrackerEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" /></button>
+          <form className="db-card acc-form" onSubmit={(e) => saveTrackerEdit(e, t.id)}>
+            <div className="db-card-header">
+              <h3 className="db-card-title">Edit tracker</h3>
+              <button type="button" className="icon-x" onClick={() => setTrackerEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
             </div>
-            <div className="form-row">
-              <input className="field-grow" placeholder="Tracker name" value={trackerEdit.name} onChange={(e) => setTrackerEdit({ ...trackerEdit, name: e.target.value })} required autoFocus />
-            </div>
-            <div className="color-picker">
+            <input placeholder="Tracker name" aria-label="Tracker name" value={trackerEdit.name} onChange={(e) => setTrackerEdit({ ...trackerEdit, name: e.target.value })} required autoFocus />
+            <div className="color-picker" role="group" aria-label="Colour">
               {COLORS.map((c) => (
-                <button key={c} type="button" className={`color-swatch ${trackerEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTrackerEdit({ ...trackerEdit, color: c })} aria-label={`Colour ${c}`} />
+                <button key={c} type="button" className={`color-swatch ${trackerEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTrackerEdit({ ...trackerEdit, color: c })} aria-label={`Colour ${c}`} aria-pressed={trackerEdit.color === c} />
               ))}
             </div>
-            <div className="day-seg" style={{ maxWidth: 320 }}>
-              <button type="button" className={trackerEdit.mode === "count" ? "active" : ""} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "count" })}>
-                <i className="fa-solid fa-hashtag" /> Counter
+            <div className="segmented acc-mode" role="radiogroup" aria-label="Tracker type">
+              <button type="button" role="radio" aria-checked={trackerEdit.mode === "count"} className={`segmented-opt${trackerEdit.mode === "count" ? " active" : ""}`} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "count" })}>
+                <i className="fa-solid fa-hashtag" aria-hidden="true" /> Counter
               </button>
-              <button type="button" className={trackerEdit.mode === "check" ? "active" : ""} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "check" })}>
-                <i className="fa-solid fa-check" /> Once a day
+              <button type="button" role="radio" aria-checked={trackerEdit.mode === "check"} className={`segmented-opt${trackerEdit.mode === "check" ? " active" : ""}`} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "check" })}>
+                <i className="fa-solid fa-check" aria-hidden="true" /> Once a day
               </button>
             </div>
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+            <p className="life-note">
               {trackerEdit.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done. Existing extra logs on a day are kept."}
             </p>
             <ScheduleFields value={trackerEdit} onChange={setTrackerEdit} />
             <div className="form-actions">
               <button className="btn" type="submit">Save changes</button>
-              <button className="btn btn-secondary-sm" type="button" onClick={() => setTrackerEdit(null)}>Cancel</button>
+              <button className="btn btn-ghost" type="button" onClick={() => setTrackerEdit(null)}>Cancel</button>
             </div>
           </form>
         )}
 
-        <p className="acc-hist-note">{habitScheduleLabel(t)}</p>
-        <div className="acc-detail-stats">
-          <div className="acc-stat-pill"><b>{st.total}</b><span>total</span></div>
-          <div className="acc-stat-pill"><b>{st.weekCount}</b><span>this week</span></div>
-          <div className="acc-stat-pill"><b>{st.streak}</b><span>day streak</span></div>
+        <div className="acc-kpis">
+          <div className="acc-kpi"><span className="acc-kpi-label">Total</span><span className="acc-kpi-value">{st.total}</span></div>
+          <div className="acc-kpi"><span className="acc-kpi-label">This week</span><span className="acc-kpi-value">{st.weekCount}</span></div>
+          <div className="acc-kpi"><span className="acc-kpi-label">Day streak</span><span className="acc-kpi-value">{st.streak}</span></div>
         </div>
 
-        <div className="db-card" style={{ "--acc-color": t.color, marginBottom: "1rem" }}>
-          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Past {WEEKS_BACK} weeks</h3>
+        <div className="acc-detail-grid">
+        <section className="db-card acc-history">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Past {WEEKS_BACK} weeks</h3>
+          </div>
 
           {/* Month labels row */}
           <div className="acc-hist-grid">
-            <div className="acc-hist-dow-col">
+            <div className="acc-hist-dow-col" aria-hidden="true">
               {["S","M","T","W","T","F","S"].map((d, i) => (
                 <div key={i} className="acc-hist-dow">{d}</div>
               ))}
             </div>
             {weeks.map((week, wi) => (
               <div key={wi} className="acc-hist-week-col">
-                <div className="acc-hist-month-lbl">{mLabels[wi] || ""}</div>
+                {/* columns are one cell wide; a partial first month would collide with the next label */}
+                <div className="acc-hist-month-lbl">{wi === 0 && mLabels[1] ? "" : mLabels[wi] || ""}</div>
                 {week.map((ds) => {
                   const on = dateSet.has(ds);
                   const cnt = counts[ds] || 0;
@@ -311,8 +312,9 @@ export default function AccountabilityPage() {
                   return (
                     <div
                       key={ds}
-                      className={`acc-hist-dot${isToday ? " today" : ""}${future ? " future" : ""}`}
-                      style={{ background: on ? t.color : undefined, opacity: future ? 0.2 : on ? opacity : undefined }}
+                      className={`acc-hist-dot${isToday ? " today" : ""}${future ? " future" : ""}${on ? " on" : ""}`}
+                      /* per-day intensity is data: the tracker colour at a count-scaled opacity */
+                      style={{ opacity: future ? undefined : on ? opacity : undefined }}
                       title={`${ds}${on ? ` · ${cnt > 1 ? cnt + "x" : "done"}` : ""}`}
                     />
                   );
@@ -321,40 +323,44 @@ export default function AccountabilityPage() {
             ))}
           </div>
           {t.mode === "count" && <p className="acc-hist-note">Darker = more logs that day</p>}
-        </div>
+        </section>
 
         {/* Log actions */}
-        <div className="db-card" style={{ "--acc-color": t.color }}>
-          <h3 className="db-card-title" style={{ marginBottom: "0.75rem" }}>Log</h3>
+        <section className="db-card acc-log-card">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Log</h3>
+          </div>
           <div className="acc-actions">
             {(() => {
               const done = t.mode === "check" && countOn(t, todayStr) > 0;
               return (
-                <button className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
+                <button type="button" className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
                   {t.mode === "check"
-                    ? (done ? <><i className="fa-solid fa-check" /> Done today</> : <><i className="fa-solid fa-plus" /> Mark done</>)
-                    : <><i className="fa-solid fa-plus" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
+                    ? (done ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done today</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Mark done</>)
+                    : <><i className="fa-solid fa-plus" aria-hidden="true" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
                 </button>
               );
             })()}
             <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" max={todayStr} />
           </div>
           {st.recent.length > 0 && (
-            <div className="acc-recent" style={{ marginTop: "0.75rem" }}>
+            <div className="acc-recent">
               {st.recent.map((l) => (
                 <div className="acc-log" key={l.id}>
                   <span>{l.date === todayStr ? "Today" : formatDisplayDate(l.date)}</span>
-                  <button className="icon-x sm" onClick={() => deleteLog(l.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                  <button type="button" className="icon-x sm" onClick={() => deleteLog(l.id)} aria-label={`Remove log from ${l.date === todayStr ? "today" : formatDisplayDate(l.date)}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               ))}
             </div>
           )}
+        </section>
         </div>
+        {dialog}
       </div>
     );
   };
 
-  if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
+  if (!ready) return <p className="life-loading">Loading…</p>;
 
   // A failed load is an error, not "no trackers" — never render an empty state
   // (or accept new writes) over data we couldn't read.
@@ -376,67 +382,78 @@ export default function AccountabilityPage() {
   }
 
   return (
-    <div className="module-page">
+    <div className="module-page habits">
       {dialog}
       <div className="module-header">
         <h1>Accountability</h1>
-        <button className="btn" onClick={() => setShowAdd((s) => !s)}>
-          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} /> {showAdd ? "Close" : "New Tracker"}
+        <button type="button" className="btn btn-sm" onClick={() => setShowAdd((s) => !s)}>
+          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showAdd ? "Close" : "New tracker"}
         </button>
       </div>
 
       {showAdd && (
-        <form className="form-card" onSubmit={addTracker} style={{ maxWidth: 520 }}>
-          <div className="form-row">
-            <input className="field-grow" placeholder="Track what? (e.g. Gym, Read, Journal)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus required />
+        <form className="db-card acc-form" onSubmit={addTracker}>
+          <div className="db-card-header">
+            <h3 className="db-card-title">New tracker</h3>
           </div>
-          <div className="color-picker">
+          <input placeholder="Track what? (e.g. Gym, Read, Journal)" aria-label="Tracker name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus required />
+          <div className="color-picker" role="group" aria-label="Colour">
             {COLORS.map((c) => (
-              <button key={c} type="button" className={`color-swatch ${form.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} />
+              <button key={c} type="button" className={`color-swatch ${form.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} aria-label={`Colour ${c}`} aria-pressed={form.color === c} />
             ))}
           </div>
-          <div className="day-seg" style={{ maxWidth: 320 }}>
-            <button type="button" className={form.mode === "count" ? "active" : ""} onClick={() => setForm({ ...form, mode: "count", ...(form.reminder === "interval" ? {} : { reminder: "none" }) })}>
-              <i className="fa-solid fa-hashtag" /> Counter
+          <div className="segmented acc-mode" role="radiogroup" aria-label="Tracker type">
+            <button type="button" role="radio" aria-checked={form.mode === "count"} className={`segmented-opt${form.mode === "count" ? " active" : ""}`} onClick={() => setForm({ ...form, mode: "count", ...(form.reminder === "interval" ? {} : { reminder: "none" }) })}>
+              <i className="fa-solid fa-hashtag" aria-hidden="true" /> Counter
             </button>
-            <button type="button" className={form.mode === "check" ? "active" : ""} onClick={() => setForm({ ...form, mode: "check", ...(form.reminder === "interval" ? {} : { reminder: "daily" }) })}>
-              <i className="fa-solid fa-check" /> Once a day
+            <button type="button" role="radio" aria-checked={form.mode === "check"} className={`segmented-opt${form.mode === "check" ? " active" : ""}`} onClick={() => setForm({ ...form, mode: "check", ...(form.reminder === "interval" ? {} : { reminder: "daily" }) })}>
+              <i className="fa-solid fa-check" aria-hidden="true" /> Once a day
             </button>
           </div>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+          <p className="life-note">
             {form.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done."}
           </p>
           <ScheduleFields value={form} onChange={setForm} />
-          <button className="btn" type="submit" style={{ width: "fit-content" }}>Create tracker</button>
+          <div className="form-actions">
+            <button className="btn" type="submit">Create tracker</button>
+          </div>
         </form>
       )}
 
       {trackers.length === 0 && !showAdd && (
-        <p className="no-entries">No trackers yet. Add one to start logging gym days, habits, or running tallies.</p>
+        <div className="empty-state">
+          <i className="fa-solid fa-fire empty-state-icon" aria-hidden="true" />
+          <p className="empty-state-desc">No trackers yet. Add one to start logging gym days, habits, or running tallies.</p>
+        </div>
       )}
 
       <div className="acc-grid">
         {trackers.map((t) => {
           const st = stats(t.id);
           return (
-            <div className="acc-card" id={`acc-${t.id}`} key={t.id} style={{ "--acc-color": t.color }}>
-              <div className="acc-card-top" style={{ cursor: "pointer" }} onClick={() => setDetailId(t.id)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setDetailId(t.id)}>
-                
-                <div className="acc-card-name">{t.name}</div>
-                <button className="icon-x sm" onClick={(e) => { e.stopPropagation(); deleteTracker(t.id); }} aria-label="Delete tracker"><i className="fa-solid fa-xmark" /></button>
+            // --acc-color is the tracker's own (user-chosen) colour.
+            <article className="db-card acc-card" id={`acc-${t.id}`} key={t.id} style={{ "--acc-color": t.color }}>
+              <div className="acc-card-top">
+                <button type="button" className="acc-card-open" onClick={() => setDetailId(t.id)}>
+                  <span className="acc-swatch" aria-hidden="true" />
+                  <span className="acc-card-text">
+                    <span className="acc-card-name">{t.name}</span>
+                    <span className="acc-card-sched">{habitScheduleLabel(t)}</span>
+                  </span>
+                </button>
+                <button type="button" className="icon-x sm" onClick={(e) => { e.stopPropagation(); deleteTracker(t.id); }} aria-label={`Delete tracker ${t.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
 
-              <p className="acc-hist-note">{habitScheduleLabel(t)}</p>
               <div className="acc-stats">
-                <div className="acc-big"><b>{st.total}</b><span>total</span></div>
-                <div className="acc-sub"><b>{st.weekCount}</b><span>this week</span></div>
-                <div className="acc-sub"><b>{st.streak}</b><span>day streak</span></div>
+                <div className="acc-stat"><span className="acc-stat-label">Total</span><span className="acc-stat-value">{st.total}</span></div>
+                <div className="acc-stat"><span className="acc-stat-label">This week</span><span className="acc-stat-value">{st.weekCount}</span></div>
+                <div className="acc-stat"><span className="acc-stat-label">Day streak</span><span className="acc-stat-value">{st.streak}</span></div>
               </div>
 
-              <div className="acc-week">
+              <div className="acc-week" aria-label="Last 7 days">
                 {st.week.map((w, i) => (
-                  <div key={i} className="acc-day">
-                    <span className={`acc-dot ${w.on ? "on" : ""} ${w.ds === todayStr ? "today" : ""}`}>
+                  <div key={i} className={`acc-day${w.ds === todayStr ? " is-today" : ""}`} title={`${formatDisplayDate(w.ds)}${w.on ? (t.mode === "count" ? ` · ${w.count}` : " · done") : ""}`}>
+                    <span className={`acc-dot${w.on ? " on" : ""}${t.mode === "count" ? " is-count" : ""}${w.ds === todayStr ? " today" : ""}`}>
                       {t.mode === "count" && w.count > 0 ? w.count : ""}
                     </span>
                     <span className="acc-day-lbl">{w.dow}</span>
@@ -448,10 +465,10 @@ export default function AccountabilityPage() {
                 {(() => {
                   const done = t.mode === "check" && countOn(t, todayStr) > 0;
                   return (
-                    <button className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
+                    <button type="button" className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
                       {t.mode === "check"
-                        ? (done ? <><i className="fa-solid fa-check" /> Done today</> : <><i className="fa-solid fa-plus" /> Mark done</>)
-                        : <><i className="fa-solid fa-plus" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
+                        ? (done ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done today</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Mark done</>)
+                        : <><i className="fa-solid fa-plus" aria-hidden="true" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
                     </button>
                   );
                 })()}
@@ -463,12 +480,12 @@ export default function AccountabilityPage() {
                   {st.recent.map((l) => (
                     <div className="acc-log" key={l.id}>
                       <span>{l.date === todayStr ? "Today" : formatDisplayDate(l.date)}</span>
-                      <button className="icon-x sm" onClick={() => deleteLog(l.id)} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                      <button type="button" className="icon-x sm" onClick={() => deleteLog(l.id)} aria-label={`Remove log from ${l.date === todayStr ? "today" : formatDisplayDate(l.date)}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </article>
           );
         })}
       </div>

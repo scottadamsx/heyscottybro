@@ -63,11 +63,11 @@ export default function WeedTrackerPage() {
     );
   }
 
-  if (!ready) return <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>Loading…</div>;
+  if (!ready) return <p className="life-loading">Loading…</p>;
 
   return (
     <div className="module-page">
-      <div className="module-header" style={{ flexWrap: "wrap", gap: "0.75rem" }}>
+      <div className="module-header">
         <h1>Wind Down</h1>
       </div>
 
