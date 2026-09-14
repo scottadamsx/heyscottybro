@@ -176,8 +176,12 @@ export default function ProjectsPage() {
         await loadAll();
         if (!wasSubProject && p) setSelected(p.id);
       }
-    } catch {
-      // Nothing to roll back since we didn't add optimistically
+    } catch (err) {
+      // Nothing was added optimistically; reopen the form with what was typed.
+      setProjectForm({ ...emptyProject, ...fields, parent_id: undefined });
+      setParentForCreate(wasSubProject || null);
+      setShowProjectForm(true);
+      addToast(`Couldn't create project: ${err?.message || "unknown error"}`, "error");
     }
   };
 

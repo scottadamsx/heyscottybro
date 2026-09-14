@@ -20,6 +20,14 @@ const durLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h
 const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
 const clampStart = (m, dur) => Math.min(Math.max(m, DAY_START), DAY_END - dur);
 
+/** First free slot on `day` for `dur` minutes, at/after `prefer` (or 9 AM), never before now today. */
+function placeOn(day, dur, reminders, events, today, prefer) {
+  const b = dayBlocks(day, expandReminders(reminders, day, day), expandEvents(events, day, day));
+  const floor = day === today ? Math.max(DAY_START, nowMinutes()) : DAY_START;
+  const from = Math.max(floor, prefer ?? 9 * 60);
+  return firstFreeSlot(dur, b.timed, from) ?? firstFreeSlot(dur, b.timed, floor) ?? clampStart(from, dur);
+}
+
 /**
  * "Fit it in" — schedule a task (or a one-off event) into a real slot.
  *  1. Day: today + the next 13 days, busiest-vs-lightest at a glance. Drag the
@@ -30,18 +38,21 @@ const clampStart = (m, dur) => Math.min(Math.max(m, DAY_START), DAY_END - dur);
  *     use ↑/↓ (15 min) and PgUp/PgDn (1 h). Overlaps are called out by name.
  * Saves through the normal update APIs and reports the real result.
  *
- * props: item, kind ("task" | "event"), reminders, events, today, onClose, onMoved(patch)
+ * props: item, kind ("task" | "event"), reminders, events, today, onClose, onMoved(patch),
+ *        initialDate? — open with this day already picked (e.g. dropped on a calendar day)
  */
-export default function RescheduleSheet({ item, kind, reminders = [], events = [], today, onClose, onMoved }) {
+export default function RescheduleSheet({ item, kind, reminders = [], events = [], today, initialDate, onClose, onMoved }) {
   const { addToast } = useToast();
   const title = kind === "task" ? item.name : item.title;
   const origStart = toMinutes(kind === "task" ? item.time : item.start_time);
   const overdue = item.date && item.date < today;
 
-  const [target, setTarget] = useState(overdue || !item.date ? null : item.date);
+  const [target, setTarget] = useState(initialDate || (overdue || !item.date ? null : item.date));
   const [duration, setDuration] = useState(() => itemDuration(item, kind));
   const [custom, setCustom] = useState("");
-  const [start, setStart] = useState(origStart);
+  const [start, setStart] = useState(() => (initialDate
+    ? placeOn(initialDate, itemDuration(item, kind), reminders.filter((r) => !r.completed && r.id !== item.id), events.filter((e) => e.id !== item.id), today, origStart ?? undefined)
+    : origStart));
   const [noTime, setNoTime] = useState(false);
   const [overDay, setOverDay] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -71,11 +82,7 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
 
   // Picking a day (or changing length) lands the block in the first free slot
   // at/after the old time — or after "now" today.
-  const placeFor = (day, dur, prefer) => {
-    const b = dayBlocks(day, expandReminders(others.reminders, day, day), expandEvents(others.events, day, day));
-    const from = Math.max(day === today ? Math.max(DAY_START, nowMinutes()) : DAY_START, prefer ?? 9 * 60);
-    return firstFreeSlot(dur, b.timed, from) ?? firstFreeSlot(dur, b.timed, day === today ? nowMinutes() : DAY_START) ?? clampStart(from, dur);
-  };
+  const placeFor = (day, dur, prefer) => placeOn(day, dur, others.reminders, others.events, today, prefer);
   const pickDay = (d) => { setTarget(d); setStart(placeFor(d, duration, origStart ?? undefined)); };
   const pickDuration = (m) => {
     if (!(m > 0)) return;

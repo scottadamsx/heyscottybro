@@ -54,23 +54,18 @@ export default function TimePicker({ value, onChange, placeholder = "Select time
     <div className="picker" ref={ref}>
       <button
         type="button"
-        className={`picker-trigger ${value ? "" : "is-placeholder"}`}
+        className={`picker-trigger ${value ? "has-clear" : "is-placeholder"}`}
         onClick={() => setOpen((o) => !o)}
       >
         <i className="fa-solid fa-clock picker-lead" aria-hidden="true" />
         <span className="picker-value">{value ? to12h(value) : placeholder}</span>
-        {value ? (
-          <i
-            className="fa-solid fa-xmark picker-clear"
-            aria-label="Clear time"
-            role="button"
-            tabIndex={-1}
-            onClick={(e) => { e.stopPropagation(); onChange(""); }}
-          />
-        ) : (
-          <i className="fa-solid fa-chevron-down picker-caret" aria-hidden="true" />
-        )}
+        {!value && <i className="fa-solid fa-chevron-down picker-caret" aria-hidden="true" />}
       </button>
+      {value && (
+        <button type="button" className="picker-clear-btn" aria-label="Clear time" onClick={() => onChange("")}>
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
+        </button>
+      )}
 
       <PopoverPortal anchorRef={ref} popRef={popRef} open={open}>
         <div className="picker-pop tmp-pop">

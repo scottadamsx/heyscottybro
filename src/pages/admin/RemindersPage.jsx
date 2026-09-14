@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects } from "../../api/plannerApi";
+import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects, loadEvents } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr, nextOccurrence, formatTime12 } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import TimePicker from "../../components/TimePicker";
@@ -10,6 +10,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { loadAccountability, logHabitDone } from "../../api/accountabilityApi";
 import { dueHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
+import RescheduleSheet from "../../components/RescheduleSheet";
 import "./plan.css";
 
 const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
@@ -43,6 +44,11 @@ export default function RemindersPage() {
   const [showForm, setShowForm] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showDateTime, setShowDateTime] = useState(false);
+  const [scheduling, setScheduling] = useState(null); // { item, events } — the Fit-it-in dialog
+  const openSchedule = async (r) => {
+    try { setScheduling({ item: r, events: await loadEvents() }); }
+    catch (err) { addToast(`Couldn't open the day view: ${err?.message || "unknown error"}`, "error"); }
+  };
   // Computed per render (not module-level) so overdue highlighting stays
   // correct if the tab is left open past midnight.
   const [todayStr, setTodayStr] = useState(() => toDateStr(new Date()));
@@ -251,6 +257,9 @@ export default function RemindersPage() {
           )}
         </span>
         <span className="task-row-actions">
+          {(r.recurrence || "none") === "none" && (overdue
+            ? <button type="button" className="btn-mini accent" onClick={() => openSchedule(r)}><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Fit it in</button>
+            : <button type="button" className="btn-mini" onClick={() => openSchedule(r)} title="Schedule a time" aria-label={`Schedule ${r.name}`}><i className="fa-regular fa-clock" aria-hidden="true" /></button>)}
           <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
             <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
           </button>
@@ -268,6 +277,17 @@ export default function RemindersPage() {
   return (
     <div className="module-page">
       {dialog}
+      {scheduling && (
+        <RescheduleSheet
+          item={scheduling.item}
+          kind="task"
+          reminders={list}
+          events={scheduling.events}
+          today={todayStr}
+          onClose={() => setScheduling(null)}
+          onMoved={load}
+        />
+      )}
       {loadErrors.length > 0 && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">Couldn't load {loadErrors.join(", ")}</p>

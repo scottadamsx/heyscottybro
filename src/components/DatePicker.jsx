@@ -42,7 +42,6 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const y = view.getFullYear();
@@ -61,23 +60,18 @@ export default function DatePicker({ value, onChange, placeholder = "Select date
       <button
         type="button"
         id={id}
-        className={`picker-trigger ${selected ? "" : "is-placeholder"}`}
+        className={`picker-trigger ${selected ? "has-clear" : "is-placeholder"}`}
         onClick={() => setOpen((o) => !o)}
       >
         <i className="fa-solid fa-calendar-day picker-lead" aria-hidden="true" />
         <span className="picker-value">{selected ? fmtDisplay(selected) : placeholder}</span>
-        {selected ? (
-          <i
-            className="fa-solid fa-xmark picker-clear"
-            aria-label="Clear date"
-            role="button"
-            tabIndex={-1}
-            onClick={(e) => { e.stopPropagation(); onChange(""); }}
-          />
-        ) : (
-          <i className="fa-solid fa-chevron-down picker-caret" aria-hidden="true" />
-        )}
+        {!selected && <i className="fa-solid fa-chevron-down picker-caret" aria-hidden="true" />}
       </button>
+      {selected && (
+        <button type="button" className="picker-clear-btn" aria-label="Clear date" onClick={() => onChange("")}>
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
+        </button>
+      )}
 
       <PopoverPortal anchorRef={ref} popRef={popRef} open={open}>
         <div className="picker-pop dtp-pop">

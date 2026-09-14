@@ -10,10 +10,13 @@ import { loadAccountability } from "../../api/accountabilityApi";
 import { formatTime12, expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../contexts/ToastContext";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import DocLinks from "../../components/docs/DocLinks";
 import DatePicker from "../../components/DatePicker";
 import EventForm from "../../components/EventForm";
+import RescheduleSheet from "../../components/RescheduleSheet";
+import { overdueReminders } from "../../utils/reschedule";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
 import "./plan.css";
 
@@ -25,6 +28,7 @@ export default function CalendarPage() {
   const now = new Date();
   const [params, setParams] = useSearchParams();
   const { confirm, dialog } = useConfirm();
+  const { addToast } = useToast();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [reminders, setReminders] = useState([]);
@@ -39,6 +43,10 @@ export default function CalendarPage() {
   const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
   const [selectedDate, setSelectedDate] = useState("");
+  // Drag an overdue task onto a day → the Fit-it-in dialog opens on that day.
+  const [scheduling, setScheduling] = useState(null); // { item, date? }
+  const [dragId, setDragId] = useState(null);
+  const [dropDate, setDropDate] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
   const saveEventEdit = async (id, values) => {
@@ -305,8 +313,10 @@ export default function CalendarPage() {
         project_id: selectedProject || null,
       });
       await load();
-    } catch {
+    } catch (err) {
       setReminders((prev) => prev.filter((r) => r.id !== tempId));
+      setTaskName(optimistic.name); // give the text back so nothing typed is lost
+      addToast(`Couldn't add task: ${err?.message || "unknown error"}`, "error");
     }
   };
 
@@ -314,7 +324,8 @@ export default function CalendarPage() {
     const t = reminders.find((x) => x.id === id);
     if (!(await confirm(`Mark "${t?.name || "this task"}" as incomplete?`, { title: "Undo completion", confirmLabel: "Undo" }))) return;
     setReminders((prev) => prev.map((r) => r.id === id ? { ...r, completed: false, completed_date: null } : r));
-    try { await updateReminder(id, { completed: false, completed_date: null }); } catch { await load(); }
+    try { await updateReminder(id, { completed: false, completed_date: null }); }
+    catch (err) { addToast(`Couldn't undo: ${err?.message || "unknown error"}`, "error"); await load(); }
   };
 
   const longDate = selectedDate
@@ -324,6 +335,18 @@ export default function CalendarPage() {
   return (
     <div className="module-page cal-page">
       {dialog}
+      {scheduling && (
+        <RescheduleSheet
+          item={scheduling.item}
+          kind="task"
+          reminders={reminders}
+          events={events}
+          today={toDateStr(now)}
+          initialDate={scheduling.date}
+          onClose={() => setScheduling(null)}
+          onMoved={load}
+        />
+      )}
       {loadErrors.length > 0 && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">Couldn't load {loadErrors.length} of {LOAD_SOURCES.length}: {loadErrors.join(", ")}</p>
@@ -391,7 +414,35 @@ export default function CalendarPage() {
           )}
         </div>
 
-        <div className="calendar-grid-react">
+        {(() => {
+          const overdue = overdueReminders(reminders.filter(byProject), toDateStr(now));
+          if (!overdue.length) return null;
+          return (
+            <div className="cal-overdue" role="group" aria-label="Overdue tasks">
+              <span className="cal-overdue-label"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Overdue · drag onto a day, or tap to schedule</span>
+              <div className="cal-overdue-chips">
+                {overdue.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    className={`cal-chip${dragId === r.id ? " is-dragging" : ""}`}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(r.id)); e.dataTransfer.effectAllowed = "move"; setDragId(r.id); }}
+                    onDragEnd={() => { setDragId(null); setDropDate(null); }}
+                    onClick={() => setScheduling({ item: r })}
+                    aria-label={`Schedule ${r.name}, overdue since ${formatDisplayDate(r.date)}`}
+                  >
+                    <i className="fa-solid fa-grip-vertical" aria-hidden="true" />
+                    <span className="cal-chip-name">{r.name}</span>
+                    <span className="cal-chip-date">{formatDisplayDate(r.date).replace(/^\w+, /, "")}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        <div className={`calendar-grid-react${dragId ? " is-dropping" : ""}`}>
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((name) => (
             <div key={name} className="calendar-day-name">{name}</div>
           ))}
@@ -399,13 +450,23 @@ export default function CalendarPage() {
             if (!day) return <div key={`e-${i}`} className="calendar-cell empty" />;
             const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const isToday = date === toDateStr(now);
+            const canDrop = dragId && date >= toDateStr(now);
             return (
               <button
                 key={date}
                 type="button"
-                className={`calendar-cell${isToday ? " today" : ""}`}
+                className={`calendar-cell${isToday ? " today" : ""}${dropDate === date ? " is-drop" : ""}`}
                 aria-current={isToday ? "date" : undefined}
                 onClick={() => openDay(date)}
+                onDragOver={canDrop ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dropDate !== date) setDropDate(date); } : undefined}
+                onDragLeave={canDrop ? () => setDropDate((d) => (d === date ? null : d)) : undefined}
+                onDrop={canDrop ? (e) => {
+                  e.preventDefault();
+                  const id = e.dataTransfer.getData("text/plain");
+                  const item = reminders.find((r) => String(r.id) === id);
+                  setDragId(null); setDropDate(null);
+                  if (item) setScheduling({ item, date });
+                } : undefined}
               >
                 <span className="day-number">{day}</span>
                 {(() => {
@@ -545,7 +606,7 @@ export default function CalendarPage() {
                       {g.name && <div className="day-group-title"><span className="day-item-dot" style={{ background: g.color || "var(--accent)" }} aria-hidden="true" />{g.name}</div>}
                       {g.items.map((t) => (
                   <div className="day-item" key={`${t.id}-${t.date}`}>
-                    <button type="button" className="day-check" onClick={() => completeReminder(t.id).then(load)} title="Mark complete" aria-label={`Complete ${t.name}`}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
+                    <button type="button" className="day-check" onClick={() => completeReminder(t.id).then(load).catch((err) => addToast(`Couldn't complete “${t.name}”: ${err?.message || "unknown error"}`, "error"))} title="Mark complete" aria-label={`Complete ${t.name}`}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
                     <div className="day-item-body">
                       <button type="button" className="day-item-title day-item-link" onClick={() => navigate(`/admin/tasks/${t.id}`)} title="Open task">{t.name}</button>
                       {(t.time || (t.recurrence && t.recurrence !== "none")) && (

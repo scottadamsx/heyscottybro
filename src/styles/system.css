@@ -876,7 +876,7 @@
   background: var(--accent); color: var(--text-on-accent); font-weight: 700;
 }
 .admin-shell .calendar-count,
-.admin-shell .calendar-item { margin-top: var(--space-2xs); padding: 2px var(--space-xs); border-radius: var(--radius-xs); font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0; }
+.admin-shell .calendar-item { margin-top: var(--space-2xs); padding: 2px var(--space-xs); border-radius: var(--radius-xs); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0; }
 .admin-shell .calendar-count.event-count { background: var(--info-bg); color: var(--blue); }
 .admin-shell .calendar-count.task-count { background: var(--bg-raised); color: var(--text-secondary); }
 .admin-shell .calendar-count.done-count { background: var(--success-bg); color: var(--green); }
@@ -986,6 +986,16 @@
   .admin-shell .export-kit-menu { right: auto; left: 0; }
   .admin-shell .fin-top-value, .admin-shell .fin-hero-value { font-size: var(--text-2xl); }
 }
+
+/* A stacked form row: fields keep their natural height (flex-basis would
+   otherwise become a 120px height once the row turns into a column). */
+@media (max-width: 480px) {
+  .admin-shell .form-row > * { flex: 0 0 auto; width: 100%; }
+}
+
+/* While any dialog is open, the chat button steps aside (it sat on top of
+   the phone day sheet's "Add event"). */
+.admin-shell:has(.event-overlay, .uik-modal-backdrop, .doc-viewer-overlay, .confirm-overlay) .chat-fab { display: none; }
 
 /* Touch: mini controls grow to real targets */
 @media (pointer: coarse) {

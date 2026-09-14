@@ -300,3 +300,22 @@
 @media (max-width: 480px) {
   .admin-shell :is(.project-quick-form, .tasks-form-panel, .task-edit-form, .worklog-page, .day-add-form, .plan-quick-reminder) .form-row > * { flex: 0 0 auto; }
 }
+
+/* ── Overdue tray + drop-to-schedule (Fit it in) ── */
+.cal-overdue { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-md); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); background: var(--danger-bg); }
+.cal-overdue-label { font-size: var(--text-sm); font-weight: 600; color: var(--red); }
+.cal-overdue-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.cal-chip {
+  display: inline-flex; align-items: center; gap: var(--space-xs); max-width: 100%;
+  min-height: var(--control-h-sm); padding: 0 var(--space-sm);
+  border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card);
+  color: var(--text-primary); font: inherit; font-size: var(--text-sm); cursor: grab; box-shadow: var(--shadow-card);
+}
+.cal-chip:hover { border-color: var(--border-strong); }
+.cal-chip:active { cursor: grabbing; }
+.cal-chip.is-dragging { opacity: 0.5; }
+.cal-chip i { font-size: 11px; color: var(--text-muted); }
+.cal-chip-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-chip-date { color: var(--red); font-size: var(--text-xs); white-space: nowrap; }
+.admin-shell .calendar-grid-react.is-dropping .calendar-cell:not(.empty) { transition: box-shadow var(--dur-fast), border-color var(--dur-fast); }
+.admin-shell .calendar-cell.is-drop { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); background: var(--bg-card); }
