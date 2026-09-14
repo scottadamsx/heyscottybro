@@ -155,88 +155,92 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
   };
 
   return (
-    <div>
-      <p className="bud-sh bud-sh-tight">Generate projection</p>
-      <div className="bud-grid-3">
-        <div>
-          <label className="bud-label bud-label-sm">Starting balance</label>
-          <input type="number" value={startBal} onChange={e => setStartBal(e.target.value)} placeholder="0" style={{ width: "100%" }} />
+    <div className="money money-tab">
+      <div className="section-head"><h2 className="section-title">Generate projection</h2></div>
+
+      <div className="db-card sim-setup">
+        <div className="sim-fields">
+          <label className="money-field">
+            <span className="field-label">Starting balance</span>
+            <input type="number" value={startBal} onChange={e => setStartBal(e.target.value)} placeholder="0" />
+          </label>
+          <div className="money-field">
+            <span className="field-label">From</span>
+            <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+          </div>
+          <div className="money-field">
+            <span className="field-label">To</span>
+            <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+          </div>
         </div>
-        <div>
-          <label className="bud-label bud-label-sm">From</label>
-          <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+        <div className="form-actions">
+          <button type="button" className="btn btn-sm" onClick={generate}>From bill config</button>
+          <button type="button" className="btn-sm btn-secondary-sm" onClick={loadFromHabits}
+            title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
+            From my habits{transactions.length ? <> <i className="fa-solid fa-check sim-ready" aria-hidden="true" /></> : null}
+          </button>
         </div>
-        <div>
-          <label className="bud-label bud-label-sm">To</label>
-          <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
-        </div>
-      </div>
-      <div className="bud-hstack" style={{ marginBottom: 12 }}>
-        <button className="btn bud-flex1" onClick={generate} style={{ background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>From bill config</button>
-        <button className="btn bud-flex1" onClick={loadFromHabits} style={{ background: transactions.length ? "var(--success-bg)" : "var(--bg-raised)", color: transactions.length ? "var(--green)" : "var(--text-muted)", border: `1px solid ${transactions.length ? "var(--success-bg)" : "var(--border-subtle)"}` }}
-          title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
-          From my habits{transactions.length ? <> <i className="fa-solid fa-check" aria-hidden="true" /></> : null}
-        </button>
+
+        {/* Saved simulations */}
+        {simulations.length > 0 && (
+          <div className="bi-inline sim-saved">
+            <select value={loadSel} aria-label="Saved simulations" onChange={e => setLoadSel(e.target.value)}>
+              <option value="">Load saved…</option>
+              {simulations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.savedAt})</option>)}
+            </select>
+            {loadSel && <button type="button" className="btn-sm btn-secondary-sm" onClick={() => loadSimulation(loadSel)}>Load</button>}
+            {loadSel && <button type="button" className="btn-sm btn-delete" onClick={() => deleteSimulation(loadSel)}>Delete</button>}
+          </div>
+        )}
       </div>
 
-      {/* Saved simulations */}
-      {simulations.length > 0 && (
-        <div className="bud-hstack" style={{ marginBottom: 12 }}>
-          <select value={loadSel} onChange={e => setLoadSel(e.target.value)} style={{ flex: 1, fontSize: 13 }}>
-            <option value="">Load saved…</option>
-            {simulations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.savedAt})</option>)}
-          </select>
-          {loadSel && <button className="btn bud-btn-sm" onClick={() => loadSimulation(loadSel)}>Load</button>}
-          {loadSel && <button className="btn btn-delete bud-btn-sm" onClick={() => deleteSimulation(loadSel)}>Del</button>}
-        </div>
-      )}
-
-      {warning && <div style={{ background: "var(--danger-bg)", border: "1px solid var(--red)", borderRadius: "0.375rem", padding: "0.75rem 1rem", marginBottom: 12, fontSize: 13, color: "var(--red)" }}>{warning}</div>}
+      {warning && <div className="money-alert" role="alert"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /><span>{warning}</span></div>}
 
       {rows.length > 0 && (
-        <>
-          <div className="bud-hstack" style={{ marginBottom: 12, flexWrap: "wrap" }}>
-            <button className="btn bud-btn-md" onClick={addRow}>+ Add row</button>
-            <button className="btn bud-btn-md" onClick={exportCsv}><i className="fa-solid fa-download"/> CSV</button>
-            <button className="btn bud-btn-md" onClick={() => setShowSaveForm(s => !s)}><i className="fa-solid fa-floppy-disk"/> Save</button>
+        <div className="db-card">
+          <div className="form-actions sim-toolbar">
+            <button type="button" className="btn-sm btn-secondary-sm" onClick={addRow}><i className="fa-solid fa-plus" aria-hidden="true" /> Add row</button>
+            <button type="button" className="btn-sm btn-secondary-sm" onClick={exportCsv}><i className="fa-solid fa-download" aria-hidden="true" /> CSV</button>
+            <button type="button" className="btn-sm btn-secondary-sm" aria-expanded={showSaveForm} onClick={() => setShowSaveForm(s => !s)}><i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Save</button>
           </div>
           {showSaveForm && (
-            <div className="bud-hstack" style={{ marginBottom: 10 }}>
-              <input value={simName} onChange={e => setSimName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveSimulation()} placeholder="Simulation name…" style={{ flex: 1, fontSize: 13 }} autoFocus />
-              <button className="btn" onClick={saveSimulation} style={{ fontSize: 12, background: "var(--green)", color: "var(--text-on-accent)", border: "none", fontWeight: 600 }}>Save</button>
+            <div className="bi-inline sim-save">
+              <input value={simName} aria-label="Simulation name" onChange={e => setSimName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveSimulation()} placeholder="Simulation name…" autoFocus />
+              <button type="button" className="btn btn-sm" onClick={saveSimulation}>Save</button>
             </div>
           )}
-          <div style={{ overflowX: "auto" }}>
-            <table className="bud-table bud-table-sim">
+          <div className="bud-table-wrap">
+            <table className="bud-table money-table sim-table">
               <thead>
                 <tr>
-                  {["Date","Description","Income","Expense","Balance",""].map(h => (
-                    <th key={h} className={["Income","Expense","Balance"].includes(h) ? "bud-right" : undefined}>{h}</th>
+                  {["Date", "Description", "Income", "Expense", "Balance"].map(h => (
+                    <th key={h} className={["Income", "Expense", "Balance"].includes(h) ? "bud-right" : undefined}>{h}</th>
                   ))}
+                  <th><span className="visually-hidden">Delete</span></th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(r => {
                   const negBal = r.balance < 0, lowBal = r.balance < 200;
                   return (
-                    <tr key={r.id} style={{ background: negBal ? "var(--danger-bg)" : lowBal ? "var(--warn-bg)" : "transparent" }}>
-                      <td>
-                        <DatePicker value={r.date} onChange={(v) => updateRow(r.id, "date", v)} className="bud-sim-inp" />
+                    <tr key={r.id}>
+                      <td className="sim-date">
+                        <DatePicker value={r.date} onChange={(v) => updateRow(r.id, "date", v)} />
                       </td>
                       <td>
-                        <input type="text" value={r.description} onChange={e => updateRow(r.id, "description", e.target.value)} className="bud-sim-inp" style={{ width: "100%", minWidth: 100 }} />
+                        <input type="text" value={r.description} aria-label="Description" onChange={e => updateRow(r.id, "description", e.target.value)} className="bud-sim-inp" />
                       </td>
                       <td className="bud-right">
-                        <input type="number" step="0.01" value={r.income || ""} onChange={e => updateRow(r.id, "income", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num" style={{ color: "var(--green)" }} />
+                        <input type="number" step="0.01" value={r.income || ""} aria-label="Income" onChange={e => updateRow(r.id, "income", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num is-in" />
                       </td>
                       <td className="bud-right">
-                        <input type="number" step="0.01" value={r.expense || ""} onChange={e => updateRow(r.id, "expense", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num" style={{ color: "var(--red)" }} />
+                        <input type="number" step="0.01" value={r.expense || ""} aria-label="Expense" onChange={e => updateRow(r.id, "expense", e.target.value)} placeholder="0" className="bud-sim-inp bud-sim-num" />
                       </td>
-                      <td className="bud-right bud-mono" style={{ fontSize: 12, color: negBal ? "var(--red)" : lowBal ? "var(--orange)" : "var(--green)", whiteSpace: "nowrap" }}>
+                      <td className={`is-amt${negBal ? " is-neg" : lowBal ? " is-low" : ""}`}>
                         {formatMoney(r.balance)}
                       </td>
-                      <td>
-                        <button onClick={() => deleteRow(r.id)} className="bud-x" style={{ color: "var(--red)", fontSize: 14, padding: 0 }}>×</button>
+                      <td className="is-actions">
+                        <button type="button" onClick={() => deleteRow(r.id)} className="icon-x sm" aria-label={`Delete row ${r.description || r.date}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                       </td>
                     </tr>
                   );
@@ -244,7 +248,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
       {dialog}
     </div>

@@ -201,10 +201,13 @@ export default function StatementImport({ transactions, setTransactions, categor
 
   return (
     <div className={`si${open ? " open" : ""}`}>
-      <button type="button" className="si-toggle" onClick={() => setOpen((o) => !o)}>
-        <span className="si-toggle-title"><i className="fa-solid fa-file-invoice" /> Import statement</span>
-        <span className="si-toggle-sub">Drop a bank statement — it reconciles against your ledger, you approve every line</span>
-        <i className={`fa-solid fa-chevron-${open ? "up" : "down"} si-chev`} />
+      <button type="button" className="si-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <span className="si-toggle-icon" aria-hidden="true"><i className="fa-solid fa-file-invoice" /></span>
+        <span className="si-toggle-text">
+          <span className="si-toggle-title">Import statement</span>
+          <span className="si-toggle-sub">Drop a bank statement — it reconciles against your ledger, you approve every line</span>
+        </span>
+        <i className={`fa-solid fa-chevron-${open ? "up" : "down"} si-chev`} aria-hidden="true" />
       </button>
 
       {open && (
@@ -212,26 +215,26 @@ export default function StatementImport({ transactions, setTransactions, categor
           {phase === "idle" && (
             <>
               <label className="si-drop">
-                <input type="file" accept=".pdf,.csv,.txt,image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-                <i className="fa-solid fa-cloud-arrow-up" /> Drop or choose a statement (PDF · image · CSV)
+                <input type="file" accept=".pdf,.csv,.txt,image/*" className="visually-hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+                <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a statement (PDF · image · CSV)
               </label>
               <div className="si-or">or paste the statement text</div>
-              <textarea rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the transactions section of your statement…" />
-              <button className="btn btn-sm" disabled={!paste.trim()} onClick={() => analyze({ text: paste.trim().slice(0, 24000) })}>
-                <i className="fa-solid fa-magnifying-glass-dollar" /> Analyze
+              <textarea rows={4} value={paste} aria-label="Statement text" onChange={(e) => setPaste(e.target.value)} placeholder="Paste the transactions section of your statement…" />
+              <button type="button" className="btn btn-sm" disabled={!paste.trim()} onClick={() => analyze({ text: paste.trim().slice(0, 24000) })}>
+                <i className="fa-solid fa-magnifying-glass-dollar" aria-hidden="true" /> Analyze
               </button>
             </>
           )}
 
-          {phase === "busy" && <p className="si-busy"><i className="fa-solid fa-spinner fa-spin" /> Reading the statement and reconciling against {transactions.length} logged transactions…</p>}
+          {phase === "busy" && <p className="si-busy" role="status"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Reading the statement and reconciling against {transactions.length} logged transactions…</p>}
 
           {phase === "review" && (
             <>
-              <p className="si-note"><i className="fa-solid fa-shield-halved" /> Every claimed match was re-verified by hard rules (±6 days, amount within $5/20%, direction agrees). Failed matches were demoted to unchecked. Nothing writes until you apply.</p>
+              <p className="si-note"><i className="fa-solid fa-shield-halved" aria-hidden="true" /> Every claimed match was re-verified by hard rules (±6 days, amount within $5/20%, direction agrees). Failed matches were demoted to unchecked. Nothing writes until you apply.</p>
 
               {rows.some((r) => r.kind === "update") && (
                 <div className="si-group">
-                  <div className="si-group-title"><i className="fa-solid fa-pen"/> Updates — same purchase, exact figures from the statement</div>
+                  <div className="si-group-title"><i className="fa-solid fa-pen" aria-hidden="true" /> Updates — same purchase, exact figures from the statement</div>
                   {rows.filter((r) => r.kind === "update").map((r) => (
                     <label key={r.key} className="si-row">
                       <input type="checkbox" checked={r.checked} onChange={() => toggle(r.key)} />
@@ -251,14 +254,14 @@ export default function StatementImport({ transactions, setTransactions, categor
 
               {rows.some((r) => r.kind === "new") && (
                 <div className="si-group">
-                  <div className="si-group-title"><i className="fa-solid fa-plus"/> New — on the statement, not in your ledger</div>
+                  <div className="si-group-title"><i className="fa-solid fa-plus" aria-hidden="true" /> New — on the statement, not in your ledger</div>
                   {rows.filter((r) => r.kind === "new").map((r) => (
                     <label key={r.key} className={`si-row${r.warn ? " warned" : ""}`}>
                       <input type="checkbox" checked={r.checked} onChange={() => toggle(r.key)} />
                       <span className="si-row-main">
                         <span className="si-row-title">{r.description} <em className="si-cat">{r.category_guess}</em></span>
                         <span className="si-diff"><strong>{r.direction === "credit" ? "+" : "−"}{formatMoney(r.amount)}</strong> · {r.date}</span>
-                        {r.warn && <span className="si-warn"><i className="fa-solid fa-triangle-exclamation" /> {r.warn}</span>}
+                        {r.warn && <span className="si-warn"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {r.warn}</span>}
                       </span>
                       {conf(r.confidence)}
                     </label>
@@ -268,7 +271,7 @@ export default function StatementImport({ transactions, setTransactions, categor
 
               {rows.some((r) => r.kind === "logged") && (
                 <div className="si-group muted">
-                  <div className="si-group-title"><i className="fa-solid fa-circle-check"/> Already logged correctly ({rows.filter((r) => r.kind === "logged").length}) — no action</div>
+                  <div className="si-group-title"><i className="fa-solid fa-circle-check" aria-hidden="true" /> Already logged correctly ({rows.filter((r) => r.kind === "logged").length}) — no action</div>
                 </div>
               )}
 
@@ -283,18 +286,18 @@ export default function StatementImport({ transactions, setTransactions, categor
               )}
 
               <div className="si-actions">
-                <button className="btn btn-sm" onClick={apply} disabled={checkedCount === 0 && !applyBalance}>
-                  <i className="fa-solid fa-check" /> Apply {checkedCount} change{checkedCount === 1 ? "" : "s"}{applyBalance ? " + balance" : ""}
+                <button type="button" className="btn btn-sm" onClick={apply} disabled={checkedCount === 0 && !applyBalance}>
+                  <i className="fa-solid fa-check" aria-hidden="true" /> Apply {checkedCount} change{checkedCount === 1 ? "" : "s"}{applyBalance ? " + balance" : ""}
                 </button>
-                <button className="btn btn-sm btn-secondary-sm" onClick={reset}>Cancel</button>
+                <button type="button" className="btn-sm btn-secondary-sm" onClick={reset}>Cancel</button>
               </div>
             </>
           )}
 
           {phase === "done" && summary && (
             <div className="si-done">
-              <p><i className="fa-solid fa-circle-check" /> Done: <strong>{summary.updated}</strong> transaction{summary.updated === 1 ? "" : "s"} updated to exact statement figures, <strong>{summary.created}</strong> added{summary.balance != null ? <>, ledger anchored to <strong>{formatMoney(summary.balance)}</strong> at statement close</> : ""}.</p>
-              <button className="btn btn-sm btn-secondary-sm" onClick={reset}>Import another</button>
+              <p><i className="fa-solid fa-circle-check" aria-hidden="true" /> Done: <strong>{summary.updated}</strong> transaction{summary.updated === 1 ? "" : "s"} updated to exact statement figures, <strong>{summary.created}</strong> added{summary.balance != null ? <>, ledger anchored to <strong>{formatMoney(summary.balance)}</strong> at statement close</> : ""}.</p>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={reset}>Import another</button>
             </div>
           )}
         </div>

@@ -73,67 +73,65 @@ export default function BudgetTransactions({ config, transactions, setTransactio
     return { totalIn, totalOut, finalBal };
   }, [transactions, ledgerRows, startingBalance]);
 
+  const setField = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const SORT_COLS = [["date", "Date"], ["description", "Description"], ["category", "Category"], ["amount", "Amount"], ["type", "Type"]];
+  const balTone = (bal) => (bal < 0 ? " is-neg" : bal < startingBalance * 0.2 ? " is-low" : "");
+
   return (
-    <div>
+    <div className="money money-tab">
       {/* Header row */}
       <div className="money-toolbar">
         <button type="button" className="btn" onClick={openNew}><i className="fa-solid fa-plus" aria-hidden="true" /> Log transaction</button>
-        <div className="bud-seg">
-          <button onClick={() => setViewMode("transactions")} className={`bud-seg-btn${viewMode === "transactions" ? " bud-seg-btn-on" : ""}`}>
+        <div className="segmented" role="group" aria-label="View">
+          <button type="button" aria-pressed={viewMode === "transactions"} onClick={() => setViewMode("transactions")} className={`segmented-opt${viewMode === "transactions" ? " active" : ""}`}>
             Transactions
           </button>
-          <button onClick={() => setViewMode("ledger")} className={`bud-seg-btn${viewMode === "ledger" ? " bud-seg-btn-on" : ""}`}>
+          <button type="button" aria-pressed={viewMode === "ledger"} onClick={() => setViewMode("ledger")} className={`segmented-opt${viewMode === "ledger" ? " active" : ""}`}>
             Ledger
           </button>
         </div>
       </div>
 
       {showForm && (
-        <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: "0.75rem", padding: "1.25rem", marginBottom: 16 }}>
-          <div className="bud-row" style={{ marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: "0.95rem" }}>{editId ? "Edit Transaction" : "Log Transaction"}</h3>
-            <button onClick={() => setShowForm(false)} className="bud-x" style={{ fontSize: 18 }}>×</button>
+        <div className="db-card tx-form">
+          <div className="db-card-header">
+            <h3 className="db-card-title">{editId ? "Edit transaction" : "Log transaction"}</h3>
+            <button type="button" onClick={() => setShowForm(false)} className="icon-x" aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
           </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {["expense", "income", "savings"].map(t => {
-              // Savings is money set aside (a transfer), so it reads as accent/neutral — not expense-red.
-              const tone = t === "income" ? "var(--green)" : t === "savings" ? "var(--accent)" : "var(--red)";
-              const tint = t === "income" ? "var(--success-bg)" : t === "savings" ? "var(--accent-bg)" : "var(--danger-bg)";
-              const on = form.type === t;
-              return (
-                <button key={t} onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
-                  className="bud-typebtn"
-                  style={{ fontWeight: on ? 600 : 400,
-                    background: on ? tint : "var(--bg-raised)",
-                    color: on ? tone : "var(--text-muted)",
-                    border: `1px solid ${on ? tone : "var(--border-subtle)"}` }}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              );
-            })}
+          <div className="segmented tx-type" role="radiogroup" aria-label="Type">
+            {["expense", "income", "savings"].map(t => (
+              // Savings is money set aside (a transfer) and pre-fills the Savings category.
+              <button key={t} type="button" role="radio" aria-checked={form.type === t}
+                onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
+                className={`segmented-opt${form.type === t ? " active" : ""}`}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
-          <input placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="bud-inp" />
-          <div className="bud-hstack" style={{ marginBottom: 8 }}>
-            <input type="number" placeholder="Amount" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} style={{ flex: 1 }} />
+          <div className="tx-form-grid">
+            <input className="is-wide" placeholder="Description" aria-label="Description" value={form.description} onChange={setField("description")} />
+            <input type="number" placeholder="Amount" aria-label="Amount" value={form.amount} onChange={setField("amount")} />
             <DatePicker value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
-          </div>
-          <label className="bud-caps-label">Category (Groceries, Gas…)</label>
-          <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="bud-inp">
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {form.type === "expense" && recurringBills.length > 0 && (
-            <>
-              <label className="bud-caps-label">Pays a bill? (Phone, Rent…)</label>
-              <select value={form.fulfills_recurring_id} onChange={e => pickBill(e.target.value)} className="bud-inp">
-                <option value="">— Not a bill —</option>
-                {recurringBills.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            <label className="money-field is-wide">
+              <span className="field-label">Category (Groceries, Gas…)</span>
+              <select value={form.category} onChange={setField("category")}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-            </>
-          )}
-          <input placeholder="Notes (optional)" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="bud-inp" />
-          <div className="bud-hstack">
-            <button className="btn bud-flex1" onClick={save} style={{ background: "var(--accent)", color: "var(--text-on-accent)", border: "none" }}>Save</button>
-            <button className="btn bud-flex1" onClick={() => setShowForm(false)}>Cancel</button>
+            </label>
+            {form.type === "expense" && recurringBills.length > 0 && (
+              <label className="money-field is-wide">
+                <span className="field-label">Pays a bill? (Phone, Rent…)</span>
+                <select value={form.fulfills_recurring_id} onChange={e => pickBill(e.target.value)}>
+                  <option value="">— Not a bill —</option>
+                  {recurringBills.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </label>
+            )}
+            <input className="is-wide" placeholder="Notes (optional)" aria-label="Notes" value={form.notes} onChange={setField("notes")} />
+          </div>
+          <div className="form-actions">
+            <button type="button" className="btn" onClick={save}>Save</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -142,83 +140,83 @@ export default function BudgetTransactions({ config, transactions, setTransactio
       {viewMode === "ledger" && (
         <>
           {/* Summary strip */}
-          <div className="bud-grid-3">
+          <div className="money-stats">
             {[
-              { label: "Total in", val: ledgerTotals.totalIn, color: "var(--green)" },
-              { label: "Total out", val: ledgerTotals.totalOut, color: "var(--red)" },
-              { label: "Current balance", val: ledgerTotals.finalBal, color: ledgerTotals.finalBal >= 0 ? "var(--green)" : "var(--red)" },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="bud-panel" style={{ padding: "0.75rem" }}>
-                <div className="bud-tile-label">{label}</div>
-                <div className="bud-mono" style={{ fontSize: 16, color }}>{formatMoney(val)}</div>
+              { label: "Total in", val: ledgerTotals.totalIn, tone: "good" },
+              { label: "Total out", val: ledgerTotals.totalOut },
+              { label: "Current balance", val: ledgerTotals.finalBal, tone: ledgerTotals.finalBal < 0 ? "bad" : "" },
+            ].map(({ label, val, tone }) => (
+              <div key={label} className="money-stat">
+                <span className="kpi-head"><span className="kpi-label">{label}</span></span>
+                <span className={`money-stat-value${tone ? ` tone-${tone}` : ""}`}>{formatMoney(val)}</span>
               </div>
             ))}
           </div>
-          <p className="bud-sh bud-sh-tight">Running ledger — {ledgerRows.length} entries</p>
-          {ledgerRows.length === 0
-            ? <p className="bud-muted-13">No transactions yet.</p>
-            : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="bud-table bud-table-ledger">
-                  <thead>
-                    <tr>
-                      {["Date", "Description", "Category", "Debit", "Credit", "Balance"].map(h => (
-                        <th key={h} className={["Debit", "Credit", "Balance"].includes(h) ? "bud-right" : undefined}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Opening balance row */}
-                    <tr style={{ background: "var(--bg-raised)" }}>
-                      <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontSize: 11, whiteSpace: "nowrap" }}>Opening</td>
-                      <td style={{ padding: "6px 8px", color: "var(--text-muted)", fontStyle: "italic", fontSize: 11 }}>Starting balance</td>
-                      <td /><td /><td />
-                      <td className="bud-right bud-mono" style={{ padding: "6px 8px", fontSize: 12 }}>{formatMoney(startingBalance)}</td>
-                    </tr>
-                    {ledgerRows.map(t => {
-                      const isIncome = t.type === "income";
-                      const balNeg = t.runningBalance < 0;
-                      return (
-                        <tr key={t.id} style={{ background: balNeg ? "var(--danger-bg)" : "transparent" }}>
-                          <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap", fontSize: 11 }}>{t.date}</td>
-                          <td className="bud-ellipsis" style={{ maxWidth: 200 }}>
-                            {t.description}
-                            {t.notes && <span className="bud-muted-10" style={{ marginLeft: 5 }}>· {t.notes}</span>}
-                          </td>
-                          <td>
-                            <span className="bud-pill bud-pill-10">{t.category}</span>
-                          </td>
-                          <td className="bud-right bud-mono">
-                            {!isIncome ? formatMoney(t.amount) : ""}
-                          </td>
-                          <td className="bud-right bud-mono" style={{ color: "var(--green)" }}>
-                            {isIncome ? formatMoney(t.amount) : ""}
-                          </td>
-                          <td className="bud-right bud-mono" style={{ fontSize: 13, fontWeight: 600, color: balNeg ? "var(--red)" : t.runningBalance < startingBalance * 0.2 ? "var(--orange)" : "var(--text-primary)", whiteSpace: "nowrap" }}>
-                            {formatMoney(t.runningBalance)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )
-          }
+          <div className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Running ledger</h3>
+              <span className="money-bills-count">{ledgerRows.length} entries</span>
+            </div>
+            {ledgerRows.length === 0
+              ? <p className="money-card-note">No transactions yet.</p>
+              : (
+                <div className="bud-table-wrap">
+                  <table className="bud-table money-table ledger-table">
+                    <thead>
+                      <tr>
+                        {["Date", "Description", "Category", "Debit", "Credit", "Balance"].map(h => (
+                          <th key={h} className={["Debit", "Credit", "Balance"].includes(h) ? "bud-right" : h === "Category" ? "is-cat" : undefined}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Opening balance row */}
+                      <tr className="is-opening">
+                        <td className="is-date">Opening</td>
+                        <td className="is-sub">Starting balance</td>
+                        <td className="is-cat" /><td /><td />
+                        <td className="is-amt">{formatMoney(startingBalance)}</td>
+                      </tr>
+                      {ledgerRows.map(t => {
+                        const isIncome = t.type === "income";
+                        return (
+                          <tr key={t.id}>
+                            <td className="is-date">{t.date}</td>
+                            <td className="is-desc">
+                              {t.description}
+                              {t.notes && <span className="is-note">· {t.notes}</span>}
+                            </td>
+                            <td className="is-cat">{t.category}</td>
+                            <td className="is-amt is-plain">{!isIncome ? formatMoney(t.amount) : ""}</td>
+                            <td className="is-amt is-plain is-in">{isIncome ? formatMoney(t.amount) : ""}</td>
+                            <td className={`is-amt${balTone(t.runningBalance)}`}>{formatMoney(t.runningBalance)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+          </div>
         </>
       )}
 
       {/* ── TRANSACTIONS VIEW ── */}
       {viewMode === "transactions" && (
-        <>
-          <div className="bud-grid-2">
-            <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ fontSize: 13 }}>
+        <div className="db-card">
+          <div className="db-card-header">
+            <h3 className="db-card-title">Transactions</h3>
+            <span className="db-count" aria-label={`${filtered.length} transactions`}>{filtered.length}</span>
+          </div>
+          <div className="tx-filters">
+            <select value={filterType} onChange={e => setFilterType(e.target.value)} aria-label="Type">
               <option value="all">All types</option>
               <option value="expense">Expenses</option>
               <option value="income">Income</option>
               <option value="savings">Savings</option>
             </select>
-            <select value={filterCat} onChange={e => setFilterCat(e.target.value)} style={{ fontSize: 13 }}>
+            <select value={filterCat} onChange={e => setFilterCat(e.target.value)} aria-label="Category">
               <option value="all">All categories</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -226,50 +224,51 @@ export default function BudgetTransactions({ config, transactions, setTransactio
             <DatePicker value={filterTo} onChange={(v) => setFilterTo(v)} placeholder="To" />
           </div>
 
-          <p className="bud-sh bud-sh-tight">Transactions ({filtered.length})</p>
-
           {filtered.length === 0
-            ? <p className="bud-muted-13">No transactions match your filters.</p>
+            ? <p className="money-card-note">No transactions match your filters.</p>
             : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="bud-table bud-table-tx">
+              <div className="bud-table-wrap">
+                <table className="bud-table money-table is-stack tx-table">
                   <thead>
                     <tr>
-                      {[["date", "Date"], ["description", "Description"], ["category", "Category"], ["amount", "Amount"], ["type", "Type"], ["", ""]].map(([col, label]) => (
-                        <th key={label} onClick={col ? () => sortBy(col) : undefined}
-                          className={col === "amount" ? "bud-right" : undefined}
-                          style={{ cursor: col ? "pointer" : "default" }}>
-                          {label}{sortCol === col ? (sortAsc ? " ↑" : " ↓") : ""}
+                      {SORT_COLS.map(([col, label]) => (
+                        <th key={col} className={col === "amount" ? "bud-right" : undefined}
+                          aria-sort={sortCol === col ? (sortAsc ? "ascending" : "descending") : undefined}>
+                          <button type="button" className={`money-sort${sortCol === col ? " is-active" : ""}`} onClick={() => sortBy(col)}>
+                            {label}
+                            {sortCol === col && <i className={`fa-solid fa-arrow-${sortAsc ? "up" : "down"}`} aria-hidden="true" />}
+                          </button>
                         </th>
                       ))}
+                      <th><span className="visually-hidden">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map(t => (
                       <tr key={t.id}>
-                        <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>{t.date}</td>
-                        <td className="bud-ellipsis" style={{ maxWidth: 180 }}>
+                        <td className="is-date">{t.date}</td>
+                        <td className="is-desc">
                           {t.description}
-                          {t.notes && <span className="bud-muted-11" style={{ marginLeft: 6 }}>· {t.notes}</span>}
+                          {t.notes && <span className="is-note">· {t.notes}</span>}
                         </td>
-                        <td><span className="bud-pill">{t.category}</span></td>
-                        <td className={`bud-right money-tx-amt t-${t.type}`}>
-                          {t.type === "income" ? "+" : "-"}{formatMoney(t.amount)}
+                        <td className="is-cat">{t.category}</td>
+                        <td className={`is-amt money-tx-amt t-${t.type}`}>
+                          {t.type === "income" ? "+" : "−"}{formatMoney(t.amount)}
                         </td>
-                        <td style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                        <td className="is-type">
                           {(t.is_bill || t.fulfills_recurring_id) && <span className="bud-billtag">{billName(t.fulfills_recurring_id) || "Bill"}</span>}
-                          {t.reconciled ? <span style={{ fontSize: 11, color: "var(--green)" }}>Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
+                          {t.reconciled ? <span className="tx-reconciled">Reconciled</span> : t.type === "future" ? "Planned" : t.type === "income" ? "Income" : t.type === "savings" ? "Savings" : "Expense"}
                         </td>
-                        <td style={{ whiteSpace: "nowrap" }}>
+                        <td className="is-actions">
                           <div className="bud-actions">
-                            <button className="btn-sm bud-btn-xs" onClick={() => openEdit(t)}>Edit</button>
+                            <button type="button" className="btn-mini" onClick={() => openEdit(t)}>Edit</button>
                             {t.type === "expense" && (
-                              <button className="btn-sm bud-btn-xs" onClick={() => toggleBill(t.id)} style={t.is_bill ? { color: "var(--orange)", borderColor: "var(--orange)" } : undefined} title={t.is_bill ? "Unmark as bill" : "Mark as bill"}>
+                              <button type="button" className="btn-mini" onClick={() => toggleBill(t.id)} aria-pressed={!!t.is_bill} title={t.is_bill ? "Unmark as bill" : "Mark as bill"}>
                                 {t.is_bill ? "Unbill" : "Bill"}
                               </button>
                             )}
-                            {t.type === "future" && <button className="btn-sm btn-complete bud-btn-xs" onClick={() => convertFuture(t.id)}>Purchased</button>}
-                            <button className="btn-sm btn-delete bud-btn-xs" onClick={() => deleteTx(t.id)}>Del</button>
+                            {t.type === "future" && <button type="button" className="btn-mini accent" onClick={() => convertFuture(t.id)}>Purchased</button>}
+                            <button type="button" className="btn-mini danger" onClick={() => deleteTx(t.id)} aria-label={`Delete ${t.description}`}>Delete</button>
                           </div>
                         </td>
                       </tr>
@@ -279,7 +278,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
               </div>
             )
           }
-        </>
+        </div>
       )}
       {dialog}
     </div>

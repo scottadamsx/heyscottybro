@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatMoney, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
 import { useConfirm } from "../../hooks/useConfirm";
+import "./budget.css";
 
 export default function RecurringCard({ item, kind, categories, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
@@ -9,7 +10,6 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
   const { confirm, dialog } = useConfirm();
 
   const isIncome = kind === "income";
-  const accent = isIncome ? "var(--bud-green)" : "var(--bud-red)";
 
   const commit = async () => {
     const patch = { ...draft, amount: Number(draft.amount) };
@@ -35,9 +35,9 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
 
   if (editing) {
     return (
-      <div className="bud-card bud-card-edit" style={{ borderTopColor: accent }}>
-        <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="Name" />
-        <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} placeholder="Amount" />
+      <div className="bud-card bud-card-edit">
+        <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="Name" aria-label="Name" />
+        <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft({ ...draft, amount: e.target.value })} placeholder="Amount" aria-label="Amount" />
         {!isIncome && (
           <select value={draft.category || "Other"} onChange={e => setDraft({ ...draft, category: e.target.value })}>
             {categories.map(c => <option key={c}>{c}</option>)}
@@ -59,9 +59,9 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
             </label>
           )}
         </div>
-        <textarea value={draft.notes || ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} placeholder="Notes" rows={2} />
+        <textarea value={draft.notes || ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} placeholder="Notes" aria-label="Notes" rows={2} />
         <div className="bud-card-actions">
-          <button type="button" className="btn-mini accent" onClick={commit}><i className="fa-solid fa-check" /> Save</button>
+          <button type="button" className="btn-mini accent" onClick={commit}><i className="fa-solid fa-check" aria-hidden="true" /> Save</button>
           <button type="button" className="btn-mini muted" onClick={() => { setDraft(item); setEditing(false); }}>Cancel</button>
         </div>
       </div>
@@ -71,11 +71,11 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
   const ended = item.endDate && item.endDate < toDateStr(new Date());
 
   return (
-    <div className="bud-card" style={{ borderTopColor: accent, opacity: ended ? 0.55 : 1 }}>
+    <div className={`bud-card${ended ? " is-ended" : ""}`}>
       {dialog}
       <div className="bud-card-head">
         <h4>{item.name}</h4>
-        <span className="bud-card-amount" style={{ color: accent }}>
+        <span className={`bud-card-amount${isIncome ? " is-income" : ""}`}>
           {isIncome ? "+" : "-"}{formatMoney(item.amount)}<span className="bud-card-unit">/mo</span>
         </span>
       </div>
@@ -86,9 +86,9 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
       </div>
       {item.notes && <p className="bud-card-note">{item.notes}</p>}
       <div className="bud-card-actions">
-        <button type="button" className="btn-mini" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" /> Edit</button>
-        {!ended && <button type="button" className="btn-mini muted" onClick={pause} title="Set end date to end of this month"><i className="fa-solid fa-pause" /> Pause</button>}
-        <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${item.name}"?`, { title: "Delete", confirmLabel: "Delete" })) onDelete(item.id); }} aria-label="Delete"><i className="fa-solid fa-trash" /></button>
+        <button type="button" className="btn-mini" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+        {!ended && <button type="button" className="btn-mini muted" onClick={pause} title="Set end date to end of this month"><i className="fa-solid fa-pause" aria-hidden="true" /> Pause</button>}
+        <button type="button" className="btn-mini danger" onClick={async () => { if (await confirm(`Delete "${item.name}"?`, { title: "Delete", confirmLabel: "Delete" })) onDelete(item.id); }} aria-label="Delete"><i className="fa-solid fa-trash" aria-hidden="true" /></button>
       </div>
     </div>
   );

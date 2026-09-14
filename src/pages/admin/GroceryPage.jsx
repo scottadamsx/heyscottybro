@@ -184,36 +184,32 @@ export default function GroceryPage() {
   const fmtDate = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "");
 
   return (
-    <div className="module-page grocery-page">
+    <div className="grocery-page">
       {dialog}
-      <div className="module-header">
-        <h1><i className="fa-solid fa-receipt" /> Groceries</h1>
-        <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-          {receipts.length} receipt{receipts.length === 1 ? "" : "s"}
-        </span>
-      </div>
 
       {/* ── Upload + review ── */}
       <div className="db-card">
-        <h3 className="db-card-title"><i className={`fa-solid ${editingId ? "fa-pen" : "fa-camera"}`} /> {editingId ? "Edit receipt" : "Scan a receipt"}</h3>
+        <div className="db-card-header">
+          <h3 className="db-card-title"><i className={`fa-solid ${editingId ? "fa-pen" : "fa-camera"}`} aria-hidden="true" /> {editingId ? "Edit receipt" : "Scan a receipt"}</h3>
+        </div>
 
         {!draft && (
           <div className="grocery-upload">
-            <label className="btn btn-sm">
-              <i className="fa-solid fa-image" /> {file ? "Choose a different photo" : "Choose receipt photo"}
-              <input type="file" accept="image/*" capture="environment" onChange={pickFile} style={{ display: "none" }} />
+            {!preview && <p className="money-card-note grocery-intro">Snap or upload a photo of a grocery receipt and AI will pull out the items and total.</p>}
+            <label className={`grocery-pick ${preview ? "btn-sm btn-secondary-sm" : "btn btn-sm"}`}>
+              <i className="fa-solid fa-image" aria-hidden="true" /> {file ? "Choose a different photo" : "Choose receipt photo"}
+              <input type="file" accept="image/*" capture="environment" onChange={pickFile} className="visually-hidden" />
             </label>
             {preview && (
               <div className="grocery-preview">
                 <img src={preview} alt="Receipt preview" />
-                <button className="btn btn-sm" onClick={readReceipt} disabled={extracting}>
+                <button type="button" className="btn btn-sm" onClick={readReceipt} disabled={extracting}>
                   {extracting
-                    ? <><i className="fa-solid fa-spinner fa-spin" /> Reading…</>
-                    : <><i className="fa-solid fa-wand-magic-sparkles" /> Read receipt</>}
+                    ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Reading…</>
+                    : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Read receipt</>}
                 </button>
               </div>
             )}
-            {!preview && <p className="no-entries">Snap or upload a photo of a grocery receipt and AI will pull out the items and total.</p>}
           </div>
         )}
 
@@ -221,56 +217,56 @@ export default function GroceryPage() {
           <div className="grocery-review" key={editingId || "new"}>
             {editingId && <p className="grocery-edit-note">Editing a saved receipt — changes replace its store, date, totals and item lines. Budget transactions are not touched.</p>}
             <div className="grocery-review-grid">
-              <label>Store
+              <label className="money-field"><span className="field-label">Store</span>
                 <input value={draft.store_name} onChange={(e) => setField("store_name", e.target.value)} placeholder="Store name" />
               </label>
-              <label>Date
+              <div className="money-field"><span className="field-label">Date</span>
                 <DatePicker value={draft.purchase_date} onChange={(v) => setField("purchase_date", v)} />
-              </label>
-              <label>Subtotal
+              </div>
+              <label className="money-field"><span className="field-label">Subtotal</span>
                 <input type="number" step="0.01" value={draft.subtotal} onChange={(e) => setField("subtotal", e.target.value)} placeholder="—" />
               </label>
-              <label>Total
+              <label className="money-field"><span className="field-label">Total</span>
                 <input type="number" step="0.01" value={draft.total} onChange={(e) => setField("total", e.target.value)} placeholder="0.00" />
               </label>
             </div>
 
             <div className="grocery-items">
-              <div className="grocery-item-head">
+              <div className="grocery-item-head" aria-hidden="true">
                 <span>Item</span><span>Qty</span><span>Unit</span><span>Total</span><span />
               </div>
               {draft.items.map((it, i) => (
                 <div className="grocery-item-row" key={i}>
-                  <input value={it.raw_text} onChange={(e) => setItem(i, "raw_text", e.target.value)} placeholder="Item name" />
-                  <input type="number" step="0.001" value={it.quantity} onChange={(e) => setItem(i, "quantity", e.target.value)} />
-                  <input type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, "unit_price", e.target.value)} placeholder="—" />
-                  <input type="number" step="0.01" value={it.total_price} onChange={(e) => setItem(i, "total_price", e.target.value)} placeholder="0.00" />
-                  <button className="btn-mini" onClick={() => removeRow(i)} title="Remove"><i className="fa-solid fa-xmark" /></button>
+                  <input value={it.raw_text} onChange={(e) => setItem(i, "raw_text", e.target.value)} placeholder="Item name" aria-label="Item" />
+                  <input type="number" step="0.001" value={it.quantity} onChange={(e) => setItem(i, "quantity", e.target.value)} aria-label="Quantity" />
+                  <input type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(i, "unit_price", e.target.value)} placeholder="—" aria-label="Unit price" />
+                  <input type="number" step="0.01" value={it.total_price} onChange={(e) => setItem(i, "total_price", e.target.value)} placeholder="0.00" aria-label="Line total" />
+                  <button type="button" className="icon-x sm" onClick={() => removeRow(i)} title="Remove" aria-label={`Remove ${it.raw_text || "item"}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               ))}
-              <button className="btn btn-sm btn-secondary-sm" onClick={addRow}><i className="fa-solid fa-plus" /> Add item</button>
+              <button type="button" className="btn-sm btn-secondary-sm grocery-add" onClick={addRow}><i className="fa-solid fa-plus" aria-hidden="true" /> Add item</button>
               {lineSum > 0 && (
                 <p className="grocery-linesum">
                   Items add up to {money(lineSum)}
                   {Number(draft.total) > 0 && Math.abs(lineSum - Number(draft.total)) > 0.02 && (
-                    <span style={{ color: "var(--text-muted)" }}> · total entered is {money(draft.total)}</span>
+                    <span className="grocery-linesum-diff"> · total entered is {money(draft.total)}</span>
                   )}
                 </p>
               )}
             </div>
 
             {!editingId && (
-              <label className="grocery-check">
+              <label className="checkbox-inline grocery-check">
                 <input type="checkbox" checked={addToBudget} onChange={(e) => setAddToBudget(e.target.checked)} />
                 Add {money(draft.total || 0)} to the budget as a Groceries expense
               </label>
             )}
 
-            <div className="grocery-review-actions">
-              <button className="btn btn-sm" onClick={save} disabled={saving}>
-                {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> {editingId ? "Save changes" : "Save receipt"}</>}
+            <div className="form-actions">
+              <button type="button" className="btn btn-sm" onClick={save} disabled={saving}>
+                {saving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" aria-hidden="true" /> {editingId ? "Save changes" : "Save receipt"}</>}
               </button>
-              <button className="btn btn-sm btn-secondary-sm" onClick={resetForm} disabled={saving}>Cancel</button>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={resetForm} disabled={saving}>Cancel</button>
             </div>
           </div>
         )}
@@ -278,31 +274,34 @@ export default function GroceryPage() {
 
       {/* ── History ── */}
       <div className="db-card">
-        <h3 className="db-card-title"><i className="fa-solid fa-clock-rotate-left" /> Recent receipts</h3>
-        {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p>}
+        <div className="db-card-header">
+          <h3 className="db-card-title"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Recent receipts</h3>
+          {!loading && !loadError && <span className="money-bills-count">{receipts.length} receipt{receipts.length === 1 ? "" : "s"}</span>}
+        </div>
+        {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
         {!loading && loadError && (
           <div className="load-error" role="alert">
             <p className="load-error-msg">{loadError}</p>
             <button type="button" className="btn btn-sm" onClick={refresh}>Retry</button>
           </div>
         )}
-        {!loading && !loadError && receipts.length === 0 && <p className="no-entries">No receipts yet. Scan one above.</p>}
+        {!loading && !loadError && receipts.length === 0 && <p className="money-card-note">No receipts yet. Scan one above.</p>}
         <div className="grocery-list">
           {receipts.map((r) => (
             <div className={`grocery-receipt${openId === r.id ? " open" : ""}`} key={r.id}>
-              <button className="grocery-receipt-row" onClick={() => toggleOpen(r)}>
+              <button type="button" className="grocery-receipt-row" aria-expanded={openId === r.id} onClick={() => toggleOpen(r)}>
                 <span className="grocery-receipt-main">
-                  <strong>{r.store_name || "Store"}</strong>
+                  <span className="grocery-receipt-name">{r.store_name || "Store"}</span>
                   <span className="grocery-receipt-sub">{fmtDate(r.purchase_date)} · {r.item_count} item{r.item_count === 1 ? "" : "s"}</span>
                 </span>
                 <span className="grocery-receipt-total">{money(r.total)}</span>
-                <i className={`fa-solid fa-chevron-${openId === r.id ? "up" : "down"}`} />
+                <i className={`fa-solid fa-chevron-${openId === r.id ? "up" : "down"} grocery-chev`} aria-hidden="true" />
               </button>
               {openId === r.id && (
                 <div className="grocery-receipt-detail">
                   {openImg && <img className="grocery-receipt-img" src={openImg} alt="Receipt" />}
                   <div className="grocery-detail-items">
-                    {openItems.length === 0 && <p className="no-entries">No itemized lines.</p>}
+                    {openItems.length === 0 && <p className="no-entries-compact">No itemized lines.</p>}
                     {openItems.map((it) => (
                       <div className="grocery-detail-line" key={it.id}>
                         <span>{it.raw_text}</span>
@@ -311,11 +310,11 @@ export default function GroceryPage() {
                     ))}
                   </div>
                   <div className="grocery-detail-actions">
-                    <button className="btn btn-sm btn-secondary-sm" onClick={() => startEdit(r)}>
-                      <i className="fa-solid fa-pen" /> Edit
+                    <button type="button" className="btn-sm btn-secondary-sm" onClick={() => startEdit(r)}>
+                      <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
                     </button>
-                    <button className="btn btn-sm btn-secondary-sm" onClick={() => removeReceipt(r.id)}>
-                      <i className="fa-solid fa-trash" /> Delete
+                    <button type="button" className="btn-sm btn-delete" onClick={() => removeReceipt(r.id)}>
+                      <i className="fa-solid fa-trash" aria-hidden="true" /> Delete
                     </button>
                   </div>
                 </div>
