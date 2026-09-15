@@ -16,7 +16,7 @@ import { loadContext, addContextEntry, deleteContextEntry, replaceContext } from
 import { linkNodes as linkBrainNodes } from "./brainApi";
 import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
 import { clearAllMembers } from "./hikerApi";
-import { loadAccountability, logHabitDone, unlogHabitDone } from "./accountabilityApi";
+import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "./accountabilityApi";
 import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
 import { todayStr as nutritionToday } from "../utils/nutrition";
 import { supabase, getAuthHeaders } from "../utils/supabase";
@@ -179,7 +179,7 @@ export const TOOLS = [
     },
   },
   { name: "complete_reminder", description: "Mark a reminder/task complete (shortcut for update_item with completed: true)", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
-  { name: "log_habit", description: "Log a habit tracker (Life › Habits) as done for a day. Get the tracker id from query on the 'habits' collection. Checkbox trackers toggle (logging twice un-logs); count trackers add one tally. Also mirrors into that day's Work log automatically — don't create a separate work_log entry for the same habit.", input_schema: { type: "object", properties: { tracker_id: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" } }, required: ["tracker_id"] } },
+  { name: "log_habit", description: "Log a habit tracker (Life › Habits) as done for a day. Get the tracker id from query on the 'habits' collection. Checkbox trackers toggle (logging twice un-logs); count trackers add one tally. Also mirrors into that day's Work log automatically — don't create a separate work_log entry for the same habit. Pass missed: true when Scott says a habit WON'T get done that day (\"skip the gym today\"): it's crossed out, doesn't count as done, and moves the habit's next due date on; missed: false undoes that.", input_schema: { type: "object", properties: { tracker_id: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" }, missed: { type: "boolean", description: "true = mark 'Missed it' for the day; false = undo a miss. Omit to log it done." } }, required: ["tracker_id"] } },
   { name: "set_balance", description: "Set Scott's current bank balance", input_schema: { type: "object", properties: { balance: { type: "number" } }, required: ["balance"] } },
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
@@ -300,6 +300,10 @@ async function runTool(name, input) {
       if (!tracker) return { error: `no habit tracker with id ${input.tracker_id} — query the habits collection for the id` };
       const date = input.date || nutritionToday();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
+      if (input.missed === true || input.missed === false) {
+        await (input.missed ? logHabitMissed(tracker, date) : unlogHabitMissed(tracker, date));
+        return { success: true, action: input.missed ? "marked missed" : "un-missed", tracker: tracker.name, date };
+      }
       const already = state.logs.some((l) => l.trackerId === tracker.id && l.date === date);
       const willUnlog = tracker.mode === "check" && already;
       const next = willUnlog ? await unlogHabitDone(tracker, date) : await logHabitDone(tracker, date);

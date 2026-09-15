@@ -529,6 +529,10 @@
 .admin-shell .db-list-item-subtitle { font-size: var(--text-sm); color: var(--text-secondary); }
 .admin-shell .db-list-item-chevron { flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
 .admin-shell .db-list > .form-card { margin: var(--space-2xs) 0; }
+/* "Missed it": a crossed-out row — struck title + a word, never colour alone */
+.admin-shell .is-missed .db-list-item-title { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--text-secondary); }
+.admin-shell .missed-tag { font-weight: 600; color: var(--text-secondary); }
+.admin-shell .habit-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
 
 .admin-shell .db-subhead { display: flex; align-items: center; gap: var(--space-xs); margin: var(--space-md) 0 var(--space-xs); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
 .admin-shell .db-subhead:first-child { margin-top: 0; }

@@ -1,6 +1,13 @@
 /**
  * Accountability API — one state row per user in Supabase (accountability_state)
- * holding { schema, version, trackers, logs } as a jsonb blob.
+ * holding { schema, version, trackers, logs, misses } as a jsonb blob.
+ *
+ * Schema 2 (2026-09-14, DR-014) adds `misses`: [{ id, trackerId, date, at }] —
+ * "Missed it" marks for a day a habit won't get done. A miss is never a log:
+ * it doesn't count as done and doesn't extend a streak. It moves the habit's
+ * next due date on (see habitSchedule.dueHabits). Schema 1/0 blobs upgrade
+ * in place with misses: []; an older app build refuses a schema-2 blob rather
+ * than dropping the misses on its next save.
  *
  * Concurrency: three surfaces write this blob (Habits page, the Today card and
  * agents). Every write goes through updateAccountability(), which loads fresh,
@@ -16,13 +23,13 @@ import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
 import { loadWorkLog, createWorkLog, deleteWorkLog } from "./workLogApi";
 
-export const ACCOUNTABILITY_SCHEMA = 1;
+export const ACCOUNTABILITY_SCHEMA = 2;
 const TABLE = "accountability_state";
 const LOCAL_KEY = "accountability"; // write-only mirror, kept for the legacy seed path below
 const VERSION_COL = "state->>version";
 
 function empty() {
-  return { schema: ACCOUNTABILITY_SCHEMA, version: 0, trackers: [], logs: [] };
+  return { schema: ACCOUNTABILITY_SCHEMA, version: 0, trackers: [], logs: [], misses: [] };
 }
 
 /**
@@ -35,14 +42,17 @@ export function normalize(d) {
   if (typeof d !== "object" || Array.isArray(d)) {
     throw new Error(`Unrecognised accountability state: expected an object, got ${Array.isArray(d) ? "an array" : typeof d}`);
   }
-  // Pre-versioned blobs (no `schema`) have the same shape as schema 1; they are
-  // upgraded in place on the next write.
+  // Pre-versioned blobs (no `schema`) and schema 1 are schema 2 without
+  // `misses`; they are upgraded in place on the next write.
   const schema = d.schema ?? 0;
-  if (schema !== 0 && schema !== ACCOUNTABILITY_SCHEMA) {
+  if (![0, 1, ACCOUNTABILITY_SCHEMA].includes(schema)) {
     throw new Error(`Unrecognised accountability schema ${schema} (this app understands schema ${ACCOUNTABILITY_SCHEMA}) — refusing to load so nothing is overwritten`);
   }
   if (!Array.isArray(d.trackers) || !Array.isArray(d.logs)) {
     throw new Error("Unrecognised accountability state: trackers/logs are not arrays — refusing to load so nothing is overwritten");
+  }
+  if (d.misses !== undefined && !Array.isArray(d.misses)) {
+    throw new Error("Unrecognised accountability state: misses is not an array — refusing to load so nothing is overwritten");
   }
   for (const tracker of d.trackers) {
     if (tracker.schedule !== undefined) validateHabitSchedule(tracker.schedule);
@@ -52,6 +62,7 @@ export function normalize(d) {
     version: Number.isInteger(d.version) && d.version >= 0 ? d.version : 0,
     trackers: d.trackers,
     logs: d.logs,
+    misses: d.misses || [],
   };
 }
 
@@ -60,6 +71,7 @@ function clone(state) {
     ...state,
     trackers: state.trackers.map((t) => ({ ...t, ...(t.schedule === undefined ? {} : { schedule: { ...t.schedule } }) })),
     logs: state.logs.map((l) => ({ ...l })),
+    misses: (state.misses || []).map((m) => ({ ...m })),
   };
 }
 
@@ -229,6 +241,8 @@ async function unmirrorHabitFromWorkLog(tracker, date) {
  */
 export async function logHabitDone(tracker, date) {
   const next = await updateAccountability((d) => {
+    // Doing it after all beats "missed it": the same-day miss goes.
+    d.misses = d.misses.filter((m) => !(m.trackerId === tracker.id && m.date === date));
     if (tracker.mode === "check" && d.logs.some((l) => l.trackerId === tracker.id && l.date === date)) return;
     d.logs.push({ id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() });
   });
@@ -243,4 +257,26 @@ export async function unlogHabitDone(tracker, date) {
   });
   await unmirrorHabitFromWorkLog(tracker, date);
   return next;
+}
+
+/**
+ * "Missed it" — cross a habit out for a day it won't get done. Idempotent per
+ * (tracker, day). Refused when the habit is already logged that day (undo the
+ * log first) so a day can never read as both done and missed.
+ */
+export async function logHabitMissed(tracker, date) {
+  return updateAccountability((d) => {
+    if (d.logs.some((l) => l.trackerId === tracker.id && l.date === date)) {
+      throw new Error(`${tracker.name} is already logged for that day — remove the log before marking it missed.`);
+    }
+    if (d.misses.some((m) => m.trackerId === tracker.id && m.date === date)) return;
+    d.misses.push({ id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() });
+  });
+}
+
+/** Undo "Missed it" for one habit/day. */
+export async function unlogHabitMissed(tracker, date) {
+  return updateAccountability((d) => {
+    d.misses = d.misses.filter((m) => !(m.trackerId === tracker.id && m.date === date));
+  });
 }

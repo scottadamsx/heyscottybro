@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
-import { loadAccountability, logHabitDone, unlogHabitDone } from "../api/accountabilityApi";
+import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../api/accountabilityApi";
 import { onDataChange } from "../utils/dataEvents";
 import { useToast } from "../contexts/ToastContext";
 
@@ -14,7 +14,7 @@ export default function AccountabilitySummary() {
   // Habits page reads, through the same versioned write path. This card never
   // auto-saves a snapshot: each tap is one updateAccountability() mutation
   // against the fresh blob, and both surfaces re-load on any write.
-  const [data, setData] = useState({ trackers: [], logs: [] });
+  const [data, setData] = useState({ trackers: [], logs: [], misses: [] });
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const mounted = useRef(true);
@@ -32,6 +32,7 @@ export default function AccountabilitySummary() {
   const todayStr = toDateStr(new Date());
   const trackers = data.trackers || [];
   const logs = data.logs || [];
+  const missedToday = new Set((data.misses || []).filter((m) => m.date === todayStr).map((m) => m.trackerId));
 
   const countOn = (tid, date) => logs.filter((l) => l.trackerId === tid && l.date === date).length;
   const streakOf = (tid) => {
@@ -47,6 +48,16 @@ export default function AccountabilitySummary() {
     const already = logs.some((l) => l.trackerId === t.id && l.date === todayStr);
     try {
       const next = t.mode === "check" && already ? await unlogHabitDone(t, todayStr) : await logHabitDone(t, todayStr);
+      if (mounted.current) setData(next);
+    } catch (err) {
+      addToast(err?.message || "Couldn't save accountability.", "error");
+    }
+  };
+
+  // "Missed it": crossed out for today — not done, no streak — with Undo.
+  const setMissed = async (t, missed) => {
+    try {
+      const next = await (missed ? logHabitMissed(t, todayStr) : unlogHabitMissed(t, todayStr));
       if (mounted.current) setData(next);
     } catch (err) {
       addToast(err?.message || "Couldn't save accountability.", "error");
@@ -74,21 +85,31 @@ export default function AccountabilitySummary() {
           {trackers.map((t) => {
             const c = countOn(t.id, todayStr);
             const done = t.mode === "check" && c > 0;
+            const missed = missedToday.has(t.id);
             return (
-              <div className="db-list-item" key={t.id}>
+              <div className={`db-list-item${missed ? " is-missed" : ""}`} key={t.id}>
                 <div className="db-list-item--clickable habit-row-main" role="button" tabIndex={0} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
                                     <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
-                    <div className="db-list-item-subtitle">{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</div>
+                    <div className="db-list-item-subtitle">{missed ? <><span className="missed-tag">Missed</span> · today</> : <>{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</>}</div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className={`btn-sm ${done ? "btn-complete" : "btn-secondary-sm"}`}
-                  onClick={() => logToday(t)}
-                >
-                  {t.mode === "check" ? (done ? "Done" : "Mark done") : "+ Log"}
-                </button>
+                <div className="habit-row-actions">
+                  {missed ? (
+                    <button type="button" className="btn-mini" onClick={() => setMissed(t, false)} aria-label={`Undo missed for ${t.name}`}>Undo</button>
+                  ) : (
+                    <>
+                      {c === 0 && <button type="button" className="btn-mini" onClick={() => setMissed(t, true)} aria-label={`Mark ${t.name} missed today`}>Missed it</button>}
+                      <button
+                        type="button"
+                        className={`btn-sm ${done ? "btn-complete" : "btn-secondary-sm"}`}
+                        onClick={() => logToday(t)}
+                      >
+                        {t.mode === "check" ? (done ? "Done" : "Mark done") : "+ Log"}
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}

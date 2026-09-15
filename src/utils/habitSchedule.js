@@ -25,10 +25,16 @@ export function habitSchedule(tracker, today) {
   if (tracker.mode !== 'check') return { schema: 1, kind: 'none' };
   return { schema: 1, kind: 'interval', every: 1, unit: 'days', startDate: validHabitDate(tracker.created) ? tracker.created : today };
 }
+/**
+ * Habits due on `today`. The next due date counts from the latest day the habit
+ * was handled — done (a log) or crossed out ("Missed it", state.misses) — so a
+ * skipped habit leaves today's list and comes round again on schedule instead
+ * of sitting overdue forever. A miss never counts as done anywhere else.
+ */
 export function dueHabits(state, today) {
   if (!validHabitDate(today)) throw new Error('Choose a valid day to find due habits.');
   const latest = new Map();
-  for (const log of state.logs || []) {
+  for (const log of [...(state.logs || []), ...(state.misses || [])]) {
     if (validHabitDate(log.date) && log.date <= today && (!latest.has(log.trackerId) || log.date > latest.get(log.trackerId))) latest.set(log.trackerId, log.date);
   }
   return (state.trackers || []).flatMap(tracker => {
@@ -39,6 +45,11 @@ export function dueHabits(state, today) {
     const dueDate = next > schedule.startDate ? next : schedule.startDate;
     return dueDate <= today ? [{ tracker, dueDate, overdue: dueDate < today }] : [];
   }).sort((a, b) => a.dueDate.localeCompare(b.dueDate) || (a.tracker.name || '').localeCompare(b.tracker.name || ''));
+}
+/** Scheduled habits crossed out ("Missed it") on `day`, for the struck-through rows. */
+export function missedHabits(state, day) {
+  const ids = new Set((state.misses || []).filter((m) => m.date === day).map((m) => m.trackerId));
+  return (state.trackers || []).filter((t) => ids.has(t.id)).map((tracker) => ({ tracker, date: day }));
 }
 export function habitScheduleLabel(tracker) {
   const schedule = habitSchedule(tracker, '2000-01-01');

@@ -50,3 +50,21 @@ test('form roundtrip and invalid schedules fail explicitly', () => {
   }
   assert.throws(() => scheduleFromForm({ reminder: 'interval', every: '', unit: 'days', startDate: '2026-09-01' }));
 });
+
+import { missedHabits } from './habitSchedule.js';
+const miss = (date, trackerId = 'habit') => ({ id: `m-${date}`, trackerId, date });
+
+test('"Missed it" takes a habit off today and rolls it on like a completion', () => {
+  const state = { trackers: [tracker(1)], logs: [log('2026-09-01')], misses: [miss('2026-09-14')] };
+  assert.equal(dueHabits(state, '2026-09-14').length, 0);          // crossed out today
+  assert.equal(dueHabits(state, '2026-09-15')[0].dueDate, '2026-09-15'); // daily: back tomorrow
+  const every5 = { trackers: [tracker(5)], logs: [], misses: [miss('2026-09-01')] };
+  assert.equal(dueHabits(every5, '2026-09-05').length, 0);
+  assert.equal(dueHabits(every5, '2026-09-06')[0].dueDate, '2026-09-06'); // next due counts from the miss
+});
+
+test('missedHabits lists the crossed-out trackers for a day, and only them', () => {
+  const state = { trackers: [tracker(1), { ...tracker(1), id: 'other', name: 'Gym' }], logs: [], misses: [miss('2026-09-14'), miss('2026-09-13', 'other')] };
+  assert.deepEqual(missedHabits(state, '2026-09-14').map((m) => m.tracker.id), ['habit']);
+  assert.deepEqual(missedHabits({ trackers: [tracker(1)], logs: [] }, '2026-09-14'), []);   // schema-1 blobs have no misses
+});

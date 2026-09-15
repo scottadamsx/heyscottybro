@@ -7,8 +7,8 @@ import TimePicker from "../../components/TimePicker";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
-import { loadAccountability, logHabitDone } from "../../api/accountabilityApi";
-import { dueHabits } from "../../utils/habitSchedule";
+import { loadAccountability, logHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
+import { dueHabits, missedHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
 import RescheduleSheet from "../../components/RescheduleSheet";
 import "./plan.css";
@@ -86,6 +86,18 @@ export default function RemindersPage() {
   useEffect(() => onDataChange("accountability", load), []);
 
   const habitRows = useMemo(() => habits ? dueHabits(habits, todayStr) : [], [habits, todayStr]);
+  const missedRows = useMemo(() => habits ? missedHabits(habits, todayStr) : [], [habits, todayStr]);
+  // "Missed it": cross today's habit out (not done, no streak) and undo it.
+  const setHabitMissed = async (tracker, missed) => {
+    if (habitSaving) return;
+    setHabitSaving(tracker.id);
+    try {
+      setHabits(await (missed ? logHabitMissed(tracker, todayStr) : unlogHabitMissed(tracker, todayStr)));
+      addToast(missed ? `${tracker.name} crossed out for today.` : `${tracker.name} is back on today's list.`, "success");
+    } catch (err) {
+      addToast(`Couldn't update habit: ${err?.message || "unknown error"}`, "error");
+    } finally { setHabitSaving(null); }
+  };
   const completeHabit = async (tracker) => {
     if (habitSaving) return;
     setHabitSaving(tracker.id);
@@ -414,7 +426,8 @@ export default function RemindersPage() {
         {/* Right: task list */}
         <div className="tasks-list">
           {filter === "all" && !loadErrors.some((error) => error.startsWith("habits (")) && (habits
-            ? <DueHabitReminders rows={habitRows} busyId={habitSaving} onDone={completeHabit}
+            ? <DueHabitReminders rows={habitRows} missedRows={missedRows} busyId={habitSaving} onDone={completeHabit}
+                onMiss={(t) => setHabitMissed(t, true)} onUnmiss={(t) => setHabitMissed(t, false)}
                 onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
             : <p className="field-hint" role="status">Loading due habits…</p>)}
           <section className="db-card" aria-label="Active tasks">

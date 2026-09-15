@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
-import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone } from "../../api/accountabilityApi";
+import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
 import { habitScheduleForm, scheduleFromForm, habitScheduleLabel } from "../../utils/habitSchedule";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
@@ -81,7 +81,7 @@ function ScheduleFields({ value, onChange }) {
 
 export default function AccountabilityPage() {
   const [params] = useSearchParams();
-  const [data, setData] = useState({ trackers: [], logs: [] });
+  const [data, setData] = useState({ trackers: [], logs: [], misses: [] });
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const { trackers, logs } = data;
@@ -195,6 +195,20 @@ export default function AccountabilityPage() {
     } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
 
+  // "Missed it" days, per tracker (DR-014): crossed out, never counted as done.
+  const missedDays = useMemo(() => {
+    const map = {};
+    (data.misses || []).forEach((m) => { (map[m.trackerId] = map[m.trackerId] || new Set()).add(m.date); });
+    return map;
+  }, [data.misses]);
+  const isMissed = (t, date) => Boolean(missedDays[t.id]?.has(date));
+  const setMissed = async (t, missed) => {
+    try {
+      const next = await (missed ? logHabitMissed(t, todayStr) : unlogHabitMissed(t, todayStr));
+      if (mounted.current) setData(next);
+    } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
+  };
+
   const logsByTracker = useMemo(() => {
     const map = {};
     logs.forEach((l) => { (map[l.trackerId] = map[l.trackerId] || []).push(l); });
@@ -213,9 +227,36 @@ export default function AccountabilityPage() {
     const counts = {};
     tl.forEach((l) => { counts[l.date] = (counts[l.date] || 0) + 1; });
     const week = [];
-    for (let i = 6; i >= 0; i--) { const ds = addDays(todayStr, -i); week.push({ ds, count: counts[ds] || 0, on: dateSet.has(ds), dow: DOW[new Date(ds + "T00:00:00").getDay()] }); }
+    for (let i = 6; i >= 0; i--) { const ds = addDays(todayStr, -i); week.push({ ds, count: counts[ds] || 0, on: dateSet.has(ds), missed: Boolean(missedDays[tid]?.has(ds)), dow: DOW[new Date(ds + "T00:00:00").getDay()] }); }
     const weekCount = tl.filter((l) => l.date >= addDays(todayStr, -6)).length;
     return { total: tl.length, streak: s, week, weekCount, recent: tl.slice(0, 6), lastDate: tl[0]?.date };
+  };
+
+  // Today's controls: Mark done / Log, or "Missed it" — and Undo once crossed out.
+  const todayActions = (t) => {
+    const n = countOn(t, todayStr);
+    const done = t.mode === "check" && n > 0;
+    if (isMissed(t, todayStr)) {
+      return (
+        <button type="button" className="btn btn-secondary-sm acc-missed" onClick={() => setMissed(t, false)} aria-label={`Undo missed for ${t.name}`}>
+          <i className="fa-solid fa-xmark" aria-hidden="true" /> Missed today · Undo
+        </button>
+      );
+    }
+    return (
+      <>
+        <button type="button" className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
+          {t.mode === "check"
+            ? (done ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done today</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Mark done</>)
+            : <><i className="fa-solid fa-plus" aria-hidden="true" /> Log{n > 0 ? ` (${n} today)` : ""}</>}
+        </button>
+        {n === 0 && (
+          <button type="button" className="btn btn-secondary-sm" onClick={() => setMissed(t, true)} aria-label={`Mark ${t.name} missed today`}>
+            Missed it
+          </button>
+        )}
+      </>
+    );
   };
 
   // Detail view for a single tracker
@@ -331,16 +372,7 @@ export default function AccountabilityPage() {
             <h3 className="db-card-title">Log</h3>
           </div>
           <div className="acc-actions">
-            {(() => {
-              const done = t.mode === "check" && countOn(t, todayStr) > 0;
-              return (
-                <button type="button" className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
-                  {t.mode === "check"
-                    ? (done ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done today</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Mark done</>)
-                    : <><i className="fa-solid fa-plus" aria-hidden="true" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
-                </button>
-              );
-            })()}
+            {todayActions(t)}
             <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" max={todayStr} />
           </div>
           {st.recent.length > 0 && (
@@ -452,9 +484,9 @@ export default function AccountabilityPage() {
 
               <div className="acc-week" aria-label="Last 7 days">
                 {st.week.map((w, i) => (
-                  <div key={i} className={`acc-day${w.ds === todayStr ? " is-today" : ""}`} title={`${formatDisplayDate(w.ds)}${w.on ? (t.mode === "count" ? ` · ${w.count}` : " · done") : ""}`}>
-                    <span className={`acc-dot${w.on ? " on" : ""}${t.mode === "count" ? " is-count" : ""}${w.ds === todayStr ? " today" : ""}`}>
-                      {t.mode === "count" && w.count > 0 ? w.count : ""}
+                  <div key={i} className={`acc-day${w.ds === todayStr ? " is-today" : ""}`} title={`${formatDisplayDate(w.ds)}${w.on ? (t.mode === "count" ? ` · ${w.count}` : " · done") : w.missed ? " · missed" : ""}`}>
+                    <span className={`acc-dot${w.on ? " on" : ""}${w.missed && !w.on ? " missed" : ""}${t.mode === "count" ? " is-count" : ""}${w.ds === todayStr ? " today" : ""}`}>
+                      {t.mode === "count" && w.count > 0 ? w.count : w.missed && !w.on ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : ""}
                     </span>
                     <span className="acc-day-lbl">{w.dow}</span>
                   </div>
@@ -462,16 +494,7 @@ export default function AccountabilityPage() {
               </div>
 
               <div className="acc-actions">
-                {(() => {
-                  const done = t.mode === "check" && countOn(t, todayStr) > 0;
-                  return (
-                    <button type="button" className={`btn ${done ? "acc-done" : ""}`} onClick={() => logToday(t)}>
-                      {t.mode === "check"
-                        ? (done ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done today</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Mark done</>)
-                        : <><i className="fa-solid fa-plus" aria-hidden="true" /> Log{countOn(t, todayStr) > 0 ? ` (${countOn(t, todayStr)} today)` : ""}</>}
-                    </button>
-                  );
-                })()}
+                {todayActions(t)}
                 <DatePicker value="" onChange={(v) => logPast(t, v)} placeholder="Log a past day" max={todayStr} />
               </div>
 

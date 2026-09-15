@@ -43,3 +43,23 @@ test("empty due list communicates no due habits rather than showing a fake task"
   assert.match(html, /No unfinished habits due today/);
   assert.doesNotMatch(html, /<button/);
 });
+
+test("Missed it crosses a habit out; crossed-out habits stay listed with Undo", () => {
+  let missed, unmissed;
+  const element = DueHabitReminders({ rows: [row], missedRows: [{ tracker: { id: "gym", name: "Gym" }, date: "2026-09-14" }], onDone() {}, onEdit() {}, onMiss: v => missed = v, onUnmiss: v => unmissed = v });
+  const buttons = [];
+  const walk = node => {
+    if (!React.isValidElement(node)) return;
+    if (node.type === "button") buttons.push(node);
+    React.Children.forEach(node.props.children, walk);
+  };
+  walk(element);
+  buttons.find(b => b.props["aria-label"] === "Mark Laundry missed today").props.onClick();
+  buttons.find(b => b.props["aria-label"] === "Undo missed for Gym").props.onClick();
+  assert.equal(missed, tracker);
+  assert.equal(unmissed.id, "gym");
+  const html = renderToStaticMarkup(React.createElement(DueHabitReminders, { rows: [], missedRows: [{ tracker: { id: "gym", name: "Gym" } }], onUnmiss() {} }));
+  assert.match(html, /is-missed/);
+  assert.match(html, /Missed/);
+  assert.doesNotMatch(html, /No unfinished habits/);
+});

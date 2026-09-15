@@ -123,7 +123,7 @@ const COLLECTIONS = {
     },
     remove: async (id) => {
       const state = await loadAccountability();
-      await saveAccountability({ trackers: state.trackers.filter((t) => t.id !== id), logs: state.logs.filter((l) => l.trackerId !== id) });
+      await saveAccountability({ ...state, trackers: state.trackers.filter((t) => t.id !== id), logs: state.logs.filter((l) => l.trackerId !== id), misses: state.misses.filter((m) => m.trackerId !== id) });
     },
     echoFields: ["id", "name", "emoji", "mode"],
   },
