@@ -966,6 +966,10 @@
   .admin-shell.drawer-open .sidebar { transform: none; box-shadow: var(--shadow-modal); }
   .admin-shell .drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 115; border: none; background: var(--overlay); cursor: pointer; }
   .admin-shell .sidebar-toggle { display: none; }
+  .admin-shell .topbar-actions { display: flex; align-items: center; }
+  .admin-shell .topbar-chat { position: relative; }
+  .admin-shell .topbar-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--red); box-shadow: 0 0 0 2px var(--bg-sidebar); }
+  .admin-shell .chat-fab { display: none; }
   .admin-shell .icon-btn.drawer-close { display: inline-flex; margin-right: calc(var(--space-xs) * -1); }
   .admin-shell.is-collapsed .brand-word,
   .admin-shell.is-collapsed .sidebar-profile-text,
@@ -987,6 +991,21 @@
 }
 
 @media (max-width: 640px) {
+  /* Every tab visible: the strip wraps instead of scrolling sideways. */
+  .admin-shell .page-tabs,
+  .admin-shell .uik-tabs,
+  .admin-shell .fin-tabs {
+    display: flex; flex-wrap: wrap; overflow: visible; width: 100%;
+    border-radius: var(--radius-lg);
+  }
+  .admin-shell .page-tab,
+  .admin-shell .uik-tab,
+  .admin-shell .fin-tab { flex: 1 1 auto; padding: 0 var(--space-sm); }
+  .admin-shell .settings-row { flex-wrap: wrap; }
+  .admin-shell .settings-row > .segmented { width: 100%; }
+  .admin-shell .settings-row > .segmented .segmented-opt { flex: 1 1 0; }
+  /* (Frodo keeps index.css's phone dock: the top half, clear of the keyboard.
+     His trigger lives in the top bar on small screens.) */
   .admin-shell .module-header h1,
   .admin-shell .combined-page-title { font-size: var(--text-xl); line-height: 2rem; }
   .admin-shell .db-card,
@@ -997,6 +1016,8 @@
   .admin-shell select,
   .admin-shell textarea { font-size: var(--text-md); }
   .admin-shell .chat-input { min-height: unset; }
+  /* the placeholder stays on its one row instead of wrapping under the clip */
+  .admin-shell .chat-input::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .admin-shell .module-page table { display: block; overflow-x: auto; max-width: 100%; }
   .admin-shell .calendar-grid-react { gap: 2px; }
   .admin-shell .calendar-cell { min-height: 52px; padding: var(--space-2xs); border-radius: var(--radius-sm); }

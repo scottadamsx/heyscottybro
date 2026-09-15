@@ -245,6 +245,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devAuleControlPlugin],
+    // One React, always. The Brain's 3D graph is lazy-loaded, so Vite's dev
+    // pre-bundler used to discover it late and bundle it against a second
+    // React copy — "Cannot read properties of null (reading 'useRef')" on
+    // Mission › Brain in dev. Pre-bundle it up front and dedupe React.
+    resolve: { dedupe: ["react", "react-dom"] },
+    optimizeDeps: { include: ["react-force-graph-3d"] },
     build: {
       outDir: "dist",
       rollupOptions: {

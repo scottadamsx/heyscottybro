@@ -212,6 +212,12 @@ button.money-status { cursor: pointer; }
 .bud-td-muted { color: var(--text-secondary); }
 .bud-table-note { margin: var(--space-md) 0 0; }
 
+/* Narrow: the trends table keeps category · last · trend · projected */
+@container money (max-width: 560px) {
+  .bud-table-an th:nth-child(2), .bud-table-an td:nth-child(2),
+  .bud-table-an th:nth-child(4), .bud-table-an td:nth-child(4) { display: none; }
+  .bud-table td, .bud-table th { padding-inline: var(--space-xs); }
+}
 @container money (max-width: 760px) {
   .money-panels, .money-grid { grid-template-columns: minmax(0, 1fr); }
 }

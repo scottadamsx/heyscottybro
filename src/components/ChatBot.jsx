@@ -13,7 +13,7 @@ const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 // Docked full-height on the right (≥641px, see index.css) instead of a small
 // floating popover — `onOpenChange` lets AdminLayout reserve that space from
 // the page content instead of Frodo just overlapping it.
-export default function ChatBot({ onOpenChange } = {}) {
+export default function ChatBot({ onOpenChange, onUnreadChange } = {}) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
@@ -29,6 +29,14 @@ export default function ChatBot({ onOpenChange } = {}) {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [displayMsgs, loading]);
   useEffect(() => { if (open) textareaRef.current?.focus(); }, [open]);
   useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
+  useEffect(() => { onUnreadChange?.(hasUnread); }, [hasUnread, onUnreadChange]);
+  // On phones/tablets the trigger lives in the top bar (AdminLayout), which
+  // asks for the panel with this event instead of a floating button.
+  useEffect(() => {
+    const toggle = () => setOpen((v) => !v);
+    window.addEventListener("hsb:toggle-chat", toggle);
+    return () => window.removeEventListener("hsb:toggle-chat", toggle);
+  }, []);
 
   // Closed the panel while Frodo was still working ("exit")? Badge the fab
   // the moment he finishes, instead of the reply just sitting there unseen.

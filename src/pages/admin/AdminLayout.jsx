@@ -44,6 +44,7 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);   // phone/tablet sidebar
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const toggleCollapsed = () => setCollapsed((v) => {
@@ -82,9 +83,17 @@ export default function AdminLayout() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
           <span className="brand-word">heyScottyBro</span>
         </NavLink>
-        <button type="button" className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search and jump (⌘K)">
-          <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
-        </button>
+        <div className="topbar-actions">
+          <button type="button" className="icon-btn" onClick={() => setPaletteOpen(true)} aria-label="Search and jump (⌘K)">
+            <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+          </button>
+          {/* Frodo lives up here on small screens, so no floating button sits on content */}
+          <button type="button" className="icon-btn topbar-chat" onClick={() => window.dispatchEvent(new Event("hsb:toggle-chat"))}
+            aria-label={chatOpen ? "Close assistant" : chatUnread ? "Open assistant — Frodo has a reply for you" : "Open assistant"} aria-pressed={chatOpen}>
+            <i className="fa-solid fa-comment-dots" aria-hidden="true" />
+            {chatUnread && !chatOpen && <span className="topbar-dot" aria-hidden="true" />}
+          </button>
+        </div>
       </header>
       {drawerOpen && <button type="button" className="drawer-backdrop" onClick={closeDrawer} aria-label="Close menu" />}
 
@@ -141,7 +150,7 @@ export default function AdminLayout() {
         </ErrorBoundary>
       </main>
 
-      <ChatBot onOpenChange={setChatOpen} />
+      <ChatBot onOpenChange={setChatOpen} onUnreadChange={setChatUnread} />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );
