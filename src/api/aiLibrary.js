@@ -28,15 +28,12 @@ import {
 import { loadMembers, deleteMember } from "./hikerApi";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
 import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
-import { loadRecipes, createRecipe, updateRecipe, deleteRecipe } from "./recipesApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
 import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./workLogApi";
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
-import { loadProfiles as loadNutritionProfiles, loadFoodLogs, loadWeightLogs } from "./nutritionApi";
-import { loadWorkouts } from "./workoutsApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
@@ -276,28 +273,6 @@ const COLLECTIONS = {
       : row),
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
   },
-  recipes: {
-    table: "recipes",
-    description: "Saved recipes (Health › Recipes) — ingredients[] and steps[] are string arrays; nutrition is per serving.",
-    searchFields: ["title", "description"],
-    defaultFields: ["id", "title", "servings", "tags", "favorite"],
-    fields: {
-      title: { type: "string", required: true },
-      description: { type: "string", long: true },
-      servings: { type: "number" },
-      prep_minutes: { type: "number" },
-      cook_minutes: { type: "number" },
-      ingredients: { type: "array", long: true },
-      steps: { type: "array", long: true },
-      calories_per_serving: { type: "number" },
-      protein_g: { type: "number" },
-      carbs_g: { type: "number" },
-      fat_g: { type: "number" },
-      tags: { type: "array" },
-      favorite: { type: "boolean", updateOnly: true },
-    },
-    load: loadRecipes, create: createRecipe, update: updateRecipe, remove: deleteRecipe,
-  },
   bugs: {
     table: "bugs",
     description: "Bug & feature-request tracker (Tools › Bugs). type 'bug' logs an app issue, type 'feature' logs a feature request. Track status open → resolved. Use export_bugs to download a zip report. Screenshots are added by Scott in the UI.",
@@ -378,63 +353,6 @@ const COLLECTIONS = {
       feedback: { type: "string", long: true },
     },
     load: loadGrades,
-  },
-  food_logs: {
-    table: "food_logs",
-    description: "Food diary rows (Life › Food) — read-only here; use log_food to add. Filter by profile_id (see list_nutrition_profiles) and date.",
-    dateField: "date",
-    searchFields: ["name", "description"],
-    defaultFields: ["id", "profile_id", "date", "meal_type", "name", "calories", "protein_g", "carbs_g", "fat_g"],
-    fields: {
-      profile_id: { type: "string" },
-      date: { type: "date" },
-      meal_type: { type: "enum", values: ["breakfast", "lunch", "dinner", "snack"] },
-      name: { type: "string" },
-      description: { type: "string", long: true },
-      calories: { type: "number" },
-      protein_g: { type: "number" },
-      carbs_g: { type: "number" },
-      fat_g: { type: "number" },
-    },
-    load: async () => {
-      const profiles = await loadNutritionProfiles();
-      const all = await Promise.all(profiles.map((p) => loadFoodLogs(p.id)));
-      return all.flat();
-    },
-  },
-  weight_logs: {
-    table: "weight_logs",
-    description: "Weigh-ins per nutrition profile (Life › Food) — read-only here; use log_weight to add. weight_kg is stored in kilograms (Scott talks in pounds: kg × 2.2046).",
-    dateField: "date",
-    searchFields: ["note"],
-    defaultFields: ["id", "profile_id", "date", "weight_kg", "note"],
-    fields: {
-      profile_id: { type: "string" },
-      date: { type: "date" },
-      weight_kg: { type: "number" },
-      note: { type: "string" },
-    },
-    load: async () => {
-      const profiles = await loadNutritionProfiles();
-      const all = await Promise.all(profiles.map((p) => loadWeightLogs(p.id)));
-      return all.flat();
-    },
-  },
-  workouts: {
-    table: "workouts",
-    description: "Gym Tracker sets (Life › Fitness) — read-only. One row per exercise entry: weight × reps × sets on a date.",
-    dateField: "date",
-    searchFields: ["exercise", "notes"],
-    defaultFields: ["id", "date", "exercise", "weight", "reps", "sets"],
-    fields: {
-      date: { type: "date" },
-      exercise: { type: "string" },
-      weight: { type: "number" },
-      reps: { type: "number" },
-      sets: { type: "number" },
-      notes: { type: "string", long: true },
-    },
-    load: loadWorkouts,
   },
   documents: {
     table: "documents",

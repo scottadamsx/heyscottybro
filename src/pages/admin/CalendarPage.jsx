@@ -5,7 +5,6 @@ import {
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
   loadJournal,
 } from "../../api/plannerApi";
-import { loadWorkouts } from "../../api/workoutsApi";
 import { loadAccountability } from "../../api/accountabilityApi";
 import { formatTime12, expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
@@ -40,7 +39,6 @@ export default function CalendarPage() {
   // Everything-that-happened-that-day sources for the robust day view.
   const [journal, setJournal] = useState([]);
   const navigate = useNavigate();
-  const [workouts, setWorkouts] = useState([]);
   const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
   const [selectedDate, setSelectedDate] = useState("");
@@ -97,13 +95,12 @@ export default function CalendarPage() {
     ["projects", loadProjects, []],
     ["event types", loadEventTypes, []],
     ["journal", loadJournal, []],
-    ["workouts", loadWorkouts, []],
     ["habits", loadAccountability, { trackers: [], logs: [] }],
   ];
   const load = async () => {
     const results = await Promise.allSettled(LOAD_SOURCES.map(([, fn]) => fn()));
     const failed = [];
-    const [r, e, t, p, et, j, w, acc] = results.map((res, i) => {
+    const [r, e, t, p, et, j, acc] = results.map((res, i) => {
       if (res.status === "fulfilled") return res.value;
       console.error(`[calendar] failed to load ${LOAD_SOURCES[i][0]}`, res.reason);
       failed.push(LOAD_SOURCES[i][0]);
@@ -116,7 +113,6 @@ export default function CalendarPage() {
     setProjects(p);
     setEventTypes(et);
     setJournal(j);
-    setWorkouts(w);
     setHabits(acc?.trackers ? acc : { trackers: [], logs: [] });
   };
 
@@ -129,7 +125,6 @@ export default function CalendarPage() {
       onDataChange("events", load),
       onDataChange("transactions", load),
       onDataChange("journal", load),
-      onDataChange("workouts", load),
     ];
     return () => unsubs.forEach((u) => u());
   }, []);
@@ -262,7 +257,7 @@ export default function CalendarPage() {
     ? reminders.filter((r) => r.completed && r.date === selectedDate && byProject(r))
     : [];
 
-  // The rest of the day — journal, money, habits, workouts, dates. Each section
+  // The rest of the day — journal, money, habits, dates. Each section
   // only renders when it has something, so the sheet stays focused. Money spent
   // excludes "future" (planned) rows; grocery receipts already post here as
   // transactions, so this is the single source of day spend.
@@ -275,7 +270,6 @@ export default function CalendarPage() {
         .map((tr) => ({ tracker: tr, count: (habits.logs || []).filter((l) => l.trackerId === tr.id && l.date === selectedDate).length }))
         .filter((h) => h.count > 0)
     : [];
-  const dayWorkouts = selectedDate ? workouts.filter((w) => w.date === selectedDate) : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
 
@@ -700,28 +694,6 @@ export default function CalendarPage() {
                       {count > 1
                         ? <span className="day-count">{count}×</span>
                         : <span className="day-check done"><i className="fa-solid fa-circle-check" aria-hidden="true" /><span className="visually-hidden">Done</span></span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Workouts */}
-              {dayWorkouts.length > 0 && (
-                <div className="day-section">
-                  <div className="day-section-head">
-                    <span>Workouts</span>
-                    <span className="day-count">{dayWorkouts.length}</span>
-                  </div>
-                  {dayWorkouts.map((w) => (
-                    <div className="day-item" key={w.id}>
-                      <span className="day-item-dot tone-accent" aria-hidden="true" />
-                      <div className="day-item-body">
-                        <div className="day-item-title">{w.exercise}</div>
-                        <div className="day-item-sub">
-                          {[Number(w.weight) ? `${w.weight} lb` : null, Number(w.reps) ? `${w.reps} reps` : null, Number(w.sets) ? `${w.sets} sets` : null].filter(Boolean).join(" · ")}
-                          {w.notes ? ` — ${w.notes}` : ""}
-                        </div>
-                      </div>
                     </div>
                   ))}
                 </div>

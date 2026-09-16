@@ -11,7 +11,6 @@ const WorkLogPage     = lazy(() => import("./WorkLogPage.jsx"));
 const TaskDetailPage  = lazy(() => import("./TaskDetailPage.jsx"));
 const SchoolPage      = lazy(() => import("./SchoolPage.jsx"));
 const LifePage        = lazy(() => import("./LifePage.jsx"));
-const RecipePage      = lazy(() => import("./RecipePage.jsx"));
 const SchoolDocPage   = lazy(() => import("./SchoolDocPage.jsx"));
 const ArcadePage      = lazy(() => import("./ArcadePage.jsx"));
 const MissionPage     = lazy(() => import("./MissionPage.jsx"));
@@ -40,7 +39,6 @@ export const ADMIN_PAGES = [
   { path: "school",       title: "School",          icon: "fa-graduation-cap",  element: <SchoolPage /> },
   { path: "school/doc/*", title: "School document", icon: "fa-file-lines",      element: <SchoolDocPage /> },
   { path: "life",         title: "Life",            icon: "fa-heart-pulse",     element: <LifePage /> },
-  { path: "recipe/:id",   title: "Recipe",          icon: "fa-utensils",        element: <RecipePage /> },
   { path: "arcade",       title: "Arcade",          icon: "fa-gamepad",         element: <ArcadePage /> },
   { path: "mission",      title: "Mission Control", icon: "fa-satellite-dish",  element: <MissionPage /> },
   { path: "vault",        title: "Vault",           icon: "fa-vault",           element: <VaultPage /> },
@@ -53,7 +51,7 @@ export const ADMIN_REDIRECTS = [
   ["dashboard", "/admin/today"], ["health", "/admin/life"], ["tools", "/admin/mission"], ["command", "/admin/mission"],
   ["brain", "/admin/mission?tab=brain"], ["research", "/admin/mission?tab=research"], ["grocery", "/admin/finance?tab=receipts"],
   ["dates", "/admin/planner"], ["calendar", "/admin/planner"], ["journal", "/admin/life?tab=journal"], ["projects", "/admin/planner?tab=projects"],
-  ["nutrition", "/admin/life"], ["recipes", "/admin/life?tab=recipes"], ["accountability", "/admin/life?tab=habits"], ["smoke", "/admin/life?tab=smoke"],
+  ["nutrition", "/admin/life"], ["recipes", "/admin/life"], ["accountability", "/admin/life?tab=habits"], ["smoke", "/admin/life?tab=smoke"],
   ["hikers", "/admin/vault?tab=databases"], ["snippets", "/admin/vault"], ["context", "/admin/mission?tab=brain"], ["documents", "/admin/vault?tab=documents"],
   ["budget", "/admin/finance"], ["design", "/admin/settings"],
 ];

@@ -1,8 +1,8 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   life.css — the Life space (Journal · Habits · Fitness · Smoke), DR-013.
+   life.css — the Life space (Journal · Habits · Smoke), DR-013.
    Composes tokens from globals.css and primitives from system.css; it never
-   redefines a primitive. Food + Recipes live with their modules in
-   styles/features.css (RecipePage is its own route); Arcade in arcade.css.
+   redefines a primitive. Arcade lives in arcade.css. (Food, recipes and
+   fitness moved out to Achilles — DR-015.)
    ───────────────────────────────────────────────────────────────────────── */
 
 .life-loading { padding: var(--space-xl) 0; text-align: center; color: var(--text-secondary); }
@@ -194,42 +194,6 @@
 .acc-history .acc-hist-note { margin-top: var(--space-sm); }
 
 
-/* ── Fitness (gym log) ───────────────────────────────────────────────────── */
-
-.gym { display: flex; flex-direction: column; gap: var(--space-lg); }
-.admin-shell .gym-form .db-card-header { margin-bottom: var(--space-sm); }
-.gym-form-row { display: flex; align-items: flex-end; gap: var(--space-sm); flex-wrap: wrap; }
-.gym-field { display: flex; flex-direction: column; gap: var(--space-2xs); min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
-.gym-field-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
-.gym-field-date { flex: 0 1 200px; }
-.gym-grow { flex: 1 1 220px; }
-.gym-num { flex: 0 1 112px; }
-.gym-field .picker { flex: none; width: 100%; }
-.admin-shell .gym-log-btn { flex-shrink: 0; }
-
-.gym-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-lg); align-items: start; }
-.gym-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: var(--space-sm); }
-.gym-card { display: flex; flex-direction: column; gap: var(--space-sm); min-width: 0; padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-raised); }
-.gym-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-xs); }
-.gym-card-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text-primary); }
-.gym-card-count { flex-shrink: 0; font-size: var(--text-xs); color: var(--text-secondary); }
-.gym-card-pr { display: flex; gap: var(--space-md); }
-.gym-card-pr > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gym-k { font-size: var(--text-xs); color: var(--text-secondary); }
-.gym-card-pr b { font-family: var(--font-display); font-size: var(--text-md); line-height: 1.5rem; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.gym-spark { display: block; width: 100%; height: 24px; overflow: visible; }
-.gym-spark-line { fill: none; stroke: var(--chart-2); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.gym-spark-empty { font-size: var(--text-xs); line-height: 24px; color: var(--text-muted); }
-
-.gym-log { display: flex; flex-direction: column; gap: 2px; }
-.gym-log-row { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--control-h-lg); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-md); transition: background-color var(--dur-fast); }
-.gym-log-row:hover { background: var(--bg-raised); }
-.gym-log-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.gym-log-ex { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: var(--text-primary); }
-.gym-log-date { font-size: var(--text-sm); color: var(--text-secondary); }
-.gym-log-detail { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-
 /* ── Smoke (wind-down tracker) ───────────────────────────────────────────── */
 
 .wt { display: flex; flex-direction: column; gap: var(--space-lg); }
@@ -321,7 +285,7 @@
 
 /* ── Small screens ───────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .gym-layout, .wt-grid, .acc-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .wt-grid, .acc-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   .wt-stats-row, .acc-kpis { gap: var(--space-md); }
@@ -333,7 +297,4 @@
   .acc-actions .picker { flex-basis: 100%; }
   /* 16 weeks must fit a phone card without sideways scrolling */
   .acc-history { --hm-cell: 14px; }
-  .gym-field-date { flex: 1 1 100%; }
-  .gym-num { flex: 1 1 80px; }
-  .admin-shell .gym-log-btn { flex: 1 1 100%; }
 }

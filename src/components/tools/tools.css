@@ -18,11 +18,11 @@
 .tools-shell-title { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
 
 /* shared field look for tool forms */
-.gt input, .gt textarea, .gym input {
+.gt input, .gt textarea {
   background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: 0.4rem;
   color: var(--text-primary); padding: 0.45rem 0.6rem; font-size: 0.9rem; font-family: inherit; width: 100%;
 }
-.gt input:focus, .gt textarea:focus, .gym input:focus { outline: none; border-color: var(--accent); }
+.gt input:focus, .gt textarea:focus { outline: none; border-color: var(--accent); }
 
 /* ── Grade Tracker (School › a course) — tokens only ── */
 .gt { display: flex; flex-direction: column; gap: var(--space-md); }
@@ -104,6 +104,6 @@
   .inbox-form, .inbox-item-body { padding: var(--space-md); }
   .inbox-item-head { padding-inline: var(--space-md); }
   .inbox-form-row { flex-wrap: wrap; }
-  .gt input, .gt textarea, .gym input,
+  .gt input, .gt textarea,
   .inbox-form select, .inbox-form input, .inbox-form textarea, .inbox-draft { font-size: 16px; }  /* stop iOS zoom-on-focus */
 }

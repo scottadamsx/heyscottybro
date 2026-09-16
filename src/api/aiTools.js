@@ -4,7 +4,7 @@
  * Data access goes through the generic library tools (see aiLibrary.js) so the
  * agent can touch every collection with four schemas instead of thirty — far
  * fewer prompt tokens, and validation is centralised in one place. Only
- * genuinely special flows (nutrition, context memory, balance, bulk hiker
+ * genuinely special flows (habits, context memory, balance, bulk hiker
  * wipe) keep bespoke tools. The pass_to_* escalation tools are appended per
  * tier by useAIAgent, not listed here.
  */
@@ -17,8 +17,7 @@ import { linkNodes as linkBrainNodes } from "./brainApi";
 import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerApi";
 import { clearAllMembers } from "./hikerApi";
 import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "./accountabilityApi";
-import { loadProfiles as loadNutritionProfiles, createFoodLog, loadFoodLogs, saveWeight } from "./nutritionApi";
-import { todayStr as nutritionToday } from "../utils/nutrition";
+import { toDateStr } from "../utils/dates";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { lazyImport } from "../lib/lazyImport";
 
@@ -184,48 +183,6 @@ export const TOOLS = [
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
   { name: "consult_archivist", description: "Ask Bilbo, Scott's Archivist and keeper of the Brain. Two jobs: (1) FIND information across Scott's planner data and Brain (knowledge graph) and report it back with sources — call this when gathering context would take you several queries (e.g. \"what do we know about NEVER86?\", \"pull everything relevant to this week's hikes\"); and (2) WRITE to the Brain on your behalf — Bilbo is the ONLY agent allowed to create, update, delete, or link Brain notes, so when something should be saved to or changed in the Brain, ask him and he'll do it. For non-Brain data changes use the write tools yourself; for money use consult_banker.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full request — what to find, or exactly what to create/update/delete/link in the Brain, with specifics." } }, required: ["request"] } },
-  { name: "list_nutrition_profiles", description: "List nutrition profiles (Scott + partner) with their ids. Call before logging food or weight.", input_schema: { type: "object", properties: {} } },
-  {
-    name: "log_food",
-    description: "Log a meal/snack to a nutrition profile. Estimate calories + macros if Scott didn't give them.",
-    input_schema: {
-      type: "object",
-      properties: {
-        profile_id: { type: "string" },
-        name: { type: "string" },
-        calories: { type: "number" },
-        protein_g: { type: "number" },
-        carbs_g: { type: "number" },
-        fat_g: { type: "number" },
-        meal_type: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack"] },
-        date: { type: "string", description: "YYYY-MM-DD (defaults to today)" },
-      },
-      required: ["profile_id", "name", "calories"],
-    },
-  },
-  {
-    name: "log_weight",
-    description: "Record a weigh-in for a nutrition profile. Scott talks in POUNDS — convert lb to kg (lb × 0.4536) before passing weight_kg.",
-    input_schema: {
-      type: "object",
-      properties: {
-        profile_id: { type: "string" },
-        weight_kg: { type: "number" },
-        date: { type: "string", description: "YYYY-MM-DD (defaults to today)" },
-        note: { type: "string" },
-      },
-      required: ["profile_id", "weight_kg"],
-    },
-  },
-  {
-    name: "list_food",
-    description: "List food logged for a nutrition profile on a given date (defaults to today).",
-    input_schema: {
-      type: "object",
-      properties: { profile_id: { type: "string" }, date: { type: "string" } },
-      required: ["profile_id"],
-    },
-  },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
   { name: "export_bugs", description: "Package every bug and feature request into a downloadable .zip — a Markdown report (report.md) plus all attached screenshots. Call this when Scott asks to export, download, or send his bugs/feature requests. The download starts in his browser automatically.", input_schema: { type: "object", properties: {} } },
   {
@@ -298,7 +255,7 @@ async function runTool(name, input) {
       const state = await loadAccountability();
       const tracker = state.trackers.find((t) => t.id === input.tracker_id);
       if (!tracker) return { error: `no habit tracker with id ${input.tracker_id} — query the habits collection for the id` };
-      const date = input.date || nutritionToday();
+      const date = input.date || toDateStr();
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
       if (input.missed === true || input.missed === false) {
         await (input.missed ? logHabitMissed(tracker, date) : unlogHabitMissed(tracker, date));
@@ -343,20 +300,6 @@ async function runTool(name, input) {
         authHeaders,
       });
       return { archivist: "Bilbo", reply: text };
-    }
-    case "list_nutrition_profiles": { const ps = await loadNutritionProfiles(); return { profiles: ps.map((p) => ({ id: p.id, name: p.name, goal: p.goal, target_calories: p.target_calories })) }; }
-    case "log_food": {
-      await createFoodLog(input.profile_id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: input.meal_type || "snack", date: input.date || nutritionToday(), source: "ai" });
-      return { success: true };
-    }
-    case "log_weight": {
-      await saveWeight(input.profile_id, { weight_kg: input.weight_kg, date: input.date || nutritionToday(), note: input.note || "" });
-      return { success: true };
-    }
-    case "list_food": {
-      const d = input.date || nutritionToday();
-      const logs = await loadFoodLogs(input.profile_id, { from: d, to: d });
-      return { items: logs.map((l) => ({ name: l.name, calories: l.calories, meal_type: l.meal_type, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g })) };
     }
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
     case "export_bugs": { const { exportBugsZip } = await lazyImport(() => import("./bugsApi"), "the bug exporter"); const r = await exportBugsZip(); return { success: true, ...r }; }
@@ -449,7 +392,7 @@ export async function executeTool(name, input, agentId = "frodo") {
     result = { error: err.message };
   }
   // Skip logging for read-only / high-frequency tools to avoid noise
-  const skipLog = ["library_catalog", "query", "list_context", "list_nutrition_profiles", "list_food"].includes(name);
+  const skipLog = ["library_catalog", "query", "list_context"].includes(name);
   if (!skipLog) logAction({ agentId, tool: name, input, result });
   return result;
 }
