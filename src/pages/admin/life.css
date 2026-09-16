@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────────
-   life.css — the Life space (Journal · Habits · Smoke), DR-013.
+   life.css — the Life space (Journal · Habits), DR-013.
    Composes tokens from globals.css and primitives from system.css; it never
    redefines a primitive. Arcade lives in arcade.css. (Food, recipes and
    fitness moved out to Achilles — DR-015.)
@@ -194,105 +194,14 @@
 .acc-history .acc-hist-note { margin-top: var(--space-sm); }
 
 
-/* ── Smoke (wind-down tracker) ───────────────────────────────────────────── */
-
-.wt { display: flex; flex-direction: column; gap: var(--space-lg); }
-.wt-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-lg); align-items: start; }
-.admin-shell .wt-card-head { align-items: flex-start; }
-.wt-card-titles { display: flex; flex-direction: column; gap: var(--space-2xs); min-width: 0; }
-.wt-card-sub { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
-.wt-card-sub strong { font-weight: 600; color: var(--text-primary); }
-.admin-shell .wt-taper-badge { flex-shrink: 0; }
-.wt-taper-soon { font-weight: 500; }
-
-.wt-stats-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xl); margin-bottom: var(--space-lg); }
-.wt-stat { display: flex; flex-direction: column; gap: var(--space-xs); min-width: 0; }
-.wt-stat-lbl { padding-bottom: var(--space-xs); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-base); font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wt-stat-val { font-family: var(--font-display); font-size: var(--text-2xl); line-height: 2.5rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.wt-stat-val.is-over { color: var(--red); }
-
-.wt-bar-track { height: 8px; overflow: hidden; border-radius: var(--radius-full); background: var(--bg-raised); }
-.wt-bar-fill { height: 100%; border-radius: var(--radius-full); background: var(--teal); transition: width var(--dur) var(--ease); }
-.wt-bar-fill.is-at { background: var(--amber); }
-.wt-bar-fill.is-over { background: var(--red); }
-.wt-bar-labels { display: flex; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.wt-cap-status { font-weight: 600; }
-.wt-cap-status.is-under { color: var(--green); }
-.wt-cap-status.is-at { color: var(--orange); }
-.wt-cap-status.is-over { color: var(--red); }
-
-/* joint / pen: a neutral pill with a decorative dot (no hard-coded hues) */
-.wt-today-types { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-md); }
-.wt-type-chip { display: inline-flex; align-items: center; gap: var(--space-xs); height: 24px; padding: 0 var(--space-sm); border-radius: var(--radius-full); background: var(--bg-raised); font-size: var(--text-xs); font-weight: 500; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.wt-type-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: var(--radius-full); background: var(--text-muted); }
-.wt-type-chip.joint .wt-type-dot { background: var(--amber); }
-.wt-type-chip.pen .wt-type-dot { background: var(--sky); }
-
-.wt-log-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 1px solid var(--border-subtle); }
-.admin-shell .wt-logbtn { min-height: var(--control-h-lg); padding: 0 var(--space-lg); }
-.wt-log-hint { margin-left: auto; font-size: var(--text-sm); color: var(--text-secondary); }
-
-.wt-ctrl { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) 0; border-top: 1px solid var(--border-subtle); }
-.db-card-header + .wt-ctrl { border-top: none; padding-top: 0; }
-.wt-ctrl-label { font-weight: 500; color: var(--text-primary); }
-.wt-ctrl-sub { margin-top: 2px; font-size: var(--text-sm); color: var(--text-secondary); }
-
-.wt-stepper { display: flex; align-items: center; gap: 2px; flex-shrink: 0; padding: var(--space-2xs); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); background: var(--bg-raised); }
-.admin-shell .wt-stepper button {
-  width: var(--control-h-sm); height: var(--control-h-sm);
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; border-radius: var(--radius-full); background: transparent;
-  color: var(--text-primary); font: inherit; font-size: var(--text-md); line-height: 1; cursor: pointer;
-  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
-}
-.admin-shell .wt-stepper button:hover { background: var(--bg-card); box-shadow: var(--shadow-raised); }
-.wt-stepper span { min-width: 56px; text-align: center; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.wt-stepper.lg span { min-width: 64px; font-family: var(--font-display); font-size: var(--text-xl); line-height: 2rem; font-weight: 700; }
-.admin-shell .wt-stepper.lg button { width: var(--control-h); height: var(--control-h); font-size: var(--text-lg); }
-
-.wt-switch-wrap { display: flex; align-items: center; gap: var(--space-xs); }
-.wt-switch-state { min-width: 24px; text-align: right; font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); }
-
-.admin-shell .wt-start-btn { align-self: flex-start; margin-top: var(--space-sm); }
-.wt-taper-status { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-raised); }
-.wt-taper-row { display: flex; justify-content: space-between; gap: var(--space-sm); font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-.wt-taper-row strong { font-weight: 600; color: var(--text-primary); }
-.admin-shell .wt-reset-btn { align-self: flex-start; margin-top: var(--space-xs); }
-
-.wt-hist { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.wt-hist-item { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--control-h-lg); padding: var(--space-2xs) var(--space-sm); border-radius: var(--radius-md); transition: background-color var(--dur-fast); }
-.wt-hist-item:hover { background: var(--bg-raised); }
-.wt-hist-item .wt-type-chip { min-width: 72px; }
-.wt-hist-desc { flex: 1; min-width: 0; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.wt-hist-time { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
-
-/* Log-a-session dialog (card chrome from system.css .wt-modal) */
-.wt-backdrop { position: fixed; inset: 0; z-index: 499; background: var(--overlay); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.wt-modal { position: fixed; left: 50%; top: 50%; z-index: 500; transform: translate(-50%, -50%); width: min(420px, calc(100vw - var(--space-xl))); padding: var(--space-lg); }
-.wt-modal-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-md); }
-.admin-shell .wt-modal-title { margin: 0; font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; }
-.wt-modal-body { display: flex; flex-direction: column; gap: var(--space-md); }
-.admin-shell .wt-log-type-toggle { display: flex; width: 100%; }
-.admin-shell .wt-log-type-toggle .segmented-opt { flex: 1; }
-.wt-gram-grid { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
-.admin-shell .wt-gram-btn { font-variant-numeric: tabular-nums; }
-.wt-pen-hits-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); }
-.wt-pen-conv-note { width: 100%; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); background: var(--bg-raised); text-align: center; font-size: var(--text-sm); color: var(--text-secondary); }
-.wt-pen-conv-note strong { font-weight: 600; color: var(--text-primary); }
-.wt-pen-conv-sub { color: var(--text-secondary); }
-.admin-shell .wt-modal-go { width: 100%; }
-
-
 /* ── Small screens ───────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .wt-grid, .acc-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .acc-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
-  .wt-stats-row, .acc-kpis { gap: var(--space-md); }
-  .wt-stat-val, .acc-kpi-value { font-size: var(--text-xl); line-height: 2rem; }
-  .wt-stat-lbl, .acc-kpi-label { font-size: var(--text-sm); }
-  .wt-log-hint { width: 100%; margin-left: 0; }
-  .admin-shell .wt-logbtn { flex: 1; }
+  .acc-kpis { gap: var(--space-md); }
+  .acc-kpi-value { font-size: var(--text-xl); line-height: 2rem; }
+  .acc-kpi-label { font-size: var(--text-sm); }
   .acc-actions { flex-wrap: wrap; }
   .acc-actions .picker { flex-basis: 100%; }
   /* 16 weeks must fit a phone card without sideways scrolling */

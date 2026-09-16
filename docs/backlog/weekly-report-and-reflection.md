@@ -5,8 +5,8 @@ rules agreed before building; treat them as the spec.
 
 ## Build order (fastest path to value)
 
-1. **Habit toggles inside the journal entry.** One tap per habit (worked out,
-   smoked, read, wrote code…) while writing. The journal *is* the habit
+1. **Habit toggles inside the journal entry.** One tap per habit (read,
+   wrote code, went outside…) while writing. The journal *is* the habit
    tracker; everything downstream needs this data and it can't be backfilled.
 2. **Report page, numbers only, no AI.**
 3. **AI summary + next-week actions**, once there are ~4 weeks of data.
@@ -22,7 +22,7 @@ exists, it rises when you log, so honesty is what gets rewarded.
 |---|---|
 | Spending by category | Money (`transactions`), week vs last week |
 | Tasks on time vs late | tasks/reminders: needs a due date + `completed_at` on every item |
-| Workouts, smoked, read | journal habit toggles (step 1) |
+| Read, went outside | journal habit toggles (step 1) |
 | Journaled | an entry exists that day |
 | Wrote code | GitHub API, commits per day across repos (automatic) |
 
@@ -38,7 +38,7 @@ whether it was done. The report grades its own advice.
 ## 2 · AI Journal Reflection
 
 Worth building: patterns you can't see from inside a day ("money stress in
-9 of 14 entries, every one also 'smoked'"; "said 'make content tonight' 4×,
+9 of 14 entries, every one also 'skipped reading'"; "said 'make content tonight' 4×,
 never followed up").
 
 Failure modes to design against: generic therapy-speak, and flattery.

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { HIDE_SMOKE_TRACKER, useSetting, useHiddenPages } from "../utils/settings";
+import { useHiddenPages } from "../utils/settings";
 
 const COMMANDS = [
   { label: "Today",           to: "/admin/today",                    icon: "fa-house",            section: "Home" },
@@ -19,7 +19,6 @@ const COMMANDS = [
   { label: "Life",            to: "/admin/life",                     icon: "fa-heart-pulse",      section: "Life" },
   { label: "Journal",         to: "/admin/life?tab=journal",         icon: "fa-book",             section: "Life" },
   { label: "Habits",          to: "/admin/life?tab=habits",          icon: "fa-fire",             section: "Life" },
-  { label: "Smoke Tracker",   to: "/admin/life?tab=smoke",           icon: "fa-leaf",             section: "Life", smokeOnly: true },
   { label: "Arcade",          to: "/admin/life?tab=arcade",          icon: "fa-gamepad",          section: "Life" },
   { label: "Mission Control", to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Agents",          to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
@@ -43,17 +42,15 @@ export default function CommandPalette({ onClose }) {
   const inputRef = useRef(null);
   const listRef = useRef(null);
   const navigate = useNavigate();
-  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
   const hiddenPages = useHiddenPages();
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const commands = useMemo(
     () => COMMANDS.filter((c) =>
-      !(hideSmoke && c.smokeOnly) &&
       !hiddenPages.some((base) => c.to === base || c.to.startsWith(`${base}?`))
     ),
-    [hideSmoke, hiddenPages]
+    [hiddenPages]
   );
 
   const results = useMemo(() => {

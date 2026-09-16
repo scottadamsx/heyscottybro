@@ -1992,8 +1992,7 @@ input, textarea, select { font-family: inherit; }
 .chat-attach:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-attach:not(:disabled):hover { color: var(--text-primary); border-color: var(--border-strong); }
 
-/* (Budget rules live in components/budget/budget.css; smoke-tracker .wt-*
-   rules in pages/admin/life.css — DR-013 passes.) */
+/* (Budget rules live in components/budget/budget.css — DR-013 pass.) */
 
 /* ═══════════════════════════════════════════
    CONTEXT PAGE

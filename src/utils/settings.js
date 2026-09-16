@@ -8,7 +8,6 @@ import { useSyncExternalStore } from "react";
 const PREFIX = "setting:";
 
 // Setting keys live here so they can't drift between callers.
-export const HIDE_SMOKE_TRACKER = "hideSmokeTracker";
 export const THEME = "theme";
 export const HIDDEN_PAGES = "hiddenPages";
 
@@ -63,8 +62,7 @@ export function useSetting(key, fallback = false) {
 }
 
 /** Hidden pages: a set of nav `to` paths removed from the rail, the mobile
- * menu, and the command palette (data is kept — same soft-hide as
- * HIDE_SMOKE_TRACKER, just generalised to any top-level space). */
+ * menu, and the command palette (data is kept). */
 function parseHiddenPages(raw) {
   try { const v = JSON.parse(raw); return Array.isArray(v) ? v : []; }
   catch { return []; }

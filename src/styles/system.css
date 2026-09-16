@@ -51,7 +51,7 @@
 /* Numbers line up everywhere */
 .admin-shell .stat-value, .admin-shell .uik-stat-value, .admin-shell .fin-amt,
 .admin-shell .fin-kpi-value, .admin-shell .fin-top-value, .admin-shell .fin-hero-value,
-.admin-shell .bud-hero-value, .admin-shell .nut-big-cal, .admin-shell .wt-stat-val,
+.admin-shell .bud-hero-value, 
 .admin-shell .gt-stat-val, .admin-shell .kpi-value { font-variant-numeric: tabular-nums; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -685,7 +685,6 @@
 .admin-shell .modal,
 .admin-shell .modal-card,
 .admin-shell .doc-viewer-modal,
-.admin-shell .wt-modal,
 .admin-shell .uik-modal,
 .confirm-panel {
   background: var(--bg-card);

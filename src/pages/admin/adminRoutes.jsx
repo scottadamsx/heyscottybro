@@ -51,7 +51,7 @@ export const ADMIN_REDIRECTS = [
   ["dashboard", "/admin/today"], ["health", "/admin/life"], ["tools", "/admin/mission"], ["command", "/admin/mission"],
   ["brain", "/admin/mission?tab=brain"], ["research", "/admin/mission?tab=research"], ["grocery", "/admin/finance?tab=receipts"],
   ["dates", "/admin/planner"], ["calendar", "/admin/planner"], ["journal", "/admin/life?tab=journal"], ["projects", "/admin/planner?tab=projects"],
-  ["nutrition", "/admin/life"], ["recipes", "/admin/life"], ["accountability", "/admin/life?tab=habits"], ["smoke", "/admin/life?tab=smoke"],
+  ["nutrition", "/admin/life"], ["recipes", "/admin/life"], ["accountability", "/admin/life?tab=habits"],
   ["hikers", "/admin/vault?tab=databases"], ["snippets", "/admin/vault"], ["context", "/admin/mission?tab=brain"], ["documents", "/admin/vault?tab=documents"],
   ["budget", "/admin/finance"], ["design", "/admin/settings"],
 ];

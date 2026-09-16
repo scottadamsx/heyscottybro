@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { THEMES, useTheme, setTheme } from "../../utils/theme";
-import { HIDE_SMOKE_TRACKER, useSetting, setSetting, useHiddenPages, toggleHiddenPage } from "../../utils/settings";
+import { useHiddenPages, toggleHiddenPage } from "../../utils/settings";
 import { NAV_ITEMS } from "./AdminLayout";
 import { clearAgentSession } from "../../api/agentSessionsApi";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -27,7 +27,6 @@ function Toggle({ checked, onChange, label }) {
 
 export default function SettingsPage() {
   const theme = useTheme();
-  const hideSmoke = useSetting(HIDE_SMOKE_TRACKER);
   const hiddenPages = useHiddenPages();
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
@@ -104,25 +103,6 @@ export default function SettingsPage() {
               />
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="db-card">
-        <div className="settings-row">
-          <div className="settings-row-body">
-            <div className="settings-row-title">
-              <i className="fa-solid fa-leaf" /> Hide Smoke Tracker
-            </div>
-            <div className="settings-row-meta">
-              Removes Smoke Tracker from the sidebar, menus, and command palette —
-              handy when showing the dashboard to someone else. Your data is kept.
-            </div>
-          </div>
-          <Toggle
-            checked={hideSmoke}
-            onChange={(v) => setSetting(HIDE_SMOKE_TRACKER, v)}
-            label="Hide Smoke Tracker"
-          />
         </div>
       </div>
 

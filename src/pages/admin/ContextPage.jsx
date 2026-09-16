@@ -11,7 +11,6 @@ const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "bor
 const TOPICS = {
   gardening: "Gardening", garden: "Gardening", work: "Work", school: "School",
   music: "Music", food: "Food", family: "Family", health: "Health",
-  weed: "Cannabis", pen: "Cannabis", smoke: "Cannabis", joint: "Cannabis",
   birthday: "Date", anniversary: "Date", exercise: "Health", gym: "Health",
   diet: "Food", allergy: "Health",
 };
