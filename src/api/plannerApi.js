@@ -9,6 +9,7 @@
  * - Local mode (toggle in the dashboard, or VITE_LOCAL_DATA=1): every call uses
  *   localStorage consistently — handy for offline testing.
  */
+import { isNetworkError } from "../utils/networkError";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
 import { toDateStr, nextOccurrence } from "../utils/plannerUtils";
@@ -54,8 +55,7 @@ async function withRetry(fn, maxAttempts = 3) {
     try {
       return await fn();
     } catch (err) {
-      const isNetworkError = err instanceof TypeError && /fetch|network|failed/i.test(err.message ?? "");
-      if (!isNetworkError || attempt >= maxAttempts) throw err;
+      if (!isNetworkError(err) || attempt >= maxAttempts) throw err;
       await new Promise((r) => setTimeout(r, 2 ** attempt * 300));
     }
   }
@@ -76,7 +76,10 @@ async function op(remote, localFn, label = "call") {
     setConnected(false);
     const msg = err?.message || String(err);
     console.error(`[plannerApi] Supabase ${label} failed:`, msg);
-    throw new Error(`Supabase ${label}: ${msg}`);
+    if (isNetworkError(err)) {
+      throw new Error(`Couldn't reach the database after 3 tries (${msg.replace(/^TypeError:\s*/, "")}). Check your connection and try again.`, { cause: err });
+    }
+    throw new Error(`Supabase ${label}: ${msg}`, { cause: err });
   }
 }
 
