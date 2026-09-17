@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { fileToContent, extract } from "../../lib/smartImport";
 import { formatMoney, genId } from "../../utils/budgetCalc";
 import { useToast } from "../../contexts/ToastContext";
+import { FormModal, Field } from "../ui";
 import "./statementImport.css";
 
 /**
@@ -199,30 +200,57 @@ export default function StatementImport({ transactions, setTransactions, categor
   const checkedCount = rows.filter((r) => r.checked).length;
   const conf = (c) => <span className={`si-conf ${c}`}>{c}</span>;
 
+  // One modal, four phases. The primary button does the phase's job:
+  // idle → Analyze pasted text · busy → locked · review → Apply · done → Import another.
+  // Analyze runs in the background (its own spinner), so the modal stays open.
+  const close = () => { setOpen(false); if (phase === "done") reset(); };
+  const submit = () => {
+    if (phase === "idle") {
+      if (!paste.trim()) throw new Error("Choose a statement file or paste its text first.");
+      analyze({ text: paste.trim().slice(0, 24000) });
+      return false;
+    }
+    if (phase === "review") { apply(); return false; }
+    if (phase === "done") { reset(); return false; }
+    return false;
+  };
+  const submitLabel = phase === "review"
+    ? `Apply ${checkedCount} change${checkedCount === 1 ? "" : "s"}${applyBalance ? " + balance" : ""}`
+    : phase === "done" ? "Import another" : phase === "busy" ? "Reading…" : "Analyze";
+  const submitDisabled = phase === "busy"
+    || (phase === "idle" && !paste.trim())
+    || (phase === "review" && checkedCount === 0 && !applyBalance);
+
   return (
-    <div className={`si${open ? " open" : ""}`}>
-      <button type="button" className="si-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <span className="si-toggle-icon" aria-hidden="true"><i className="fa-solid fa-file-invoice" /></span>
-        <span className="si-toggle-text">
-          <span className="si-toggle-title">Import statement</span>
-          <span className="si-toggle-sub">Drop a bank statement — it reconciles against your ledger, you approve every line</span>
-        </span>
-        <i className={`fa-solid fa-chevron-${open ? "up" : "down"} si-chev`} aria-hidden="true" />
+    <>
+      <button type="button" className="btn btn-secondary" onClick={() => setOpen(true)}>
+        <i className="fa-solid fa-file-invoice" aria-hidden="true" /> Import statement
       </button>
 
       {open && (
-        <div className="si-body">
+        <FormModal
+          title="Import statement"
+          width={640}
+          submitLabel={submitLabel}
+          submitDisabled={submitDisabled}
+          cancelLabel={phase === "done" ? "Close" : "Cancel"}
+          onClose={close}
+          onSubmit={submit}
+          extraActions={phase === "review" && (
+            <button type="button" className="btn btn-secondary" onClick={reset}>Start over</button>
+          )}
+        >
           {phase === "idle" && (
             <>
+              <p className="si-note">Drop a bank statement — it reconciles against your ledger and you approve every line. Nothing is written until you apply.</p>
               <label className="si-drop">
                 <input type="file" accept=".pdf,.csv,.txt,image/*" className="visually-hidden" onChange={(e) => onFile(e.target.files?.[0])} />
                 <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a statement (PDF · image · CSV)
               </label>
               <div className="si-or">or paste the statement text</div>
-              <textarea rows={4} value={paste} aria-label="Statement text" onChange={(e) => setPaste(e.target.value)} placeholder="Paste the transactions section of your statement…" />
-              <button type="button" className="btn btn-sm" disabled={!paste.trim()} onClick={() => analyze({ text: paste.trim().slice(0, 24000) })}>
-                <i className="fa-solid fa-magnifying-glass-dollar" aria-hidden="true" /> Analyze
-              </button>
+              <Field label="Statement text">
+                <textarea rows={5} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the transactions section of your statement…" />
+              </Field>
             </>
           )}
 
@@ -285,23 +313,16 @@ export default function StatementImport({ transactions, setTransactions, categor
                 </label>
               )}
 
-              <div className="si-actions">
-                <button type="button" className="btn btn-sm" onClick={apply} disabled={checkedCount === 0 && !applyBalance}>
-                  <i className="fa-solid fa-check" aria-hidden="true" /> Apply {checkedCount} change{checkedCount === 1 ? "" : "s"}{applyBalance ? " + balance" : ""}
-                </button>
-                <button type="button" className="btn-sm btn-secondary-sm" onClick={reset}>Cancel</button>
-              </div>
             </>
           )}
 
           {phase === "done" && summary && (
-            <div className="si-done">
+            <div className="si-done" role="status">
               <p><i className="fa-solid fa-circle-check" aria-hidden="true" /> Done: <strong>{summary.updated}</strong> transaction{summary.updated === 1 ? "" : "s"} updated to exact statement figures, <strong>{summary.created}</strong> added{summary.balance != null ? <>, ledger anchored to <strong>{formatMoney(summary.balance)}</strong> at statement close</> : ""}.</p>
-              <button type="button" className="btn-sm btn-secondary-sm" onClick={reset}>Import another</button>
             </div>
           )}
-        </div>
+        </FormModal>
       )}
-    </div>
+    </>
   );
 }

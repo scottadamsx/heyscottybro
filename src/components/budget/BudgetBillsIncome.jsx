@@ -1,95 +1,91 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./budget.css";
 import DatePicker from "../DatePicker";
+import { FormModal, Field } from "../ui";
 
 const FREQ_OPTS = ["weekly","biweekly","monthly","yearly"];
+const SCHED_OPTS = ["weekly","biweekly","semimonthly","monthly","custom"];
 const EMPTY_BILL = { name: "", amount: "", category: "Housing", frequency: "monthly", startDate: toDateStr(), autoPay: false, variable: false, notes: "" };
 const EMPTY_INC = { name: "", amount: "", frequency: "biweekly", startDate: toDateStr(), endDate: "" };
 
-export default function BudgetBillsIncome({ config, setConfig, transactions, setTransactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
+// Which form modal is open: "inc" | "bill" | "sched" | "cat" | "bal" | "reset" | null
+export default function BudgetBillsIncome({ config, setConfig, transactions, startingBalance = 0, setStartingBalance, onFreshStart }) {
   const categories = config.categories || [];
   const { confirm, dialog } = useConfirm();
+  const [modal, setModal] = useState(null);
+  const close = () => setModal(null);
   const [billForm, setBillForm] = useState({ ...EMPTY_BILL });
   const [billEditId, setBillEditId] = useState(null);
-  const [showBillForm, setShowBillForm] = useState(false);
   const [incForm, setIncForm] = useState({ ...EMPTY_INC });
   const [incEditId, setIncEditId] = useState(null);
-  const [showIncForm, setShowIncForm] = useState(false);
-  const [showSchedEdit, setShowSchedEdit] = useState(false);
-  const [schedForm, setSchedForm] = useState({ type: config.paySchedule?.type || "biweekly", anchorDate: config.paySchedule?.anchorDate || toDateStr(), customDays: config.paySchedule?.customDays || 14 });
+  const [schedForm, setSchedForm] = useState({ type: "biweekly", anchorDate: toDateStr(), customDays: 14 });
   const [newCat, setNewCat] = useState("");
-  const [balInput, setBalInput] = useState(String(startingBalance));
-  const [flash, setFlash] = useState("");
-
-  const flashFor = key => { setFlash(key); setTimeout(() => setFlash(""), 1800); };
-
-  // The Add/Edit forms render inline below long lists, so opening one from the
-  // top of the page leaves it off-screen. Scroll the form into view and focus
-  // its first field whenever it opens (preventScroll so it doesn't fight the
-  // smooth scroll). Covers both income and recurring-bill forms.
-  const billFormRef = useRef(null);
-  const incFormRef = useRef(null);
-  const revealForm = (ref) => {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.querySelector("input, select, textarea")?.focus({ preventScroll: true });
-  };
-  useEffect(() => { if (showBillForm) revealForm(billFormRef); }, [showBillForm]);
-  useEffect(() => { if (showIncForm) revealForm(incFormRef); }, [showIncForm]);
+  const [balInput, setBalInput] = useState("");
+  const [resetOk, setResetOk] = useState(false);
 
   // ── Bills ──
-  const openNewBill = () => { setBillEditId(null); setBillForm({ ...EMPTY_BILL, startDate: toDateStr(), category: categories[0] || "Other" }); setShowBillForm(true); };
-  const openEditBill = b => { setBillEditId(b.id); setBillForm({ name: b.name, amount: String(b.amount), category: b.category, frequency: b.frequency, startDate: b.startDate || toDateStr(), autoPay: b.autoPay, variable: !!b.variable, notes: b.notes || "" }); setShowBillForm(true); };
+  const openNewBill = () => { setBillEditId(null); setBillForm({ ...EMPTY_BILL, startDate: toDateStr(), category: categories[0] || "Other" }); setModal("bill"); };
+  const openEditBill = b => { setBillEditId(b.id); setBillForm({ name: b.name, amount: String(b.amount), category: b.category, frequency: b.frequency, startDate: b.startDate || toDateStr(), autoPay: b.autoPay, variable: !!b.variable, notes: b.notes || "" }); setModal("bill"); };
   const saveBill = () => {
     const amt = parseFloat(billForm.amount);
-    if (!billForm.name.trim() || isNaN(amt) || amt <= 0) return;
+    if (!billForm.name.trim()) throw new Error("Give the bill a name.");
+    if (isNaN(amt) || amt <= 0) throw new Error("Enter an amount greater than zero.");
     const nb = { id: billEditId || genId(), name: billForm.name.trim(), amount: amt, category: billForm.category, frequency: billForm.frequency, startDate: billForm.startDate, autoPay: billForm.autoPay, variable: billForm.variable, notes: billForm.notes };
     if (billEditId) setConfig(c => ({ ...c, recurringBills: c.recurringBills.map(b => b.id === billEditId ? nb : b) }));
     else setConfig(c => ({ ...c, recurringBills: [...(c.recurringBills || []), nb] }));
-    setShowBillForm(false); setBillEditId(null); flashFor("bill");
   };
   const deleteBill = async id => { if (!await confirm("Delete this bill?", { title: "Delete bill", confirmLabel: "Delete" })) return; setConfig(c => ({ ...c, recurringBills: c.recurringBills.filter(b => b.id !== id) })); };
 
   // ── Income ──
-  const openNewInc = () => { setIncEditId(null); setIncForm({ ...EMPTY_INC, startDate: toDateStr() }); setShowIncForm(true); };
-  const openEditInc = inc => { setIncEditId(inc.id); setIncForm({ name: inc.name, amount: String(inc.amount), frequency: inc.frequency, startDate: inc.startDate || inc.nextDate || toDateStr(), endDate: inc.endDate || "" }); setShowIncForm(true); };
+  const openNewInc = () => { setIncEditId(null); setIncForm({ ...EMPTY_INC, startDate: toDateStr() }); setModal("inc"); };
+  const openEditInc = inc => { setIncEditId(inc.id); setIncForm({ name: inc.name, amount: String(inc.amount), frequency: inc.frequency, startDate: inc.startDate || inc.nextDate || toDateStr(), endDate: inc.endDate || "" }); setModal("inc"); };
   const saveInc = () => {
     const amt = parseFloat(incForm.amount);
-    if (!incForm.name.trim() || isNaN(amt) || amt <= 0 || !incForm.startDate) return;
+    if (!incForm.name.trim()) throw new Error("Give the income source a name.");
+    if (isNaN(amt) || amt <= 0) throw new Error("Enter an amount greater than zero.");
+    if (!incForm.startDate) throw new Error("Pick the start date (first payday).");
     const ni = { id: incEditId || genId(), name: incForm.name.trim(), amount: amt, frequency: incForm.frequency, startDate: incForm.startDate, endDate: incForm.endDate || null };
     if (incEditId) setConfig(c => ({ ...c, income: c.income.map(i => i.id === incEditId ? ni : i) }));
     else setConfig(c => ({ ...c, income: [...(c.income || []), ni] }));
-    setShowIncForm(false); setIncEditId(null); flashFor("inc");
   };
   const deleteInc = async id => { if (!await confirm("Delete this income source?", { title: "Delete income", confirmLabel: "Delete" })) return; setConfig(c => ({ ...c, income: c.income.filter(i => i.id !== id) })); };
 
-  // ── One-time income ──
-  const logOneTimeIncome = (desc, amount, date) => {
-    const tx = { id: genId(), description: desc, amount, type: "income", category: "Other", date, notes: "", reconciled: false };
-    setTransactions(p => [tx, ...p]);
+  // ── Pay schedule ── (the modal opens on the schedule as it is now)
+  const openSched = () => {
+    setSchedForm({ type: config.paySchedule?.type || "biweekly", anchorDate: config.paySchedule?.anchorDate || toDateStr(), customDays: config.paySchedule?.customDays || 14 });
+    setModal("sched");
   };
-
-  // ── Pay schedule ──
   const saveSched = () => {
     setConfig(c => ({ ...c, paySchedule: { type: schedForm.type, anchorDate: schedForm.anchorDate, customDays: schedForm.type === "custom" ? parseInt(schedForm.customDays) || 14 : null } }));
-    setShowSchedEdit(false); flashFor("sched");
   };
 
   // ── Categories ──
+  const openCat = () => { setNewCat(""); setModal("cat"); };
   const addCat = () => {
     const n = newCat.trim();
-    if (!n || categories.includes(n)) return;
+    if (!n) throw new Error("Type a category name.");
+    if (categories.includes(n)) throw new Error(`"${n}" is already a category.`);
     setConfig(c => ({ ...c, categories: [...c.categories, n] }));
-    setNewCat("");
   };
   const removeCat = async cat => {
     const used = transactions.some(t => t.category === cat);
     if (used && !await confirm(`"${cat}" is used by transactions. Delete anyway?`, { title: "Delete category", confirmLabel: "Delete" })) return;
     setConfig(c => ({ ...c, categories: c.categories.filter(x => x !== cat) }));
   };
+
+  // ── Starting balance ──
+  const openBal = () => { setBalInput(String(startingBalance)); setModal("bal"); };
+  const saveBal = () => {
+    const v = parseFloat(balInput);
+    if (isNaN(v)) throw new Error("Enter a balance (it can be 0 or negative).");
+    setStartingBalance(v);
+  };
+
+  // ── Fresh start ──
+  const openReset = () => { setResetOk(false); setModal("reset"); };
+  const doReset = () => { if (onFreshStart) onFreshStart(); };
 
   // Bills schedule off frequency + startDate (there is no separate "due day"
   // field — the day-of-month comes from startDate). Surface the next occurrence
@@ -111,10 +107,8 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
     return dates;
   })();
 
-  // "Saved" flashes on the button that saved: same button, success tone.
-  const saveBtn = (key) => `btn btn-sm${flash === key ? " btn-complete" : ""}`;
-
   return (
+    <>
     <div className="money money-tab">
       <div className="bi-grid">
         {/* ── Money in and out ── */}
@@ -123,7 +117,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <div className="db-card">
             <div className="db-card-header">
               <h3 className="db-card-title">Income sources</h3>
-              <button type="button" className="btn-sm btn-secondary-sm" onClick={openNewInc}><i className="fa-solid fa-plus" aria-hidden="true" /> Add</button>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={openNewInc}><i className="fa-solid fa-plus" aria-hidden="true" /> Add income</button>
             </div>
             {(config.income || []).length === 0
               ? <p className="money-card-note">No income sources added yet.</p>
@@ -148,7 +142,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
                         </div>
                         <span className="bi-row-amt">{formatMoney(inc.amount)}</span>
                         <div className="bud-actions">
-                          <button type="button" className="btn-mini" onClick={() => openEditInc(inc)}>Edit</button>
+                          <button type="button" className="btn-mini" onClick={() => openEditInc(inc)} aria-label={`Edit ${inc.name}`}>Edit</button>
                           <button type="button" className="btn-mini danger" onClick={() => deleteInc(inc.id)} aria-label={`Delete ${inc.name}`}>Delete</button>
                         </div>
                       </div>
@@ -157,37 +151,13 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
                 </div>
               )
             }
-            {showIncForm && (
-              <div ref={incFormRef} className="bi-form">
-                <h4 className="bi-form-title">{incEditId ? "Edit income" : "Add income source"}</h4>
-                <input placeholder="Name (e.g. TxtSquad)" aria-label="Name" value={incForm.name} onChange={e => setIncForm(f => ({ ...f, name: e.target.value }))} />
-                <div className="form-row">
-                  <input type="number" placeholder="Amount" aria-label="Amount" value={incForm.amount} onChange={e => setIncForm(f => ({ ...f, amount: e.target.value }))} />
-                  <select value={incForm.frequency} aria-label="Frequency" onChange={e => setIncForm(f => ({ ...f, frequency: e.target.value }))}>
-                    {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <div className="money-field">
-                  <span className="field-label">Start date (first payday)</span>
-                  <DatePicker value={incForm.startDate} onChange={(v) => setIncForm(f => ({ ...f, startDate: v }))} />
-                </div>
-                <div className="money-field">
-                  <span className="field-label">End date <span className="bi-hint">(optional — leave blank for ongoing)</span></span>
-                  <DatePicker value={incForm.endDate} onChange={(v) => setIncForm(f => ({ ...f, endDate: v }))} />
-                </div>
-                <div className="form-actions">
-                  <button type="button" className={saveBtn("inc")} onClick={saveInc}>{flash === "inc" ? "Saved" : "Save"}</button>
-                  <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setShowIncForm(false)}>Cancel</button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Recurring bills */}
           <div className="db-card">
             <div className="db-card-header">
               <h3 className="db-card-title">Recurring bills</h3>
-              <button type="button" className="btn-sm btn-secondary-sm" onClick={openNewBill}><i className="fa-solid fa-plus" aria-hidden="true" /> Add</button>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={openNewBill}><i className="fa-solid fa-plus" aria-hidden="true" /> Add bill</button>
             </div>
             {(config.recurringBills || []).length === 0
               ? <p className="money-card-note">No bills added yet.</p>
@@ -201,7 +171,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
                       </div>
                       <span className="bi-row-amt">{formatMoney(b.amount)}</span>
                       <div className="bud-actions">
-                        <button type="button" className="btn-mini" onClick={() => openEditBill(b)}>Edit</button>
+                        <button type="button" className="btn-mini" onClick={() => openEditBill(b)} aria-label={`Edit ${b.name}`}>Edit</button>
                         <button type="button" className="btn-mini danger" onClick={() => deleteBill(b.id)} aria-label={`Delete ${b.name}`}>Delete</button>
                       </div>
                     </div>
@@ -209,40 +179,6 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
                 </div>
               )
             }
-            {showBillForm && (
-              <div ref={billFormRef} className="bi-form">
-                <h4 className="bi-form-title">{billEditId ? "Edit bill" : "Add recurring bill"}</h4>
-                <input placeholder="Name (e.g. Rent, Netflix)" aria-label="Name" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} />
-                <div className="form-row">
-                  <input type="number" placeholder="Amount" aria-label="Amount" value={billForm.amount} onChange={e => setBillForm(f => ({ ...f, amount: e.target.value }))} />
-                  <select value={billForm.frequency} aria-label="Frequency" onChange={e => setBillForm(f => ({ ...f, frequency: e.target.value }))}>
-                    {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-                <select value={billForm.category} aria-label="Category" onChange={e => setBillForm(f => ({ ...f, category: e.target.value }))}>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <div className="money-field">
-                  <span className="field-label">Start date (first billing date)</span>
-                  <DatePicker value={billForm.startDate} onChange={(v) => setBillForm(f => ({ ...f, startDate: v }))} />
-                </div>
-                <label className="bi-check">
-                  <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} />
-                  <span>Variable / quantifiable <span className="bi-hint">— track spending against this amount (e.g. Groceries, Gas, Fun). Shows a progress bar instead of paid/unpaid.</span></span>
-                </label>
-                {!billForm.variable && (
-                  <label className="bi-check">
-                    <input type="checkbox" checked={billForm.autoPay} onChange={e => setBillForm(f => ({ ...f, autoPay: e.target.checked }))} />
-                    <span>Auto-pay (won&apos;t prompt to pay manually)</span>
-                  </label>
-                )}
-                <input placeholder="Notes (optional)" aria-label="Notes" value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} />
-                <div className="form-actions">
-                  <button type="button" className={saveBtn("bill")} onClick={saveBill}>{flash === "bill" ? "Saved" : "Save bill"}</button>
-                  <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setShowBillForm(false)}>Cancel</button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -252,27 +188,18 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
           <div className="db-card">
             <div className="db-card-header">
               <h3 className="db-card-title">Pay schedule</h3>
-              <button type="button" className={flash === "sched" ? "btn-sm btn-complete" : "btn-sm btn-secondary-sm"} aria-expanded={showSchedEdit} onClick={() => setShowSchedEdit(s => !s)}>{flash === "sched" ? "Saved" : "Edit"}</button>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={openSched}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit schedule</button>
             </div>
             <div className="bi-sched-type">{config.paySchedule?.type || "biweekly"}</div>
             <div className="bi-row-sub">Next paydays: {upcomingPaydays.join(", ")}</div>
-            {showSchedEdit && (
-              <div className="bi-form">
-                <select value={schedForm.type} aria-label="Pay schedule" onChange={e => setSchedForm(f => ({ ...f, type: e.target.value }))}>
-                  {["weekly","biweekly","semimonthly","monthly","custom"].map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <DatePicker value={schedForm.anchorDate} onChange={(v) => setSchedForm(f => ({ ...f, anchorDate: v }))} placeholder="Anchor/next payday" />
-                {schedForm.type === "custom" && <input type="number" value={schedForm.customDays} aria-label="Days per period" onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="Days per period" />}
-                <div className="form-actions">
-                  <button type="button" className="btn btn-sm" onClick={saveSched}>Save schedule</button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Categories */}
           <div className="db-card">
-            <div className="db-card-header"><h3 className="db-card-title">Categories</h3></div>
+            <div className="db-card-header">
+              <h3 className="db-card-title">Categories</h3>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={openCat}><i className="fa-solid fa-plus" aria-hidden="true" /> Add category</button>
+            </div>
             <div className="bi-cats">
               {categories.map(c => (
                 <span key={c} className="bud-chip">
@@ -281,22 +208,16 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
                 </span>
               ))}
             </div>
-            <div className="bi-inline">
-              <input value={newCat} aria-label="New category" onChange={e => setNewCat(e.target.value)} onKeyDown={e => e.key === "Enter" && addCat()} placeholder="New category…" />
-              <button type="button" className="btn btn-sm" onClick={addCat}>Add</button>
-            </div>
           </div>
 
           {/* Starting balance */}
           <div className="db-card">
-            <div className="db-card-header"><h3 className="db-card-title">Starting balance</h3></div>
-            <p className="money-card-note">The balance you&apos;re starting from. Used in the ledger running total and simulator.</p>
-            <div className="bi-inline">
-              <input type="number" step="0.01" value={balInput} aria-label="Starting balance" onChange={e => setBalInput(e.target.value)} placeholder="0.00" />
-              <button type="button" className={saveBtn("bal")} onClick={() => { const v = parseFloat(balInput); if (!isNaN(v)) { setStartingBalance(v); flashFor("bal"); } }}>
-                {flash === "bal" ? "Saved" : "Set balance"}
-              </button>
+            <div className="db-card-header">
+              <h3 className="db-card-title">Starting balance</h3>
+              <button type="button" className="btn-sm btn-secondary-sm" onClick={openBal}><i className="fa-solid fa-pen" aria-hidden="true" /> Set balance</button>
             </div>
+            <div className="bi-balance">{formatMoney(startingBalance)}</div>
+            <p className="money-card-note">The balance you&apos;re starting from. Used in the ledger running total and simulator.</p>
           </div>
 
           {/* Fresh start */}
@@ -305,18 +226,131 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, set
             <p className="money-card-note">
               Clear all transaction history and reset your balance to $0. Your recurring bills, income sources, pay schedule, and categories are kept.
             </p>
-            <button type="button" className="btn-sm btn-delete bi-reset"
-              onClick={async () => {
-                if (!await confirm("Clear all transactions and reset balance to $0? Your bills config is kept. This cannot be undone.", { title: "Fresh start", confirmLabel: "Reset" })) return;
-                if (onFreshStart) onFreshStart();
-              }}
-            >
-              Fresh start: clear transactions &amp; reset balance
+            <button type="button" className="btn-sm btn-delete bi-reset" onClick={openReset}>
+              Fresh start…
             </button>
           </div>
         </div>
       </div>
       {dialog}
     </div>
+
+    {/* Modals sit outside .money (a size container). */}
+    {modal === "inc" && (
+      <FormModal title={incEditId ? "Edit income source" : "Add income source"} submitLabel={incEditId ? "Save changes" : "Add income"} onClose={close} onSubmit={saveInc}>
+        <Field label="Name">
+          <input data-autofocus placeholder="e.g. TxtSquad" value={incForm.name} onChange={e => setIncForm(f => ({ ...f, name: e.target.value }))} />
+        </Field>
+        <div className="money-form-row">
+          <Field label="Amount per payday">
+            <input type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={incForm.amount} onChange={e => setIncForm(f => ({ ...f, amount: e.target.value }))} />
+          </Field>
+          <Field label="Frequency">
+            <select value={incForm.frequency} onChange={e => setIncForm(f => ({ ...f, frequency: e.target.value }))}>
+              {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="uik-field">
+          <span className="field-label">Start date (first payday)</span>
+          <DatePicker value={incForm.startDate} onChange={(v) => setIncForm(f => ({ ...f, startDate: v }))} />
+        </div>
+        <div className="uik-field">
+          <span className="field-label">End date (optional)</span>
+          <DatePicker value={incForm.endDate} onChange={(v) => setIncForm(f => ({ ...f, endDate: v }))} placeholder="Ongoing" />
+          <span className="field-hint">Leave blank for ongoing income.</span>
+        </div>
+      </FormModal>
+    )}
+
+    {modal === "bill" && (
+      <FormModal title={billEditId ? "Edit bill" : "Add recurring bill"} submitLabel={billEditId ? "Save changes" : "Add bill"} onClose={close} onSubmit={saveBill}>
+        <Field label="Name">
+          <input data-autofocus placeholder="e.g. Rent, Netflix" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} />
+        </Field>
+        <div className="money-form-row">
+          <Field label="Amount">
+            <input type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={billForm.amount} onChange={e => setBillForm(f => ({ ...f, amount: e.target.value }))} />
+          </Field>
+          <Field label="Frequency">
+            <select value={billForm.frequency} onChange={e => setBillForm(f => ({ ...f, frequency: e.target.value }))}>
+              {FREQ_OPTS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Field label="Category">
+          <select value={billForm.category} onChange={e => setBillForm(f => ({ ...f, category: e.target.value }))}>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </Field>
+        <div className="uik-field">
+          <span className="field-label">Start date (first billing date)</span>
+          <DatePicker value={billForm.startDate} onChange={(v) => setBillForm(f => ({ ...f, startDate: v }))} />
+        </div>
+        <label className="bi-check">
+          <input type="checkbox" checked={billForm.variable} onChange={e => setBillForm(f => ({ ...f, variable: e.target.checked }))} />
+          <span>Variable / quantifiable <span className="bi-hint">— track spending against this amount (e.g. Groceries, Gas, Fun). Shows a progress bar instead of paid/unpaid.</span></span>
+        </label>
+        {!billForm.variable && (
+          <label className="bi-check">
+            <input type="checkbox" checked={billForm.autoPay} onChange={e => setBillForm(f => ({ ...f, autoPay: e.target.checked }))} />
+            <span>Auto-pay (won&apos;t prompt to pay manually)</span>
+          </label>
+        )}
+        <Field label="Notes (optional)">
+          <input value={billForm.notes} onChange={e => setBillForm(f => ({ ...f, notes: e.target.value }))} />
+        </Field>
+      </FormModal>
+    )}
+
+    {modal === "sched" && (
+      <FormModal title="Pay schedule" submitLabel="Save schedule" onClose={close} onSubmit={saveSched}>
+        <Field label="How often you're paid">
+          <select data-autofocus value={schedForm.type} onChange={e => setSchedForm(f => ({ ...f, type: e.target.value }))}>
+            {SCHED_OPTS.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </Field>
+        <div className="uik-field">
+          <span className="field-label">Anchor payday</span>
+          <DatePicker value={schedForm.anchorDate} onChange={(v) => setSchedForm(f => ({ ...f, anchorDate: v }))} placeholder="Anchor/next payday" />
+          <span className="field-hint">Any real payday; periods are counted from it.</span>
+        </div>
+        {schedForm.type === "custom" && (
+          <Field label="Days per period">
+            <input type="number" inputMode="numeric" value={schedForm.customDays} onChange={e => setSchedForm(f => ({ ...f, customDays: e.target.value }))} placeholder="14" />
+          </Field>
+        )}
+      </FormModal>
+    )}
+
+    {modal === "cat" && (
+      <FormModal title="Add category" submitLabel="Add category" onClose={close} onSubmit={addCat} width={420}>
+        <Field label="Category name">
+          <input data-autofocus value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="e.g. Pets" />
+        </Field>
+      </FormModal>
+    )}
+
+    {modal === "bal" && (
+      <FormModal title="Starting balance" submitLabel="Set balance" onClose={close} onSubmit={saveBal} width={420}>
+        <Field label="Balance" hint="Used in the ledger running total and the simulator.">
+          <input data-autofocus type="number" inputMode="decimal" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0.00" />
+        </Field>
+      </FormModal>
+    )}
+
+    {modal === "reset" && (
+      <FormModal title="Fresh start" submitLabel="Clear everything" danger submitDisabled={!resetOk} onClose={close} onSubmit={doReset} width={460}>
+        <p className="bi-reset-warn">
+          This deletes <strong>all {transactions.length} transaction{transactions.length === 1 ? "" : "s"}</strong> and sets your starting balance to $0. It cannot be undone.
+        </p>
+        <p className="money-card-note">Your recurring bills, income sources, pay schedule and categories are kept.</p>
+        <label className="bi-check">
+          <input type="checkbox" checked={resetOk} onChange={e => setResetOk(e.target.checked)} />
+          <span>I understand my transaction history will be permanently deleted.</span>
+        </label>
+      </FormModal>
+    )}
+    </>
   );
 }
