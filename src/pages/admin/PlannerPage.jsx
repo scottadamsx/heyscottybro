@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ExportKit, Modal } from "../../components/ui";
+import { ExportKit, FormModal, Field } from "../../components/ui";
 import { loadReminders, loadEvents, loadProjects, loadEventTypes, newReminder } from "../../api/plannerApi";
 import { expandReminders, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
 import { useSearchParams } from "react-router-dom";
@@ -39,7 +39,6 @@ export default function PlannerPage() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [quickReminder, setQuickReminder] = useState(emptyQuickReminder);
-  const [savingReminder, setSavingReminder] = useState(false);
 
   useEffect(() => {
     if (!showEventModal) return;
@@ -49,24 +48,19 @@ export default function PlannerPage() {
 
   const addEvent = async (values) => {
     await createEventWithAutoTasks(values, eventTypes);
-    setShowEventModal(false);
     addToast("Event added.", "success");
   };
 
-  const addQuickReminder = async (e) => {
-    e.preventDefault();
-    if (!quickReminder.name.trim()) return;
-    setSavingReminder(true);
+  // Throws on failure: the modal stays open with the error and what was typed.
+  const addQuickReminder = async () => {
+    if (!quickReminder.name.trim()) throw new Error("Give the reminder a name.");
     try {
       await newReminder({ name: quickReminder.name.trim(), date: quickReminder.date || null, recurrence: quickReminder.recurrence });
-      setQuickReminder(emptyQuickReminder);
-      setShowReminderModal(false);
-      addToast("Reminder added.", "success");
     } catch (err) {
-      addToast(`Couldn't add reminder: ${err?.message || "unknown error"}`, "error");
-    } finally {
-      setSavingReminder(false);
+      throw new Error(`Couldn't add reminder: ${err?.message || "unknown error"}`, { cause: err });
     }
+    setQuickReminder(emptyQuickReminder);
+    addToast("Reminder added.", "success");
   };
 
   // The toolbar's quick actions change with the tab — Overview is the one
@@ -144,30 +138,29 @@ export default function PlannerPage() {
       )}
 
       {showEventModal && (
-        <Modal title="New event" onClose={() => setShowEventModal(false)} width={520}>
-          <EventForm projects={projects} eventTypes={eventTypes} onSubmit={addEvent} onCancel={() => setShowEventModal(false)} />
-        </Modal>
+        <EventForm modalTitle="New event" projects={projects} eventTypes={eventTypes} onSubmit={addEvent} onClose={() => setShowEventModal(false)} />
       )}
 
       {showReminderModal && (
-        <Modal title="New reminder" onClose={() => setShowReminderModal(false)} width={420}>
-          <form className="form-card plan-quick-reminder" onSubmit={addQuickReminder}>
-            <input placeholder="Reminder name" aria-label="Reminder name" value={quickReminder.name} onChange={(e) => setQuickReminder({ ...quickReminder, name: e.target.value })} required autoFocus />
-            <div className="form-row">
+        <FormModal title="New reminder" submitLabel="Add reminder" width={420} onClose={() => setShowReminderModal(false)} onSubmit={addQuickReminder}>
+          <Field label="Reminder">
+            <input placeholder="Reminder name" value={quickReminder.name} onChange={(e) => setQuickReminder({ ...quickReminder, name: e.target.value })} data-autofocus required />
+          </Field>
+          <div className="form-row">
+            <div className="uik-field">
+              <span className="field-label">Due date</span>
               <DatePicker value={quickReminder.date} onChange={(v) => setQuickReminder({ ...quickReminder, date: v })} placeholder="Due date" />
-              <select value={quickReminder.recurrence} onChange={(e) => setQuickReminder({ ...quickReminder, recurrence: e.target.value })} aria-label="Recurrence">
+            </div>
+            <Field label="Repeats">
+              <select value={quickReminder.recurrence} onChange={(e) => setQuickReminder({ ...quickReminder, recurrence: e.target.value })}>
                 <option value="none">One-time</option>
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
               </select>
-            </div>
-            <div className="form-actions">
-              <button className="btn" type="submit" disabled={savingReminder}>{savingReminder ? "Saving…" : "Add reminder"}</button>
-              <button className="btn btn-secondary" type="button" onClick={() => setShowReminderModal(false)}>Cancel</button>
-            </div>
-          </form>
-        </Modal>
+            </Field>
+          </div>
+        </FormModal>
       )}
     </div>
   );

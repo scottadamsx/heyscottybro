@@ -10,9 +10,39 @@ import { onDataChange } from "../../utils/dataEvents";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
 import DatePicker from "../../components/DatePicker";
+import { FormModal, Field } from "../../components/ui";
 import "./plan.css";
 
 const emptyForm = () => ({ date: toDateStr(new Date()), task: "", notes: "", project_id: "", minutes: "" });
+
+/** The log-work fields, shared by "Log work" and a row's Edit. */
+function WorkLogFields({ form, setForm, projects }) {
+  return (
+    <>
+      <Field label="What did you do?">
+        <input value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} data-autofocus required />
+      </Field>
+      <div className="form-row">
+        <div className="uik-field">
+          <span className="field-label">Date</span>
+          <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
+        </div>
+        <Field label="Minutes" className="worklog-min">
+          <input type="number" min="0" step="5" placeholder="min" value={form.minutes} onChange={(e) => setForm({ ...form, minutes: e.target.value })} />
+        </Field>
+      </div>
+      <Field label="Project">
+        <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })}>
+          <option value="">No project</option>
+          {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Notes (optional)">
+        <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+      </Field>
+    </>
+  );
+}
 
 export default function WorkLogPage() {
   const { addToast } = useToast();
@@ -20,11 +50,10 @@ export default function WorkLogPage() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [showLog, setShowLog] = useState(false);
   const [mirrorToReminders, setMirrorToReminders] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
-  const [editSaving, setEditSaving] = useState(false);
 
   const load = async () => {
     try {
@@ -42,10 +71,9 @@ export default function WorkLogPage() {
     return [...m.entries()];
   }, [rows]);
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.task.trim()) return;
-    setSaving(true);
+  // Throws on failure: the modal stays open with the error and what was typed.
+  const submit = async () => {
+    if (!form.task.trim()) throw new Error("Say what you worked on.");
     try {
       await createWorkLog(form);
       if (mirrorToReminders) {
@@ -67,8 +95,7 @@ export default function WorkLogPage() {
       }
       setForm((f) => ({ ...emptyForm(), date: f.date, project_id: f.project_id }));
       addToast("Logged.", "success");
-    } catch (err) { addToast(`Couldn't save: ${err.message}`, "error"); }
-    finally { setSaving(false); }
+    } catch (err) { throw new Error(`Couldn't save: ${err.message}`, { cause: err }); }
   };
 
   const remove = async (r) => {
@@ -81,30 +108,32 @@ export default function WorkLogPage() {
     setEditForm({ date: r.date, task: r.task || "", notes: r.notes || "", project_id: r.project_id || "", minutes: r.minutes != null ? String(r.minutes) : "" });
   };
   const cancelEdit = () => { setEditingId(null); setEditForm(null); };
-  const saveEdit = async (e) => {
-    e.preventDefault();
-    if (!editForm.task.trim()) return;
+  const saveEdit = async () => {
+    if (!editForm.task.trim()) throw new Error("Say what you worked on.");
     const id = editingId;
     const prev = rows.find((x) => x.id === id);
     const patch = { date: editForm.date, task: editForm.task.trim(), notes: editForm.notes || "", project_id: editForm.project_id || null, minutes: editForm.minutes ? Number(editForm.minutes) : null };
-    setEditSaving(true);
     // Optimistic: apply locally, roll back + surface the real error on failure.
     setRows((list) => list.map((x) => x.id === id ? { ...x, ...patch } : x));
-    cancelEdit();
     try {
       await updateWorkLog(id, patch);
       addToast("Updated.", "success");
     } catch (err) {
       setRows((list) => list.map((x) => x.id === id ? prev : x));
-      addToast(`Couldn't save: ${err.message}`, "error");
-    } finally { setEditSaving(false); }
+      throw new Error(`Couldn't save: ${err.message}`, { cause: err });
+    }
   };
 
   const minutesFor = (list) => list.reduce((a, r) => a + (Number(r.minutes) || 0), 0);
 
   return (
     <div className="module-page worklog-page">
-      <div className="module-header worklog-head"><h1>Work log</h1></div>
+      <div className="module-header worklog-head">
+        <h1>Work log</h1>
+        <button type="button" className="btn btn-primary worklog-log-btn" onClick={() => setShowLog(true)}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> Log work
+        </button>
+      </div>
       {error && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">{error}</p>
@@ -112,20 +141,9 @@ export default function WorkLogPage() {
         </div>
       )}
 
-      <form className="form-card worklog-form" onSubmit={submit} aria-label="Log work">
-        <div className="form-row">
-          <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
-          <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
-            <option value="">No project</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <input type="number" min="0" step="5" placeholder="min" value={form.minutes} onChange={(e) => setForm({ ...form, minutes: e.target.value })} aria-label="Minutes" className="worklog-min" />
-        </div>
-        <div className="form-row">
-          <input className="field-grow" placeholder="What did you do?" aria-label="What did you do?" value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} autoFocus required />
-        </div>
-        <textarea placeholder="Notes (optional)" aria-label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
-        <div className="worklog-form-foot">
+      {showLog && (
+        <FormModal title="Log work" submitLabel="Log work" onClose={() => setShowLog(false)} onSubmit={submit}>
+          <WorkLogFields form={form} setForm={setForm} projects={projects} />
           <label className="checkbox-inline">
             <input
               type="checkbox"
@@ -134,9 +152,14 @@ export default function WorkLogPage() {
             />
             Also add this to Reminders + Calendar
           </label>
-          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Log work"}</button>
-        </div>
-      </form>
+        </FormModal>
+      )}
+
+      {editForm && (
+        <FormModal title="Edit work log entry" submitLabel="Save changes" onClose={cancelEdit} onSubmit={saveEdit}>
+          <WorkLogFields form={editForm} setForm={setEditForm} projects={projects} />
+        </FormModal>
+      )}
 
       {byDay.length === 0 && !error && <p className="no-entries">Nothing logged yet. Add what you worked on today.</p>}
 
@@ -147,26 +170,7 @@ export default function WorkLogPage() {
             <span className="db-count">{list.length} {list.length === 1 ? "item" : "items"}{minutesFor(list) ? ` · ${minutesFor(list)} min` : ""}</span>
           </div>
           <div className="db-list plan-list">
-            {list.map((r) => editingId === r.id && editForm ? (
-              <form className="form-card" key={r.id} onSubmit={saveEdit}>
-                <div className="form-row">
-                  <DatePicker value={editForm.date} onChange={(v) => setEditForm({ ...editForm, date: v })} />
-                  <select value={editForm.project_id} onChange={(e) => setEditForm({ ...editForm, project_id: e.target.value })} aria-label="Project">
-                    <option value="">No project</option>
-                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                  <input type="number" min="0" step="5" placeholder="min" value={editForm.minutes} onChange={(e) => setEditForm({ ...editForm, minutes: e.target.value })} aria-label="Minutes" className="worklog-min" />
-                </div>
-                <div className="form-row">
-                  <input className="field-grow" placeholder="What did you do?" aria-label="What did you do?" value={editForm.task} onChange={(e) => setEditForm({ ...editForm, task: e.target.value })} autoFocus required />
-                </div>
-                <textarea placeholder="Notes (optional)" aria-label="Notes" value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} rows={2} />
-                <div className="form-actions">
-                  <button type="submit" className="btn btn-primary" disabled={editSaving}>{editSaving ? "Saving…" : "Save changes"}</button>
-                  <button type="button" className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
-                </div>
-              </form>
-            ) : (
+            {list.map((r) => (
               <div className="db-list-item" key={r.id}>
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{r.task}</div>

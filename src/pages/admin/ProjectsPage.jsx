@@ -12,6 +12,7 @@ import { formatTime12 } from "../../utils/plannerUtils";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import DocLinks from "../../components/docs/DocLinks";
+import { FormModal, Field } from "../../components/ui";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./plan.css";
@@ -24,6 +25,38 @@ const PROJECT_COLORS = ["var(--accent)", "#22d3ee", "var(--green)", "var(--orang
 const emptyProject = { name: "", description: "", color: "#6366f1" }; // theme-fixed: user colour (default project colour)
 const emptyInitiative = { name: "", description: "", recurrence: "weekly" };
 const emptyEventType = { name: "", color: "#22d3ee" }; // theme-fixed: user colour (default event-type colour)
+const emptyQuickTask = { name: "", date: "", recurrence: "none" };
+const emptyAutoTask = { offset_days: -3, name: "" };
+
+const RecurrenceOptions = ({ oneTime = false }) => (
+  <>
+    {oneTime && <option value="none">One-time</option>}
+    <option value="daily">Daily</option>
+    <option value="weekly">Weekly</option>
+    <option value="monthly">Monthly</option>
+  </>
+);
+
+/** Swatches (+ an optional custom picker) for a stored project / event-type colour. */
+function ColorField({ value, onChange, custom = false, fallback }) {
+  return (
+    <div className="uik-field" role="group" aria-label="Colour">
+      <span className="field-label">Colour</span>
+      <div className="color-row">
+        <div className="color-picker">
+          {PROJECT_COLORS.map((c) => (
+            <button key={c} type="button" className={`color-swatch ${value === c ? "selected" : ""}`} style={{ background: c }} onClick={() => onChange(c)} aria-label={`Colour ${c}`} aria-pressed={value === c} />
+          ))}
+        </div>
+        {custom && <input type="color" value={/^#[0-9a-f]{6}$/i.test(value) ? value : fallback} onChange={(e) => onChange(e.target.value)} aria-label="Custom colour" />}
+      </div>
+    </div>
+  );
+}
+
+// FormModal shows a thrown error and keeps the modal open with what was typed.
+const requireName = (name, what = "a name") => { if (!String(name || "").trim()) throw new Error(`Give it ${what}.`); };
+const failed = (what, err) => new Error(`Couldn't ${what}: ${err?.message || "unknown error"}`, { cause: err });
 
 export default function ProjectsPage() {
   const [params, setParams] = useSearchParams();
@@ -39,7 +72,7 @@ export default function ProjectsPage() {
   const { confirm, dialog } = useConfirm();
   const [projects, setProjects] = useState([]);
   const [initiatives, setInitiatives] = useState([]);
-  // Inline edit state — one at a time per kind; forms are prefilled from the row.
+  // Edit state — one modal at a time per kind; forms are prefilled from the row.
   const [projectEdit, setProjectEdit] = useState(null);        // { name, description, color } for the selected project
   const [initEdit, setInitEdit] = useState(null);              // { id, name, description, recurrence }
   const [typeEdit, setTypeEdit] = useState(null);              // { id, name, color }
@@ -90,8 +123,8 @@ export default function ProjectsPage() {
     const time = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
     return range + time;
   };
-  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); setShowEventForm(false); await loadProjectDetail(selected); };
-  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); setEditingEvent(null); await loadProjectDetail(selected); };
+  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); await loadProjectDetail(selected); };
+  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); await loadProjectDetail(selected); };
   const removeEvent = async (e) => {
     if (!await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) return;
     setProjectEvents((prev) => prev.filter((x) => x.id !== e.id));
@@ -106,9 +139,9 @@ export default function ProjectsPage() {
   const [projectForm, setProjectForm] = useState(emptyProject);
   const [initiativeForm, setInitiativeForm] = useState(emptyInitiative);
   const [eventTypeForm, setEventTypeForm] = useState(emptyEventType);
-  const [newAutoTask, setNewAutoTask] = useState({ offset_days: -3, name: "" });
+  const [newAutoTask, setNewAutoTask] = useState(null); // { etId, offset_days, name } while the Add auto-task modal is open
   const [parentForCreate, setParentForCreate] = useState(null); // parent project id when adding a sub-project
-  const [quickTask, setQuickTask] = useState({ name: "", date: "", recurrence: "none" });
+  const [quickTask, setQuickTask] = useState(null); // the Add task modal's form, null when closed
 
   const loadAll = async () => {
     const [p, et] = await Promise.all([
@@ -145,6 +178,7 @@ export default function ProjectsPage() {
 
   const closeProjectForm = () => {
     setShowProjectForm(false);
+    setProjectForm(emptyProject);
     setParentForCreate(null);
     const next = new URLSearchParams(params);
     next.delete("new");
@@ -157,41 +191,29 @@ export default function ProjectsPage() {
     setShowProjectForm(true);
   };
 
-  const handleCreateProject = async (e) => {
-    e.preventDefault();
-    if (!projectForm.name.trim()) return;
+  const handleCreateProject = async () => {
+    requireName(projectForm.name);
     const fields = { ...projectForm, parent_id: parentForCreate || null };
     const wasSubProject = parentForCreate;
-    setProjectForm(emptyProject);
-    setShowProjectForm(false);
-    setParentForCreate(null);
-    try {
-      const p = await newProject(fields);
-      if (p?.id) {
-        // Splice the real row directly into state — no full reload needed
-        setProjects((prev) => [...prev, p]);
-        if (!wasSubProject) setSelected(p.id);
-      } else {
-        // Local mode: no id returned, fall back to full reload
-        await loadAll();
-        if (!wasSubProject && p) setSelected(p.id);
-      }
-    } catch (err) {
-      // Nothing was added optimistically; reopen the form with what was typed.
-      setProjectForm({ ...emptyProject, ...fields, parent_id: undefined });
-      setParentForCreate(wasSubProject || null);
-      setShowProjectForm(true);
-      addToast(`Couldn't create project: ${err?.message || "unknown error"}`, "error");
+    let p;
+    try { p = await newProject(fields); }
+    catch (err) { throw failed("create project", err); }
+    if (p?.id) {
+      // Splice the real row directly into state — no full reload needed
+      setProjects((prev) => [...prev, p]);
+      if (!wasSubProject) setSelected(p.id);
+    } else {
+      // Local mode: no id returned, fall back to full reload
+      await loadAll();
+      if (!wasSubProject && p) setSelected(p.id);
     }
   };
 
-  const addQuickTask = async (e) => {
-    e.preventDefault();
-    if (!quickTask.name.trim()) return;
+  const addQuickTask = async () => {
+    requireName(quickTask.name, "a task name");
     const fields = { name: quickTask.name.trim(), date: quickTask.date || null, recurrence: quickTask.recurrence, project_id: selected };
     const tempId = `temp-${Date.now()}`;
     setProjectTasks((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
-    setQuickTask({ name: "", date: "", recurrence: "none" });
     try {
       const saved = await newReminder(fields);
       if (saved?.id) {
@@ -199,8 +221,9 @@ export default function ProjectsPage() {
       } else {
         await loadProjectDetail(selected);
       }
-    } catch {
+    } catch (err) {
       setProjectTasks((prev) => prev.filter((t) => t.id !== tempId));
+      throw failed("add task", err);
     }
   };
 
@@ -211,31 +234,31 @@ export default function ProjectsPage() {
     await loadAll();
   };
 
-  const handleCreateInitiative = async (e) => {
-    e.preventDefault();
-    if (!initiativeForm.name.trim()) return;
-    await newInitiative({ ...initiativeForm, project_id: selected });
+  const handleCreateInitiative = async () => {
+    requireName(initiativeForm.name);
+    try { await newInitiative({ ...initiativeForm, project_id: selected }); }
+    catch (err) { throw failed("add initiative", err); }
     setInitiativeForm(emptyInitiative);
-    setShowInitiativeForm(false);
     await loadProjectDetail(selected);
   };
 
-  const handleCreateEventType = async (e) => {
-    e.preventDefault();
-    if (!eventTypeForm.name.trim()) return;
-    await newEventType({ ...eventTypeForm, auto_tasks: [] });
+  const handleCreateEventType = async () => {
+    requireName(eventTypeForm.name);
+    try { await newEventType({ ...eventTypeForm, auto_tasks: [] }); }
+    catch (err) { throw failed("create event type", err); }
     setEventTypeForm(emptyEventType);
-    setShowEventTypeForm(false);
     await loadAll();
   };
 
   const addAutoTask = async () => {
-    if (!newAutoTask.name.trim() || !editingAutoTasks) return;
-    const et = eventTypes.find(x => x.id === editingAutoTasks);
-    if (!et) return;
-    const updated = [...(et.auto_tasks || []), { ...newAutoTask, name: newAutoTask.name.trim(), offset_days: Number(newAutoTask.offset_days) || 0 }].sort(byOffset);
-    try { await updateEventType(editingAutoTasks, { auto_tasks: updated }); setNewAutoTask({ offset_days: -3, name: "" }); await loadAll(); }
-    catch (err) { addToast(`Couldn't add auto-task: ${err?.message || "unknown error"}`, "error"); }
+    requireName(newAutoTask?.name, "a task name");
+    const et = eventTypes.find(x => x.id === newAutoTask.etId);
+    if (!et) throw new Error("That event type no longer exists.");
+    const { etId, ...task } = newAutoTask;
+    const updated = [...(et.auto_tasks || []), { ...task, name: task.name.trim(), offset_days: Number(task.offset_days) || 0 }].sort(byOffset);
+    try { await updateEventType(etId, { auto_tasks: updated }); }
+    catch (err) { throw failed("add auto-task", err); }
+    await loadAll();
   };
 
   const removeAutoTask = async (etId, task) => {
@@ -248,54 +271,47 @@ export default function ProjectsPage() {
 
   const selectedProject = projects.find(p => String(p.id) === String(selected));
 
-  const saveProjectEdit = async (e) => {
-    e.preventDefault();
-    if (!projectEdit?.name.trim() || !selectedProject) return;
+  const saveProjectEdit = async () => {
+    requireName(projectEdit?.name);
+    if (!selectedProject) throw new Error("That project no longer exists.");
     const id = selectedProject.id;
     const prev = selectedProject;
     const updates = { name: projectEdit.name.trim(), description: projectEdit.description || "", color: projectEdit.color };
     setProjects((list) => list.map((p) => p.id === id ? { ...p, ...updates } : p));
-    setProjectEdit(null);
     try { await updateProject(id, updates); addToast("Project updated.", "success"); }
-    catch (err) { setProjects((list) => list.map((p) => p.id === id ? prev : p)); addToast(`Couldn't save project: ${err?.message || "unknown error"}`, "error"); }
+    catch (err) { setProjects((list) => list.map((p) => p.id === id ? prev : p)); throw failed("save project", err); }
   };
 
-  const saveInitEdit = async (e) => {
-    e.preventDefault();
-    if (!initEdit?.name.trim()) return;
+  const saveInitEdit = async () => {
+    requireName(initEdit?.name);
     const { id } = initEdit;
     const prev = initiatives.find((i) => i.id === id);
     const fields = { name: initEdit.name.trim(), description: initEdit.description || "", recurrence: initEdit.recurrence };
     setInitiatives((list) => list.map((i) => i.id === id ? { ...i, ...fields } : i));
-    setInitEdit(null);
     try { await updateInitiative(id, fields); addToast("Initiative updated.", "success"); }
-    catch (err) { setInitiatives((list) => list.map((i) => i.id === id ? prev : i)); addToast(`Couldn't save initiative: ${err?.message || "unknown error"}`, "error"); }
+    catch (err) { setInitiatives((list) => list.map((i) => i.id === id ? prev : i)); throw failed("save initiative", err); }
   };
 
-  const saveTypeEdit = async (e) => {
-    e.preventDefault();
-    if (!typeEdit?.name.trim()) return;
+  const saveTypeEdit = async () => {
+    requireName(typeEdit?.name);
     const { id } = typeEdit;
     const prev = eventTypes.find((t) => t.id === id);
     const updates = { name: typeEdit.name.trim(), color: typeEdit.color };
     setEventTypes((list) => list.map((t) => t.id === id ? { ...t, ...updates } : t));
-    setTypeEdit(null);
     try { await updateEventType(id, updates); addToast("Event type updated.", "success"); }
-    catch (err) { setEventTypes((list) => list.map((t) => t.id === id ? prev : t)); addToast(`Couldn't save event type: ${err?.message || "unknown error"}`, "error"); }
+    catch (err) { setEventTypes((list) => list.map((t) => t.id === id ? prev : t)); throw failed("save event type", err); }
   };
 
-  const saveAutoTaskEdit = async (e) => {
-    e.preventDefault();
-    if (!autoTaskEdit?.name.trim()) return;
+  const saveAutoTaskEdit = async () => {
+    requireName(autoTaskEdit?.name, "a task name");
     const { etId, task } = autoTaskEdit;
     const et = eventTypes.find((x) => x.id === etId);
-    if (!et) return;
+    if (!et) throw new Error("That event type no longer exists.");
     const prevTasks = et.auto_tasks || [];
     const updated = prevTasks.map((t) => t === task ? { ...t, name: autoTaskEdit.name.trim(), offset_days: Number(autoTaskEdit.offset_days) || 0 } : t).sort(byOffset);
     setEventTypes((list) => list.map((t) => t.id === etId ? { ...t, auto_tasks: updated } : t));
-    setAutoTaskEdit(null);
     try { await updateEventType(etId, { auto_tasks: updated }); }
-    catch (err) { setEventTypes((list) => list.map((t) => t.id === etId ? { ...t, auto_tasks: prevTasks } : t)); addToast(`Couldn't save auto-task: ${err?.message || "unknown error"}`, "error"); }
+    catch (err) { setEventTypes((list) => list.map((t) => t.id === etId ? { ...t, auto_tasks: prevTasks } : t)); throw failed("save auto-task", err); }
   };
   const children = selected ? projects.filter(p => String(p.parent_id) === String(selected)) : [];
   const parentProject = selectedProject?.parent_id
@@ -362,50 +378,24 @@ export default function ProjectsPage() {
             )}
           </nav>
 
-          {projectEdit ? (
-            <form className="form-card project-edit-form" onSubmit={saveProjectEdit}>
-              <div className="form-panel-head">
-                <h3>Edit project</h3>
-                <button type="button" className="icon-x" onClick={() => setProjectEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-              </div>
-              <input placeholder="Project name" aria-label="Project name" value={projectEdit.name} onChange={(e) => setProjectEdit({ ...projectEdit, name: e.target.value })} required autoFocus />
-              <textarea placeholder="Description (optional)" aria-label="Description" value={projectEdit.description} onChange={(e) => setProjectEdit({ ...projectEdit, description: e.target.value })} rows={2} />
-              <div>
-                <label className="field-label" htmlFor="project-edit-color">Colour</label>
-                <div className="color-row">
-                  <div className="color-picker">
-                    {PROJECT_COLORS.map((c) => (
-                      <button key={c} type="button" className={`color-swatch ${projectEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setProjectEdit({ ...projectEdit, color: c })} aria-label={`Colour ${c}`} aria-pressed={projectEdit.color === c} />
-                    ))}
-                  </div>
-                  <input id="project-edit-color" type="color" value={/^#[0-9a-f]{6}$/i.test(projectEdit.color) ? projectEdit.color : "#6366f1"} onChange={(e) => setProjectEdit({ ...projectEdit, color: e.target.value })} aria-label="Custom colour" />
-                </div>
-              </div>
-              <div className="form-actions">
-                <button className="btn" type="submit">Save changes</button>
-                <button className="btn btn-secondary" type="button" onClick={() => setProjectEdit(null)}>Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <section className="db-card project-detail-header" aria-label="Project">
-              <div className="project-detail-main">
-                {parentProject && <div className="project-detail-parent">{parentProject.name} /</div>}
-                <h2 className="project-detail-title">
-                  <span className="project-detail-dot" style={{ background: selectedProject.color }} aria-hidden="true" />
-                  {selectedProject.name}
-                </h2>
-                {selectedProject.description && <p className="project-detail-desc">{selectedProject.description}</p>}
-              </div>
-              <div className="header-actions">
-                <button type="button" className="btn-secondary-sm" onClick={() => setProjectEdit({ name: selectedProject.name || "", description: selectedProject.description || "", color: selectedProject.color || emptyProject.color })} title="Edit project">
-                  <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
-                </button>
-                <button type="button" className="btn-delete" onClick={() => handleDeleteProject(selectedProject.id)} title="Delete project">
-                  <i className="fa-solid fa-trash" aria-hidden="true" /> Delete
-                </button>
-              </div>
-            </section>
-          )}
+          <section className="db-card project-detail-header" aria-label="Project">
+            <div className="project-detail-main">
+              {parentProject && <div className="project-detail-parent">{parentProject.name} /</div>}
+              <h2 className="project-detail-title">
+                <span className="project-detail-dot" style={{ background: selectedProject.color }} aria-hidden="true" />
+                {selectedProject.name}
+              </h2>
+              {selectedProject.description && <p className="project-detail-desc">{selectedProject.description}</p>}
+            </div>
+            <div className="header-actions">
+              <button type="button" className="btn-secondary-sm" onClick={() => setProjectEdit({ name: selectedProject.name || "", description: selectedProject.description || "", color: selectedProject.color || emptyProject.color })} title="Edit project">
+                <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
+              </button>
+              <button type="button" className="btn-delete" onClick={() => handleDeleteProject(selectedProject.id)} title="Delete project">
+                <i className="fa-solid fa-trash" aria-hidden="true" /> Delete
+              </button>
+            </div>
+          </section>
 
           {/* Reference documents for this project */}
           <section className="db-card" aria-label="Documents">
@@ -443,20 +433,8 @@ export default function ProjectsPage() {
           <section className="db-card" aria-label="Tasks and due dates">
             <div className="db-card-header">
               <h3 className="db-card-title">Tasks &amp; due dates</h3>
+              <button type="button" className="btn-secondary-sm" onClick={() => setQuickTask(emptyQuickTask)}><i className="fa-solid fa-plus" aria-hidden="true" /> Add task</button>
             </div>
-            <form className="form-card form-inline proj-quick-form project-quick-form" onSubmit={addQuickTask} aria-label="Add a task to this project">
-              <div className="form-row">
-                <input className="field-grow" placeholder="Task / test (e.g. Midterm)" aria-label="Task name" value={quickTask.name} onChange={e => setQuickTask({ ...quickTask, name: e.target.value })} required />
-                <DatePicker value={quickTask.date} onChange={(v) => setQuickTask({ ...quickTask, date: v })} placeholder="Due date" />
-                <select value={quickTask.recurrence} onChange={e => setQuickTask({ ...quickTask, recurrence: e.target.value })} aria-label="Repeats">
-                  <option value="none">One-time</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-                <button className="btn" type="submit"><i className="fa-solid fa-plus" aria-hidden="true" /> Add</button>
-              </div>
-            </form>
             {projectTasks.length === 0 && <p className="no-entries">No active tasks for this project.</p>}
             {(() => {
               const dated = projectTasks.filter(t => t.date);
@@ -494,32 +472,21 @@ export default function ProjectsPage() {
           <section className="db-card" aria-label="Scheduled events">
             <div className="db-card-header">
               <h3 className="db-card-title">Scheduled events</h3>
-              <button type="button" className="btn-secondary-sm" onClick={() => { setEditingEvent(null); setShowEventForm((v) => !v); }} aria-expanded={showEventForm}>
-                <i className={`fa-solid ${showEventForm ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showEventForm ? "Cancel" : "Add event"}
+              <button type="button" className="btn-secondary-sm" onClick={() => { setEditingEvent(null); setShowEventForm(true); }}>
+                <i className="fa-solid fa-plus" aria-hidden="true" /> Add event
               </button>
             </div>
-            {showEventForm && (
-              <div className="form-card project-event-form">
-                <EventForm lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} onSubmit={addEvent} onCancel={() => setShowEventForm(false)} />
-              </div>
-            )}
-            {projectEvents.length === 0 && !showEventForm && <p className="no-entries">No events linked to this project yet.</p>}
+            {projectEvents.length === 0 && <p className="no-entries">No events linked to this project yet.</p>}
             <div className="db-list plan-list">
               {projectEvents.slice().sort((a, b) => a.date.localeCompare(b.date)).map(e => (
-                editingEvent?.id === e.id ? (
-                  <div className="form-card project-event-form" key={e.id}>
-                    <EventForm initial={e} lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={saveEventEdit} onCancel={() => setEditingEvent(null)} autoFocus={false} />
+                <div className="db-list-item" key={e.id}>
+                  <div className="db-list-item-content">
+                    <div className="db-list-item-title">{e.title}</div>
+                    <div className="db-list-item-subtitle">{eventWhen(e)}{e.description ? ` — ${e.description}` : ""}</div>
                   </div>
-                ) : (
-                  <div className="db-list-item" key={e.id}>
-                    <div className="db-list-item-content">
-                      <div className="db-list-item-title">{e.title}</div>
-                      <div className="db-list-item-subtitle">{eventWhen(e)}{e.description ? ` — ${e.description}` : ""}</div>
-                    </div>
-                    <button type="button" className="btn-mini" onClick={() => { setShowEventForm(false); setEditingEvent(e); }} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
-                    <button type="button" className="icon-x sm" onClick={() => removeEvent(e)} aria-label={`Delete ${e.title}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-                  </div>
-                )
+                  <button type="button" className="btn-mini" onClick={() => { setShowEventForm(false); setEditingEvent(e); }} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+                  <button type="button" className="icon-x sm" onClick={() => removeEvent(e)} aria-label={`Delete ${e.title}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                </div>
               ))}
             </div>
           </section>
@@ -537,21 +504,7 @@ export default function ProjectsPage() {
             </p>
             {initiatives.length === 0 && <p className="no-entries">No initiatives yet.</p>}
             <div className="db-list plan-list">
-              {initiatives.map(i => initEdit?.id === i.id ? (
-                <form className="form-card" key={i.id} onSubmit={saveInitEdit}>
-                  <input placeholder="Name" aria-label="Name" value={initEdit.name} onChange={(e) => setInitEdit({ ...initEdit, name: e.target.value })} required autoFocus />
-                  <textarea placeholder="Description (optional)" aria-label="Description" value={initEdit.description} onChange={(e) => setInitEdit({ ...initEdit, description: e.target.value })} rows={2} />
-                  <select value={initEdit.recurrence} onChange={(e) => setInitEdit({ ...initEdit, recurrence: e.target.value })} aria-label="Recurrence">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                  <div className="form-actions">
-                    <button className="btn" type="submit">Save changes</button>
-                    <button className="btn btn-secondary" type="button" onClick={() => setInitEdit(null)}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
+              {initiatives.map(i => (
                 <div className="db-list-item" key={i.id}>
                   <div className="db-list-item-content">
                     <div className="db-list-item-title">{i.name}</div>
@@ -581,81 +534,41 @@ export default function ProjectsPage() {
           {eventTypes.length === 0 && <p className="no-entries">No event types yet.</p>}
           {eventTypes.map(et => (
             <div key={et.id} className="event-type-card">
-              {typeEdit?.id === et.id ? (
-                <form className="form-card" onSubmit={saveTypeEdit}>
-                  <input placeholder="Name" aria-label="Name" value={typeEdit.name} onChange={(e) => setTypeEdit({ ...typeEdit, name: e.target.value })} required autoFocus />
-                  <div className="color-row">
-                    <div className="color-picker">
-                      {PROJECT_COLORS.map((c) => (
-                        <button key={c} type="button" className={`color-swatch ${typeEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTypeEdit({ ...typeEdit, color: c })} aria-label={`Colour ${c}`} aria-pressed={typeEdit.color === c} />
-                      ))}
-                    </div>
-                    <input type="color" value={/^#[0-9a-f]{6}$/i.test(typeEdit.color) ? typeEdit.color : "#22d3ee"} onChange={(e) => setTypeEdit({ ...typeEdit, color: e.target.value })} aria-label="Custom colour" />
-                  </div>
-                  <div className="form-actions">
-                    <button className="btn" type="submit">Save changes</button>
-                    <button className="btn btn-secondary" type="button" onClick={() => setTypeEdit(null)}>Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <div className="event-type-header">
-                  <span className="event-type-dot" style={{ background: et.color }} aria-hidden="true" />
-                  <span className="event-type-name">{et.name}</span>
-                  <button type="button" className="btn-mini" onClick={() => setTypeEdit({ id: et.id, name: et.name || "", color: et.color || emptyEventType.color })} title="Edit name & colour">
-                    <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
-                  </button>
-                  <button type="button" className={`btn-mini${editingAutoTasks === et.id ? " accent" : ""}`} aria-expanded={editingAutoTasks === et.id}
-                    onClick={() => { setAutoTaskEdit(null); setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id); }}>
-                    {editingAutoTasks === et.id ? "Done" : "Edit tasks"}
-                  </button>
-                  <button type="button" className="icon-x sm" onClick={() => deleteEventType(et.id).then(loadAll).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${et.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-                </div>
-              )}
+              <div className="event-type-header">
+                <span className="event-type-dot" style={{ background: et.color }} aria-hidden="true" />
+                <span className="event-type-name">{et.name}</span>
+                <button type="button" className="btn-mini" onClick={() => setTypeEdit({ id: et.id, name: et.name || "", color: et.color || emptyEventType.color })} title="Edit name & colour">
+                  <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
+                </button>
+                <button type="button" className={`btn-mini${editingAutoTasks === et.id ? " accent" : ""}`} aria-expanded={editingAutoTasks === et.id}
+                  onClick={() => setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id)}>
+                  {editingAutoTasks === et.id ? "Done" : "Edit tasks"}
+                </button>
+                <button type="button" className="icon-x sm" onClick={() => deleteEventType(et.id).then(loadAll).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${et.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+              </div>
               {(et.auto_tasks || []).length > 0 && (
                 <div className="auto-tasks-list event-type-tasks">
                   {et.auto_tasks.slice().sort(byOffset).map((task, idx) => (
-                    autoTaskEdit && autoTaskEdit.etId === et.id && autoTaskEdit.task === task ? (
-                      <form key={idx} className="auto-task-edit" onSubmit={saveAutoTaskEdit}>
-                        <input type="number" className="auto-task-offset-input" value={autoTaskEdit.offset_days} onChange={(e) => setAutoTaskEdit({ ...autoTaskEdit, offset_days: e.target.value })} aria-label="Days offset" />
-                        <input className="auto-task-name-input" value={autoTaskEdit.name} onChange={(e) => setAutoTaskEdit({ ...autoTaskEdit, name: e.target.value })} placeholder="Task name" aria-label="Task name" required autoFocus />
-                        <button className="btn btn-sm" type="submit">Save</button>
-                        <button className="btn-secondary-sm" type="button" onClick={() => setAutoTaskEdit(null)}>Cancel</button>
-                      </form>
-                    ) : (
-                      <div key={idx} className="event-type-task">
-                        <span className="event-type-offset">
-                          {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
-                        </span>
-                        <span className="event-type-task-name">{task.name}</span>
-                        {editingAutoTasks === et.id && (
-                          <>
-                            <button type="button" className="btn-mini" onClick={() => setAutoTaskEdit({ etId: et.id, task, name: task.name || "", offset_days: task.offset_days ?? 0 })} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
-                            <button type="button" className="icon-x sm" onClick={() => removeAutoTask(et.id, task)} aria-label={`Remove ${task.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-                          </>
-                        )}
-                      </div>
-                    )
+                    <div key={idx} className="event-type-task">
+                      <span className="event-type-offset">
+                        {task.offset_days < 0 ? `${Math.abs(task.offset_days)}d before` : task.offset_days === 0 ? "day of" : `${task.offset_days}d after`}
+                      </span>
+                      <span className="event-type-task-name">{task.name}</span>
+                      {editingAutoTasks === et.id && (
+                        <>
+                          <button type="button" className="btn-mini" onClick={() => setAutoTaskEdit({ etId: et.id, task, name: task.name || "", offset_days: task.offset_days ?? 0 })} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+                          <button type="button" className="icon-x sm" onClick={() => removeAutoTask(et.id, task)} aria-label={`Remove ${task.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                        </>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
               {editingAutoTasks === et.id && (
                 <div className="event-type-add">
-                  <input
-                    type="number"
-                    value={newAutoTask.offset_days}
-                    onChange={e => setNewAutoTask({ ...newAutoTask, offset_days: e.target.value })}
-                    placeholder="Days offset"
-                    className="auto-task-offset-input"
-                    aria-label="Days offset"
-                  />
-                  <input
-                    value={newAutoTask.name}
-                    onChange={e => setNewAutoTask({ ...newAutoTask, name: e.target.value })}
-                    placeholder="Task name (e.g. Post preview)"
-                    className="auto-task-name-input"
-                    aria-label="Task name"
-                  />
-                  <button type="button" className="btn btn-sm" onClick={addAutoTask}>Add</button>
+                  <button type="button" className="btn-secondary-sm" onClick={() => setNewAutoTask({ etId: et.id, ...emptyAutoTask })}>
+                    <i className="fa-solid fa-plus" aria-hidden="true" /> Add auto-task
+                  </button>
                 </div>
               )}
             </div>
@@ -663,70 +576,133 @@ export default function ProjectsPage() {
         </section>
       )}
 
-      {/* ── Modals ── */}
+      {/* ── Modals (DR-019: every form lives in one) ── */}
       {showProjectForm && (
-        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && closeProjectForm()}>
-          <form className="event-card project-modal" onSubmit={handleCreateProject} role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
-            <h3 id="project-modal-title">{parentForCreate ? `New sub-project in ${selectedProject?.name || ""}` : "New project"}</h3>
-            <input placeholder={parentForCreate ? "Sub-project name (e.g. Math 101)" : "Project name"} aria-label="Name" value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} required />
-            <textarea placeholder="Description (optional)" aria-label="Description" value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} />
-            <div role="group" aria-labelledby="project-colour-label">
-              <span className="field-label" id="project-colour-label">Colour</span>
-              <div className="color-picker">
-                {PROJECT_COLORS.map(c => (
-                  <button key={c} type="button" className={`color-swatch ${projectForm.color === c ? "selected" : ""}`}
-                    style={{ background: c }} onClick={() => setProjectForm({ ...projectForm, color: c })} aria-label={`Colour ${c}`} aria-pressed={projectForm.color === c} />
-                ))}
-              </div>
+        <FormModal
+          title={parentForCreate ? `New sub-project in ${selectedProject?.name || ""}` : "New project"}
+          submitLabel="Create"
+          onClose={closeProjectForm}
+          onSubmit={handleCreateProject}
+        >
+          <Field label="Name">
+            <input placeholder={parentForCreate ? "e.g. Math 101" : "Project name"} value={projectForm.name} onChange={e => setProjectForm({ ...projectForm, name: e.target.value })} data-autofocus required />
+          </Field>
+          <Field label="Description (optional)">
+            <textarea value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} rows={2} />
+          </Field>
+          <ColorField value={projectForm.color} onChange={(color) => setProjectForm({ ...projectForm, color })} />
+        </FormModal>
+      )}
+
+      {projectEdit && (
+        <FormModal title="Edit project" submitLabel="Save changes" onClose={() => setProjectEdit(null)} onSubmit={saveProjectEdit}>
+          <Field label="Name">
+            <input value={projectEdit.name} onChange={(e) => setProjectEdit({ ...projectEdit, name: e.target.value })} data-autofocus required />
+          </Field>
+          <Field label="Description (optional)">
+            <textarea value={projectEdit.description} onChange={(e) => setProjectEdit({ ...projectEdit, description: e.target.value })} rows={2} />
+          </Field>
+          <ColorField value={projectEdit.color} onChange={(color) => setProjectEdit({ ...projectEdit, color })} custom fallback={emptyProject.color} />
+        </FormModal>
+      )}
+
+      {quickTask && (
+        <FormModal title={`Add task to ${selectedProject?.name || "project"}`} submitLabel="Add task" onClose={() => setQuickTask(null)} onSubmit={addQuickTask}>
+          <Field label="Task">
+            <input placeholder="Task / test (e.g. Midterm)" value={quickTask.name} onChange={e => setQuickTask({ ...quickTask, name: e.target.value })} data-autofocus required />
+          </Field>
+          <div className="form-row">
+            <div className="uik-field">
+              <span className="field-label">Due date</span>
+              <DatePicker value={quickTask.date} onChange={(v) => setQuickTask({ ...quickTask, date: v })} placeholder="Due date" />
             </div>
-            <div className="form-actions project-modal-actions">
-              <button className="btn btn-secondary" type="button" onClick={closeProjectForm}>Cancel</button>
-              <button className="btn" type="submit">Create</button>
-            </div>
-          </form>
-        </div>
+            <Field label="Repeats">
+              <select value={quickTask.recurrence} onChange={e => setQuickTask({ ...quickTask, recurrence: e.target.value })}>
+                <RecurrenceOptions oneTime />
+              </select>
+            </Field>
+          </div>
+        </FormModal>
+      )}
+
+      {selectedProject && showEventForm && (
+        <EventForm modalTitle="New event" lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} onSubmit={addEvent} onClose={() => setShowEventForm(false)} />
+      )}
+      {selectedProject && editingEvent && (
+        <EventForm key={editingEvent.id} modalTitle="Edit event" initial={editingEvent} lockProject={selectedProject.id} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={saveEventEdit} onClose={() => setEditingEvent(null)} />
       )}
 
       {showInitiativeForm && (
-        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowInitiativeForm(false)}>
-          <form className="event-card project-modal" onSubmit={handleCreateInitiative} role="dialog" aria-modal="true" aria-labelledby="initiative-modal-title">
-            <h3 id="initiative-modal-title">New initiative</h3>
-            <input placeholder="Name (e.g. Post on Instagram)" aria-label="Name" value={initiativeForm.name} onChange={e => setInitiativeForm({ ...initiativeForm, name: e.target.value })} required />
-            <textarea placeholder="Description (optional)" aria-label="Description" value={initiativeForm.description} onChange={e => setInitiativeForm({ ...initiativeForm, description: e.target.value })} />
-            <select value={initiativeForm.recurrence} onChange={e => setInitiativeForm({ ...initiativeForm, recurrence: e.target.value })} aria-label="Repeats">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
+        <FormModal title="New initiative" submitLabel="Add initiative" onClose={() => setShowInitiativeForm(false)} onSubmit={handleCreateInitiative}>
+          <Field label="Name">
+            <input placeholder="e.g. Post on Instagram" value={initiativeForm.name} onChange={e => setInitiativeForm({ ...initiativeForm, name: e.target.value })} data-autofocus required />
+          </Field>
+          <Field label="Description (optional)">
+            <textarea value={initiativeForm.description} onChange={e => setInitiativeForm({ ...initiativeForm, description: e.target.value })} rows={2} />
+          </Field>
+          <Field label="Repeats">
+            <select value={initiativeForm.recurrence} onChange={e => setInitiativeForm({ ...initiativeForm, recurrence: e.target.value })}>
+              <RecurrenceOptions />
             </select>
-            <div className="form-actions project-modal-actions">
-              <button className="btn btn-secondary" type="button" onClick={() => setShowInitiativeForm(false)}>Cancel</button>
-              <button className="btn" type="submit">Add initiative</button>
-            </div>
-          </form>
-        </div>
+          </Field>
+        </FormModal>
+      )}
+
+      {initEdit && (
+        <FormModal title="Edit initiative" submitLabel="Save changes" onClose={() => setInitEdit(null)} onSubmit={saveInitEdit}>
+          <Field label="Name">
+            <input value={initEdit.name} onChange={(e) => setInitEdit({ ...initEdit, name: e.target.value })} data-autofocus required />
+          </Field>
+          <Field label="Description (optional)">
+            <textarea value={initEdit.description} onChange={(e) => setInitEdit({ ...initEdit, description: e.target.value })} rows={2} />
+          </Field>
+          <Field label="Repeats">
+            <select value={initEdit.recurrence} onChange={(e) => setInitEdit({ ...initEdit, recurrence: e.target.value })}>
+              <RecurrenceOptions />
+            </select>
+          </Field>
+        </FormModal>
       )}
 
       {showEventTypeForm && (
-        <div className="event-overlay" onClick={e => e.target.className === "event-overlay" && setShowEventTypeForm(false)}>
-          <form className="event-card project-modal" onSubmit={handleCreateEventType} role="dialog" aria-modal="true" aria-labelledby="event-type-modal-title">
-            <h3 id="event-type-modal-title">New event type</h3>
-            <input placeholder="Name (e.g. Hike, Meeting, Party)" aria-label="Name" value={eventTypeForm.name} onChange={e => setEventTypeForm({ ...eventTypeForm, name: e.target.value })} required />
-            <div role="group" aria-labelledby="event-type-colour-label">
-              <span className="field-label" id="event-type-colour-label">Colour</span>
-              <div className="color-picker">
-                {PROJECT_COLORS.map(c => (
-                  <button key={c} type="button" className={`color-swatch ${eventTypeForm.color === c ? "selected" : ""}`}
-                    style={{ background: c }} onClick={() => setEventTypeForm({ ...eventTypeForm, color: c })} aria-label={`Colour ${c}`} aria-pressed={eventTypeForm.color === c} />
-                ))}
-              </div>
-            </div>
-            <div className="form-actions project-modal-actions">
-              <button className="btn btn-secondary" type="button" onClick={() => setShowEventTypeForm(false)}>Cancel</button>
-              <button className="btn" type="submit">Create</button>
-            </div>
-          </form>
-        </div>
+        <FormModal title="New event type" submitLabel="Create" onClose={() => setShowEventTypeForm(false)} onSubmit={handleCreateEventType}>
+          <Field label="Name">
+            <input placeholder="e.g. Hike, Meeting, Party" value={eventTypeForm.name} onChange={e => setEventTypeForm({ ...eventTypeForm, name: e.target.value })} data-autofocus required />
+          </Field>
+          <ColorField value={eventTypeForm.color} onChange={(color) => setEventTypeForm({ ...eventTypeForm, color })} />
+        </FormModal>
       )}
+
+      {typeEdit && (
+        <FormModal title="Edit event type" submitLabel="Save changes" onClose={() => setTypeEdit(null)} onSubmit={saveTypeEdit}>
+          <Field label="Name">
+            <input value={typeEdit.name} onChange={(e) => setTypeEdit({ ...typeEdit, name: e.target.value })} data-autofocus required />
+          </Field>
+          <ColorField value={typeEdit.color} onChange={(color) => setTypeEdit({ ...typeEdit, color })} custom fallback={emptyEventType.color} />
+        </FormModal>
+      )}
+
+      {(newAutoTask || autoTaskEdit) && (() => {
+        const editing = Boolean(autoTaskEdit);
+        const value = editing ? autoTaskEdit : newAutoTask;
+        const setValue = editing ? setAutoTaskEdit : setNewAutoTask;
+        const typeName = eventTypes.find((t) => t.id === value.etId)?.name || "event type";
+        return (
+          <FormModal
+            title={editing ? "Edit auto-task" : `Add auto-task to ${typeName}`}
+            submitLabel={editing ? "Save" : "Add"}
+            onClose={() => (editing ? setAutoTaskEdit(null) : setNewAutoTask(null))}
+            onSubmit={editing ? saveAutoTaskEdit : addAutoTask}
+          >
+            <Field label="Task name">
+              <input placeholder="e.g. Post preview" value={value.name} onChange={(e) => setValue({ ...value, name: e.target.value })} data-autofocus required />
+            </Field>
+            <Field label="Days from the event" hint="Negative = before (−3 is three days before), 0 = the day of, positive = after.">
+              <input type="number" value={value.offset_days} onChange={(e) => setValue({ ...value, offset_days: e.target.value })} />
+            </Field>
+          </FormModal>
+        );
+      })()}
     </div>
   );
 }

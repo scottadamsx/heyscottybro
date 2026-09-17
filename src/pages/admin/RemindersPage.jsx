@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects, loadEvents } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr, nextOccurrence, formatTime12 } from "../../utils/plannerUtils";
-import DatePicker from "../../components/DatePicker";
-import TimePicker from "../../components/TimePicker";
+import TaskFormModal, { taskToForm } from "../../components/TaskFormModal";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -12,19 +11,6 @@ import { dueHabits, missedHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
 import RescheduleSheet from "../../components/RescheduleSheet";
 import "./plan.css";
-
-const emptyForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
-const toForm = (r) => ({
-  name: r.name || "",
-  date: r.date || "",
-  time: r.time ? String(r.time).slice(0, 5) : "",
-  description: r.description || "",
-  recurrence: r.recurrence || "none",
-  project_id: r.project_id || "",
-  recur_until: r.recur_until || "",
-  recur_times: r.recur_times != null ? String(r.recur_times) : "",
-  show_on_calendar: r.show_on_calendar !== false,
-});
 
 export default function RemindersPage() {
   const [params] = useSearchParams();
@@ -37,13 +23,9 @@ export default function RemindersPage() {
   const [list, setList] = useState([]);
   const [habits, setHabits] = useState(null);
   const [habitSaving, setHabitSaving] = useState(null);
-  const [editing, setEditing] = useState(null); // reminder id being edited (same form panel, prefilled)
-  const [saving, setSaving] = useState(false);
   const [projects, setProjects] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [showForm, setShowForm] = useState(false);
-  const [showDescription, setShowDescription] = useState(false);
-  const [showDateTime, setShowDateTime] = useState(false);
+  // The task modal: null (closed) | { id: null } (new) | the row being edited.
+  const [taskModal, setTaskModal] = useState(null);
   const [scheduling, setScheduling] = useState(null); // { item, events } — the Fit-it-in dialog
   const openSchedule = async (r) => {
     try { setScheduling({ item: r, events: await loadEvents() }); }
@@ -109,10 +91,6 @@ export default function RemindersPage() {
     } finally { setHabitSaving(null); }
   };
 
-  const showEndOptions = form.recurrence !== "none";
-  // A recurring task with no date has no occurrences — nothing to repeat.
-  const needsDate = form.recurrence !== "none" && !form.date;
-
   const filtered = useMemo(() => {
     if (filter === "all") return list;
     if (filter === "none") return list.filter(r => !r.project_id);
@@ -159,61 +137,23 @@ export default function RemindersPage() {
     try { await deleteReminder(id); } catch { await load(); }
   };
 
-  const resetForm = () => {
-    setForm(emptyForm);
-    setShowDescription(false);
-    setShowDateTime(false);
-    setEditing(null);
-  };
-  const closeForm = () => { resetForm(); setShowForm(false); };
-  const startEdit = (r) => {
-    setForm(toForm(r));
-    setShowDateTime(Boolean(r.date || r.time));
-    setShowDescription(Boolean(r.description));
-    setEditing(r.id);
-    setShowForm(true);
-  };
-
-  const fieldsFromForm = () => ({
-    name: form.name.trim(),
-    date: form.date || null,
-    time: form.time || null,
-    description: form.description || null,
-    recurrence: form.recurrence,
-    project_id: form.project_id || null,
-    recur_until: form.recurrence !== "none" ? (form.recur_until || null) : null,
-    recur_times: form.recurrence !== "none" && form.recur_times ? Number(form.recur_times) : null,
-    show_on_calendar: form.show_on_calendar,
-  });
-
-  const saveEdit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-    const id = editing;
+  // Saves throw on failure so the modal stays open with the error and what
+  // was typed; the list is updated optimistically and rolled back.
+  const saveEdit = async (id, fields) => {
     const prev = list.find((x) => x.id === id);
-    const fields = fieldsFromForm();
-    setSaving(true);
-    // Optimistic: apply locally, roll back and surface the real error on failure.
     setList((l) => l.map((x) => x.id === id ? { ...x, ...fields } : x));
-    closeForm();
     try {
       await updateReminder(id, fields);
       addToast("Task updated.", "success");
     } catch (err) {
       setList((l) => l.map((x) => x.id === id ? prev : x));
-      addToast(`Couldn't save task: ${err?.message || "unknown error"}`, "error");
-    } finally { setSaving(false); }
+      throw new Error(`Couldn't save task: ${err?.message || "unknown error"}`, { cause: err });
+    }
   };
 
-  const addReminder = async (e) => {
-    e.preventDefault();
-    if (needsDate) return; // submit is disabled; belt-and-braces for Enter-to-submit
-    if (editing) return saveEdit(e);
-    if (!form.name) return;
+  const addReminder = async (fields) => {
     const tempId = `temp-${Date.now()}`;
-    const fields = fieldsFromForm();
     setList((prev) => [...prev, { id: tempId, completed: false, ...fields }]);
-    resetForm();
     try {
       const saved = await newReminder(fields);
       if (saved?.id) {
@@ -223,7 +163,7 @@ export default function RemindersPage() {
       }
     } catch (err) {
       setList((prev) => prev.filter((r) => r.id !== tempId));
-      addToast(`Couldn't add task: ${err?.message || "unknown error"}`, "error");
+      throw new Error(`Couldn't add task: ${err?.message || "unknown error"}`, { cause: err });
     }
   };
 
@@ -272,7 +212,7 @@ export default function RemindersPage() {
           {(r.recurrence || "none") === "none" && (overdue
             ? <button type="button" className="btn-mini accent" onClick={() => openSchedule(r)}><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Fit it in</button>
             : <button type="button" className="btn-mini" onClick={() => openSchedule(r)} title="Schedule a time" aria-label={`Schedule ${r.name}`}><i className="fa-regular fa-clock" aria-hidden="true" /></button>)}
-          <button type="button" className="btn-mini" onClick={() => startEdit(r)} title="Edit task">
+          <button type="button" className="btn-mini" onClick={() => setTaskModal(r)} title="Edit task">
             <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
           </button>
           <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r)}>
@@ -310,120 +250,24 @@ export default function RemindersPage() {
         <h1>Tasks &amp; reminders</h1>
         {/* Inside Plan the page h1 is hidden (Plan owns it); this names the section instead. */}
         <h2 className="section-title tasks-embed-title">Tasks &amp; reminders</h2>
-        <button type="button" className="btn" onClick={() => (showForm ? closeForm() : setShowForm(true))} aria-expanded={showForm}>
-          <i className={`fa-solid ${showForm ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showForm ? "Close" : "New task"}
+        <button type="button" className="btn" onClick={() => setTaskModal({ id: null })}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> New task
         </button>
       </div>
 
-      <div className={`tasks-layout ${showForm ? "with-form" : ""}`}>
-        {/* Left: create form panel (hidden until "New Task") */}
-        {showForm && (
-          <aside className="tasks-form-panel">
-            <form className="form-card" onSubmit={addReminder}>
-              <div className="form-panel-head">
-                <h3>{editing ? "Edit task" : "New task"}</h3>
-                <button type="button" className="icon-x" onClick={closeForm} aria-label="Close">
-                  <i className="fa-solid fa-xmark" aria-hidden="true" />
-                </button>
-              </div>
+      {taskModal && (
+        <TaskFormModal
+          key={taskModal.id || "new"}
+          title={taskModal.id ? "Edit task" : "New task"}
+          submitLabel={taskModal.id ? "Save changes" : "Add task"}
+          initial={taskModal.id ? taskToForm(taskModal) : undefined}
+          projects={projects}
+          onSave={(fields) => (taskModal.id ? saveEdit(taskModal.id, fields) : addReminder(fields))}
+          onClose={() => setTaskModal(null)}
+        />
+      )}
 
-              <input
-                placeholder="Task name"
-                aria-label="Task name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                autoFocus
-                required
-              />
-
-              <select
-                value={form.recurrence}
-                aria-label="Repeats"
-                onChange={(e) => {
-                  const recurrence = e.target.value;
-                  setForm({ ...form, recurrence });
-                  if (recurrence !== "none") setShowDateTime(true); // a repeat needs a start date
-                }}
-              >
-                <option value="none">One-time</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-
-              <select value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} aria-label="Project">
-                <option value="">No project</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-
-              {(showDateTime || needsDate) && (
-                <div className="form-row">
-                  <DatePicker value={form.date} onChange={(v) => setForm({ ...form, date: v })} />
-                  <TimePicker value={form.time} onChange={(v) => setForm({ ...form, time: v })} />
-                </div>
-              )}
-              {needsDate && <p className="field-hint" role="status">A repeating task needs a start date — pick the first occurrence.</p>}
-
-              {showDescription && (
-                <textarea
-                  placeholder="Description (optional)"
-                  aria-label="Description"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                />
-              )}
-
-              <div className="form-meta-row">
-                <button type="button" className="btn-mini" onClick={() => setShowDateTime((s) => !s)} aria-expanded={showDateTime}>
-                  <i className={`fa-solid ${showDateTime ? "fa-minus" : "fa-plus"}`} aria-hidden="true" /> Date &amp; time
-                </button>
-                <button type="button" className="btn-mini" onClick={() => setShowDescription((s) => !s)} aria-expanded={showDescription}>
-                  <i className={`fa-solid ${showDescription ? "fa-minus" : "fa-plus"}`} aria-hidden="true" /> Description
-                </button>
-              </div>
-
-              {showEndOptions && (
-                <div className="form-row recur-limit-row">
-                  <div className="recur-limit-group">
-                    <label>End date (optional)</label>
-                    <DatePicker
-                      value={form.recur_until}
-                      onChange={(v) => setForm({ ...form, recur_until: v, recur_times: "" })}
-                      placeholder="End date"
-                    />
-                  </div>
-                  <div className="recur-limit-group">
-                    <label>Or after N times</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={form.recur_times}
-                      onChange={(e) => setForm({ ...form, recur_times: e.target.value, recur_until: "" })}
-                      placeholder="e.g. 4"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <label className="checkbox-inline">
-                <input
-                  type="checkbox"
-                  checked={form.show_on_calendar}
-                  onChange={(e) => setForm({ ...form, show_on_calendar: e.target.checked })}
-                />
-                Show on calendar
-              </label>
-
-              <div className="form-actions">
-                <button className="btn" type="submit" disabled={saving || needsDate} title={needsDate ? "Pick a start date for the repeat" : undefined}>{editing ? (saving ? "Saving…" : "Save changes") : "Add task"}</button>
-                {editing && <button className="btn btn-secondary" type="button" onClick={closeForm}>Cancel</button>}
-              </div>
-            </form>
-          </aside>
-        )}
-
-        {/* Right: task list */}
+      <div className="tasks-layout">
         <div className="tasks-list">
           {filter === "all" && !loadErrors.some((error) => error.startsWith("habits (")) && (habits
             ? <DueHabitReminders rows={habitRows} missedRows={missedRows} busyId={habitSaving} onDone={completeHabit}

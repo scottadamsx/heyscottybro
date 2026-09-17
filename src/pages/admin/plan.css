@@ -88,7 +88,7 @@
 .admin-shell .day-add-seg { display: flex; width: 100%; margin-bottom: var(--space-sm); }
 .admin-shell .day-add-seg .segmented-opt { flex: 1 1 0; }
 
-/* The one event form (day sheet, New event dialog, project page): label
+/* The one event form (day sheet, New event / Edit event modals): label
    column of one width; pickers keep a readable minimum and the helper note
    wraps under them instead of squeezing the date. */
 .event-form .day-time-row { flex-wrap: wrap; row-gap: var(--space-2xs); }
@@ -109,22 +109,6 @@
 
 .tasks-layout { display: flex; gap: var(--space-lg); align-items: flex-start; }
 .tasks-list { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-lg); }
-.tasks-form-panel {
-  flex: 0 0 clamp(280px, 30vw, 360px);
-  min-width: 0;
-  position: sticky;
-  top: var(--space-md);
-  animation: tasks-panel-in var(--dur) var(--ease) both;
-}
-@keyframes tasks-panel-in {
-  from { opacity: 0; transform: translateX(calc(var(--space-md) * -1)); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* Form panel heads (new/edit task, edit project) */
-.admin-shell .tasks-form-panel .form-panel-head h3,
-.admin-shell .task-edit-form .form-panel-head h3,
-.admin-shell .project-edit-form .form-panel-head h3 { margin: 0; font-size: var(--text-md); line-height: 1.5rem; font-weight: 600; }
 
 /* A task row: title + one meta line, actions on the right. Clean hover rows
    inside the card — no raised boxes. */
@@ -141,15 +125,9 @@
 .task-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
 .task-row.is-done .task-row-title { color: var(--text-secondary); text-decoration: line-through; }
 
-/* Repeat limits (new/edit task) */
+/* Repeat limits (task modal) */
 .admin-shell .recur-limit-row { gap: var(--space-sm); }
-.recur-limit-group { display: flex; flex-direction: column; gap: var(--space-2xs); flex: 1; min-width: 0; }
-.admin-shell .recur-limit-group label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
-
-@media (max-width: 860px) {
-  .tasks-layout { flex-direction: column; align-items: stretch; }
-  .tasks-form-panel { flex: none; width: 100%; position: static; }
-}
+.recur-limit-group { display: flex; flex-direction: column; gap: var(--space-2xs); min-width: 0; }
 @media (max-width: 640px) {
   .admin-shell .task-row { flex-wrap: wrap; row-gap: var(--space-xs); }
   .admin-shell .task-row .db-list-item-content { flex: 1 1 100%; }
@@ -240,8 +218,6 @@
 
 .admin-shell .project-card-head { margin-bottom: var(--space-xs); }
 .project-card-desc { margin: 0 0 var(--space-md); max-width: 64ch; font-size: var(--text-sm); color: var(--text-secondary); }
-.project-quick-form { margin-bottom: var(--space-md); }
-.project-event-form { margin-bottom: var(--space-md); }
 
 .project-task-link { text-decoration: none; }
 .project-task-link:hover { text-decoration: underline; }
@@ -264,19 +240,7 @@
   font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .event-type-task-name { flex: 1; min-width: 0; }
-.event-type-add {
-  display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs);
-  margin-top: var(--space-sm); padding-left: calc(10px + var(--space-xs));
-}
-/* Offset + name fields: flex-basis wins over the shell's width:100% */
-.admin-shell .event-type-add .auto-task-offset-input,
-.admin-shell .auto-task-edit .auto-task-offset-input { flex: 0 0 96px; }
-.admin-shell .event-type-add .auto-task-name-input,
-.admin-shell .auto-task-edit .auto-task-name-input { flex: 1 1 200px; }
-
-/* Create dialogs (project, sub-project, initiative, event type) */
-.admin-shell .event-card.project-modal { max-width: 480px; padding: var(--space-lg); border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); }
-.admin-shell .project-modal-actions { justify-content: flex-end; margin-top: var(--space-xs); }
+.event-type-add { margin-top: var(--space-sm); padding-left: calc(10px + var(--space-xs)); }
 
 @media (max-width: 640px) {
   .admin-shell .project-detail-header { flex-direction: column; gap: var(--space-md); }
@@ -286,19 +250,16 @@
 
 /* ── Work log ────────────────────────────────────────────────────────────── */
 
-/* Embedded under Plan › Work, the h1 is hidden by the shell; drop its empty row. */
-.combined-embed .worklog-head { display: none; }
-/* Minutes: a short number field. flex-basis beats the shell's width:100%. */
+/* Minutes: a short number field beside the date (Log work modal). */
 .admin-shell .form-row > .worklog-min { flex: 0 0 96px; }
-.worklog-form-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
 
 
 /* ── Phones: stacked form rows ───────────────────────────────────────────── */
-/* Under 480px index.css turns every .form-row into a column; the shell's
-   `flex: 1 1 120px` then becomes a 120px-tall field. Plan's forms stack at
-   their natural height instead. */
+/* Under 480px index.css turns every .form-row into a column; a flex-basis
+   would then become a field's height. Plan's modal and day-sheet forms stack
+   at their natural height instead. */
 @media (max-width: 480px) {
-  .admin-shell :is(.project-quick-form, .tasks-form-panel, .task-edit-form, .worklog-page, .day-add-form, .plan-quick-reminder) .form-row > * { flex: 0 0 auto; }
+  .admin-shell :is(.uik-form, .day-add-form) .form-row > * { flex: 0 0 auto; }
 }
 
 /* ── Overdue tray + drop-to-schedule (Fit it in) ── */

@@ -1,6 +1,14 @@
 /**
- * The one event form. Calendar day sheet (date fixed to the open day) and the
- * Project page (project fixed) both render this; edits pass `initial`.
+ * The one event form. Calendar day sheet (date fixed to the open day), the
+ * Plan "New event" button and the Project page (project fixed) all render
+ * this; edits pass `initial`.
+ *
+ * Two shells, one set of fields:
+ *   - `modalTitle` set → a FormModal (DR-019: a form on a page lives in a
+ *     modal). `onClose` closes it; a validation miss or a thrown onSubmit
+ *     error shows in the modal and keeps what was typed.
+ *   - otherwise → an inline form, only for use inside an existing dialog
+ *     (the calendar day sheet).
  *
  * Values in/out are the events row shape: title, date, end_date, start_time,
  * end_time, description, project_id, event_type_id. Times are "HH:MM".
@@ -8,6 +16,7 @@
 import { useState } from "react";
 import DatePicker from "./DatePicker";
 import TimePicker from "./TimePicker";
+import { FormModal } from "./ui";
 
 const plusHour = (t) => { const [h, m] = t.split(":").map(Number); return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`; };
 const daySpan = (a, b) => Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000) + 1;
@@ -22,6 +31,8 @@ export default function EventForm({
   onSubmit,
   onCancel,
   autoFocus = true,
+  modalTitle = null,         // render as a FormModal with this title
+  onClose,                   // modal only: close it (after a save, or on cancel)
 }) {
   const [title, setTitle] = useState(initial.title || "");
   const [date, setDate] = useState(fixedDate || initial.date || "");
@@ -36,19 +47,23 @@ export default function EventForm({
   const [error, setError] = useState("");
 
   const theDate = fixedDate || date;
+  const invalid = () => (!theDate ? "Pick a date." : !title.trim() ? "Give it a title." : "");
+  const values = () => ({ title, date: theDate, end_date: endDate, start_time: startTime, end_time: endTime, description, project_id: projectId || null, event_type_id: eventTypeId || null });
+
   const submit = async (e) => {
     e?.preventDefault?.();
-    if (!title.trim() || !theDate) { setError(!theDate ? "Pick a date." : "Give it a title."); return; }
+    const problem = invalid();
+    if (problem) { setError(problem); return; }
     setBusy(true); setError("");
     try {
-      await onSubmit({ title, date: theDate, end_date: endDate, start_time: startTime, end_time: endTime, description, project_id: projectId || null, event_type_id: eventTypeId || null });
+      await onSubmit(values());
       if (!initial.id) { setTitle(""); setDescription(""); setStartTime(""); setEndTime(""); setEndDate(""); setEndAuto(true); setEventTypeId(""); }
     } catch (err) { setError(err.message || "Couldn't save the event."); }
     finally { setBusy(false); }
   };
 
-  return (
-    <form className="day-add-form event-form" onSubmit={submit}>
+  const fields = (
+    <>
       <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus={autoFocus} aria-label="Event title" />
       {!fixedDate && (
         <div className="day-time-row">
@@ -81,6 +96,25 @@ export default function EventForm({
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       )}
+    </>
+  );
+
+  if (modalTitle) {
+    const submitModal = async () => {
+      const problem = invalid();
+      if (problem) throw new Error(problem);
+      await onSubmit(values());
+    };
+    return (
+      <FormModal title={modalTitle} submitLabel={submitLabel} onClose={onClose} onSubmit={submitModal} width={560}>
+        <div className="day-add-form event-form">{fields}</div>
+      </FormModal>
+    );
+  }
+
+  return (
+    <form className="day-add-form event-form" onSubmit={submit}>
+      {fields}
       {error && <p className="error-message" role="alert">{error}</p>}
       <div className="event-form-actions">
         {onCancel && <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
