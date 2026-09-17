@@ -5,6 +5,7 @@ import { newReminder } from "../../api/plannerApi";
 import { toDateStr } from "../../utils/plannerUtils";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
+import { FormModal, Field } from "../ui";
 import "./tools.css";
 
 const EMPTY = { course: "", name: "", earned: "", max: "100", weight: "", feedback: "" };
@@ -52,7 +53,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
   };
 
   const save = async () => {
-    if (!form.name.trim()) { addToast("Give the assessment a name.", "error"); return; }
+    if (!form.name.trim()) throw new Error("Give the assessment a name.");
     const weightBlank = form.weight === "" || form.weight == null;
     const payload = {
       ...(courseId ? { course_id: courseId } : {}),
@@ -65,13 +66,13 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
       weight: weightBlank ? 0 : Number(form.weight),
       feedback: form.feedback.trim(),
     };
-    try {
-      if (editId) { await updateGrade(editId, payload); } else { await createGrade(payload); }
-      if (weightBlank) addToast("Saved without a weight — it won't count toward the average until you set one.", "info");
-      setShowForm(false); setEditId(null); setForm({ ...EMPTY });
-      changed();
-    } catch (e) { addToast(e.message, "error"); }
+    // A failed write throws: the modal stays open with the error and what was typed.
+    if (editId) { await updateGrade(editId, payload); } else { await createGrade(payload); }
+    if (weightBlank) addToast("Saved without a weight — it won't count toward the average until you set one.", "info");
+    setForm({ ...EMPTY });
+    changed();
   };
+  const closeForm = () => { setShowForm(false); setEditId(null); };
 
   const remove = async (g) => {
     if (!await confirm(`Delete "${g.name}"?`, { title: "Delete assessment", confirmLabel: "Delete" })) return;
@@ -139,24 +140,28 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
         </button>
       </div>
 
-      {/* Add / edit form */}
+      {/* Add / edit modal */}
       {showForm && (
-        <div className="gt-form">
-          <div className="gt-form-row">
-            <input aria-label="Course" placeholder="Course (e.g. CP 2561)" value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} />
-            <input aria-label="Assessment" placeholder="Assessment (e.g. Test 2)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <FormModal
+          title={editId ? "Edit assessment" : `Add assessment${courseCode ? ` · ${courseCode}` : ""}`}
+          submitLabel={editId ? "Save" : "Add"}
+          submitDisabled={!form.name.trim()}
+          onClose={closeForm}
+          onSubmit={save}
+        >
+          <div className="gt-form-row is-wide">
+            <Field label="Assessment"><input placeholder="e.g. Test 2" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-autofocus /></Field>
+            <Field label="Course"><input placeholder={courseCode || "e.g. CP 2561"} value={form.course} onChange={(e) => setForm({ ...form, course: e.target.value })} /></Field>
           </div>
           <div className="gt-form-row">
-            <label>Earned<input type="number" step="0.01" placeholder="—" value={form.earned} onChange={(e) => setForm({ ...form, earned: e.target.value })} /></label>
-            <label>Out of<input type="number" step="0.01" value={form.max} onChange={(e) => setForm({ ...form, max: e.target.value })} /></label>
-            <label>Weight %<input type="number" step="0.1" min="0" placeholder="e.g. 15" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></label>
+            <Field label="Earned"><input type="number" inputMode="decimal" step="0.01" placeholder="—" value={form.earned} onChange={(e) => setForm({ ...form, earned: e.target.value })} /></Field>
+            <Field label="Out of"><input type="number" inputMode="decimal" step="0.01" value={form.max} onChange={(e) => setForm({ ...form, max: e.target.value })} /></Field>
+            <Field label="Weight %"><input type="number" inputMode="decimal" step="0.1" min="0" placeholder="e.g. 15" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></Field>
           </div>
-          <textarea aria-label="Instructor feedback" placeholder="Instructor feedback (optional — fuels the catch-up plan)" rows={2} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
-          <div className="gt-form-actions">
-            <button type="button" className="btn btn-sm" onClick={save}>{editId ? "Save" : "Add"}</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setShowForm(false); setEditId(null); }}>Cancel</button>
-          </div>
-        </div>
+          <Field label="Instructor feedback" hint="Optional — fuels the catch-up plan.">
+            <textarea rows={3} value={form.feedback} onChange={(e) => setForm({ ...form, feedback: e.target.value })} />
+          </Field>
+        </FormModal>
       )}
 
       {/* Assessment list */}

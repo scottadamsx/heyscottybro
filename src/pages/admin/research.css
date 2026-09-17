@@ -2,10 +2,6 @@
 .research-count { font-size: var(--text-sm); color: var(--text-secondary); }
 .research-archived-toggle { display: inline-flex; align-items: center; gap: var(--space-xs); margin-left: auto; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
 
-.research-new { gap: var(--space-sm); }
-.admin-shell .research-new .db-card-title { margin-bottom: var(--space-2xs); }
-.research-new-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
-.admin-shell .research-new-foot select { flex: 1 1 220px; width: auto; }
 
 .research-list { display: flex; flex-direction: column; gap: var(--space-md); }
 .research-card { gap: var(--space-sm); }

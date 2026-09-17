@@ -6,7 +6,7 @@ import {
   RESEARCH_STATUSES,
 } from "../../api/researchApi";
 import DocLinks from "../../components/docs/DocLinks";
-import { Badge } from "../../components/ui";
+import { Badge, FormModal, Field } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./research.css";
 
@@ -25,7 +25,7 @@ export default function ResearchPage() {
   const [title, setTitle] = useState("");
   const [details, setDetails] = useState("");
   const [assignee, setAssignee] = useState("");
-  const [adding, setAdding] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
   const refresh = () => { setLoading(true); loadResearchRequests().then(setRequests).catch(() => {}).finally(() => setLoading(false)); };
@@ -37,17 +37,14 @@ export default function ResearchPage() {
   );
   const openCount = requests.filter((r) => r.status === "open" || r.status === "in_progress").length;
 
-  async function add(e) {
-    e?.preventDefault();
-    if (!title.trim()) return;
-    setAdding(true);
-    try {
-      await newResearchRequest({ title, details, assignee });
-      setTitle(""); setDetails(""); setAssignee("");
-      refresh();
-      addToast("Research request created", "success");
-    } catch (err) { addToast(err.message || "Could not create", "error"); }
-    finally { setAdding(false); }
+  // FormModal: a thrown error stays in the modal with what was typed.
+  async function add() {
+    if (!title.trim()) return false;
+    try { await newResearchRequest({ title, details, assignee }); }
+    catch (err) { throw new Error(err?.message || "Could not create", { cause: err }); }
+    setTitle(""); setDetails(""); setAssignee("");
+    refresh();
+    addToast("Research request created", "success");
   }
 
   async function setStatus(r, status) {
@@ -74,26 +71,30 @@ export default function ResearchPage() {
         <label className="research-archived-toggle">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
+        <button type="button" className="btn btn-sm" onClick={() => setShowNew(true)}>
+          <i className="fa-solid fa-flask" aria-hidden="true" /> New request
+        </button>
       </div>
 
-      {/* New request */}
-      <form className="db-card research-new" onSubmit={add}>
-        <h3 className="db-card-title">New research request</h3>
-        <input className="research-title-input" aria-label="What do you want researched?" placeholder="What do you want researched?" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea aria-label="Details" placeholder="Details, questions, sources to use… (optional)" value={details} onChange={(e) => setDetails(e.target.value)} rows={3} />
-        <div className="research-new-foot">
-          <select aria-label="Assign to" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Unassigned</option>
-            {AGENTS.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.title}</option>)}
-          </select>
-          <button className="btn btn-sm" type="submit" disabled={adding || !title.trim()}>
-            {adding ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Creating…</> : <><i className="fa-solid fa-flask" aria-hidden="true" /> Create request</>}
-          </button>
-        </div>
-      </form>
+      {showNew && (
+        <FormModal title="New research request" submitLabel="Create request" submitDisabled={!title.trim()} onClose={() => setShowNew(false)} onSubmit={add}>
+          <Field label="What do you want researched?">
+            <input required value={title} onChange={(e) => setTitle(e.target.value)} data-autofocus />
+          </Field>
+          <Field label="Details" hint="Optional — questions, sources to use…">
+            <textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={4} />
+          </Field>
+          <Field label="Assign to">
+            <select value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+              <option value="">Unassigned</option>
+              {AGENTS.map((a) => <option key={a.id} value={a.id}>{a.name} · {a.title}</option>)}
+            </select>
+          </Field>
+        </FormModal>
+      )}
 
       {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
-      {!loading && visible.length === 0 && <p className="no-entries">No research requests yet. Create one above, then attach deliverable docs from your Brain as they’re ready.</p>}
+      {!loading && visible.length === 0 && <p className="no-entries">No research requests yet. Create one with New request, then attach deliverable docs from your Brain as they’re ready.</p>}
 
       <div className="research-list">
         {visible.map((r) => {

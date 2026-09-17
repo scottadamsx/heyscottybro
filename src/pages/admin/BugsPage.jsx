@@ -6,6 +6,7 @@ import {
   addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip, buildFixPrompt,
 } from "../../api/bugsApi";
 import { toUploadableImage } from "../../utils/image";
+import { FormModal, Field } from "../../components/ui";
 import "./mission.css";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
@@ -40,7 +41,6 @@ export default function BugsPage() {
   const [expanded, setExpanded] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm]         = useState({ ...EMPTY_FORM });
-  const [saving, setSaving]     = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesVal, setNotesVal] = useState("");
@@ -94,20 +94,15 @@ export default function BugsPage() {
     closed:     byKind.filter(b => b.status === "closed").length,
   };
 
+  // FormModal owns busy state; a thrown error stays in the modal with what was typed.
   const handleCreate = async () => {
-    if (!form.title.trim()) return;
-    setSaving(true);
-    try {
-      const bug = await createBug(form);
-      setBugs(prev => [bug, ...prev]);
-      setForm({ ...EMPTY_FORM });
-      setShowForm(false);
-      addToast(form.type === "feature" ? "Feature request added." : "Bug reported.", "success");
-    } catch (err) {
-      addToast(`Failed to create: ${err?.message || err}`, "error");
-    } finally {
-      setSaving(false);
-    }
+    if (!form.title.trim()) return false;
+    let bug;
+    try { bug = await createBug(form); }
+    catch (err) { throw new Error(`Failed to create: ${err?.message || err}`, { cause: err }); }
+    setBugs(prev => [bug, ...prev]);
+    setForm({ ...EMPTY_FORM });
+    addToast(form.type === "feature" ? "Feature request added." : "Bug reported.", "success");
   };
 
   const patch = async (id, fields) => {
@@ -142,9 +137,12 @@ export default function BugsPage() {
   };
 
   const handleSaveNotes = async (id) => {
-    await patch(id, { notes: notesVal });
-    setEditingNotes(null);
+    let updated;
+    try { updated = await updateBug(id, { notes: notesVal }); }
+    catch (err) { throw new Error(`Update failed: ${err?.message || err}`, { cause: err }); }
+    setBugs(prev => prev.map(b => b.id === id ? updated : b));
   };
+  const notesBug = bugs.find(b => b.id === editingNotes);
 
   const handleExport = async () => {
     setExporting(true);
@@ -206,16 +204,21 @@ export default function BugsPage() {
           <button type="button" className="btn btn-sm btn-secondary-sm" onClick={handleExport} disabled={exporting || bugs.length === 0}>
             <i className={`fa-solid ${exporting ? "fa-spinner fa-spin" : "fa-file-zipper"}`} aria-hidden="true" /> {exporting ? "Zipping…" : "Export zip"}
           </button>
-          <button type="button" className="btn btn-sm" aria-expanded={showForm} onClick={() => { setForm({ ...EMPTY_FORM }); setShowForm(s => !s); setExpanded(null); }}>
-            <i className="fa-solid fa-plus" aria-hidden="true" /> New
+          <button type="button" className="btn btn-sm" onClick={() => { setForm({ ...EMPTY_FORM }); setShowForm(true); }}>
+            <i className="fa-solid fa-plus" aria-hidden="true" /> Report a bug / request
           </button>
         </div>
       </div>
 
-      {/* New item form */}
+      {/* New item modal */}
       {showForm && (
-        <div className="form-card bug-form">
-          {/* Type toggle */}
+        <FormModal
+          title={form.type === "feature" ? "New feature request" : "Report a bug"}
+          submitLabel="Submit"
+          submitDisabled={!form.title.trim()}
+          onClose={() => setShowForm(false)}
+          onSubmit={handleCreate}
+        >
           <div className="segmented bug-type-toggle" role="group" aria-label="Type">
             {["bug", "feature"].map(t => (
               <button key={t} type="button" className={`segmented-opt${form.type === t ? " active" : ""}`} aria-pressed={form.type === t} onClick={() => setForm(f => ({ ...f, type: t }))}>
@@ -224,25 +227,42 @@ export default function BugsPage() {
               </button>
             ))}
           </div>
-          <input aria-label="Title" placeholder="Title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-          <div className="form-row">
-            <input className="field-grow" aria-label="Page or area" placeholder="Page / area (e.g. Budget › Dashboard)" value={form.page} onChange={e => setForm(f => ({ ...f, page: e.target.value }))} />
-            <select aria-label="Priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-              {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-            </select>
+          <Field label="Title">
+            <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} data-autofocus />
+          </Field>
+          <div className="bug-form-row">
+            <Field label="Page / area">
+              <input placeholder="e.g. Budget › Dashboard" value={form.page} onChange={e => setForm(f => ({ ...f, page: e.target.value }))} />
+            </Field>
+            <Field label="Priority">
+              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+                {PRIORITIES.map(p => <option key={p} value={p}>{cap(p)}</option>)}
+              </select>
+            </Field>
           </div>
-          <textarea aria-label="Description" placeholder={form.type === "feature" ? "Describe the feature you'd like" : "Description (what's broken?)"} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+          <Field label={form.type === "feature" ? "Describe the feature you'd like" : "Description (what's broken?)"}>
+            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={4} />
+          </Field>
           {form.type === "bug" && (
-            <textarea aria-label="Steps to reproduce" placeholder="Steps to reproduce (optional)" value={form.steps} onChange={e => setForm(f => ({ ...f, steps: e.target.value }))} rows={2} />
+            <Field label="Steps to reproduce" hint="Optional.">
+              <textarea value={form.steps} onChange={e => setForm(f => ({ ...f, steps: e.target.value }))} rows={3} />
+            </Field>
           )}
-          <p className="bug-hint">You can drag in screenshots after saving — open the item below.</p>
-          <div className="form-actions">
-            <button type="button" className="btn btn-sm" onClick={handleCreate} disabled={saving || !form.title.trim()}>
-              {saving ? "Saving…" : "Submit"}
-            </button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-          </div>
-        </div>
+          <p className="bug-hint">You can drag in screenshots after saving — open the item in the list.</p>
+        </FormModal>
+      )}
+
+      {/* Notes / resolution modal */}
+      {notesBug && (
+        <FormModal
+          title="Notes / resolution"
+          onClose={() => setEditingNotes(null)}
+          onSubmit={() => handleSaveNotes(notesBug.id)}
+        >
+          <Field label={`Notes on “${notesBug.title}”`}>
+            <textarea value={notesVal} onChange={e => setNotesVal(e.target.value)} rows={6} data-autofocus />
+          </Field>
+        </FormModal>
       )}
 
       <div className="bug-toolbar">
@@ -363,26 +383,14 @@ export default function BugsPage() {
                 <div className="bug-section">
                   <div className="bug-section-head">
                     <h4 className="bug-label">Notes / resolution</h4>
-                    {editingNotes !== bug.id && (
-                      <button type="button" className="btn-mini"
-                        onClick={() => { setEditingNotes(bug.id); setNotesVal(bug.notes || ""); }}>
-                        <i className="fa-solid fa-pen" aria-hidden="true" />Edit
-                      </button>
-                    )}
+                    <button type="button" className="btn-mini"
+                      onClick={() => { setEditingNotes(bug.id); setNotesVal(bug.notes || ""); }}>
+                      <i className="fa-solid fa-pen" aria-hidden="true" />Edit
+                    </button>
                   </div>
-                  {editingNotes === bug.id ? (
-                    <div className="bug-notes-edit">
-                      <textarea aria-label="Notes / resolution" value={notesVal} onChange={e => setNotesVal(e.target.value)} rows={3} />
-                      <div className="form-actions">
-                        <button type="button" className="btn-mini accent" onClick={() => handleSaveNotes(bug.id)}>Save</button>
-                        <button type="button" className="btn-mini" onClick={() => setEditingNotes(null)}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={`bug-text${bug.notes ? "" : " is-empty"}`}>
-                      {bug.notes || "No notes yet."}
-                    </p>
-                  )}
+                  <p className={`bug-text${bug.notes ? "" : " is-empty"}`}>
+                    {bug.notes || "No notes yet."}
+                  </p>
                 </div>
 
                 {bug.resolved_at && (

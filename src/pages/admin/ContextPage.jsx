@@ -5,6 +5,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 import EmptyState from "../../components/EmptyState";
 import { SkeletonList } from "../../components/Skeleton";
+import { FormModal, Field } from "../../components/ui";
 
 const TRIGGERS = ["remember", "don't forget", "dont forget", "note that", "note:", "keep in mind", "fyi", "important", "for the record"];
 const FACTWORDS = ["started", "likes", "loves", "hates", "works", "worked", "born", "birthday", "allergic", "allergy", "prefers", "anniversary", "favourite", "favorite", "named", "lives", "grew up", "quit", "wants", "married", "met", "studied", "plays", "eats", "drinks", "takes"];
@@ -62,11 +63,10 @@ export default function ContextPage() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
-  const [saving, setSaving] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editInstruction, setEditInstruction] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
   const [error, setError] = useState("");
   const [syncing, setSyncing] = useState(false);
 
@@ -86,32 +86,26 @@ export default function ContextPage() {
 
   const verdict = useMemo(() => classify(input), [input]);
 
+  // Runs inside FormModal: a thrown error stays in the modal with the text kept.
   const save = async () => {
     const raw = input.trim();
-    if (!raw || saving) return;
-    setSaving(true);
-    setError("");
+    if (!raw) return false;
+    // Frodo rewrites the note into a clean, tagged fact; if that AI call
+    // fails, fall back to the local keyword classifier for the TEXT only —
+    // the save itself still goes to Supabase (no local data fallback).
+    let fields;
     try {
-      // Frodo rewrites the note into a clean, tagged fact; if that AI call
-      // fails, fall back to the local keyword classifier for the TEXT only —
-      // the save itself still goes to Supabase (no local data fallback).
-      let fields;
-      try {
-        const refined = await refineContextEntry(raw);
-        fields = { text: refined.text, tags: (refined.tags || []).slice(0, 6), by: "manual", why: refined.why || "rephrased by Frodo" };
-      } catch {
-        const c = classify(raw);
-        fields = { text: c.fact || raw, tags: c.tags, by: "manual", why: c.why || "saved manually" };
-      }
-      await addContextEntry(fields);
-      setInput("");
-      await reload();
-      addToast("Context saved.", "success");
-    } catch (e) {
-      addToast(e?.message || "Failed to save context.", "error");
-    } finally {
-      setSaving(false);
+      const refined = await refineContextEntry(raw);
+      fields = { text: refined.text, tags: (refined.tags || []).slice(0, 6), by: "manual", why: refined.why || "rephrased by Frodo" };
+    } catch {
+      const c = classify(raw);
+      fields = { text: c.fact || raw, tags: c.tags, by: "manual", why: c.why || "saved manually" };
     }
+    try { await addContextEntry(fields); }
+    catch (e) { throw new Error(e?.message || "Failed to save context.", { cause: e }); }
+    setInput("");
+    await reload();
+    addToast("Context saved.", "success");
   };
 
   const remove = async (item) => {
@@ -146,9 +140,7 @@ export default function ContextPage() {
 
   const saveEdit = async (item) => {
     const instruction = editInstruction.trim();
-    if (!instruction || editSaving) return;
-    setEditSaving(true);
-    setError("");
+    if (!instruction) return false;
     try {
       const prompt = `Current fact: "${item.text}"\n\nInstruction: ${instruction}\n\nRewrite the fact following the instruction. Keep it concise and third-person.`;
       const refined = await refineContextEntry(prompt);
@@ -161,16 +153,14 @@ export default function ContextPage() {
         .eq("id", item.id)
         .eq("user_id", userId);
       if (error) throw error;
-      setEditingId(null);
-      setEditInstruction("");
-      await reload();
-      addToast("Context updated.", "success");
     } catch (e) {
-      addToast(e?.message || "Failed to update context.", "error");
-    } finally {
-      setEditSaving(false);
+      throw new Error(e?.message || "Failed to update context.", { cause: e });
     }
+    setEditInstruction("");
+    await reload();
+    addToast("Context updated.", "success");
   };
+  const editingItem = items.find((i) => i.id === editingId);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -189,51 +179,74 @@ export default function ContextPage() {
       <div className="module-header">
         <h1>Context</h1>
         <span className="module-header-sub">{items.length} saved fact{items.length !== 1 ? "s" : ""}</span>
-        <button type="button" className="btn btn-sm btn-secondary-sm ctx-header-actions" onClick={runSync} disabled={syncing}>
-          {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Sync local facts</>}
-        </button>
+        <div className="header-actions ctx-header-actions">
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={runSync} disabled={syncing}>
+            {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Sync local facts</>}
+          </button>
+          <button type="button" className="btn btn-sm" onClick={() => setShowAdd(true)}>
+            <i className="fa-solid fa-plus" aria-hidden="true" /> Add a fact
+          </button>
+        </div>
       </div>
 
       {error && <div className="load-error" role="alert"><p className="load-error-msg">{error}</p></div>}
       {loading && <SkeletonList rows={5} />}
 
-      {/* Add */}
-      <section className="db-card ctx-add-card">
-        <div className="db-card-header">
-          <h3 className="db-card-title">Add a fact</h3>
-          <p className="ctx-add-sub">Type it however you like — Frodo rewrites it into a clean fact when you save.</p>
-        </div>
-        <textarea
-          className="ctx-textarea"
-          aria-label="New fact"
-          rows={3}
-          placeholder={`e.g. "remember that Scott is allergic to shellfish" or "Scott prefers morning workouts"`}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) save(); }}
-        />
-        <div className={`ctx-verdict is-${verdict.kind}`} aria-live="polite">
-          {verdict.kind === "idle" && <span>Start typing…</span>}
-          {verdict.kind === "keep" && <><strong>Worth keeping</strong> — {verdict.why}</>}
-          {verdict.kind === "maybe" && <><strong>Looks like chatter</strong> — save it anyway if it matters</>}
-        </div>
-        {verdict.kind !== "idle" && verdict.fact && (
-          <div className="ctx-chips">
-            <span className="ctx-chip preview">&ldquo;{verdict.fact.slice(0, 60)}{verdict.fact.length > 60 ? "…" : ""}&rdquo;</span>
-            {(verdict.tags || []).map(tag => (
-              <span key={tag} className={`ctx-chip${tag === "Scott" ? " person" : ""}`}>#{tag}</span>
-            ))}
+      {/* Add — Cmd/Ctrl+Enter submits from the textarea */}
+      {showAdd && (
+        <FormModal
+          title="Add a fact"
+          submitLabel={verdict.kind === "maybe" ? "Save anyway" : "Save to context"}
+          submitDisabled={verdict.kind === "idle"}
+          onClose={() => setShowAdd(false)}
+          onSubmit={save}
+        >
+          <Field label="Fact" hint="Type it however you like — Frodo rewrites it into a clean fact when you save.">
+            <textarea
+              rows={4}
+              placeholder={`e.g. "remember that Scott is allergic to shellfish"`}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }}
+              data-autofocus
+            />
+          </Field>
+          <div className={`ctx-verdict is-${verdict.kind}`} aria-live="polite">
+            {verdict.kind === "idle" && <span>Start typing…</span>}
+            {verdict.kind === "keep" && <><strong>Worth keeping</strong> — {verdict.why}</>}
+            {verdict.kind === "maybe" && <><strong>Looks like chatter</strong> — save it anyway if it matters</>}
           </div>
-        )}
-        <div className="ctx-add-actions">
-          <button type="button" className="btn btn-sm" onClick={save} disabled={verdict.kind === "idle" || saving}>
-            {saving
-              ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Refining…</>
-              : verdict.kind === "keep" ? <><i className="fa-solid fa-brain" aria-hidden="true" /> Save to context</> : <><i className="fa-solid fa-plus" aria-hidden="true" /> Save anyway</>}
-          </button>
-          {input && !saving && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setInput("")}>Clear</button>}
-        </div>
-      </section>
+          {verdict.kind !== "idle" && verdict.fact && (
+            <div className="ctx-chips">
+              <span className="ctx-chip preview">&ldquo;{verdict.fact.slice(0, 60)}{verdict.fact.length > 60 ? "…" : ""}&rdquo;</span>
+              {(verdict.tags || []).map(tag => (
+                <span key={tag} className={`ctx-chip${tag === "Scott" ? " person" : ""}`}>#{tag}</span>
+              ))}
+            </div>
+          )}
+        </FormModal>
+      )}
+
+      {/* Edit with Frodo */}
+      {editingItem && (
+        <FormModal
+          title="Edit with Frodo"
+          submitLabel="Rewrite"
+          submitDisabled={!editInstruction.trim()}
+          onClose={() => setEditingId(null)}
+          onSubmit={() => saveEdit(editingItem)}
+        >
+          <p className="ctx-item-text">{editingItem.text}</p>
+          <Field label="How should Frodo rewrite this fact?">
+            <input
+              placeholder={`e.g. "update to say he quit smoking" or "fix the typo"`}
+              value={editInstruction}
+              onChange={(e) => setEditInstruction(e.target.value)}
+              data-autofocus
+            />
+          </Field>
+        </FormModal>
+      )}
 
       {/* Filters */}
       {items.length > 0 && (
@@ -253,7 +266,7 @@ export default function ContextPage() {
 
       {/* List */}
       {!loading && items.length === 0 ? (
-        <EmptyState icon="fa-brain" title="No context yet" description="Add a fact above, or ask Frodo — he saves things he learns automatically." />
+        <EmptyState icon="fa-brain" title="No context yet" description="Use Add a fact, or ask Frodo — he saves things he learns automatically." />
       ) : filtered.length === 0 ? (
         <p className="no-entries">Nothing matches.</p>
       ) : (
@@ -268,24 +281,6 @@ export default function ContextPage() {
                   ))}
                 </div>
               )}
-              {editingId === item.id ? (
-                <div className="ctx-edit">
-                  <input
-                    aria-label="How should Frodo rewrite this fact?"
-                    placeholder={`e.g. "update to say he quit smoking" or "fix the typo"`}
-                    value={editInstruction}
-                    onChange={(e) => setEditInstruction(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(item); if (e.key === "Escape") setEditingId(null); }}
-                    autoFocus
-                  />
-                  <div className="ctx-edit-actions">
-                    <button type="button" className="btn-mini accent" onClick={() => saveEdit(item)} disabled={!editInstruction.trim() || editSaving}>
-                      {editSaving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Rewriting…</> : <><i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> Rewrite</>}
-                    </button>
-                    <button type="button" className="btn-mini" onClick={() => setEditingId(null)}>Cancel</button>
-                  </div>
-                </div>
-              ) : null}
               <div className="ctx-item-meta">
                 <span className={`ctx-item-by ${BY_TONE[item.by] || BY_TONE.manual}`}>
                   <span className="ctx-dot" aria-hidden="true" />

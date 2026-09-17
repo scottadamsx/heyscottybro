@@ -3,6 +3,7 @@ import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail, s
 import { generateDraft } from "../../api/aiDraft";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
+import { FormModal, Field } from "../ui";
 import "./tools.css";
 
 const CHANNELS = ["manual", "email", "slack", "discord"];
@@ -49,13 +50,12 @@ export default function Inbox() {
     finally { setSyncing(false); }
   };
 
+  // FormModal: a thrown error stays in the modal with the pasted message kept.
   const add = async () => {
-    if (!form.body.trim()) { addToast("Paste the message body.", "error"); return; }
-    try {
-      const m = await createMessage(form);
-      setForm({ ...EMPTY }); setShowAdd(false);
-      setRows((rs) => [m, ...rs]); setOpen(m.id);
-    } catch (e) { addToast(e.message, "error"); }
+    if (!form.body.trim()) throw new Error("Paste the message body.");
+    const m = await createMessage(form);
+    setForm({ ...EMPTY });
+    setRows((rs) => [m, ...rs]); setOpen(m.id);
   };
 
   const draftFor = (m) => drafts[m.id] ?? m.draft ?? "";
@@ -128,7 +128,7 @@ export default function Inbox() {
     <div className="inbox">
       {dialog}
       <div className="inbox-bar">
-        <button type="button" className="btn btn-sm" aria-expanded={showAdd} onClick={() => setShowAdd((s) => !s)}>
+        <button type="button" className="btn btn-sm" onClick={() => setShowAdd(true)}>
           <i className="fa-solid fa-plus" aria-hidden="true" /> Add message
         </button>
         <button type="button" className="btn btn-sm btn-secondary-sm" onClick={sync} disabled={syncing}>
@@ -145,20 +145,24 @@ export default function Inbox() {
       </p>
 
       {showAdd && (
-        <div className="inbox-form">
+        <FormModal title="Add message" submitLabel="Add" submitDisabled={!form.body.trim()} onClose={() => setShowAdd(false)} onSubmit={add}>
           <div className="inbox-form-row">
-            <select aria-label="Channel" value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>
-              {CHANNELS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
-            </select>
-            <input aria-label="From" placeholder="From (name / handle)" value={form.sender} onChange={(e) => setForm({ ...form, sender: e.target.value })} />
-            <input aria-label="Subject" placeholder="Subject (optional)" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+            <Field label="Channel">
+              <select value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })}>
+                {CHANNELS.map((c) => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+              </select>
+            </Field>
+            <Field label="From">
+              <input placeholder="Name / handle" value={form.sender} onChange={(e) => setForm({ ...form, sender: e.target.value })} />
+            </Field>
           </div>
-          <textarea aria-label="Message" placeholder="Paste the message you need to reply to…" rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
-          <div className="inbox-form-actions">
-            <button type="button" className="btn btn-sm" onClick={add}>Add</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
-          </div>
-        </div>
+          <Field label="Subject" hint="Optional.">
+            <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+          </Field>
+          <Field label="Message">
+            <textarea placeholder="Paste the message you need to reply to…" rows={6} required value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} data-autofocus />
+          </Field>
+        </FormModal>
       )}
 
       {visible.length === 0 ? (
