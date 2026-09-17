@@ -6,14 +6,10 @@
 /* ── Numbers: tabular figures in the reading face (no monospace) ── */
 .bud-mono { font-family: inherit; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-/* ── Inputs ── */
-.bud-inp { width: 100%; margin-bottom: var(--space-xs); }
-
 /* ── Text utilities (12px floor) ── */
 .bud-muted-10, .bud-muted-12 { font-size: var(--text-xs); color: var(--text-secondary); }
 .bud-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bud-caps-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
-.bud-label { display: block; margin-bottom: var(--space-2xs); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
 
 /* ── Layout helpers ── */
 .bud-actions { display: flex; gap: var(--space-2xs); }
@@ -118,14 +114,7 @@
 .money-meter-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-xs); color: var(--text-secondary); }
 .money-meter.is-past { opacity: 0.55; }
 .money-meter.is-current .money-meter-name::after { content: "Now"; margin-left: var(--space-2xs); padding: 1px var(--space-xs); border-radius: var(--radius-full); background: var(--accent-bg); color: var(--accent); font-size: var(--text-xs); font-weight: 600; }
-.money-inline-edit { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
-.money-inline-edit input { width: 96px; min-height: var(--control-h-sm); }
-.money-add-row { display: flex; gap: var(--space-xs); align-items: center; flex-wrap: wrap; margin-top: var(--space-md); }
-.money-add-row select { flex: 1; min-width: 128px; }
-.money-add-row input { width: 112px; }
 .money-add { margin-top: var(--space-md); align-self: flex-start; }
-.money-goal-form { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-md); }
-.money-goal-form.has-rule { padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); }
 .money-goal-note { color: var(--accent); font-weight: 500; }
 .money-goal-note.is-done { color: var(--green); }
 
@@ -176,6 +165,7 @@ button.money-status { cursor: pointer; }
 
 /* Transactions + Bills & Income */
 .money-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; margin-bottom: var(--space-md); }
+.money-toolbar-actions { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
 .money-tx-amt { white-space: nowrap; }
 .bud-billtag { margin-right: var(--space-2xs); padding: 1px var(--space-xs); border-radius: var(--radius-full); background: var(--warn-bg); color: var(--orange); font-size: var(--text-xs); font-weight: 600; }
 .bud-status { padding: 1px var(--space-xs); border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 600; }
@@ -231,9 +221,17 @@ button.money-status { cursor: pointer; }
    its `money` container (layouts answer to the tab's own width). */
 .money-tab + .money-tab { margin-top: var(--space-xl); }
 
-/* Fields: a label over a control. .field-label is the system label. */
-.money-field { display: flex; flex-direction: column; min-width: 0; }
-.money-field .field-label { font-weight: 500; }
+/* Money form modals (DR-019): FormModal + Field supply the layout; these only
+   pair two short fields side by side and stack them on phones. */
+.money-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); }
+.admin-shell .uik-form .segmented.tx-type,
+.admin-shell .uik-form .segmented.sim-source { display: flex; width: 100%; }
+.uik-form .tx-type .segmented-opt,
+.uik-form .sim-source .segmented-opt { flex: 1; }
+.admin-shell .money-danger-text { color: var(--red); }
+@media (max-width: 480px) {
+  .money-form-row { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Summary numbers (ledger, reconcile): the .kpi label over a 24px slab value */
 .money-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(176px, 100%), 1fr)); gap: var(--space-xl); }
@@ -278,12 +276,6 @@ button.money-status { cursor: pointer; }
 .tx-reconciled { font-size: var(--text-xs); font-weight: 600; color: var(--green); }
 
 /* Transactions */
-.tx-form { gap: var(--space-md); }
-.tx-form .db-card-header { margin-bottom: 0; }
-.admin-shell .segmented.tx-type { display: flex; width: 100%; }
-.tx-type .segmented-opt { flex: 1; }
-.tx-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); align-items: end; }
-.tx-form-grid .is-wide { grid-column: 1 / -1; }
 .tx-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-xs); margin-bottom: var(--space-sm); }
 
 /* Bills & Income: money in/out on the left, settings on the right */
@@ -299,8 +291,6 @@ button.money-status { cursor: pointer; }
 .bi-row-amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bi-row.is-ended .bi-row-name,
 .bi-row.is-ended .bi-row-amt { color: var(--text-secondary); }
-.bi-form { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); }
-.bi-form-title { margin: 0; font-size: var(--text-base); font-weight: 600; color: var(--text-primary); }
 .bi-hint { font-weight: 400; color: var(--text-secondary); }
 .admin-shell .bi-check { display: flex; align-items: flex-start; gap: var(--space-xs); font-size: var(--text-sm); color: var(--text-primary); cursor: pointer; }
 .bi-check input { margin-top: 2px; }
@@ -308,18 +298,16 @@ button.money-status { cursor: pointer; }
 .bi-cats { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-md); }
 .bi-chip-x { width: 20px; height: 20px; margin-right: calc(var(--space-2xs) * -1); display: inline-flex; align-items: center; justify-content: center; padding: 0; border: none; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
 .bi-chip-x:hover { background: var(--bg-hover); color: var(--red); }
-.bi-inline { display: flex; align-items: center; gap: var(--space-xs); }
-.bi-inline > input, .bi-inline > select { flex: 1; min-width: 0; }
 .bi-reset { align-self: flex-start; }
+.bi-balance { margin-bottom: var(--space-xs); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.bi-reset-warn { margin: 0; font-size: var(--text-base); color: var(--text-primary); }
 
 /* Tools: reconcile + projection */
 .admin-shell .rec-period { width: auto; min-width: 240px; margin-left: auto; }
 .rec-bar { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; min-height: var(--control-h-sm); margin-bottom: var(--space-xs); }
-.sim-setup { gap: var(--space-md); }
-.sim-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-sm); }
-.sim-ready { color: var(--green); }
+.sim-saved { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+.sim-saved > select { flex: 1; min-width: 0; }
 .sim-toolbar { margin-bottom: var(--space-md); }
-.sim-save { margin-bottom: var(--space-md); }
 .sim-table td { padding-block: var(--space-2xs); }
 .sim-table .sim-date { min-width: 160px; }
 /* In-cell inputs read as text until touched (spreadsheet feel) */
@@ -353,7 +341,6 @@ button.money-status { cursor: pointer; }
 }
 @container money (max-width: 640px) {
   .tx-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sim-fields { grid-template-columns: minmax(0, 1fr); }
   .admin-shell .rec-period { width: 100%; min-width: 0; margin-left: 0; }
   .money-table .is-desc { max-width: 180px; }
 }
@@ -396,7 +383,6 @@ button.money-status { cursor: pointer; }
   .rec-table.no-check .is-actions { grid-area: 2 / 2; }
 }
 @container money (max-width: 480px) {
-  .tx-form-grid { grid-template-columns: minmax(0, 1fr); }
   .bi-row { flex-wrap: wrap; }
   .bi-row-main { flex-basis: 100%; }
   .bi-row .bud-actions { margin-left: auto; }

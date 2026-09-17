@@ -5,6 +5,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 import "./budget.css";
 import DatePicker from "../DatePicker";
+import { FormModal, Field } from "../ui";
 
 function recalcBalances(rows, startBalance) {
   let bal = startBalance;
@@ -28,6 +29,8 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
   const [loadSel, setLoadSel] = useState("");
   const [simName, setSimName] = useState("");
   const [showSaveForm, setShowSaveForm] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
+  const [source, setSource] = useState("bills"); // "bills" | "habits"
 
   const generate = () => {
     let r = [{ id: genId(), date: startDate, description: "Starting Balance", income: 0, expense: 0, isManual: false }];
@@ -87,10 +90,17 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
   };
 
   const saveSimulation = () => {
-    if (!simName.trim()) return;
+    if (!simName.trim()) throw new Error("Give the simulation a name.");
     const sim = { id: genId(), name: simName.trim(), savedAt: today, startingBalance: parseFloat(startBal) || 0, startDate, endDate, rows };
     setSimulations(p => [sim, ...p]);
-    setShowSaveForm(false); setSimName("");
+    setSimName("");
+  };
+
+  // The "New simulation" modal: same two generators as before, picked by source.
+  const runSetup = () => {
+    if (!startDate || !endDate) throw new Error("Pick both a start and an end date.");
+    if (source === "habits") loadFromHabits();
+    else generate();
   };
 
   const loadSimulation = id => {
@@ -121,8 +131,8 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     const hist = getPeriodHistory(transactions, config, 3);
     const proj = projectNextPeriod(hist, lastInc);
     if (!lastInc && !hist.some(p => p.spending > 0)) {
-      setWarning("Not enough transaction history yet. Log at least one income and a few expenses first.");
-      return;
+      // Thrown so the New simulation modal stays open and shows why.
+      throw new Error("Not enough transaction history yet. Log at least one income and a few expenses first.");
     }
     const bal = parseFloat(startBal) || 0;
     let r = [{ id: genId(), date: startDate, description: "Starting Balance", income: 0, expense: 0, isManual: false }];
@@ -155,35 +165,24 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
   };
 
   return (
+    <>
     <div className="money money-tab">
-      <div className="section-head"><h2 className="section-title">Generate projection</h2></div>
-
-      <div className="db-card sim-setup">
-        <div className="sim-fields">
-          <label className="money-field">
-            <span className="field-label">Starting balance</span>
-            <input type="number" value={startBal} onChange={e => setStartBal(e.target.value)} placeholder="0" />
-          </label>
-          <div className="money-field">
-            <span className="field-label">From</span>
-            <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
-          </div>
-          <div className="money-field">
-            <span className="field-label">To</span>
-            <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
-          </div>
-        </div>
-        <div className="form-actions">
-          <button type="button" className="btn btn-sm" onClick={generate}>From bill config</button>
-          <button type="button" className="btn-sm btn-secondary-sm" onClick={loadFromHabits}
-            title={transactions.length ? "Uses your last paycheck amount + average spending per period" : "Log some transactions first"}>
-            From my habits{transactions.length ? <> <i className="fa-solid fa-check sim-ready" aria-hidden="true" /></> : null}
+      <div className="db-card">
+        <div className="db-card-header">
+          <h3 className="db-card-title">Projection</h3>
+          <button type="button" className="btn btn-sm" onClick={() => setShowSetup(true)}>
+            <i className="fa-solid fa-plus" aria-hidden="true" /> New simulation
           </button>
         </div>
+        <p className="money-card-note">
+          {rows.length > 0
+            ? <>{startDate} → {endDate} · starting from {formatMoney(parseFloat(startBal) || 0)}</>
+            : "Project your balance forward from your bills and income, or from how you actually spend."}
+        </p>
 
-        {/* Saved simulations */}
+        {/* Saved simulations — a picker, not a form */}
         {simulations.length > 0 && (
-          <div className="bi-inline sim-saved">
+          <div className="sim-saved">
             <select value={loadSel} aria-label="Saved simulations" onChange={e => setLoadSel(e.target.value)}>
               <option value="">Load saved…</option>
               {simulations.map(s => <option key={s.id} value={s.id}>{s.name} ({s.savedAt})</option>)}
@@ -201,14 +200,8 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
           <div className="form-actions sim-toolbar">
             <button type="button" className="btn-sm btn-secondary-sm" onClick={addRow}><i className="fa-solid fa-plus" aria-hidden="true" /> Add row</button>
             <button type="button" className="btn-sm btn-secondary-sm" onClick={exportCsv}><i className="fa-solid fa-download" aria-hidden="true" /> CSV</button>
-            <button type="button" className="btn-sm btn-secondary-sm" aria-expanded={showSaveForm} onClick={() => setShowSaveForm(s => !s)}><i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Save</button>
+            <button type="button" className="btn-sm btn-secondary-sm" onClick={() => { setSimName(""); setShowSaveForm(true); }}><i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Save simulation</button>
           </div>
-          {showSaveForm && (
-            <div className="bi-inline sim-save">
-              <input value={simName} aria-label="Simulation name" onChange={e => setSimName(e.target.value)} onKeyDown={e => e.key === "Enter" && saveSimulation()} placeholder="Simulation name…" autoFocus />
-              <button type="button" className="btn btn-sm" onClick={saveSimulation}>Save</button>
-            </div>
-          )}
           <div className="bud-table-wrap">
             <table className="bud-table money-table sim-table">
               <thead>
@@ -252,5 +245,53 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
       )}
       {dialog}
     </div>
+
+    {/* Modals sit outside .money (a size container). */}
+    {showSetup && (
+      <FormModal
+        title="New simulation"
+        submitLabel="Generate"
+        onClose={() => setShowSetup(false)}
+        onSubmit={runSetup}
+      >
+        <div className="segmented sim-source" role="radiogroup" aria-label="Build from">
+          {[["bills", "Bills & income"], ["habits", "My spending habits"]].map(([k, label]) => (
+            <button key={k} type="button" role="radio" aria-checked={source === k}
+              onClick={() => setSource(k)} className={`segmented-opt${source === k ? " active" : ""}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="field-hint">
+          {source === "bills"
+            ? "Uses your recurring bills and income sources."
+            : transactions.length
+              ? "Uses your last paycheque amount and your average spending per pay period."
+              : "Needs some logged transactions first."}
+        </p>
+        <Field label="Starting balance">
+          <input data-autofocus type="number" inputMode="decimal" step="0.01" value={startBal} onChange={e => setStartBal(e.target.value)} placeholder="0" />
+        </Field>
+        <div className="money-form-row">
+          <div className="uik-field">
+            <span className="field-label">From</span>
+            <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+          </div>
+          <div className="uik-field">
+            <span className="field-label">To</span>
+            <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+          </div>
+        </div>
+      </FormModal>
+    )}
+
+    {showSaveForm && (
+      <FormModal title="Save simulation" submitLabel="Save" onClose={() => setShowSaveForm(false)} onSubmit={saveSimulation} width={420}>
+        <Field label="Name">
+          <input data-autofocus value={simName} onChange={e => setSimName(e.target.value)} placeholder="e.g. Tight month" />
+        </Field>
+      </FormModal>
+    )}
+    </>
   );
 }

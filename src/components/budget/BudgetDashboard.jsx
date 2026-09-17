@@ -3,6 +3,7 @@ import { getPeriodBills, getQuantifiableBudgets, savingsPlan, getBillDatesInRang
 import { computeBudgetSnapshot } from "./budgetSummary";
 import "./budget.css";
 import DatePicker from "../DatePicker";
+import { FormModal, Field } from "../ui";
 
 function MoneyChart({ config, transactions, period }) {
   const W = 600, H = 160, padY = 8;
@@ -100,35 +101,38 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
   const quantBudgets = useMemo(() => getQuantifiableBudgets(transactions, config, period), [transactions, config, period]);
   const budgetedCats = quantBudgets.map(q => q.category);
   const unbudgetedCats = (config.categories || []).filter(c => !budgetedCats.includes(c));
-  const [editCat, setEditCat] = useState(null);   // category whose amount is being edited
-  const [editVal, setEditVal] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [addCat, setAddCat] = useState("");
-  const [addVal, setAddVal] = useState("");
+  // Category budget modal: { mode: "add" | "edit", cat, val } or null.
+  const [budgetForm, setBudgetForm] = useState(null);
+  const openAddBudget = () => setBudgetForm({ mode: "add", cat: "", val: "" });
+  const startEdit = (cat) => setBudgetForm({ mode: "edit", cat, val: String((config.categoryBudgets || {})[cat] || "") });
+  const closeBudget = () => setBudgetForm(null);
+  // Edit: an empty / zero amount clears the budget, exactly as the inline editor did.
+  const saveBudget = () => {
+    const amt = parseFloat(budgetForm.val);
+    if (budgetForm.mode === "edit") { onSetCategoryBudget?.(budgetForm.cat, amt); return; }
+    if (!budgetForm.cat) throw new Error("Pick a category.");
+    if (!(amt > 0)) throw new Error("Enter a monthly amount greater than zero.");
+    onSetCategoryBudget?.(budgetForm.cat, amt);
+  };
+  const removeBudget = () => { onSetCategoryBudget?.(budgetForm.cat, 0); closeBudget(); };
 
-  // Savings-goal form state
+  // Savings-goal modal state
   const [goalForm, setGoalForm] = useState({ name: "", target: "", targetDate: "", saved: "" });
   const [goalEditId, setGoalEditId] = useState(null);
   const [goalOpen, setGoalOpen] = useState(false);
   const resetGoal = () => { setGoalForm({ name: "", target: "", targetDate: "", saved: "" }); setGoalEditId(null); setGoalOpen(false); };
   const saveGoal = () => {
     const target = parseFloat(goalForm.target);
-    if (!goalForm.name.trim() || isNaN(target) || target <= 0 || !goalForm.targetDate) return;
+    if (!goalForm.name.trim()) throw new Error("Say what the goal is for.");
+    if (isNaN(target) || target <= 0) throw new Error("Enter a target amount greater than zero.");
+    if (!goalForm.targetDate) throw new Error("Pick the date you need it by.");
     const g = { id: goalEditId || genId(), name: goalForm.name.trim(), target, targetDate: goalForm.targetDate, saved: parseFloat(goalForm.saved) || 0 };
     const list = config.savingsGoals || [];
     onSaveGoals?.(goalEditId ? list.map(x => x.id === goalEditId ? g : x) : [...list, g]);
-    resetGoal();
   };
+  const openNewGoal = () => { setGoalEditId(null); setGoalForm({ name: "", target: "", targetDate: "", saved: "" }); setGoalOpen(true); };
   const editGoal = (g) => { setGoalEditId(g.id); setGoalForm({ name: g.name, target: String(g.target), targetDate: g.targetDate || "", saved: String(g.saved || "") }); setGoalOpen(true); };
   const deleteGoal = (id) => onSaveGoals?.((config.savingsGoals || []).filter(g => g.id !== id));
-
-  const startEdit = (cat) => { setEditCat(cat); setEditVal(String((config.categoryBudgets || {})[cat] || "")); };
-  const commitEdit = (cat) => { onSetCategoryBudget?.(cat, parseFloat(editVal)); setEditCat(null); setEditVal(""); };
-  const commitAdd = () => {
-    const amt = parseFloat(addVal);
-    if (addCat && amt > 0) onSetCategoryBudget?.(addCat, amt);
-    setAdding(false); setAddCat(""); setAddVal("");
-  };
 
   // Scope Recent to the selected period so the list always agrees with the
   // period's Spent total (otherwise an all-time list looks inconsistent with a
@@ -183,6 +187,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
   const onKey = (fn) => (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } };
 
   return (
+    <>
     <div className="money">
       {/* Pay-period navigator */}
       <div className="money-period">
@@ -341,13 +346,12 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         {/* Category budgets (Groceries, Gas, Fun… + variable bills) */}
         <div className="db-card">
           <div className="db-card-header"><h3 className="db-card-title">Category budgets</h3><span className="bud-muted-12">this pay period</span></div>
-          {quantBudgets.length === 0 && !adding && (
+          {quantBudgets.length === 0 && (
             <p className="money-card-note">Track variable spending (Groceries, Gas, Fun…) here. Add a budget below, or tick “variable” on a bill in Bills &amp; Income.</p>
           )}
           {quantBudgets.map(({ category: cat, budget, spent: spentCat, fromBill, editable }) => {
             const pct = budget > 0 ? Math.min(spentCat / budget * 100, 100) : 0;
             const over = spentCat > budget;
-            const isEditing = editCat === cat;
             const key = `cat:${cat}`;
             const isOpen = openRow === key;
             const nums = `${formatMoney(spentCat)} / ${formatMoney(budget)} (${Math.round(budget > 0 ? spentCat / budget * 100 : 0)}%)`;
@@ -358,15 +362,8 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                     <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} bud-chev`} aria-hidden="true" />{cat}
                     {fromBill && <span className="bud-tag">bill</span>}
                   </button>
-                  {isEditing ? (
-                    <span className="money-inline-edit">
-                      <input type="number" autoFocus value={editVal} aria-label={`${cat} budget`} onChange={e => setEditVal(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") commitEdit(cat); if (e.key === "Escape") setEditCat(null); }} />
-                      <button type="button" className="btn-sm btn-complete" onClick={() => commitEdit(cat)}>Save</button>
-                      <button type="button" className="btn-sm btn-delete" onClick={() => { onSetCategoryBudget?.(cat, 0); setEditCat(null); setEditVal(""); }} title="Remove budget">Remove</button>
-                    </span>
-                  ) : editable ? (
-                    <button type="button" onClick={() => startEdit(cat)} title="Edit budget" className={`bud-x money-meter-nums${over ? " is-over" : ""}`}>
+                  {editable ? (
+                    <button type="button" onClick={() => startEdit(cat)} aria-label={`Edit ${cat} budget: ${nums}`} className={`bud-x money-meter-nums${over ? " is-over" : ""}`}>
                       {nums} <i className="fa-solid fa-pen bud-chev" aria-hidden="true" />
                     </button>
                   ) : (
@@ -379,23 +376,10 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
               </div>
             );
           })}
-          {adding ? (
-            <div className="money-add-row">
-              <select value={addCat} onChange={e => setAddCat(e.target.value)} aria-label="Category">
-                <option value="">Category…</option>
-                {unbudgetedCats.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <input type="number" placeholder="$ / month" value={addVal} aria-label="Monthly budget" onChange={e => setAddVal(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") commitAdd(); if (e.key === "Escape") setAdding(false); }} />
-              <button type="button" className="btn btn-sm" onClick={commitAdd}>Add</button>
-              <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setAdding(false)}>Cancel</button>
-            </div>
-          ) : (
-            unbudgetedCats.length > 0 && (
-              <button type="button" className="btn-sm btn-secondary-sm money-add" onClick={() => setAdding(true)}>
-                <i className="fa-solid fa-plus" aria-hidden="true" /> Add category budget
-              </button>
-            )
+          {unbudgetedCats.length > 0 && (
+            <button type="button" className="btn-sm btn-secondary-sm money-add" onClick={openAddBudget}>
+              <i className="fa-solid fa-plus" aria-hidden="true" /> Add category budget
+            </button>
           )}
         </div>
 
@@ -405,7 +389,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             <h3 className="db-card-title">Savings goals</h3>
             {savingsThisPeriod > 0 && <span className="money-goal-note">Set aside {formatMoney(savingsThisPeriod)} this paycheque</span>}
           </div>
-          {goals.length === 0 && !goalOpen && (
+          {goals.length === 0 && (
             <p className="money-card-note">Saving for something? Add a goal with a target and a date, and you&apos;ll see how much to set aside each paycheque.</p>
           )}
           {goals.map(g => {
@@ -426,32 +410,16 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                         : <>Set aside {formatMoney(g.remaining)}. Target date {g.targetDate || "not set"} {g.targetDate && g.targetDate < today ? "(past)" : "(no paydays before it)"}</>}
                   </span>
                   <span className="bud-actions">
-                    <button type="button" className="btn-mini" onClick={() => editGoal(g)}>Edit</button>
-                    <button type="button" className="btn-mini danger" onClick={() => deleteGoal(g.id)}>Delete</button>
+                    <button type="button" className="btn-mini" onClick={() => editGoal(g)} aria-label={`Edit ${g.name}`}>Edit</button>
+                    <button type="button" className="btn-mini danger" onClick={() => deleteGoal(g.id)} aria-label={`Delete ${g.name}`}>Delete</button>
                   </span>
                 </div>
               </div>
             );
           })}
-          {goalOpen ? (
-            <div className={`money-goal-form${goals.length ? " has-rule" : ""}`}>
-              <input placeholder="What for? (e.g. New laptop)" aria-label="Goal name" value={goalForm.name} onChange={e => setGoalForm(f => ({ ...f, name: e.target.value }))} />
-              <div className="form-row">
-                <input type="number" placeholder="Target $" aria-label="Target amount" value={goalForm.target} onChange={e => setGoalForm(f => ({ ...f, target: e.target.value }))} />
-                <input type="number" placeholder="Saved so far $" aria-label="Saved so far" value={goalForm.saved} onChange={e => setGoalForm(f => ({ ...f, saved: e.target.value }))} />
-              </div>
-              <label className="bud-label">Need it by</label>
-              <DatePicker value={goalForm.targetDate} onChange={(v) => setGoalForm(f => ({ ...f, targetDate: v }))} className="bud-inp" />
-              <div className="form-actions">
-                <button type="button" className="btn btn-sm" onClick={saveGoal}>{goalEditId ? "Save" : "Add goal"}</button>
-                <button type="button" className="btn-sm btn-secondary-sm" onClick={resetGoal}>Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <button type="button" className="btn-sm btn-secondary-sm money-add" onClick={() => setGoalOpen(true)}>
-              <i className="fa-solid fa-plus" aria-hidden="true" /> Add savings goal
-            </button>
-          )}
+          <button type="button" className="btn-sm btn-secondary-sm money-add" onClick={openNewGoal}>
+            <i className="fa-solid fa-plus" aria-hidden="true" /> Add savings goal
+          </button>
         </div>
 
         {/* Category breakdown */}
@@ -521,5 +489,57 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         );
       })()}
     </div>
+
+    {/* Form modals sit outside .money (a size container). */}
+    {budgetForm && (
+      <FormModal
+        title={budgetForm.mode === "edit" ? `${budgetForm.cat} budget` : "Add category budget"}
+        submitLabel={budgetForm.mode === "edit" ? "Save budget" : "Add budget"}
+        onClose={closeBudget}
+        onSubmit={saveBudget}
+        width={420}
+        extraActions={budgetForm.mode === "edit" && (
+          <button type="button" className="btn btn-secondary money-danger-text" onClick={removeBudget}>Remove budget</button>
+        )}
+      >
+        {budgetForm.mode === "add" && (
+          <Field label="Category">
+            <select data-autofocus value={budgetForm.cat} onChange={e => setBudgetForm(f => ({ ...f, cat: e.target.value }))}>
+              <option value="">Choose a category…</option>
+              {unbudgetedCats.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+        )}
+        <Field label="Monthly budget" hint={budgetForm.mode === "edit" ? "Leave empty or 0 to remove this budget." : undefined}>
+          <input data-autofocus={budgetForm.mode === "edit" ? true : undefined} type="number" inputMode="decimal" step="0.01" placeholder="$ / month" value={budgetForm.val} onChange={e => setBudgetForm(f => ({ ...f, val: e.target.value }))} />
+        </Field>
+      </FormModal>
+    )}
+
+    {goalOpen && (
+      <FormModal
+        title={goalEditId ? "Edit savings goal" : "Add savings goal"}
+        submitLabel={goalEditId ? "Save changes" : "Add goal"}
+        onClose={resetGoal}
+        onSubmit={saveGoal}
+      >
+        <Field label="What for?">
+          <input data-autofocus placeholder="e.g. New laptop" value={goalForm.name} onChange={e => setGoalForm(f => ({ ...f, name: e.target.value }))} />
+        </Field>
+        <div className="money-form-row">
+          <Field label="Target">
+            <input type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={goalForm.target} onChange={e => setGoalForm(f => ({ ...f, target: e.target.value }))} />
+          </Field>
+          <Field label="Saved so far">
+            <input type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={goalForm.saved} onChange={e => setGoalForm(f => ({ ...f, saved: e.target.value }))} />
+          </Field>
+        </div>
+        <div className="uik-field">
+          <span className="field-label">Need it by</span>
+          <DatePicker value={goalForm.targetDate} onChange={(v) => setGoalForm(f => ({ ...f, targetDate: v }))} />
+        </div>
+      </FormModal>
+    )}
+    </>
   );
 }

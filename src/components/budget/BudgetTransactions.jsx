@@ -4,10 +4,11 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
 import "./budget.css";
 import DatePicker from "../DatePicker";
+import { FormModal, Field } from "../ui";
 
 const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "", fulfills_recurring_id: "", is_bill: false };
 
-export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions" }) {
+export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions", actions = null }) {
   const categories = config.categories || [];
   const recurringBills = config.recurringBills || [];
   const billName = id => recurringBills.find(b => b.id === id)?.name || null;
@@ -51,15 +52,19 @@ export default function BudgetTransactions({ config, transactions, setTransactio
     return { ...f, fulfills_recurring_id: id, is_bill: !!id, type: id ? "expense" : f.type, category: bill?.category || f.category };
   });
 
+  // Same rules as before; the modal now says why instead of silently ignoring Save.
   const save = () => {
     const amt = parseFloat(form.amount);
-    if (!form.description.trim() || isNaN(amt) || amt <= 0 || !form.date) return;
+    if (!form.description.trim()) throw new Error("Add a description.");
+    if (isNaN(amt) || amt <= 0) throw new Error("Enter an amount greater than zero.");
+    if (!form.date) throw new Error("Pick a date.");
     const billId = form.fulfills_recurring_id || null;
     const tx = { id: editId || genId(), description: form.description.trim(), amount: amt, type: form.type, category: form.category || categories[0] || "Other", date: form.date, notes: form.notes.trim(), reconciled: false, fulfills_recurring_id: billId, is_bill: billId ? true : form.is_bill };
     if (editId) setTransactions(p => p.map(t => t.id === editId ? { ...t, ...tx } : t));
     else setTransactions(p => [tx, ...p]);
-    setShowForm(false); setEditId(null);
   };
+  // FormModal closes itself after a successful save by calling this.
+  const closeForm = () => { setShowForm(false); setEditId(null); };
 
   const deleteTx = async id => { if (!await confirm("Delete this transaction?", { title: "Delete transaction", confirmLabel: "Delete" })) return; setTransactions(p => p.filter(t => t.id !== id)); };
   const convertFuture = id => setTransactions(p => p.map(t => t.id === id ? { ...t, type: "expense", date: toDateStr() } : t));
@@ -78,10 +83,14 @@ export default function BudgetTransactions({ config, transactions, setTransactio
   const balTone = (bal) => (bal < 0 ? " is-neg" : bal < startingBalance * 0.2 ? " is-low" : "");
 
   return (
+    <>
     <div className="money money-tab">
       {/* Header row */}
       <div className="money-toolbar">
-        <button type="button" className="btn" onClick={openNew}><i className="fa-solid fa-plus" aria-hidden="true" /> Log transaction</button>
+        <div className="money-toolbar-actions">
+          <button type="button" className="btn" onClick={openNew}><i className="fa-solid fa-plus" aria-hidden="true" /> Log transaction</button>
+          {actions}
+        </div>
         <div className="segmented" role="group" aria-label="View">
           <button type="button" aria-pressed={viewMode === "transactions"} onClick={() => setViewMode("transactions")} className={`segmented-opt${viewMode === "transactions" ? " active" : ""}`}>
             Transactions
@@ -91,50 +100,6 @@ export default function BudgetTransactions({ config, transactions, setTransactio
           </button>
         </div>
       </div>
-
-      {showForm && (
-        <div className="db-card tx-form">
-          <div className="db-card-header">
-            <h3 className="db-card-title">{editId ? "Edit transaction" : "Log transaction"}</h3>
-            <button type="button" onClick={() => setShowForm(false)} className="icon-x" aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-          </div>
-          <div className="segmented tx-type" role="radiogroup" aria-label="Type">
-            {["expense", "income", "savings"].map(t => (
-              // Savings is money set aside (a transfer) and pre-fills the Savings category.
-              <button key={t} type="button" role="radio" aria-checked={form.type === t}
-                onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
-                className={`segmented-opt${form.type === t ? " active" : ""}`}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
-          <div className="tx-form-grid">
-            <input className="is-wide" placeholder="Description" aria-label="Description" value={form.description} onChange={setField("description")} />
-            <input type="number" placeholder="Amount" aria-label="Amount" value={form.amount} onChange={setField("amount")} />
-            <DatePicker value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
-            <label className="money-field is-wide">
-              <span className="field-label">Category (Groceries, Gas…)</span>
-              <select value={form.category} onChange={setField("category")}>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </label>
-            {form.type === "expense" && recurringBills.length > 0 && (
-              <label className="money-field is-wide">
-                <span className="field-label">Pays a bill? (Phone, Rent…)</span>
-                <select value={form.fulfills_recurring_id} onChange={e => pickBill(e.target.value)}>
-                  <option value="">— Not a bill —</option>
-                  {recurringBills.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </label>
-            )}
-            <input className="is-wide" placeholder="Notes (optional)" aria-label="Notes" value={form.notes} onChange={setField("notes")} />
-          </div>
-          <div className="form-actions">
-            <button type="button" className="btn" onClick={save}>Save</button>
-            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-          </div>
-        </div>
-      )}
 
       {/* ── LEDGER VIEW ── */}
       {viewMode === "ledger" && (
@@ -282,5 +247,55 @@ export default function BudgetTransactions({ config, transactions, setTransactio
       )}
       {dialog}
     </div>
+
+    {/* Rendered outside .money: that element is a size container. */}
+    {showForm && (
+      <FormModal
+        title={editId ? "Edit transaction" : "Log transaction"}
+        submitLabel={editId ? "Save changes" : "Log transaction"}
+        onClose={closeForm}
+        onSubmit={save}
+      >
+        <div className="segmented tx-type" role="radiogroup" aria-label="Type">
+          {["expense", "income", "savings"].map(t => (
+            // Savings is money set aside (a transfer) and pre-fills the Savings category.
+            <button key={t} type="button" role="radio" aria-checked={form.type === t}
+              onClick={() => setForm(f => ({ ...f, type: t, ...(t === "savings" ? { category: "Savings" } : {}) }))}
+              className={`segmented-opt${form.type === t ? " active" : ""}`}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </div>
+        <Field label="Description">
+          <input data-autofocus placeholder="e.g. Sobeys" value={form.description} onChange={setField("description")} />
+        </Field>
+        <div className="money-form-row">
+          <Field label="Amount">
+            <input type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={form.amount} onChange={setField("amount")} />
+          </Field>
+          <div className="uik-field">
+            <span className="field-label">Date</span>
+            <DatePicker value={form.date} onChange={(v) => setForm(f => ({ ...f, date: v }))} />
+          </div>
+        </div>
+        <Field label="Category">
+          <select value={form.category} onChange={setField("category")}>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </Field>
+        {form.type === "expense" && recurringBills.length > 0 && (
+          <Field label="Pays a bill?" hint="Linking a bill marks it paid on the Overview and uses its category.">
+            <select value={form.fulfills_recurring_id} onChange={e => pickBill(e.target.value)}>
+              <option value="">— Not a bill —</option>
+              {recurringBills.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </Field>
+        )}
+        <Field label="Notes (optional)">
+          <input value={form.notes} onChange={setField("notes")} />
+        </Field>
+      </FormModal>
+    )}
+    </>
   );
 }

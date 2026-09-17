@@ -8,6 +8,7 @@ import {
 import { extractReceipt, fileToBase64 } from "../../api/aiReceipt";
 import "./grocery.css";
 import DatePicker from "../../components/DatePicker";
+import { FormModal, Field } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 
 const money = (n) => `$${(Number(n) || 0).toFixed(2)}`;
@@ -27,7 +28,7 @@ export default function GroceryPage() {
   const [extracting, setExtracting] = useState(false);
   const [draft, setDraft] = useState(null); // { store_name, purchase_date, subtotal, total, items:[] }
   const [addToBudget, setAddToBudget] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [formOpen, setFormOpen] = useState(false); // the scan/edit modal
   const [editingId, setEditingId] = useState(null); // receipt.id when the form edits an existing receipt
 
   // Receipt detail (expanded)
@@ -91,6 +92,7 @@ export default function GroceryPage() {
   const removeRow = (i) => setDraft((d) => ({ ...d, items: d.items.filter((_, idx) => idx !== i) }));
 
   function resetForm() {
+    setFormOpen(false);
     setEditingId(null);
     setFile(null);
     if (preview) URL.revokeObjectURL(preview);
@@ -98,11 +100,11 @@ export default function GroceryPage() {
     setDraft(null);
   }
 
+  // Called by the FormModal: a thrown error stays in the modal with the draft intact.
   async function save() {
-    if (!draft) return;
+    if (!draft) throw new Error("Read a receipt photo first.");
     const total = Number(draft.total) || 0;
-    if (!total) { addToast("Enter the receipt total", "error"); return; }
-    setSaving(true);
+    if (!total) throw new Error("Enter the receipt total.");
     try {
       const store_id = draft.store_name?.trim() ? await findOrCreateStore(draft.store_name) : null;
       const purchase_date = draft.purchase_date || toDateStr(new Date());
@@ -122,9 +124,8 @@ export default function GroceryPage() {
         await updateReceipt(editingId, header, rows);
         addToast("Receipt updated", "success");
         if (openId === editingId) { try { setOpenItems(await loadReceiptItems(editingId)); } catch { /* noop */ } }
-        resetForm();
         refresh();
-        return;
+        return; // the modal closes and resets the form
       }
       const receipt = await saveReceipt(header, rows);
       if (file) { try { await uploadReceiptImage(file, receipt.id); } catch { /* image optional */ } }
@@ -134,12 +135,9 @@ export default function GroceryPage() {
         } catch { addToast("Saved, but couldn't post to budget", "error"); }
       }
       addToast("Receipt saved", "success");
-      resetForm();
       refresh();
     } catch (err) {
-      addToast(err.message || "Could not save the receipt", "error");
-    } finally {
-      setSaving(false);
+      throw new Error(`Couldn't save the receipt: ${err?.message || err}`, { cause: err });
     }
   }
 
@@ -172,7 +170,12 @@ export default function GroceryPage() {
         total_price: it.total_price ?? "",
       })),
     });
-    document.querySelector(".grocery-page .db-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setFormOpen(true);
+  }
+
+  function openScan() {
+    resetForm();
+    setFormOpen(true);
   }
 
   async function removeReceipt(id) {
@@ -187,15 +190,19 @@ export default function GroceryPage() {
     <div className="grocery-page">
       {dialog}
 
-      {/* ── Upload + review ── */}
-      <div className="db-card">
-        <div className="db-card-header">
-          <h3 className="db-card-title"><i className={`fa-solid ${editingId ? "fa-pen" : "fa-camera"}`} aria-hidden="true" /> {editingId ? "Edit receipt" : "Scan a receipt"}</h3>
-        </div>
-
+      {/* ── Scan / edit: one modal (DR-019) ── */}
+      {formOpen && (
+      <FormModal
+        title={editingId ? "Edit receipt" : "Scan a receipt"}
+        width={640}
+        submitLabel={editingId ? "Save changes" : "Save receipt"}
+        submitDisabled={!draft || extracting}
+        onClose={resetForm}
+        onSubmit={save}
+      >
         {!draft && (
           <div className="grocery-upload">
-            {!preview && <p className="money-card-note grocery-intro">Snap or upload a photo of a grocery receipt and AI will pull out the items and total.</p>}
+            {!preview && <p className="money-card-note grocery-intro">Choose a photo of the receipt, then let AI read it. You can check and fix every line before saving.</p>}
             <label className={`grocery-pick ${preview ? "btn-sm btn-secondary-sm" : "btn btn-sm"}`}>
               <i className="fa-solid fa-image" aria-hidden="true" /> {file ? "Choose a different photo" : "Choose receipt photo"}
               <input type="file" accept="image/*" capture="environment" onChange={pickFile} className="visually-hidden" />
@@ -217,18 +224,18 @@ export default function GroceryPage() {
           <div className="grocery-review" key={editingId || "new"}>
             {editingId && <p className="grocery-edit-note">Editing a saved receipt — changes replace its store, date, totals and item lines. Budget transactions are not touched.</p>}
             <div className="grocery-review-grid">
-              <label className="money-field"><span className="field-label">Store</span>
-                <input value={draft.store_name} onChange={(e) => setField("store_name", e.target.value)} placeholder="Store name" />
-              </label>
-              <div className="money-field"><span className="field-label">Date</span>
+              <Field label="Store">
+                <input data-autofocus value={draft.store_name} onChange={(e) => setField("store_name", e.target.value)} placeholder="Store name" />
+              </Field>
+              <div className="uik-field"><span className="field-label">Date</span>
                 <DatePicker value={draft.purchase_date} onChange={(v) => setField("purchase_date", v)} />
               </div>
-              <label className="money-field"><span className="field-label">Subtotal</span>
-                <input type="number" step="0.01" value={draft.subtotal} onChange={(e) => setField("subtotal", e.target.value)} placeholder="—" />
-              </label>
-              <label className="money-field"><span className="field-label">Total</span>
-                <input type="number" step="0.01" value={draft.total} onChange={(e) => setField("total", e.target.value)} placeholder="0.00" />
-              </label>
+              <Field label="Subtotal">
+                <input type="number" inputMode="decimal" step="0.01" value={draft.subtotal} onChange={(e) => setField("subtotal", e.target.value)} placeholder="—" />
+              </Field>
+              <Field label="Total">
+                <input type="number" inputMode="decimal" step="0.01" value={draft.total} onChange={(e) => setField("total", e.target.value)} placeholder="0.00" />
+              </Field>
             </div>
 
             <div className="grocery-items">
@@ -261,23 +268,23 @@ export default function GroceryPage() {
                 Add {money(draft.total || 0)} to the budget as a Groceries expense
               </label>
             )}
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-sm" onClick={save} disabled={saving}>
-                {saving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" aria-hidden="true" /> {editingId ? "Save changes" : "Save receipt"}</>}
-              </button>
-              <button type="button" className="btn-sm btn-secondary-sm" onClick={resetForm} disabled={saving}>Cancel</button>
-            </div>
           </div>
         )}
-      </div>
+      </FormModal>
+      )}
 
       {/* ── History ── */}
       <div className="db-card">
         <div className="db-card-header">
-          <h3 className="db-card-title"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Recent receipts</h3>
-          {!loading && !loadError && <span className="money-bills-count">{receipts.length} receipt{receipts.length === 1 ? "" : "s"}</span>}
+          <h3 className="db-card-title">
+            Receipts
+            {!loading && !loadError && <span className="db-count" aria-label={`${receipts.length} receipts`}>{receipts.length}</span>}
+          </h3>
+          <button type="button" className="btn btn-sm" onClick={openScan}>
+            <i className="fa-solid fa-camera" aria-hidden="true" /> Scan a receipt
+          </button>
         </div>
+        <p className="money-card-note">Snap or upload a photo of a grocery receipt and AI pulls out the items and total.</p>
         {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
         {!loading && loadError && (
           <div className="load-error" role="alert">
@@ -285,7 +292,7 @@ export default function GroceryPage() {
             <button type="button" className="btn btn-sm" onClick={refresh}>Retry</button>
           </div>
         )}
-        {!loading && !loadError && receipts.length === 0 && <p className="money-card-note">No receipts yet. Scan one above.</p>}
+        {!loading && !loadError && receipts.length === 0 && <p className="money-card-note">No receipts yet.</p>}
         <div className="grocery-list">
           {receipts.map((r) => (
             <div className={`grocery-receipt${openId === r.id ? " open" : ""}`} key={r.id}>

@@ -355,19 +355,19 @@ export default function BudgetPage() {
           )}
           {tab === "receipts" && <GroceryPage />}
           {tab === "transactions" && (
-            <StatementImport
-              transactions={transactions}
-              setTransactions={setTransactions}
-              categories={config.categories || []}
-              onSetBalance={(b) => setStartingBalance(b)}
-            />
-          )}
-          {tab === "transactions" && (
             <BudgetTransactions
               config={config}
               transactions={transactions}
               setTransactions={setTransactions}
               startingBalance={startingBalance}
+              actions={
+                <StatementImport
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  categories={config.categories || []}
+                  onSetBalance={(b) => setStartingBalance(b)}
+                />
+              }
             />
           )}
           {tab === "tools" && (
@@ -383,7 +383,6 @@ export default function BudgetPage() {
               config={config}
               setConfig={setConfig}
               transactions={transactions}
-              setTransactions={setTransactions}
               startingBalance={startingBalance}
               setStartingBalance={setStartingBalance}
               onFreshStart={handleFreshStart}

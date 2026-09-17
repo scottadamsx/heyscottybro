@@ -2,7 +2,9 @@
    system (DR-013). Tokens only. Embedded under Money, so no page title here. ── */
 .grocery-page { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
 
-/* Upload */
+.grocery-page .db-card-title .db-count { margin-left: var(--space-xs); vertical-align: 2px; }
+
+/* Scan / edit modal (DR-019) — upload step */
 .grocery-upload { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
 .grocery-intro { margin: 0; }
 .grocery-pick { cursor: pointer; }
