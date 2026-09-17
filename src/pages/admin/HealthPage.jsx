@@ -12,6 +12,7 @@ import { BuildWithAIModal, PlanEditorModal } from "../../components/health/Worko
 import * as api from "../../api/healthApi";
 import { coachTake } from "../../api/aiHealth";
 import { buildInsights, dailyCalories, exerciseProgress, weekStart, weeklyVolume } from "../../utils/healthInsights";
+import { suggestNext } from "../../utils/overload";
 import { toDateStr } from "../../utils/dates";
 import { addDaysStr, formatDisplayDate } from "../../utils/plannerUtils";
 import "./health.css";
@@ -173,8 +174,19 @@ export default function HealthPage() {
                       <h4>{p.name}</h4>
                       {p.source === "ai" && <span className="health-tag">AI</span>}
                     </div>
-                    <p className="plan-card-list">{p.exercises.map((e) => e.name).join(" · ")}</p>
-                    <p className="plan-card-meta">{p.exercises.length} exercises · {p.exercises.reduce((a, e) => a + e.sets, 0)} sets</p>
+                    <ul className="plan-card-lifts">
+                      {p.exercises.map((e) => {
+                        const next = suggestNext({ history: data.history, exercise: e.name, target: e });
+                        return (
+                          <li key={e.name}>
+                            <span className="plan-lift-name">{e.name}</span>
+                            <span className="plan-lift-target">{e.sets} × {e.repMin === e.repMax ? e.repMin : `${e.repMin}–${e.repMax}`}</span>
+                            <span className="plan-lift-weight">{next.weightLb == null ? "—" : `${next.weightLb} lb`}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="plan-card-meta">{p.exercises.length} exercises · {p.exercises.reduce((a, e) => a + e.sets, 0)} sets · weights from your history</p>
                     <div className="plan-card-actions">
                       <button type="button" className="btn btn-primary btn-sm" onClick={() => startWorkout(p)} disabled={starting || Boolean(openSession)}>
                         <i className="fa-solid fa-play" aria-hidden="true" /> Start

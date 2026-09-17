@@ -7,6 +7,7 @@ import { AddExerciseModal, LogSetModal } from "../../components/health/WorkoutMo
 import * as api from "../../api/healthApi";
 import { onDataChange } from "../../utils/dataEvents";
 import { DEFAULT_TARGET, e1rm, prefillSet, sameExercise, sessionsFor, suggestNext } from "../../utils/overload";
+import { loadHint } from "../../utils/plates";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import { toDateStr } from "../../utils/dates";
 import "./health.css";
@@ -25,6 +26,11 @@ const clock = (sec) => {
 };
 const fmt = (n) => Math.round(n).toLocaleString();
 const setLabel = (s) => `${s.weightLb} × ${s.reps}`;
+/** "+47.5 a side" next to a logged barbell set. */
+const perSideText = (totalLb, ex) => {
+  const side = (Number(totalLb) - (Number(ex.barLb) || 45)) / 2;
+  return side > 0 ? `+${Math.round(side * 100) / 100}/side` : "";
+};
 
 export default function WorkoutSessionPage() {
   const { id } = useParams();
@@ -179,6 +185,7 @@ export default function WorkoutSessionPage() {
               {live && (
                 <p className={`exercise-suggest kind-${suggestion.kind}`}>
                   <strong>{suggestion.weightLb == null ? "Pick a weight" : `${suggestion.weightLb} lb × ${suggestion.reps}`}</strong>
+                  {loadHint(suggestion.weightLb, ex) && <span className="load-hint">{loadHint(suggestion.weightLb, ex)}</span>}
                   <span>{suggestion.reason}</span>
                 </p>
               )}
@@ -191,6 +198,7 @@ export default function WorkoutSessionPage() {
                       <button type="button" className="set-row" onClick={() => setModal({ type: "edit", item, set: s })} aria-label={`Edit set ${s.setNumber} of ${ex.name}`}>
                         <span className="set-num">{s.setNumber}</span>
                         <span className="set-main tabular">{s.weightLb} lb × {s.reps}</span>
+                        {ex.barbell && <span className="set-side tabular">{perSideText(s.weightLb, ex)}</span>}
                         {s.rpe != null && <span className="set-rpe">RPE {s.rpe}</span>}
                         {prs.has(s.id) && <span className="health-tag tone-good">New best</span>}
                         <span className="set-e1rm tabular">{e1rm(s.weightLb, s.reps) || "—"}</span>
@@ -228,6 +236,7 @@ export default function WorkoutSessionPage() {
         <LogSetModal
           exercise={modal.item.ex.name}
           prefill={modal.item.prefill}
+          bar={modal.item.ex}
           reason={modal.item.done.length === 0 ? modal.item.suggestion.reason : null}
           onClose={() => setModal(null)}
           onSave={(values) => logSet(modal.item, values)}
@@ -237,6 +246,7 @@ export default function WorkoutSessionPage() {
         <LogSetModal
           exercise={modal.item.ex.name}
           prefill={{ setNumber: modal.set.setNumber, weightLb: modal.set.weightLb, reps: modal.set.reps }}
+          bar={modal.item.ex}
           editing={modal.set}
           onClose={() => setModal(null)}
           onSave={(values) => api.updateSet(modal.set.id, { exercise: modal.set.exercise, setNumber: modal.set.setNumber, ...values })}

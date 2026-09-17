@@ -7,6 +7,7 @@ import { emitDataChange } from "../utils/dataEvents";
 import { toDateStr } from "../utils/dates";
 import { kgToLb, lbToKg } from "../utils/healthInsights";
 import { DEFAULT_TARGET } from "../utils/overload";
+import { DEFAULT_BAR_LB } from "../utils/plates";
 
 const fail = (what, error) => {
   throw new Error(`Couldn't ${what}: ${error.message}`, { cause: error });
@@ -154,6 +155,12 @@ export function cleanExercises(list) {
     if (!(restSec >= 0 && restSec <= 900)) throw new Error(`${name}: rest must be 0–900 seconds.`);
     const row = { name, sets, repMin, repMax, restSec, note: String(e.note || "").slice(0, 300) };
     if (Number(e.startWeightLb) > 0) row.startWeightLb = Number(e.startWeightLb);
+    if (e.barbell) {
+      const bar = Math.round(Number(e.barLb ?? DEFAULT_BAR_LB));
+      if (!(bar >= 5 && bar <= 100)) throw new Error(`${name}: the bar must weigh 5–100 lb.`);
+      row.barbell = true;
+      row.barLb = bar;
+    }
     return row;
   });
   if (!out.length) throw new Error("Add at least one exercise.");

@@ -3,8 +3,9 @@ import { FormModal, Field } from "../ui";
 import { buildWorkout } from "../../api/aiHealth";
 import { cleanExercises } from "../../api/healthApi";
 import { DEFAULT_TARGET } from "../../utils/overload";
+import { DEFAULT_BAR_LB, loadHint } from "../../utils/plates";
 
-const blankExercise = () => ({ name: "", sets: DEFAULT_TARGET.sets, repMin: DEFAULT_TARGET.repMin, repMax: DEFAULT_TARGET.repMax, restSec: DEFAULT_TARGET.restSec, note: "" });
+const blankExercise = () => ({ name: "", sets: DEFAULT_TARGET.sets, repMin: DEFAULT_TARGET.repMin, repMax: DEFAULT_TARGET.repMax, restSec: DEFAULT_TARGET.restSec, startWeightLb: "", barbell: false, barLb: DEFAULT_BAR_LB, note: "" });
 
 /** A datalist of every exercise name you've used, so names stay consistent (history matches by name). */
 export function ExerciseNames({ id, names }) {
@@ -72,7 +73,11 @@ export function PlanEditorModal({ initial, knownNames = [], onClose, onSave }) {
               <Field label="Reps from"><input type="number" min="1" max="100" inputMode="numeric" value={r.repMin} onChange={(e) => update(i, "repMin", e.target.value)} /></Field>
               <Field label="to"><input type="number" min="1" max="100" inputMode="numeric" value={r.repMax} onChange={(e) => update(i, "repMax", e.target.value)} /></Field>
               <Field label="Rest (s)"><input type="number" min="0" max="900" step="15" inputMode="numeric" value={r.restSec} onChange={(e) => update(i, "restSec", e.target.value)} /></Field>
+              <Field label="Weight (lb)" hint="Optional — only used the first time; after that your history sets it.">
+                <input type="number" min="0" max="2000" step="2.5" inputMode="decimal" value={r.startWeightLb ?? ""} onChange={(e) => update(i, "startWeightLb", e.target.value)} placeholder="—" />
+              </Field>
             </div>
+            <BarbellRow row={r} onChange={(k, v) => update(i, k, v)} />
             {r.note ? <p className="field-hint">{r.note}</p> : null}
           </div>
         ))}
@@ -122,8 +127,32 @@ export function AddExerciseModal({ knownNames = [], onClose, onSave }) {
         <Field label="Reps from"><input type="number" min="1" max="100" inputMode="numeric" value={r.repMin} onChange={set("repMin")} /></Field>
         <Field label="to"><input type="number" min="1" max="100" inputMode="numeric" value={r.repMax} onChange={set("repMax")} /></Field>
         <Field label="Rest (s)"><input type="number" min="0" max="900" step="15" inputMode="numeric" value={r.restSec} onChange={set("restSec")} /></Field>
+        <Field label="Weight (lb)" hint="Optional — your history takes over next time.">
+          <input type="number" min="0" max="2000" step="2.5" inputMode="decimal" value={r.startWeightLb} onChange={set("startWeightLb")} placeholder="—" />
+        </Field>
       </div>
+      <BarbellRow row={r} onChange={(k, v) => setR((x) => ({ ...x, [k]: v }))} />
     </FormModal>
+  );
+}
+
+/** "It's a barbell" — weights are still stored as the total; the app shows what goes on each side. */
+function BarbellRow({ row, onChange }) {
+  const hint = loadHint(Number(row.startWeightLb), { barbell: row.barbell, barLb: Number(row.barLb) || DEFAULT_BAR_LB });
+  return (
+    <div className="barbell-row">
+      <label className="barbell-check">
+        <input type="checkbox" checked={Boolean(row.barbell)} onChange={(e) => onChange("barbell", e.target.checked)} />
+        <span>Barbell — show plates a side</span>
+      </label>
+      {row.barbell && (
+        <label className="barbell-bar">
+          <span className="field-label">Bar (lb)</span>
+          <input type="number" min="5" max="100" step="5" inputMode="numeric" value={row.barLb ?? DEFAULT_BAR_LB} onChange={(e) => onChange("barLb", e.target.value)} />
+        </label>
+      )}
+      {hint && <span className="field-hint">{hint}</span>}
+    </div>
   );
 }
 
@@ -147,12 +176,13 @@ function Stepper({ label, value, onChange, step, min = 0, suffix, inputMode = "d
 /**
  * Log (or edit) one set. prefill: { setNumber, weightLb, reps }; reason: why this weight.
  */
-export function LogSetModal({ exercise, prefill, reason, editing, onClose, onSave, onDelete }) {
+export function LogSetModal({ exercise, prefill, reason, editing, bar, onClose, onSave, onDelete }) {
   const [weight, setWeight] = useState(prefill?.weightLb == null ? "" : String(prefill.weightLb));
   const [reps, setReps] = useState(String(prefill?.reps ?? ""));
   const [rpe, setRpe] = useState(editing?.rpe == null ? "" : String(editing.rpe));
   const w = Number(weight);
-  const step = w >= 20 || weight === "" ? 5 : 2.5;
+  const step = bar?.barbell || w >= 20 || weight === "" ? 5 : 2.5;
+  const hint = loadHint(w, bar);
   return (
     <FormModal
       title={`${exercise} · set ${prefill?.setNumber ?? 1}`}
@@ -164,7 +194,7 @@ export function LogSetModal({ exercise, prefill, reason, editing, onClose, onSav
     >
       {reason && <p className="set-reason"><i className="fa-solid fa-arrow-trend-up" aria-hidden="true" /> {reason}</p>}
       <div className="set-steppers">
-        <Stepper label="Weight" value={weight} onChange={setWeight} step={step} suffix="lb" />
+        <Stepper label="Weight" value={weight} onChange={setWeight} step={step} suffix={hint || "lb"} />
         <Stepper label="Reps" value={reps} onChange={setReps} step={1} inputMode="numeric" />
       </div>
       <Field label="How hard? RPE 1–10 (optional)" hint="10 = nothing left, 8 = two reps left in the tank.">

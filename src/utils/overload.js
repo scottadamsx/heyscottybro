@@ -7,6 +7,8 @@
 // history: [{ sessionId, startedAt (ISO), exercise, setNumber, reps, weightLb }]
 // target:  { sets, repMin, repMax } (a plan's exercise; defaults below)
 
+import { loadableTotal } from "./plates.js";
+
 export const DEFAULT_TARGET = { sets: 3, repMin: 8, repMax: 12, restSec: 90 };
 const DELOAD = 0.9;
 
@@ -20,6 +22,9 @@ export function increment(weightLb) {
 
 /** Round to the nearest 2.5 lb (what the gym actually has). */
 export const roundLb = (w) => Math.max(0, Math.round(w / 2.5) * 2.5);
+
+/** On a barbell the plates come in pairs, so totals move in 5 lb steps from the bar. */
+const roundFor = (w, t) => (t?.barbell ? loadableTotal(w, t.barLb) : roundLb(w));
 
 /** Estimated one-rep max (Epley). 0 reps = nothing lifted. */
 export function e1rm(weightLb, reps) {
@@ -58,7 +63,7 @@ export function suggestNext({ history, exercise, target = {}, excludeSessionId }
   if (!past.length) {
     return {
       kind: "first",
-      weightLb: t.startWeightLb > 0 ? roundLb(t.startWeightLb) : null,
+      weightLb: t.startWeightLb > 0 ? roundFor(t.startWeightLb, t) : null,
       reps: t.repMin,
       reason: `First time — pick a weight you can lift for ${t.repMin}–${t.repMax} clean reps.`,
     };
@@ -73,7 +78,7 @@ export function suggestNext({ history, exercise, target = {}, excludeSessionId }
   const stalled = recent.length === 3
     && recent.every((p) => topWeight(p.sets) === w && atTop(p.sets).some((s) => s.reps < t.repMin));
   if (stalled && w > 0) {
-    const down = roundLb(w * DELOAD);
+    const down = roundFor(w * DELOAD, t);
     return {
       kind: "deload",
       weightLb: down,
@@ -84,7 +89,7 @@ export function suggestNext({ history, exercise, target = {}, excludeSessionId }
 
   const hitTop = top.length >= need && top.length >= Math.min(t.sets, last.sets.length) && top.every((s) => s.reps >= t.repMax);
   if (hitTop && w > 0) {
-    const up = roundLb(w + increment(w));
+    const up = roundFor(w + increment(w), t);
     return {
       kind: "increase",
       weightLb: up,
