@@ -1,7 +1,7 @@
 # heyScottyBro — implementer rules
 
-Scott's personal command centre: seven spaces (Today · Plan · Money · School ·
-Life · Mission Control · Vault), a Fellowship of AI agents that can read and
+Scott's personal command centre: eight spaces (Today · Plan · Money · School ·
+Life · People · Mission Control · Vault), a Fellowship of AI agents that can read and
 write every collection, on React 18 + Vite + Supabase + Vercel.
 
 Orientation: `MASTERPLAN.md` is the architecture and IA of record. `ledger.jsonl`
@@ -80,6 +80,21 @@ options: <a> | <b>
 recommendation: <a, because ...>
 blocked-task: <T-x>
 ```
+
+## People space = Orbit (DR-017)
+
+`orbit/` is a **read-only copy** of the Orbit repo (`~/Documents/GitHub/orbit`),
+made by `npm run sync-orbit`. Never edit it here: change Orbit in its own repo
+(its own ledger and tests), commit, then re-sync. Orbit renders in a shadow root
+(`src/pages/admin/PeoplePage.jsx`; theme mapping in `people-orbit.css`), and its API
+is `api/orbit.js` (rows `orbit_people` / `orbit_events` / `orbit_settings`, one
+`orbit_apply` call per request, caller's session + RLS). The local Orbit app uses
+the same rows. Agents read people through the Library (`people`,
+`people_events`) and never write them directly.
+
+Vercel Hobby allows **12 functions**, and every non-underscore `.js` in `api/`
+counts (tests too — keep them out of `api/`). `api/` is at 12, so a new
+endpoint must replace one or be folded into an existing handler.
 
 ## Conventions digest
 

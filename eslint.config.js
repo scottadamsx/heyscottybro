@@ -32,7 +32,7 @@ const NODE_FILES = ['api/**/*.js', 'vite.config.js', '**/*.test.js']
 const SW_FILES = ['public/sw.js']
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'orbit']), // orbit/ is a copy of the Orbit repo (scripts/sync-orbit.mjs)
 
   // Browser: the React app and the static arcade games.
   {

@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   // Dev-only stand-in for the Vercel serverless proxy (api/_utils.js):
-  // forwards /api/chat and /api/briefing straight to Anthropic with the key
+  // forwards /api/chat straight to Anthropic with the key
   // from .env, so the chat features work under `vite dev`.
   const anthropicProxy = {
     target: "https://api.anthropic.com",
@@ -203,6 +203,23 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Dev-only stand-in for api/orbit.js (the People space). Runs the same Orbit app in-process,
+  // so dev uses the real Supabase rows and the signed-in session, like production.
+  const devOrbitPlugin = {
+    name: "dev-api-orbit",
+    configureServer(server) {
+      server.middlewares.use("/api/orbit", (req, res) => {
+        for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "ORBIT_OWNER_NAME", "VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY"]) {
+          if (!process.env[k] && env[k]) process.env[k] = env[k];
+        }
+        req.url = req.originalUrl; // connect strips the mount path; Orbit's router expects it
+        import("./api/orbit.js")
+          .then((m) => m.default(req, res))
+          .catch((e) => { res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ ok: false, code: "server", message: e.message })); });
+      });
+    },
+  };
+
   // Dev-only: turn the Aulë coding agent on/off from the Command Center. The
   // browser can't spawn a process, but the Vite dev server (Node, on the Mac)
   // can — so this starts `npm run agents` as a detached child. Not present in
@@ -244,7 +261,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devAuleControlPlugin],
+    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devOrbitPlugin, devAuleControlPlugin],
     // One React, always. The Brain's 3D graph is lazy-loaded, so Vite's dev
     // pre-bundler used to discover it late and bundle it against a second
     // React copy — "Cannot read properties of null (reading 'useRef')" on
@@ -263,13 +280,13 @@ export default defineConfig(({ mode }) => {
             if (id.includes("@supabase/supabase-js")) return "vendor-supabase";
             if (id.includes("react-router") || id.includes("@remix-run")) return "vendor-router";
             if (id.includes("@anthropic-ai/claude-agent-sdk")) return "vendor-agent-sdk";
+            if (id.includes("lucide-react")) return "vendor-icons";
           },
         },
       },
     },
     server: {
       proxy: {
-        "/api/briefing": anthropicProxy,
         "/api/chat": anthropicProxy,
       },
     },

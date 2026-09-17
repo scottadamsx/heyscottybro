@@ -8,14 +8,18 @@
     "build": "vite build",
     "preview": "vite preview",
     "agents": "node agent-server/server.mjs",
-    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js src/utils/reschedule.test.js",
-    "lint": "eslint . --max-warnings=0"
+    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js src/utils/reschedule.test.js scripts/orbit-route.test.js",
+    "lint": "eslint . --max-warnings=0",
+    "sync-orbit": "node scripts/sync-orbit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.177",
+    "@anthropic-ai/sdk": "^0.126.0",
     "@supabase/supabase-js": "^2.99.2",
+    "express": "^4.22.3",
     "framer-motion": "^12.40.0",
     "jszip": "^3.10.1",
+    "lucide-react": "^1.47.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-force-graph-3d": "^1.29.1",

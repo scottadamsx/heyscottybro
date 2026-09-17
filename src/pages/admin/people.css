@@ -1,0 +1,7 @@
+/* People space (DR-017). Orbit renders inside .people-host's shadow root and brings its own
+   styles (see people-orbit.css); this file only covers what lives outside that root. */
+
+.admin-shell .people-host { display: block; min-width: 0; }
+
+/* Orbit's dialogs lock page scrolling by putting this class on <body>. */
+body.no-scroll { overflow: hidden; }

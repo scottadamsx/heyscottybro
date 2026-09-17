@@ -34,6 +34,7 @@ import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./work
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
+import { loadPeople, loadPeopleEvents } from "./peopleApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
@@ -353,6 +354,38 @@ const COLLECTIONS = {
       feedback: { type: "string", long: true },
     },
     load: loadGrades,
+  },
+  // No `table`: the People space (Orbit) keeps each record as a jsonb doc and owns every
+  // write (validation, duplicate checks, cascades) through /api/orbit — so read-only here.
+  people: {
+    description: "People Scott knows (People space, the Orbit CRM) — read-only. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them; open_items = to-dos and gift ideas. To add or change someone, tell Scott to use People › Interview me (it saves as he talks).",
+    searchFields: ["name", "how", "notes", "facts", "open_items"],
+    defaultFields: ["id", "name", "group", "how", "birthday"],
+    fields: {
+      name: { type: "string" },
+      group: { type: "enum", values: ["partner", "family", "friends", "sjhc", "sjlc", "carrick", "school", "other"] },
+      how: { type: "string" },
+      birthday: { type: "string", description: "YYYY-MM-DD, or MM-DD with no year" },
+      notes: { type: "string", long: true },
+      facts: { type: "string", long: true },
+      open_items: { type: "string", long: true },
+    },
+    load: loadPeople,
+  },
+  people_events: {
+    description: "Time Scott spent with people (People space): hangouts, calls, texts, plans — read-only. people = names of who was there; status done, planned or skipped.",
+    dateField: "date",
+    searchFields: ["title", "kind", "people", "notes"],
+    defaultFields: ["id", "date", "title", "kind", "people", "status"],
+    fields: {
+      date: { type: "date" },
+      title: { type: "string" },
+      kind: { type: "string" },
+      status: { type: "enum", values: ["done", "planned", "skipped"] },
+      people: { type: "string" },
+      notes: { type: "string", long: true },
+    },
+    load: loadPeopleEvents,
   },
   documents: {
     table: "documents",

@@ -19,6 +19,7 @@ const COMMANDS = [
   { label: "Life",            to: "/admin/life",                     icon: "fa-heart-pulse",      section: "Life" },
   { label: "Journal",         to: "/admin/life?tab=journal",         icon: "fa-book",             section: "Life" },
   { label: "Habits",          to: "/admin/life?tab=habits",          icon: "fa-fire",             section: "Life" },
+  { label: "People",          to: "/admin/people",                   icon: "fa-user-group",       section: "People" },
   { label: "Arcade",          to: "/admin/life?tab=arcade",          icon: "fa-gamepad",          section: "Life" },
   { label: "Mission Control", to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Agents",          to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },

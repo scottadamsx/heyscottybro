@@ -1,0 +1,79 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   people-orbit.css: heyScottyBro's design, applied to Orbit inside the People
+   space (DR-017). Loaded into Orbit's shadow root after Orbit's own stylesheet,
+   so it only re-points Orbit's tokens and layout. It never styles the rest of
+   the admin. heyScottyBro tokens inherit into the shadow root. Tokens that
+   Orbit also defines under the same name (fonts, radii, shadows) are repeated
+   here with heyScottyBro's values.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:host(.people-host) {
+  --color-paper: var(--bg-base);
+  --color-surface: var(--bg-card);
+  --color-ink: var(--text-primary);
+  --color-ink-soft: var(--text-secondary);
+  --color-line: var(--border-subtle);
+  --color-brand-50: var(--bg-raised);
+  --color-brand-100: var(--accent-bg);
+  --color-brand-200: var(--border-accent);
+  --color-brand-400: var(--coral);
+  --color-brand-600: var(--accent);
+  --color-brand-700: var(--accent-hover);
+  --color-danger: var(--red);
+  --color-danger-dark: var(--red-deep);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--green);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-fg: var(--orange);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--red);
+  --color-neutral-bg: var(--bg-raised);
+  --color-neutral-fg: var(--text-secondary);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+  --shadow-floating: 0 12px 32px rgba(34, 30, 27, 0.10), 0 2px 6px rgba(34, 30, 27, 0.05);
+  --shadow-modal: 0 24px 64px rgba(34, 30, 27, 0.20), 0 4px 12px rgba(34, 30, 27, 0.06);
+  --font-display: "Roboto Slab", "Rockwell", "Georgia", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  display: block;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.43;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The admin page already provides the gutter and the width. */
+.app { max-width: none; margin: 0; padding: 0; }
+@media (max-width: 1120px) { .app { padding: 0; } }
+@media (max-width: 620px) { .app { padding: 0; } }
+.boot { min-height: 40vh; }
+
+/* Page title in the admin's voice: slab, 32/40 (24/32 on phones); no tracked caps label. */
+.header h1 {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.header .eyebrow { display: none; }
+@media (max-width: 640px) {
+  .header h1 { font-size: 1.5rem; line-height: 2rem; }
+}
+.eyebrow {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Dialogs and toasts sit above the admin's top bar and sidebar. */
+.backdrop { z-index: 1000; }
+.toasts { z-index: 1100; }

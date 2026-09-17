@@ -13,6 +13,7 @@ const SchoolPage      = lazy(() => import("./SchoolPage.jsx"));
 const LifePage        = lazy(() => import("./LifePage.jsx"));
 const SchoolDocPage   = lazy(() => import("./SchoolDocPage.jsx"));
 const ArcadePage      = lazy(() => import("./ArcadePage.jsx"));
+const PeoplePage      = lazy(() => import("./PeoplePage.jsx"));
 const MissionPage     = lazy(() => import("./MissionPage.jsx"));
 const BudgetPage      = lazy(() => import("./BudgetPage.jsx"));
 const VaultPage       = lazy(() => import("./VaultPage.jsx"));
@@ -39,6 +40,7 @@ export const ADMIN_PAGES = [
   { path: "school",       title: "School",          icon: "fa-graduation-cap",  element: <SchoolPage /> },
   { path: "school/doc/*", title: "School document", icon: "fa-file-lines",      element: <SchoolDocPage /> },
   { path: "life",         title: "Life",            icon: "fa-heart-pulse",     element: <LifePage /> },
+  { path: "people/*",     title: "People",          icon: "fa-user-group",      element: <PeoplePage /> },
   { path: "arcade",       title: "Arcade",          icon: "fa-gamepad",         element: <ArcadePage /> },
   { path: "mission",      title: "Mission Control", icon: "fa-satellite-dish",  element: <MissionPage /> },
   { path: "vault",        title: "Vault",           icon: "fa-vault",           element: <VaultPage /> },
