@@ -704,6 +704,7 @@
 .admin-shell .uik-modal-foot-extra { margin-right: auto; display: flex; gap: var(--space-xs); }
 .admin-shell .uik-form { display: flex; flex-direction: column; gap: var(--space-md); }
 .admin-shell .uik-field { display: flex; flex-direction: column; min-width: 0; }
+.admin-shell .uik-field-label { display: flex; flex-direction: column; min-width: 0; }
 .admin-shell .uik-field .field-label { margin-bottom: var(--space-2xs); }
 .admin-shell .uik-field .field-hint { margin-top: var(--space-2xs); }
 .admin-shell .uik-form .form-error { margin: 0; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--red); font-size: var(--text-sm); }
@@ -801,6 +802,8 @@ body.uik-modal-open { overflow: hidden; }
   .admin-shell .uik-modal-foot > .btn { flex: 1 1 auto; }
 }
 @media (max-width: 640px) { .toast-stack { top: auto; bottom: calc(var(--space-md) + env(safe-area-inset-bottom)); left: var(--space-md); right: var(--space-md); width: auto; } }
+/* A bottom sheet is open: toasts go to the top so they never cover its buttons. */
+@media (max-width: 640px) { body.uik-modal-open .toast-stack { top: calc(var(--space-md) + env(safe-area-inset-top, 0px)); bottom: auto; } }
 
 /* ── 9. States: empty, loading, error ────────────────────────────────────── */
 
@@ -943,9 +946,6 @@ body.uik-modal-open { overflow: hidden; }
 .admin-shell .auto-tasks-list > .form-card { margin: var(--space-2xs) 0; }
 .admin-shell .project-edit-form { margin-bottom: var(--space-md); }
 .admin-shell .tmp-pop { min-width: 260px; }
-.doc-card-edit { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-xs); }
-.doc-card-edit-actions { display: flex; gap: var(--space-xs); }
-.doc-card-edit-error { font-size: var(--text-xs); color: var(--red); }
 .doc-card-tags { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-top: var(--space-2xs); }
 .doc-card-tag { padding: 2px var(--space-xs); border-radius: var(--radius-full); background: var(--bg-raised); color: var(--text-secondary); font-size: var(--text-2xs); }
 .grocery-edit-note { margin: 0 0 var(--space-sm); font-size: var(--text-sm); color: var(--text-secondary); }

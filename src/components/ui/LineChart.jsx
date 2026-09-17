@@ -40,15 +40,25 @@ function monotonePath(pts) {
   return path;
 }
 
-export default function LineChart({ data, height = 192, format = String, ariaLabel, defaultIndex }) {
+/** zeroBased=false fits the axis to the data (e.g. body weight) instead of starting at 0. */
+export default function LineChart({ data, height = 192, format = String, ariaLabel, defaultIndex, zeroBased = true }) {
   const gradId = useId();
   const [active, setActive] = useState(null);
   if (!data?.length) return null;
 
-  const max = niceMax(Math.max(...data.map((p) => p.value)));
-  const ticks = [1, 0.75, 0.5, 0.25, 0].map((f) => f * max);
+  const hi = Math.max(...data.map((p) => p.value));
+  const lo = Math.min(...data.map((p) => p.value));
+  let min = 0;
+  let max = niceMax(hi);
+  if (!zeroBased) {
+    const step = niceMax(Math.max((hi - lo) / 4, 1));
+    min = Math.floor(lo / step) * step - (hi === lo ? step : 0);
+    max = Math.ceil(hi / step) * step + (hi === lo ? step : 0);
+    if (max === min) max = min + step;
+  }
+  const ticks = [1, 0.75, 0.5, 0.25, 0].map((f) => min + f * (max - min));
   const x = (i) => (data.length === 1 ? W / 2 : (i / (data.length - 1)) * W);
-  const y = (v) => height - (v / max) * height;
+  const y = (v) => height - ((v - min) / (max - min)) * height;
   const pts = data.map((p, i) => [x(i), y(p.value)]);
   const line = monotonePath(pts);
   const area = `${line} L${W},${height} L0,${height} Z`;

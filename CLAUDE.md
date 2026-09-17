@@ -1,7 +1,7 @@
 # heyScottyBro — implementer rules
 
-Scott's personal command centre: eight spaces (Today · Plan · Money · School ·
-Life · People · Mission Control · Vault), a Fellowship of AI agents that can read and
+Scott's personal command centre: nine spaces (Today · Plan · Money · School ·
+Life · Health · People · Mission Control · Vault), a Fellowship of AI agents that can read and
 write every collection, on React 18 + Vite + Supabase + Vercel.
 
 Orientation: `MASTERPLAN.md` is the architecture and IA of record. `ledger.jsonl`
@@ -80,6 +80,17 @@ options: <a> | <b>
 recommendation: <a, because ...>
 blocked-task: <T-x>
 ```
+
+## Health space = Achilles (DR-018)
+
+Food, body weight and workouts live at `/admin/health` (`HealthPage.jsx`,
+`WorkoutSessionPage.jsx`, `src/components/health/*`, `api/healthApi.js`,
+`api/aiHealth.js`). The lifting rules are pure and tested — `utils/overload.js`
+(what to lift next) and `utils/healthInsights.js` (what the numbers say); the AI
+coach is given those computed results and nothing else. Set weights are pounds
+(`weight_lb`), body weight is stored in kilograms (`weight_logs.weight_kg`) and
+shown in pounds. DR-015 moved these out to a separate app; DR-018 brought them
+back in.
 
 ## Forms live in modals (DR-019)
 

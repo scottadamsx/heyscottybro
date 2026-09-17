@@ -18,6 +18,7 @@ export const NAV_ITEMS = [
   { to: "/admin/finance",   icon: "fa-wallet",          label: "Money" },
   { to: "/admin/school",    icon: "fa-graduation-cap",  label: "School" },
   { to: "/admin/life",      icon: "fa-heart-pulse",     label: "Life" },
+  { to: "/admin/health",    icon: "fa-dumbbell",        label: "Health" },
   { to: "/admin/people",    icon: "fa-user-group",      label: "People" },
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },

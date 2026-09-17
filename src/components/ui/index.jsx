@@ -3,7 +3,7 @@
  * Token-driven (no hardcoded colors), className-driven (no inline style soup).
  * Import: `import { Card, StatTile, Badge, Modal, PageHeader } from "../../components/ui";`
  */
-import { useEffect, useId, useRef, useState } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState } from "react";
 import ExportKit from "./ExportKit";
 import "./ui.css";
 
@@ -56,7 +56,7 @@ export function Modal({ title, onClose, footer, width = 560, children, className
   const ref = useRef(null);
   const titleId = useId();
   const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
   useEffect(() => {
     const node = ref.current;
     const previous = document.activeElement;
@@ -101,14 +101,22 @@ export function Modal({ title, onClose, footer, width = 560, children, className
   );
 }
 
-/** A labelled field inside a FormModal: <Field label="Weight (lb)" hint="…"><input …/></Field> */
+/**
+ * A labelled field inside a FormModal: <Field label="Weight (lb)" hint="…"><input …/></Field>
+ * The hint sits outside the label (so it isn't read as the field's name) and is linked to a
+ * single child control with aria-describedby.
+ */
 export function Field({ label, hint, children, className = "" }) {
+  const hintId = useId();
+  const only = hint && isValidElement(children) ? cloneElement(children, { "aria-describedby": hintId }) : children;
   return (
-    <label className={`uik-field ${className}`}>
-      <span className="field-label">{label}</span>
-      {children}
-      {hint && <span className="field-hint">{hint}</span>}
-    </label>
+    <div className={`uik-field ${className}`}>
+      <label className="uik-field-label">
+        <span className="field-label">{label}</span>
+        {only}
+      </label>
+      {hint && <span className="field-hint" id={hintId}>{hint}</span>}
+    </div>
   );
 }
 

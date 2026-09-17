@@ -18,6 +18,7 @@ import { completeReminder, loadBudgetConfig, saveBudgetConfig } from "./plannerA
 import { clearAllMembers } from "./hikerApi";
 import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "./accountabilityApi";
 import { toDateStr } from "../utils/dates";
+import { loadProfile as loadHealthProfile, addFood, saveWeight as saveHealthWeight, MEALS } from "./healthApi";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { lazyImport } from "../lib/lazyImport";
 
@@ -183,6 +184,32 @@ export const TOOLS = [
   { name: "set_category_budget", description: "Set or clear a monthly spending budget for a variable expense category (Groceries, Gas, Toiletries…). Pass amount 0 to remove the budget.", input_schema: { type: "object", properties: { category: { type: "string" }, amount: { type: "number" } }, required: ["category", "amount"] } },
   { name: "consult_banker", description: "Hand any budget/money task to Griphook, Scott's specialist Gringotts banker — logging transactions, editing recurring bills or income, setting category budgets or balance, or any multi-step ledger change. Griphook makes the edits and reports back. Use this instead of editing money data yourself.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full budget task, with any specifics Scott gave (amounts, dates, categories)." } }, required: ["request"] } },
   { name: "consult_archivist", description: "Ask Bilbo, Scott's Archivist and keeper of the Brain. Two jobs: (1) FIND information across Scott's planner data and Brain (knowledge graph) and report it back with sources — call this when gathering context would take you several queries (e.g. \"what do we know about NEVER86?\", \"pull everything relevant to this week's hikes\"); and (2) WRITE to the Brain on your behalf — Bilbo is the ONLY agent allowed to create, update, delete, or link Brain notes, so when something should be saved to or changed in the Brain, ask him and he'll do it. For non-Brain data changes use the write tools yourself; for money use consult_banker.", input_schema: { type: "object", properties: { request: { type: "string", description: "The full request — what to find, or exactly what to create/update/delete/link in the Brain, with specifics." } }, required: ["request"] } },
+  {
+    name: "log_food",
+    description: "Log something Scott ate to Health › Food. Estimate calories and macros from typical portions when he doesn't give them.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        calories: { type: "number" },
+        protein_g: { type: "number" },
+        carbs_g: { type: "number" },
+        fat_g: { type: "number" },
+        meal_type: { type: "string", enum: ["breakfast", "lunch", "dinner", "snack"] },
+        date: { type: "string", description: "YYYY-MM-DD, defaults to today" },
+      },
+      required: ["name", "calories"],
+    },
+  },
+  {
+    name: "log_weight",
+    description: "Record a weigh-in in Health › Body. Scott talks in pounds. One per day — logging the same date replaces it.",
+    input_schema: {
+      type: "object",
+      properties: { weight_lb: { type: "number" }, date: { type: "string", description: "YYYY-MM-DD, defaults to today" }, note: { type: "string" } },
+      required: ["weight_lb"],
+    },
+  },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
   { name: "export_bugs", description: "Package every bug and feature request into a downloadable .zip — a Markdown report (report.md) plus all attached screenshots. Call this when Scott asks to export, download, or send his bugs/feature requests. The download starts in his browser automatically.", input_schema: { type: "object", properties: {} } },
   {
@@ -300,6 +327,21 @@ async function runTool(name, input) {
         authHeaders,
       });
       return { archivist: "Bilbo", reply: text };
+    }
+    case "log_food": {
+      const date = input.date || toDateStr();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
+      const profile = await loadHealthProfile();
+      const meal = MEALS.includes(input.meal_type) ? input.meal_type : "snack";
+      await addFood(profile.id, { name: input.name, calories: input.calories, protein_g: input.protein_g || 0, carbs_g: input.carbs_g || 0, fat_g: input.fat_g || 0, meal_type: meal, date, source: "ai" });
+      return { success: true, logged: { name: input.name, calories: Math.round(input.calories), meal_type: meal, date } };
+    }
+    case "log_weight": {
+      const date = input.date || toDateStr();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
+      const profile = await loadHealthProfile();
+      await saveHealthWeight(profile.id, { date, weightLb: Number(input.weight_lb), note: input.note || "" });
+      return { success: true, logged: { weight_lb: Number(input.weight_lb), date } };
     }
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
     case "export_bugs": { const { exportBugsZip } = await lazyImport(() => import("./bugsApi"), "the bug exporter"); const r = await exportBugsZip(); return { success: true, ...r }; }

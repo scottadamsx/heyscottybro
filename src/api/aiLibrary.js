@@ -35,6 +35,7 @@ import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
 import { loadPeople, loadPeopleEvents } from "./peopleApi";
+import { loadProfile as loadHealthProfile, loadFood as loadHealthFood, loadWeights as loadHealthWeights, loadHistory as loadLiftHistory } from "./healthApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
@@ -386,6 +387,50 @@ const COLLECTIONS = {
       notes: { type: "string", long: true },
     },
     load: loadPeopleEvents,
+  },
+  // Health space (Achilles, DR-018) — read-only here; log_food / log_weight write.
+  food_log: {
+    description: "What Scott ate (Health › Food), last 90 days — read-only; use log_food to add. calories and grams per entry.",
+    dateField: "date",
+    searchFields: ["name", "description"],
+    defaultFields: ["id", "date", "meal_type", "name", "calories", "protein_g"],
+    fields: {
+      date: { type: "date" },
+      meal_type: { type: "enum", values: ["breakfast", "lunch", "dinner", "snack"] },
+      name: { type: "string" },
+      description: { type: "string", long: true },
+      calories: { type: "number" },
+      protein_g: { type: "number" },
+      carbs_g: { type: "number" },
+      fat_g: { type: "number" },
+    },
+    load: async () => {
+      const p = await loadHealthProfile();
+      const since = new Date(); since.setDate(since.getDate() - 90);
+      return loadHealthFood(p.id, { from: toDateStr(since) });
+    },
+  },
+  body_weight: {
+    description: "Scott's weigh-ins in pounds (Health › Body) — read-only; use log_weight to add.",
+    dateField: "date",
+    searchFields: ["note"],
+    defaultFields: ["id", "date", "weight_lb", "note"],
+    fields: { date: { type: "date" }, weight_lb: { type: "number" }, note: { type: "string" } },
+    load: async () => {
+      const p = await loadHealthProfile();
+      return (await loadHealthWeights(p.id)).map((w) => ({ id: w.id, date: w.date, weight_lb: w.weightLb, note: w.note }));
+    },
+  },
+  workout_sets: {
+    description: "Every set Scott has lifted (Health › Workouts) — read-only. One row per set: exercise, weight_lb × reps, the workout's date. Workouts are run live in Health.",
+    dateField: "date",
+    searchFields: ["exercise"],
+    defaultFields: ["date", "exercise", "set_number", "weight_lb", "reps"],
+    maxLimit: 100,
+    fields: { date: { type: "date" }, exercise: { type: "string" }, set_number: { type: "number" }, weight_lb: { type: "number" }, reps: { type: "number" }, rpe: { type: "number" } },
+    load: async () => (await loadLiftHistory()).map((s) => ({
+      id: s.id, date: toDateStr(new Date(s.startedAt)), exercise: s.exercise, set_number: s.setNumber, weight_lb: s.weightLb, reps: s.reps, rpe: s.rpe,
+    })),
   },
   documents: {
     table: "documents",

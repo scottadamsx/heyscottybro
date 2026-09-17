@@ -1638,14 +1638,6 @@ input, textarea, select { font-family: inherit; }
 /* (Repeat limits, project tiles and the project header live in
    pages/admin/plan.css.) */
 
-/* Project "quick add task" toolbar: stack cleanly (full-width fields) on phones.
-   The shared .form-inline centres its row, which leaves cramped ~140px fields
-   once it wraps — so stretch them to full width here. */
-@media (max-width: 600px) {
-  .proj-quick-form .form-row { flex-direction: column; align-items: stretch; }
-  .proj-quick-form .form-row > * { width: 100%; min-width: 0; flex: 1 1 auto; }
-}
-
 /* (Task detail page styles live in pages/admin/plan.css.) */
 
 /* Color Picker */

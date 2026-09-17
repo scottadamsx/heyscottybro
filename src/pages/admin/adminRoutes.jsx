@@ -14,6 +14,8 @@ const LifePage        = lazy(() => import("./LifePage.jsx"));
 const SchoolDocPage   = lazy(() => import("./SchoolDocPage.jsx"));
 const ArcadePage      = lazy(() => import("./ArcadePage.jsx"));
 const PeoplePage      = lazy(() => import("./PeoplePage.jsx"));
+const HealthPage      = lazy(() => import("./HealthPage.jsx"));
+const WorkoutSessionPage = lazy(() => import("./WorkoutSessionPage.jsx"));
 const MissionPage     = lazy(() => import("./MissionPage.jsx"));
 const BudgetPage      = lazy(() => import("./BudgetPage.jsx"));
 const VaultPage       = lazy(() => import("./VaultPage.jsx"));
@@ -40,6 +42,8 @@ export const ADMIN_PAGES = [
   { path: "school",       title: "School",          icon: "fa-graduation-cap",  element: <SchoolPage /> },
   { path: "school/doc/*", title: "School document", icon: "fa-file-lines",      element: <SchoolDocPage /> },
   { path: "life",         title: "Life",            icon: "fa-heart-pulse",     element: <LifePage /> },
+  { path: "health",       title: "Health",          icon: "fa-dumbbell",        element: <HealthPage /> },
+  { path: "health/workout/:id", title: "Workout",   icon: "fa-dumbbell",        element: <WorkoutSessionPage /> },
   { path: "people/*",     title: "People",          icon: "fa-user-group",      element: <PeoplePage /> },
   { path: "arcade",       title: "Arcade",          icon: "fa-gamepad",         element: <ArcadePage /> },
   { path: "mission",      title: "Mission Control", icon: "fa-satellite-dish",  element: <MissionPage /> },
@@ -50,10 +54,10 @@ export const ADMIN_PAGES = [
 
 /** Legacy paths that redirect (kept out of the window table). */
 export const ADMIN_REDIRECTS = [
-  ["dashboard", "/admin/today"], ["health", "/admin/life"], ["tools", "/admin/mission"], ["command", "/admin/mission"],
+  ["dashboard", "/admin/today"], ["tools", "/admin/mission"], ["command", "/admin/mission"],
   ["brain", "/admin/mission?tab=brain"], ["research", "/admin/mission?tab=research"], ["grocery", "/admin/finance?tab=receipts"],
   ["dates", "/admin/planner"], ["calendar", "/admin/planner"], ["journal", "/admin/life?tab=journal"], ["projects", "/admin/planner?tab=projects"],
-  ["nutrition", "/admin/life"], ["recipes", "/admin/life"], ["accountability", "/admin/life?tab=habits"],
+  ["nutrition", "/admin/health?tab=food"], ["recipes", "/admin/health?tab=food"], ["fitness", "/admin/health?tab=workouts"], ["accountability", "/admin/life?tab=habits"],
   ["hikers", "/admin/vault?tab=databases"], ["snippets", "/admin/vault"], ["context", "/admin/mission?tab=brain"], ["documents", "/admin/vault?tab=documents"],
   ["budget", "/admin/finance"], ["design", "/admin/settings"],
 ];
