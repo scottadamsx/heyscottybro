@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getSignedUrl } from "../../api/documentsApi";
+import { FormModal, Field } from "../ui";
 
 const ICON_MAP = {
   "application/pdf": "fa-file-pdf",
@@ -26,23 +27,15 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(doc.name);
   const [tagText, setTagText] = useState(tagsToText(doc.tags));
-  const [savingEdit, setSavingEdit] = useState(false);
-  const [editError, setEditError] = useState(null);
 
-  const startEdit = () => { setName(doc.name); setTagText(tagsToText(doc.tags)); setEditError(null); setEditing(true); };
-  const cancelEdit = () => { setEditing(false); setEditError(null); };
+  const startEdit = () => { setName(doc.name); setTagText(tagsToText(doc.tags)); setEditing(true); };
+  // Rename / tags modal: errors propagate from onUpdate and stay in the modal.
   const commitEdit = async () => {
     const clean = name.trim();
-    if (!clean) { setEditError("Name can't be empty."); return; }
-    setSavingEdit(true); setEditError(null);
-    try {
-      await onUpdate(doc, { name: clean, tags: textToTags(tagText) });
-      setEditing(false);
-    } catch (e) {
-      setEditError(e?.message || "Couldn't save changes.");
-    } finally { setSavingEdit(false); }
+    if (!clean) throw new Error("Name can't be empty.");
+    try { await onUpdate(doc, { name: clean, tags: textToTags(tagText) }); }
+    catch (e) { throw new Error(e?.message || "Couldn't save changes.", { cause: e }); }
   };
-  const onEditKey = (e) => { if (e.key === "Enter") { e.preventDefault(); commitEdit(); } if (e.key === "Escape") cancelEdit(); };
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -63,21 +56,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
     <div className="doc-card">
       <div className="doc-card-icon" aria-hidden="true"><i className={`fa-solid ${getIcon(doc.mime_type)}`} /></div>
       <div className="doc-card-body">
-        {editing ? (
-          <div className="doc-card-edit" onKeyDown={onEditKey}>
-            <label className="visually-hidden" htmlFor={`doc-name-${doc.id}`}>Document name</label>
-            <input id={`doc-name-${doc.id}`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" autoFocus />
-            <label className="visually-hidden" htmlFor={`doc-tags-${doc.id}`}>Tags, comma separated</label>
-            <input id={`doc-tags-${doc.id}`} value={tagText} onChange={(e) => setTagText(e.target.value)} placeholder="Tags (comma separated)" />
-            {editError && <div className="doc-card-edit-error" role="alert">{editError}</div>}
-            <div className="doc-card-edit-actions">
-              <button type="button" className="btn-mini accent" onClick={commitEdit} disabled={savingEdit}>{savingEdit ? "Saving…" : "Save"}</button>
-              <button type="button" className="btn-mini muted" onClick={cancelEdit} disabled={savingEdit}>Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <div className="doc-card-name">{doc.name}</div>
-        )}
+        <div className="doc-card-name">{doc.name}</div>
         {agentLabel && (
           <div className="doc-card-agent">
             <i className="fa-solid fa-robot" aria-hidden="true" /> {agentLabel}
@@ -87,7 +66,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
           {formatBytes(doc.size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
         </div>
         {doc.description && <div className="doc-card-desc">{doc.description}</div>}
-        {!editing && Array.isArray(doc.tags) && doc.tags.length > 0 && (
+        {Array.isArray(doc.tags) && doc.tags.length > 0 && (
           <div className="doc-card-tags">{doc.tags.map((t) => <span className="doc-card-tag" key={t}>{t}</span>)}</div>
         )}
       </div>
@@ -98,7 +77,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
         <button type="button" className="btn-mini doc-card-btn" onClick={handleDownload} disabled={downloading} title="Download" aria-label={`Download ${doc.name}`}>
           <i className={`fa-solid ${downloading ? "fa-spinner fa-spin" : "fa-download"}`} aria-hidden="true" />
         </button>
-        {onUpdate && !editing && (
+        {onUpdate && (
           <button type="button" className="btn-mini doc-card-btn" onClick={startEdit} title="Rename / tags" aria-label="Rename or edit tags">
             <i className="fa-solid fa-pen" aria-hidden="true" />
           </button>
@@ -110,6 +89,16 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
           <i className="fa-solid fa-trash" aria-hidden="true" />
         </button>
       </div>
+      {editing && (
+        <FormModal title="Rename / tags" submitDisabled={!name.trim()} onClose={() => setEditing(false)} onSubmit={commitEdit}>
+          <Field label="Document name">
+            <input value={name} onChange={(e) => setName(e.target.value)} required data-autofocus />
+          </Field>
+          <Field label="Tags" hint="Comma separated.">
+            <input value={tagText} onChange={(e) => setTagText(e.target.value)} />
+          </Field>
+        </FormModal>
+      )}
     </div>
   );
 }

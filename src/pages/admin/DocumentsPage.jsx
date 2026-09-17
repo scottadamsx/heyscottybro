@@ -88,8 +88,8 @@ export default function DocumentsPage() {
     <div className="module-page">
       <div className="module-header">
         <h1>Documents</h1>
-        <button type="button" className="btn btn-sm" aria-expanded={showUploader} onClick={() => setShowUploader((s) => !s)}>
-          <i className={`fa-solid ${showUploader ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showUploader ? "Close" : "Upload"}
+        <button type="button" className="btn btn-sm" onClick={() => setShowUploader(true)}>
+          <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Upload
         </button>
       </div>
 

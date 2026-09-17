@@ -4,7 +4,7 @@ import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHike
 import { toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import "./mission.css";
-import { RowChevron } from "../../components/ui";
+import { RowChevron, FormModal, Field } from "../../components/ui";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -14,7 +14,6 @@ export default function HikerPage() {
   const [search, setSearch] = useState("");
   const [sortCol, setSortCol] = useState("last");
   const [sortDir, setSortDir] = useState("asc");
-  const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -46,39 +45,44 @@ export default function HikerPage() {
   useEffect(() => { reload(); reloadHistory(); }, []);
   useEffect(() => { loadMembers(search).then(setMembers); }, [search]);
 
-  const handleFiles = (files) => {
-    if (!files.length) return;
-    setPendingFiles(files);
+  const openImport = () => {
+    setPendingFiles(null);
     setHikeName("");
     setHikeDate(toDateStr(new Date()));
+    setImportError("");
     setHikeModal(true);
   };
+  const handleFiles = (files) => {
+    if (!files?.length) return;
+    setPendingFiles(Array.from(files));
+  };
 
+  // Runs inside FormModal (DR-019): busy state is the modal's, and a failure is
+  // thrown so the modal stays open with the files and name still filled in.
   const runImport = async () => {
-    if (!hikeName.trim()) return;
-    setHikeModal(false);
-    setImporting(true);
+    if (!hikeName.trim() || !pendingFiles?.length) return false;
     setImportResult(null);
     setImportError("");
+    let totals = { first_timers: 0, returning: 0, total: 0, files: pendingFiles.length };
     try {
-      let totals = { first_timers: 0, returning: 0, total: 0, files: pendingFiles.length };
-      for (const file of Array.from(pendingFiles)) {
+      for (const file of pendingFiles) {
         const text = await file.text();
         const result = await importCSV(text, file.name, hikeName.trim(), hikeDate);
         totals.first_timers += result.first_timers;
         totals.returning += result.returning;
         totals.total += result.total;
       }
-      setImportResult(totals);
+    } catch (e) {
+      throw new Error(e?.message || "Import failed. Please try again.", { cause: e });
+    }
+    setImportResult(totals);
+    try {
       await reload();
       await reloadHistory();
-      setView("dashboard");
     } catch (e) {
-      setImportError(e?.message || "Import failed. Please try again.");
-    } finally {
-      // Always clear the spinner — a thrown error must never leave it stuck on "Importing…".
-      setImporting(false);
+      setImportError(`Imported, but couldn't refresh the list: ${e?.message || e}`);
     }
+    setView("dashboard");
   };
 
   const openHike = async (hike) => {
@@ -131,43 +135,46 @@ export default function HikerPage() {
         <h1>SJHC Hiker Database</h1>
       </div>
 
-      {/* Hike Name Modal */}
+      <div className="hiker-actions">
+        <button type="button" className="btn btn-sm" onClick={openImport}>
+          <i className="fa-solid fa-file-import" aria-hidden="true" /> Import CSV
+        </button>
+        <span className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</span>
+      </div>
+
+      {/* Import modal: files + hike name + date */}
       {hikeModal && (
-        <div className="event-overlay" onClick={e => { if (e.target.className === "event-overlay") setHikeModal(false); }}>
-          <div className="event-card hiker-modal" role="dialog" aria-modal="true" aria-labelledby="hiker-modal-title">
-            <h3 id="hiker-modal-title" className="hiker-modal-title">Name this hike</h3>
-            <input
-              aria-label="Hike name"
-              placeholder="e.g. Blue Mountains Day Hike"
-              value={hikeName}
-              onChange={e => setHikeName(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && hikeName.trim() && runImport()}
-              autoFocus
-            />
+        <FormModal
+          title="Import hike CSV"
+          submitLabel="Import"
+          submitDisabled={!hikeName.trim() || !pendingFiles?.length}
+          onClose={() => setHikeModal(false)}
+          onSubmit={runImport}
+        >
+          <button
+            type="button"
+            className={`hiker-drop-zone ${dragOver ? "dragover" : ""}`}
+            onClick={() => fileRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+            data-autofocus
+          >
+            <span className="hiker-drop-icon"><i className="fa-solid fa-folder-open" aria-hidden="true" /></span>
+            <span className="hiker-drop-text">
+              {pendingFiles?.length ? pendingFiles.map((f) => f.name).join(", ") : "Drop CSV files here or tap to choose"}
+            </span>
+          </button>
+          <input ref={fileRef} type="file" accept=".csv" multiple hidden onChange={e => { handleFiles(e.target.files); e.target.value = ""; }} />
+          <Field label="Hike name">
+            <input placeholder="e.g. Blue Mountains Day Hike" required value={hikeName} onChange={e => setHikeName(e.target.value)} />
+          </Field>
+          <div className="uik-field">
             <span className="field-label">Hike date</span>
             <DatePicker value={hikeDate} onChange={(v) => setHikeDate(v)} />
-            <div className="form-actions hiker-modal-actions">
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setHikeModal(false)}>Cancel</button>
-              <button type="button" className="btn btn-sm" onClick={runImport} disabled={!hikeName.trim()}>Import</button>
-            </div>
           </div>
-        </div>
+        </FormModal>
       )}
-
-      {/* Drop Zone */}
-      <button
-        type="button"
-        className={`hiker-drop-zone ${dragOver ? "dragover" : ""} ${importing ? "importing" : ""}`}
-        onClick={() => fileRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-      >
-        <span className="hiker-drop-icon"><i className={`fa-solid ${importing ? "fa-spinner fa-spin" : "fa-folder-open"}`} aria-hidden="true" /></span>
-        <span className="hiker-drop-text">{importing ? "Importing…" : "Drop CSV files here or tap to upload"}</span>
-        <span className="hiker-drop-hint">Auto-detects name, email &amp; phone columns</span>
-      </button>
-      <input ref={fileRef} type="file" accept=".csv" multiple hidden onChange={e => handleFiles(e.target.files)} />
 
       {/* Import Error */}
       {importError && (

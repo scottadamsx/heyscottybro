@@ -4,7 +4,7 @@ import { loadCourses, createCourse, updateCourse, deleteCourse } from "../../api
 import { loadGrades, gradeStats } from "../../api/gradesApi";
 import { loadReminders, newReminder, completeReminder } from "../../api/plannerApi";
 import { toDateStr } from "../../utils/plannerUtils";
-import { Card, StatTile, Badge, Modal, PageHeader } from "../../components/ui";
+import { Card, StatTile, Badge, FormModal, Field, PageHeader } from "../../components/ui";
 import GradeTracker from "../../components/tools/GradeTracker";
 import SchoolImport from "../../components/school/SchoolImport";
 import { loadBrain, deleteNode } from "../../api/brainApi";
@@ -79,12 +79,10 @@ export default function SchoolPage() {
 
   const saveCourse = async () => {
     const f = courseForm;
-    if (!f.code.trim() || !f.name.trim()) { addToast("Code and name are required.", "error"); return; }
+    if (!f.code.trim() || !f.name.trim()) throw new Error("Code and name are required.");
     const payload = { code: f.code.trim(), name: f.name.trim(), term: f.term.trim(), instructor: f.instructor.trim(), target_grade: f.target_grade === "" ? null : Number(f.target_grade) };
-    try {
-      if (f.id) await updateCourse(f.id, payload); else await createCourse(payload);
-      setCourseForm(null); refresh();
-    } catch (e) { addToast(e.message, "error"); }
+    if (f.id) await updateCourse(f.id, payload); else await createCourse(payload);
+    refresh(); // FormModal closes on resolve; a thrown error stays in the modal
   };
 
   const removeCourse = async (c) => {
@@ -93,13 +91,11 @@ export default function SchoolPage() {
   };
 
   const addDeadline = async () => {
-    if (!dl.name.trim()) { addToast("Name the deadline.", "error"); return; }
-    try {
-      await newReminder({ name: `${dl.name.trim()}`, date: dl.date, course_id: deadlineFor.id, description: `${deadlineFor.code} deadline` });
-      addToast(`Deadline added — it's on your Plan too.`, "success");
-      setDeadlineFor(null); setDl({ name: "", date: toDateStr(new Date()) });
-      refresh();
-    } catch (e) { addToast(e.message, "error"); }
+    if (!dl.name.trim()) throw new Error("Name the deadline.");
+    await newReminder({ name: `${dl.name.trim()}`, date: dl.date, course_id: deadlineFor.id, description: `${deadlineFor.code} deadline` });
+    addToast(`Deadline added — it's on your Plan too.`, "success");
+    setDl({ name: "", date: toDateStr(new Date()) });
+    refresh();
   };
 
   const completeDeadline = async (r) => {
@@ -300,34 +296,32 @@ export default function SchoolPage() {
 
       {/* Course add/edit modal */}
       {courseForm && (
-        <Modal title={courseForm.id ? `Edit ${courseForm.code}` : "Add course"} onClose={() => setCourseForm(null)}
-          footer={<>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setCourseForm(null)}>Cancel</button>
-            <button type="button" className="btn btn-sm" onClick={saveCourse}>Save</button>
-          </>}>
-          <div className="school-form">
-            <input aria-label="Course code" placeholder="Code (CP 2315) *" value={courseForm.code} onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })} />
-            <input aria-label="Course name" placeholder="Name (Cloud Developer Capstone) *" value={courseForm.name} onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })} />
-            <input aria-label="Term" placeholder="Term (Spring 2026)" value={courseForm.term} onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })} />
-            <input aria-label="Instructor" placeholder="Instructor" value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} />
-            <input type="number" aria-label="Target grade %" placeholder="Target grade % (e.g. 80)" value={courseForm.target_grade} onChange={(e) => setCourseForm({ ...courseForm, target_grade: e.target.value })} />
+        <FormModal title={courseForm.id ? `Edit ${courseForm.code}` : "Add course"} onClose={() => setCourseForm(null)} onSubmit={saveCourse}
+          submitDisabled={!courseForm.code.trim() || !courseForm.name.trim()}>
+          <div className="school-form-row">
+            <Field label="Code"><input placeholder="CP 2315" required value={courseForm.code} onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })} data-autofocus /></Field>
+            <Field label="Term"><input placeholder="Spring 2026" value={courseForm.term} onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })} /></Field>
           </div>
-        </Modal>
+          <Field label="Name"><input placeholder="Cloud Developer Capstone" required value={courseForm.name} onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })} /></Field>
+          <div className="school-form-row">
+            <Field label="Instructor"><input value={courseForm.instructor} onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })} /></Field>
+            <Field label="Target grade %"><input type="number" inputMode="decimal" min="0" max="100" placeholder="e.g. 80" value={courseForm.target_grade} onChange={(e) => setCourseForm({ ...courseForm, target_grade: e.target.value })} /></Field>
+          </div>
+        </FormModal>
       )}
 
       {/* Quick-deadline modal */}
       {deadlineFor && (
-        <Modal title={`New ${deadlineFor.code} deadline`} onClose={() => setDeadlineFor(null)}
-          footer={<>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setDeadlineFor(null)}>Cancel</button>
-            <button type="button" className="btn btn-sm" onClick={addDeadline}>Add</button>
-          </>}>
-          <div className="school-form">
-            <input aria-label="What's due?" placeholder="What's due? (Lab 3, Final report…) *" value={dl.name} onChange={(e) => setDl({ ...dl, name: e.target.value })} />
+        <FormModal title={`New ${deadlineFor.code} deadline`} submitLabel="Add deadline" onClose={() => setDeadlineFor(null)} onSubmit={addDeadline}
+          submitDisabled={!dl.name.trim()}>
+          <Field label="What's due?" hint="Deadlines are reminders under the hood — they'll show on Plan and Today automatically.">
+            <input placeholder="Lab 3, Final report…" required value={dl.name} onChange={(e) => setDl({ ...dl, name: e.target.value })} data-autofocus />
+          </Field>
+          <div className="uik-field">
+            <span className="field-label">Due date</span>
             <DatePicker value={dl.date} onChange={(v) => setDl({ ...dl, date: v })} />
-            <p className="school-form-hint">Deadlines are reminders under the hood — they'll show on Plan and Today automatically.</p>
           </div>
-        </Modal>
+        </FormModal>
       )}
     </div>
   );

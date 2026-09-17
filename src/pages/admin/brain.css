@@ -174,9 +174,6 @@
 .admin-shell .brain-page .module-page .module-header h1 { font-size: var(--text-lg); line-height: 1.75rem; font-weight: 600; }
 .ctx-header-actions { margin-left: auto; }
 
-.ctx-add-card { gap: var(--space-sm); }
-.admin-shell .ctx-add-card .db-card-header { flex-direction: column; align-items: flex-start; gap: var(--space-2xs); margin-bottom: var(--space-xs); }
-.ctx-add-sub { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
 .ctx-verdict { min-height: 20px; font-size: var(--text-sm); color: var(--text-secondary); }
 .ctx-verdict.is-keep strong { color: var(--green); }
 .ctx-verdict.is-maybe strong { color: var(--orange); }
@@ -189,7 +186,6 @@
 }
 .ctx-chip.person { background: var(--accent-bg); color: var(--accent); }
 .ctx-chip.preview { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-secondary); }
-.ctx-add-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 
 /* Filters row */
 .ctx-filters { display: flex; flex-direction: column; gap: var(--space-sm); }
@@ -206,8 +202,6 @@
   box-shadow: var(--shadow-card);
 }
 .ctx-item-text { color: var(--text-primary); }
-.ctx-edit { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); }
-.ctx-edit-actions { display: flex; gap: var(--space-xs); }
 .ctx-item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); margin-top: var(--space-xs); font-size: var(--text-sm); color: var(--text-secondary); }
 .ctx-item-by { display: inline-flex; align-items: center; gap: var(--space-2xs); font-weight: 600; color: var(--text-secondary); }
 .ctx-item-by.by-scott { color: var(--orange); }

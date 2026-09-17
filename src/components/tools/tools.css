@@ -32,11 +32,9 @@
 .gt-stat-val { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .gt-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 
-.gt-form { display: flex; flex-direction: column; gap: var(--space-sm); padding: var(--space-md); border-radius: var(--radius-md); background: var(--bg-raised); }
-.gt-form-row { display: flex; gap: var(--space-xs); }
-.gt-form-row > * { flex: 1; min-width: 0; }
-.gt-form-row label { display: flex; flex-direction: column; gap: var(--space-2xs); font-size: var(--text-xs); font-weight: 500; color: var(--text-secondary); }
-.gt-form-actions { display: flex; gap: var(--space-xs); }
+/* Assessment modal: fields side by side, wrapping on narrow screens. */
+.gt-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(96px, 100%), 1fr)); gap: var(--space-md); }
+.gt-form-row.is-wide { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
 
 .gt-list { display: flex; flex-direction: column; }
 .gt-item { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--control-h-lg); padding: var(--space-xs) 0; border-bottom: 1px solid var(--border-subtle); }
@@ -67,10 +65,8 @@
 .inbox-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); }
 .inbox-toggle { display: inline-flex; align-items: center; gap: var(--space-xs); margin-left: auto; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
 .inbox-note { max-width: 80ch; margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-secondary); }
-.inbox-form { display: flex; flex-direction: column; gap: var(--space-sm); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
-.inbox-form-row { display: flex; gap: var(--space-xs); }
-.inbox-form-row > * { flex: 1; min-width: 0; }
-.inbox-form-actions { display: flex; gap: var(--space-xs); }
+/* Add-message modal: channel + sender side by side, stacked on phones. */
+.inbox-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: var(--space-md); }
 
 .inbox-list { display: flex; flex-direction: column; gap: var(--space-xs); }
 .inbox-item { overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); transition: border-color var(--dur-fast); }
@@ -99,11 +95,9 @@
 
 @media (max-width: 640px) {
   .gt-stats { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); }
-  .gt-form-row { flex-wrap: wrap; }
   .gt-plan { padding: var(--space-md); }
-  .inbox-form, .inbox-item-body { padding: var(--space-md); }
+  .inbox-item-body { padding: var(--space-md); }
   .inbox-item-head { padding-inline: var(--space-md); }
-  .inbox-form-row { flex-wrap: wrap; }
   .gt input, .gt textarea,
-  .inbox-form select, .inbox-form input, .inbox-form textarea, .inbox-draft { font-size: 16px; }  /* stop iOS zoom-on-focus */
+  .inbox-draft { font-size: 16px; }  /* stop iOS zoom-on-focus */
 }

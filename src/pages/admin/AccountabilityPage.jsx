@@ -5,6 +5,7 @@ import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone,
 import { habitScheduleForm, scheduleFromForm, habitScheduleLabel } from "../../utils/habitSchedule";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
+import { FormModal, Field } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 
@@ -79,6 +80,46 @@ function ScheduleFields({ value, onChange }) {
   </fieldset>;
 }
 
+// The tracker form body, shared by the New and Edit modals. `isNew` keeps the
+// create-only behaviour: switching type also suggests a reminder default.
+function TrackerFields({ value, onChange, isNew }) {
+  const setMode = (mode) => onChange({
+    ...value,
+    mode,
+    ...(isNew && value.reminder !== "interval" ? { reminder: mode === "check" ? "daily" : "none" } : {}),
+  });
+  return <>
+    <Field label="Name">
+      <input placeholder={isNew ? "Track what? (e.g. Gym, Read, Journal)" : "Tracker name"} value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} required data-autofocus />
+    </Field>
+    <div className="uik-field">
+      <span className="field-label" id="acc-colour-label">Colour</span>
+      <div className="color-picker" role="group" aria-labelledby="acc-colour-label">
+        {COLORS.map((c) => (
+          <button key={c} type="button" className={`color-swatch ${value.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => onChange({ ...value, color: c })} aria-label={`Colour ${c}`} aria-pressed={value.color === c} />
+        ))}
+      </div>
+    </div>
+    <div className="uik-field">
+      <span className="field-label" id="acc-type-label">Type</span>
+      <div className="segmented acc-mode" role="radiogroup" aria-labelledby="acc-type-label">
+        <button type="button" role="radio" aria-checked={value.mode === "count"} className={`segmented-opt${value.mode === "count" ? " active" : ""}`} onClick={() => setMode("count")}>
+          <i className="fa-solid fa-hashtag" aria-hidden="true" /> Counter
+        </button>
+        <button type="button" role="radio" aria-checked={value.mode === "check"} className={`segmented-opt${value.mode === "check" ? " active" : ""}`} onClick={() => setMode("check")}>
+          <i className="fa-solid fa-check" aria-hidden="true" /> Once a day
+        </button>
+      </div>
+      <span className="field-hint">
+        {value.mode === "count"
+          ? "Log multiple times a day — shows the daily count."
+          : `One check per day — done or not done.${isNew ? "" : " Existing extra logs on a day are kept."}`}
+      </span>
+    </div>
+    <ScheduleFields value={value} onChange={onChange} />
+  </>;
+}
+
 export default function AccountabilityPage() {
   const [params] = useSearchParams();
   const [data, setData] = useState({ trackers: [], logs: [], misses: [] });
@@ -139,16 +180,21 @@ export default function AccountabilityPage() {
     }
   };
 
-  const addTracker = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-    let schedule;
-    try { schedule = scheduleFromForm(form); }
-    catch (err) { addToast(err.message, "error"); return; }
+  // Modal saves: same versioned write, but a failure is thrown so the modal
+  // stays open and shows it (DR-019).
+  const mutateOrThrow = async (fn) => {
+    let next;
+    try { next = await updateAccountability(fn); }
+    catch (err) { throw new Error(err?.message || "Couldn't save habits", { cause: err }); }
+    if (mounted.current) setData(next);
+  };
+
+  const addTracker = async () => {
+    if (!form.name.trim()) return false;
+    const schedule = scheduleFromForm(form); // throws a readable validation message
     const tracker = { schedule, id: genId(), name: form.name.trim(), emoji: form.emoji, color: form.color, mode: form.mode, created: todayStr };
-    if (!await mutate((d) => { d.trackers.push(tracker); })) return;
+    await mutateOrThrow((d) => { d.trackers.push(tracker); });
     setForm({ name: "", emoji: "", color: "#4f7cff", mode: form.mode, ...habitScheduleForm({ mode: form.mode }, todayStr) }); // theme-fixed: user colour (default tracker colour)
-    setShowAdd(false);
   };
   const deleteTracker = async (id) => {
     if (!await confirm("Delete this tracker and its history?", { title: "Delete tracker", confirmLabel: "Delete" })) return;
@@ -162,15 +208,11 @@ export default function AccountabilityPage() {
     catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
   const deleteLog = (id) => mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
-  const saveTrackerEdit = async (e, id) => {
-    e.preventDefault();
-    if (!trackerEdit?.name.trim()) return;
-    let schedule;
-    try { schedule = scheduleFromForm(trackerEdit); }
-    catch (err) { addToast(err.message, "error"); return; }
+  const saveTrackerEdit = async (id) => {
+    if (!trackerEdit?.name.trim()) return false;
+    const schedule = scheduleFromForm(trackerEdit); // throws a readable validation message
     const patch = { schedule, name: trackerEdit.name.trim(), mode: trackerEdit.mode, color: trackerEdit.color };
-    if (!await mutate((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); })) return;
-    setTrackerEdit(null);
+    await mutateOrThrow((d) => { d.trackers = d.trackers.map((t) => t.id === id ? { ...t, ...patch } : t); });
   };
 
   const countOn = (t, date) => (logsByTracker[t.id] || []).filter((l) => l.date === date).length;
@@ -291,34 +333,15 @@ export default function AccountabilityPage() {
         <p className="acc-sched-note">{habitScheduleLabel(t)}</p>
 
         {trackerEdit && (
-          <form className="db-card acc-form" onSubmit={(e) => saveTrackerEdit(e, t.id)}>
-            <div className="db-card-header">
-              <h3 className="db-card-title">Edit tracker</h3>
-              <button type="button" className="icon-x" onClick={() => setTrackerEdit(null)} aria-label="Cancel"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-            </div>
-            <input placeholder="Tracker name" aria-label="Tracker name" value={trackerEdit.name} onChange={(e) => setTrackerEdit({ ...trackerEdit, name: e.target.value })} required autoFocus />
-            <div className="color-picker" role="group" aria-label="Colour">
-              {COLORS.map((c) => (
-                <button key={c} type="button" className={`color-swatch ${trackerEdit.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setTrackerEdit({ ...trackerEdit, color: c })} aria-label={`Colour ${c}`} aria-pressed={trackerEdit.color === c} />
-              ))}
-            </div>
-            <div className="segmented acc-mode" role="radiogroup" aria-label="Tracker type">
-              <button type="button" role="radio" aria-checked={trackerEdit.mode === "count"} className={`segmented-opt${trackerEdit.mode === "count" ? " active" : ""}`} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "count" })}>
-                <i className="fa-solid fa-hashtag" aria-hidden="true" /> Counter
-              </button>
-              <button type="button" role="radio" aria-checked={trackerEdit.mode === "check"} className={`segmented-opt${trackerEdit.mode === "check" ? " active" : ""}`} onClick={() => setTrackerEdit({ ...trackerEdit, mode: "check" })}>
-                <i className="fa-solid fa-check" aria-hidden="true" /> Once a day
-              </button>
-            </div>
-            <p className="life-note">
-              {trackerEdit.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done. Existing extra logs on a day are kept."}
-            </p>
-            <ScheduleFields value={trackerEdit} onChange={setTrackerEdit} />
-            <div className="form-actions">
-              <button className="btn" type="submit">Save changes</button>
-              <button className="btn btn-ghost" type="button" onClick={() => setTrackerEdit(null)}>Cancel</button>
-            </div>
-          </form>
+          <FormModal
+            title="Edit tracker"
+            submitLabel="Save changes"
+            submitDisabled={!trackerEdit.name.trim()}
+            onClose={() => setTrackerEdit(null)}
+            onSubmit={() => saveTrackerEdit(t.id)}
+          >
+            <TrackerFields value={trackerEdit} onChange={setTrackerEdit} />
+          </FormModal>
         )}
 
         <div className="acc-kpis">
@@ -418,38 +441,21 @@ export default function AccountabilityPage() {
       {dialog}
       <div className="module-header">
         <h1>Accountability</h1>
-        <button type="button" className="btn btn-sm" onClick={() => setShowAdd((s) => !s)}>
-          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showAdd ? "Close" : "New tracker"}
+        <button type="button" className="btn btn-sm" onClick={() => setShowAdd(true)}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> New tracker
         </button>
       </div>
 
       {showAdd && (
-        <form className="db-card acc-form" onSubmit={addTracker}>
-          <div className="db-card-header">
-            <h3 className="db-card-title">New tracker</h3>
-          </div>
-          <input placeholder="Track what? (e.g. Gym, Read, Journal)" aria-label="Tracker name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus required />
-          <div className="color-picker" role="group" aria-label="Colour">
-            {COLORS.map((c) => (
-              <button key={c} type="button" className={`color-swatch ${form.color === c ? "selected" : ""}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} aria-label={`Colour ${c}`} aria-pressed={form.color === c} />
-            ))}
-          </div>
-          <div className="segmented acc-mode" role="radiogroup" aria-label="Tracker type">
-            <button type="button" role="radio" aria-checked={form.mode === "count"} className={`segmented-opt${form.mode === "count" ? " active" : ""}`} onClick={() => setForm({ ...form, mode: "count", ...(form.reminder === "interval" ? {} : { reminder: "none" }) })}>
-              <i className="fa-solid fa-hashtag" aria-hidden="true" /> Counter
-            </button>
-            <button type="button" role="radio" aria-checked={form.mode === "check"} className={`segmented-opt${form.mode === "check" ? " active" : ""}`} onClick={() => setForm({ ...form, mode: "check", ...(form.reminder === "interval" ? {} : { reminder: "daily" }) })}>
-              <i className="fa-solid fa-check" aria-hidden="true" /> Once a day
-            </button>
-          </div>
-          <p className="life-note">
-            {form.mode === "count" ? "Log multiple times a day — shows the daily count." : "One check per day — done or not done."}
-          </p>
-          <ScheduleFields value={form} onChange={setForm} />
-          <div className="form-actions">
-            <button className="btn" type="submit">Create tracker</button>
-          </div>
-        </form>
+        <FormModal
+          title="New tracker"
+          submitLabel="Create tracker"
+          submitDisabled={!form.name.trim()}
+          onClose={() => setShowAdd(false)}
+          onSubmit={addTracker}
+        >
+          <TrackerFields value={form} onChange={setForm} isNew />
+        </FormModal>
       )}
 
       {trackers.length === 0 && !showAdd && (

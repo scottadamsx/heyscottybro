@@ -6,12 +6,11 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 .life-loading { padding: var(--space-xl) 0; text-align: center; color: var(--text-secondary); }
-.life-note { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
 .life-error { margin: 0; font-size: var(--text-sm); color: var(--red); }
 
 
 /* ── Journal ─────────────────────────────────────────────────────────────── */
-/* A writing surface: one calm sheet (compose / read / edit) beside the index. */
+/* A reading surface beside the index; compose and edit open in a FormModal (DR-019). */
 
 .journal-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-xl); align-items: start; }
 .journal-layout.is-index-only { grid-template-columns: minmax(0, 1fr); }
@@ -24,10 +23,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
-/* The fields are borderless paper, so the sheet carries the focus ring. */
-.journal-sheet:has(.journal-title-field:focus, .journal-body-field:focus) { border-color: var(--border-accent); box-shadow: 0 0 0 3px var(--accent-bg); }
 
 .journal-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; min-height: var(--control-h-sm); }
 .journal-sheet-date { margin: 0; font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
@@ -35,30 +31,15 @@
 .admin-shell .journal-sheet-title { margin: 0; font-size: var(--text-xl); line-height: 2rem; font-weight: 700; overflow-wrap: anywhere; }
 .journal-sheet-body { margin: var(--space-xs) 0 0; max-width: 68ch; font-size: var(--text-md); line-height: var(--leading-relaxed); color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
 
-.admin-shell .journal-sheet .journal-title-field:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) {
-  min-height: var(--control-h); padding: 0;
-  border: none; border-radius: 0; background: transparent; box-shadow: none;
-  font-family: var(--font-display); font-size: var(--text-xl); line-height: 2rem; font-weight: 700; letter-spacing: -0.01em;
-  color: var(--text-primary);
-}
-.admin-shell .journal-sheet .journal-title-field::placeholder { font-weight: 500; color: var(--text-muted); }
-.admin-shell .journal-sheet .journal-body-field {
-  min-height: 320px; padding: 0;
-  border: none; border-radius: 0; background: transparent; box-shadow: none;
+/* Compose / edit modal — a large writing field. */
+.admin-shell .journal-modal .journal-body-field {
+  min-height: 320px;
   font-size: var(--text-md); line-height: var(--leading-relaxed);
   resize: vertical;
 }
-.journal-sheet-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap;
-  margin-top: var(--space-xs); padding-top: var(--space-md);
-  border-top: 1px solid var(--border-subtle);
-}
-.journal-sheet-foot .form-actions { margin-left: auto; }
-
-.journal-edit { display: flex; flex-direction: column; gap: var(--space-sm); }
-.journal-edit-row { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
-.journal-edit-row .journal-title-field { flex: 1 1 240px; width: auto; }
-.journal-edit .journal-edit-date { flex: 0 0 200px; }
+.journal-edit-row { display: flex; align-items: flex-end; gap: var(--space-md); flex-wrap: wrap; }
+.journal-edit-row .journal-edit-title { flex: 1 1 240px; }
+.journal-edit-row .journal-edit-date { flex: 0 0 200px; }
 
 /* Drafts — unsaved text is cached on this device (utils/drafts.js). */
 .draft-status { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
@@ -98,8 +79,8 @@
 }
 @media (max-width: 640px) {
   .journal-sheet { padding: var(--space-lg) var(--space-md) var(--space-md); }
-  .admin-shell .journal-sheet .journal-body-field { min-height: 240px; }
-  .journal-edit .journal-edit-date { flex: 1 1 100%; }
+  .admin-shell .journal-modal .journal-body-field { min-height: 240px; }
+  .journal-edit-row .journal-edit-date { flex: 1 1 100%; }
 }
 
 
@@ -158,8 +139,6 @@
 .acc-log:hover { background: var(--bg-raised); color: var(--text-primary); }
 
 /* New / edit tracker */
-.admin-shell .acc-form { gap: var(--space-sm); max-width: 560px; }
-.admin-shell .acc-form .db-card-header { margin-bottom: 0; }
 .admin-shell .acc-mode { align-self: flex-start; }
 .acc-schedule { display: flex; flex-direction: column; gap: var(--space-sm); min-width: 0; margin: 0; padding: var(--space-md); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); }
 .acc-schedule legend { padding: 0 var(--space-2xs); font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }

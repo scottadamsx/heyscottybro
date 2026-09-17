@@ -13,7 +13,8 @@
 .bug-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 .bug-chip-count { margin-left: var(--space-2xs); font-variant-numeric: tabular-nums; opacity: 0.8; }
 
-.admin-shell .form-card.bug-form { gap: var(--space-sm); padding: var(--space-lg); }
+/* New-item modal: page + priority side by side, stacked on phones. */
+.bug-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: var(--space-md); }
 .admin-shell .segmented.bug-type-toggle { align-self: flex-start; }
 .bug-hint { margin: 0; font-size: var(--text-xs); color: var(--text-secondary); }
 
@@ -65,7 +66,6 @@
 .bug-label i { color: var(--text-muted); }
 .bug-text { margin: 0; white-space: pre-wrap; color: var(--text-primary); }
 .bug-text.is-empty { color: var(--text-secondary); font-style: italic; }
-.bug-notes-edit { display: flex; flex-direction: column; gap: var(--space-xs); }
 .bug-resolved { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
 
 .bug-drop {
@@ -157,7 +157,9 @@
 .vault-count { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
 .admin-shell .vault-search { max-width: 360px; }
 .admin-shell .vault-toolbar .vault-search { flex: 1 1 240px; }
-.admin-shell .form-card.vault-form { max-width: 560px; padding: var(--space-lg); }
+.vault-form-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-md); }
+.vault-form-row > * { flex: 1 1 160px; }
+.vault-form-row > .vault-form-grow { flex: 2 1 220px; }
 
 
 /* ── Vault › Secrets (snippets) ──────────────────────────────────────────── */
@@ -233,10 +235,11 @@
 }
 .hiker-drop-zone:hover { background: var(--bg-raised); }
 .hiker-drop-zone.dragover { border-color: var(--accent); background: var(--accent-bg); }
-.hiker-drop-zone.importing { opacity: 0.7; cursor: progress; }
 .hiker-drop-icon { margin-bottom: var(--space-2xs); font-size: 24px; color: var(--text-muted); }
 .hiker-drop-text { font-weight: 600; }
 .hiker-drop-hint { font-size: var(--text-sm); color: var(--text-secondary); }
+.hiker-drop-text { overflow-wrap: anywhere; }
+.hiker-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
 
 .hiker-import-foot { display: flex; margin-top: var(--space-md); }
 .admin-shell .stat-value.hiker-num-good { color: var(--green); }
@@ -281,9 +284,6 @@
 .hiker-detail-meta { margin-top: 2px; color: var(--text-primary); }
 .admin-shell .btn.hiker-copy-btn.copied { background: var(--success-bg); border-color: transparent; color: var(--green); }
 
-.hiker-modal { gap: var(--space-sm); width: min(440px, 100%); }
-.admin-shell .hiker-modal-title { margin: 0 0 var(--space-2xs); font-size: var(--text-lg); font-weight: 700; }
-.hiker-modal-actions { justify-content: flex-end; margin-top: var(--space-xs); }
 
 
 /* ── Small screens ───────────────────────────────────────────────────────── */
@@ -294,7 +294,6 @@
 @media (max-width: 640px) {
   .bug-summary { padding: var(--space-sm) var(--space-md); }
   .bug-detail { padding: var(--space-md); }
-  .admin-shell .form-card.bug-form, .admin-shell .form-card.vault-form { padding: var(--space-md); }
   .usage-stats { grid-template-columns: minmax(0, 1fr); gap: var(--space-sm); }
   .usage-stats.is-pair { grid-template-columns: minmax(0, 1fr); }
   .usage-recent-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0; padding-block: var(--space-xs); }
@@ -307,10 +306,7 @@
 @media (max-width: 480px) {
   /* index.css stacks every .form-row into a column under 480px, which turns
      system.css's 120px flex-basis into 120px-TALL fields. Undo it here. */
-  .admin-shell .bug-detail .form-row > *,
-  .admin-shell .bug-form .form-row > *,
-  .admin-shell .vault-form .form-row > *,
-  .admin-shell .snip-card .form-row > * { flex-basis: auto; }
+  .admin-shell .bug-detail .form-row > * { flex-basis: auto; }
 
   /* Hikers table: hide email + phone columns */
   .hiker-table th:nth-child(3),

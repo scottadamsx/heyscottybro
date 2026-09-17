@@ -1,23 +1,24 @@
 import { useRef, useState } from "react";
 import { uploadDocument } from "../../api/documentsApi";
+import { FormModal, Field } from "../ui";
 
 const ACCEPTED = ".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.webp";
 const MAX_BYTES = 50 * 1024 * 1024;
 
+/** Upload modal (DR-019): the page's "Upload" button opens this. */
 export default function DocumentUploader({ onUploaded, onClose }) {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [agentWork, setAgentWork] = useState(false);
   const [agentName, setAgentName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
+  const [fileError, setFileError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef();
 
   const handleFile = (f) => {
-    if (f.size > MAX_BYTES) { setError("File exceeds the 50 MB limit."); return; }
-    setError(null);
+    if (f.size > MAX_BYTES) { setFileError("File exceeds the 50 MB limit."); return; }
+    setFileError(null);
     setFile(f);
     setName(f.name.replace(/\.[^.]+$/, ""));
   };
@@ -28,27 +29,24 @@ export default function DocumentUploader({ onUploaded, onClose }) {
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!file) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const tags = agentWork
-        ? ["agent", ...(agentName.trim() ? [`agent:${agentName.trim()}`] : [])]
-        : [];
-      const doc = await uploadDocument(file, { name, description, tags });
-      onUploaded(doc);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setUploading(false);
-    }
+  // A failed upload throws: FormModal keeps the modal open and shows the message.
+  const handleSubmit = async () => {
+    if (!file) return false;
+    const tags = agentWork
+      ? ["agent", ...(agentName.trim() ? [`agent:${agentName.trim()}`] : [])]
+      : [];
+    const doc = await uploadDocument(file, { name, description, tags });
+    onUploaded(doc);
   };
 
   return (
-    <div className="form-card doc-uploader">
+    <FormModal
+      title="Upload a document"
+      submitLabel="Upload"
+      submitDisabled={!file || !name.trim()}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+    >
       <button
         type="button"
         className={`doc-dropzone ${dragOver ? "dragover" : ""}`}
@@ -56,6 +54,7 @@ export default function DocumentUploader({ onUploaded, onClose }) {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current.click()}
+        data-autofocus
       >
         <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" />
         <span>{file ? file.name : "Drop a file here or click to browse"}</span>
@@ -67,49 +66,26 @@ export default function DocumentUploader({ onUploaded, onClose }) {
         hidden
         onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
       />
+      {fileError && <p className="doc-upload-error" role="alert">{fileError}</p>}
       {file && (
-        <form className="doc-uploader-form" onSubmit={handleSubmit}>
-          <div className="form-row">
-            <input
-              className="field-grow"
-              aria-label="Display name"
-              placeholder="Display name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <textarea
-            aria-label="Description"
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-          />
+        <>
+          <Field label="Display name">
+            <input value={name} onChange={(e) => setName(e.target.value)} required />
+          </Field>
+          <Field label="Description" hint="Optional.">
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+          </Field>
           <label className="checkbox-inline">
             <input type="checkbox" checked={agentWork} onChange={(e) => setAgentWork(e.target.checked)} />
             <span><i className="fa-solid fa-robot" aria-hidden="true" /> This is agent work (show under “Agent work”)</span>
           </label>
           {agentWork && (
-            <div className="form-row">
-              <input
-                className="field-grow"
-                aria-label="Agent name"
-                placeholder="Agent name (optional, e.g. Aulë)"
-                value={agentName}
-                onChange={(e) => setAgentName(e.target.value)}
-              />
-            </div>
+            <Field label="Agent name" hint="Optional, e.g. Aulë.">
+              <input value={agentName} onChange={(e) => setAgentName(e.target.value)} />
+            </Field>
           )}
-          <div className="form-actions">
-            <button className="btn btn-sm" type="submit" disabled={uploading}>
-              {uploading ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading…</> : "Upload"}
-            </button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={onClose}>Cancel</button>
-          </div>
-        </form>
+        </>
       )}
-      {error && <p className="doc-upload-error" role="alert">{error}</p>}
-    </div>
+    </FormModal>
   );
 }

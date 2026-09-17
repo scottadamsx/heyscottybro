@@ -11,6 +11,7 @@ import {
   deleteSnippet,
   importSnippets,
 } from "../../api/snippetsApi";
+import { FormModal, Field } from "../../components/ui";
 import "./mission.css";
 
 const TYPES = [
@@ -50,12 +51,10 @@ export default function SnippetsPage() {
   // Add form
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState(() => emptyForm());
-  const [addSaving, setAddSaving] = useState(false);
 
   // Edit form
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [editSaving, setEditSaving] = useState(false);
 
   // UI
   const [search, setSearch] = useState("");
@@ -92,28 +91,24 @@ export default function SnippetsPage() {
     } catch { /* ignore */ }
   }
 
-  async function handleAdd(e) {
-    e.preventDefault();
-    if (!addForm.title.trim() || !addForm.value.trim()) return;
-    setAddSaving(true);
-    setError(null);
+  // Modal saves: a thrown error stays in the modal with what was typed (DR-019).
+  async function handleAdd() {
+    if (!addForm.title.trim() || !addForm.value.trim()) return false;
+    let created;
     try {
-      const created = await createSnippet({
+      created = await createSnippet({
         title: addForm.title.trim(),
         value: addForm.value.trim(),
         type: addForm.type,
         secret: addForm.secret,
         notes: addForm.notes.trim() || null,
       });
-      setItems((prev) => [created, ...prev]);
-      setAddForm(emptyForm(addForm.type));
-      setShowAdd(false);
-      addToast("Snippet saved.", "success");
-    } catch {
-      addToast("Failed to save snippet.", "error");
-    } finally {
-      setAddSaving(false);
+    } catch (err) {
+      throw new Error(`Failed to save snippet: ${err?.message || "unknown error"}`, { cause: err });
     }
+    setItems((prev) => [created, ...prev]);
+    setAddForm(emptyForm(addForm.type));
+    addToast("Snippet saved.", "success");
   }
 
   function startEdit(item) {
@@ -127,27 +122,22 @@ export default function SnippetsPage() {
     });
   }
 
-  async function handleEdit(e) {
-    e.preventDefault();
-    if (!editForm.title.trim() || !editForm.value.trim()) return;
-    setEditSaving(true);
-    setError(null);
+  async function handleEdit() {
+    if (!editForm.title.trim() || !editForm.value.trim()) return false;
+    let updated;
     try {
-      const updated = await updateSnippet(editId, {
+      updated = await updateSnippet(editId, {
         title: editForm.title.trim(),
         value: editForm.value.trim(),
         type: editForm.type,
         secret: editForm.secret,
         notes: editForm.notes.trim() || null,
       });
-      setItems((prev) => prev.map((i) => (i.id === editId ? updated : i)));
-      setEditId(null);
-      addToast("Snippet updated.", "success");
-    } catch {
-      addToast("Failed to update snippet.", "error");
-    } finally {
-      setEditSaving(false);
+    } catch (err) {
+      throw new Error(`Failed to update snippet: ${err?.message || "unknown error"}`, { cause: err });
     }
+    setItems((prev) => prev.map((i) => (i.id === editId ? updated : i)));
+    addToast("Snippet updated.", "success");
   }
 
   async function handleDelete(id) {
@@ -212,39 +202,41 @@ export default function SnippetsPage() {
 
   const formFields = (form, setForm) => (
     <>
-      <div className="form-row">
-        <input
-          className="field-grow"
-          aria-label="Label"
-          placeholder="Label (e.g. Home Wi-Fi)"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          autoFocus
-          required
-        />
-        <select
-          aria-label="Type"
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value, secret: typeInfo(e.target.value).secret })}
-        >
-          {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-        </select>
+      <div className="vault-form-row">
+        <Field label="Label" className="vault-form-grow">
+          <input
+            placeholder="e.g. Home Wi-Fi"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            data-autofocus
+            required
+          />
+        </Field>
+        <Field label="Type">
+          <select
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value, secret: typeInfo(e.target.value).secret })}
+          >
+            {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+          </select>
+        </Field>
       </div>
-      <textarea
-        aria-label="Value"
-        placeholder="Value to remember / copy"
-        value={form.value}
-        onChange={(e) => setForm({ ...form, value: e.target.value })}
-        rows={2}
-        required
-      />
-      <input
-        className="field-grow"
-        aria-label="Notes"
-        placeholder="Notes (optional — never hidden)"
-        value={form.notes}
-        onChange={(e) => setForm({ ...form, notes: e.target.value })}
-      />
+      <Field label="Value" hint="What to remember / copy.">
+        <textarea
+          value={form.value}
+          onChange={(e) => setForm({ ...form, value: e.target.value })}
+          rows={3}
+          required
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </Field>
+      <Field label="Notes" hint="Optional — never hidden.">
+        <input
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+        />
+      </Field>
       <label className="checkbox-inline">
         <input
           type="checkbox"
@@ -255,18 +247,15 @@ export default function SnippetsPage() {
       </label>
     </>
   );
+  const formInvalid = (form) => !form.title?.trim() || !form.value?.trim();
+  const openAdd = () => { setAddForm((f) => emptyForm(f.type)); setShowAdd(true); };
 
   return (
     <div className="module-page">
       <div className="module-header">
         <h1>Vault</h1>
-        <button
-          type="button"
-          className="btn btn-sm"
-          aria-expanded={showAdd}
-          onClick={() => { setShowAdd((s) => !s); setAddForm((f) => emptyForm(f.type)); }}
-        >
-          <i className={`fa-solid ${showAdd ? "fa-xmark" : "fa-plus"}`} aria-hidden="true" /> {showAdd ? "Close" : "New snippet"}
+        <button type="button" className="btn btn-sm" onClick={openAdd}>
+          <i className="fa-solid fa-plus" aria-hidden="true" /> New snippet
         </button>
       </div>
 
@@ -286,14 +275,15 @@ export default function SnippetsPage() {
       )}
 
       {showAdd && (
-        <form className="form-card vault-form" onSubmit={handleAdd}>
+        <FormModal title="New snippet" onClose={() => setShowAdd(false)} onSubmit={handleAdd} submitDisabled={formInvalid(addForm)}>
           {formFields(addForm, setAddForm)}
-          <div className="form-actions">
-            <button className="btn btn-sm" type="submit" disabled={addSaving}>
-              {addSaving ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Saving…</> : "Save"}
-            </button>
-          </div>
-        </form>
+        </FormModal>
+      )}
+
+      {editId && (
+        <FormModal title="Edit snippet" submitLabel="Save changes" onClose={() => setEditId(null)} onSubmit={handleEdit} submitDisabled={formInvalid(editForm)}>
+          {formFields(editForm, setEditForm)}
+        </FormModal>
       )}
 
       <input
@@ -313,29 +303,13 @@ export default function SnippetsPage() {
         </div>
       )}
       {!loading && !error && filtered.length === 0 && (
-        <EmptyState icon="fa-key" title="Vault is empty" description="Store passwords, codes, Wi-Fi credentials, and more. They're hidden until you reveal them." action={<button className="btn" onClick={() => setShowAdd(true)}>Add first snippet</button>} />
+        <EmptyState icon="fa-key" title="Vault is empty" description="Store passwords, codes, Wi-Fi credentials, and more. They're hidden until you reveal them." action={<button type="button" className="btn" onClick={openAdd}>Add first snippet</button>} />
       )}
 
       <div className="snip-grid">
         {filtered.map((item) => {
           const info = typeInfo(item.type);
           const show = !item.secret || revealed.has(item.id);
-
-          if (editId === item.id) {
-            return (
-              <form className="snip-card is-editing" key={item.id} onSubmit={handleEdit}>
-                {formFields(editForm, setEditForm)}
-                <div className="snip-actions">
-                  <button className="btn-mini accent" type="submit" disabled={editSaving}>
-                    <i className="fa-solid fa-check" aria-hidden="true" /> {editSaving ? "Saving…" : "Save"}
-                  </button>
-                  <button className="btn-mini" type="button" onClick={() => setEditId(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            );
-          }
 
           return (
             <div className="snip-card" key={item.id}>

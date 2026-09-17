@@ -80,10 +80,7 @@
 .doc-dropzone.dragover { border-color: var(--accent); background: var(--accent-bg); color: var(--text-primary); }
 .doc-dropzone i { font-size: 24px; color: var(--text-muted); }
 
-.doc-uploader { max-width: 560px; }
-.admin-shell .form-card.doc-uploader { padding: var(--space-lg); }
-.doc-uploader .doc-dropzone { margin-bottom: 0; }
-.doc-uploader-form { display: flex; flex-direction: column; gap: var(--space-sm); }
+.uik-form .doc-dropzone { margin-bottom: 0; }
 .doc-upload-error { margin: 0; font-size: var(--text-sm); font-weight: 500; color: var(--red); }
 
 .doc-confirm {
@@ -133,14 +130,12 @@
 @media (max-width: 640px) {
   .doc-card { flex-wrap: wrap; padding: var(--space-sm) var(--space-md); }
   .doc-card-actions { width: 100%; justify-content: flex-end; }
-  .admin-shell .form-card.doc-uploader { padding: var(--space-md); }
   .doc-viewer-header { padding: var(--space-sm) var(--space-md); }
   .doc-viewer-body { padding: var(--space-md); }
 }
 @media (max-width: 480px) {
   /* index.css stacks .form-row into a column here; keep fields their natural height */
-  .admin-shell .share-body .form-row > *,
-  .admin-shell .doc-uploader .form-row > * { flex-basis: auto; }
+  .admin-shell .share-body .form-row > * { flex-basis: auto; }
 }
 
 /* Public share page */
