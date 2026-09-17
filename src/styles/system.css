@@ -700,6 +700,14 @@
 .admin-shell .uik-modal-head h3 { margin: 0; font-size: var(--text-lg); font-weight: 700; }
 .admin-shell .uik-modal-body { padding: var(--space-sm) var(--space-lg) var(--space-lg); overflow-y: auto; }
 .admin-shell .uik-modal-foot { display: flex; justify-content: flex-end; gap: var(--space-xs); padding: var(--space-md) var(--space-lg); border-top: 1px solid var(--border-subtle); }
+.admin-shell .uik-modal:focus { outline: none; }
+.admin-shell .uik-modal-foot-extra { margin-right: auto; display: flex; gap: var(--space-xs); }
+.admin-shell .uik-form { display: flex; flex-direction: column; gap: var(--space-md); }
+.admin-shell .uik-field { display: flex; flex-direction: column; min-width: 0; }
+.admin-shell .uik-field .field-label { margin-bottom: var(--space-2xs); }
+.admin-shell .uik-field .field-hint { margin-top: var(--space-2xs); }
+.admin-shell .uik-form .form-error { margin: 0; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--red); font-size: var(--text-sm); }
+body.uik-modal-open { overflow: hidden; }
 .admin-shell .uik-modal-x { width: var(--control-h-sm); height: var(--control-h-sm); border-radius: var(--radius-full); border: none; background: var(--bg-raised); color: var(--text-secondary); cursor: pointer; }
 .admin-shell .uik-modal-x:hover { color: var(--text-primary); background: var(--bg-hover); }
 .admin-shell .day-modal-dow,
@@ -785,6 +793,13 @@
 .toast-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
 .toast-x { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; margin: -2px -4px 0 0; padding: 0; border: none; border-radius: var(--radius-full); background: none; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
 .toast-x:hover { background: var(--bg-raised); color: var(--text-primary); }
+/* Dialogs become bottom sheets on phones: thumb-reachable, full width. */
+@media (max-width: 640px) {
+  .admin-shell .uik-modal-backdrop { align-items: flex-end; padding: 0; }
+  .admin-shell .uik-modal { max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .admin-shell .uik-modal-foot { flex-wrap: wrap; }
+  .admin-shell .uik-modal-foot > .btn { flex: 1 1 auto; }
+}
 @media (max-width: 640px) { .toast-stack { top: auto; bottom: calc(var(--space-md) + env(safe-area-inset-bottom)); left: var(--space-md); right: var(--space-md); width: auto; } }
 
 /* ── 9. States: empty, loading, error ────────────────────────────────────── */

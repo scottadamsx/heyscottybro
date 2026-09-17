@@ -3,7 +3,7 @@
  * Token-driven (no hardcoded colors), className-driven (no inline style soup).
  * Import: `import { Card, StatTile, Badge, Modal, PageHeader } from "../../components/ui";`
  */
-import { useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import ExportKit from "./ExportKit";
 import "./ui.css";
 
@@ -47,23 +47,123 @@ export function Badge({ children, tone = "default", icon }) {
   );
 }
 
-export function Modal({ title, onClose, footer, width = 560, children }) {
+/**
+ * The one dialog shell. Real dialog semantics (role, aria-modal, labelled title),
+ * focus moves in and returns on close, Tab stays inside, Esc closes, page scroll
+ * locks. On phones it becomes a bottom sheet (system.css).
+ */
+export function Modal({ title, onClose, footer, width = 560, children, className = "" }) {
+  const ref = useRef(null);
+  const titleId = useId();
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    const node = ref.current;
+    const previous = document.activeElement;
+    const focusables = () => [...node.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+    (node.querySelector("[data-autofocus]") || focusables().find((el) => !el.classList.contains("uik-modal-x")) || node).focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); closeRef.current?.(); return; }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    node.addEventListener("keydown", onKey);
+    document.body.classList.add("uik-modal-open");
+    return () => {
+      node.removeEventListener("keydown", onKey);
+      if (!document.querySelector(".uik-modal")) document.body.classList.remove("uik-modal-open");
+      if (previous?.isConnected) previous.focus();
+    };
+  }, []);
   return (
-    <div className="uik-modal-backdrop" onClick={onClose}>
-      <div className="uik-modal" style={{ width: `min(${width}px, 100%)` }} onClick={(e) => e.stopPropagation()}>
+    <div className="uik-modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+      <div
+        ref={ref}
+        className={`uik-modal ${className}`}
+        style={{ width: `min(${width}px, 100%)` }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <div className="uik-modal-head">
-          <h3>{title}</h3>
+          <h3 id={titleId}>{title}</h3>
           <button type="button" className="uik-modal-x" onClick={onClose} aria-label="Close"><i className="fa-solid fa-xmark" /></button>
         </div>
         <div className="uik-modal-body">{children}</div>
         {footer && <div className="uik-modal-foot">{footer}</div>}
       </div>
     </div>
+  );
+}
+
+/** A labelled field inside a FormModal: <Field label="Weight (lb)" hint="…"><input …/></Field> */
+export function Field({ label, hint, children, className = "" }) {
+  return (
+    <label className={`uik-field ${className}`}>
+      <span className="field-label">{label}</span>
+      {children}
+      {hint && <span className="field-hint">{hint}</span>}
+    </label>
+  );
+}
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Every form in the admin lives here (DR-019): a button on the page opens it,
+ * Enter or the primary button submits, Cancel/Esc closes. `onSubmit` may be
+ * async; while it runs the buttons lock, and a thrown error is shown in the
+ * modal (the form stays open with what was typed). Resolve to close.
+ *
+ *   {open && <FormModal title="Log weight" submitLabel="Save" onClose={...} onSubmit={save}>…fields…</FormModal>}
+ */
+export function FormModal({
+  title, onClose, onSubmit, submitLabel = "Save", cancelLabel = "Cancel",
+  submitDisabled = false, danger = false, width = 520, children, extraActions = null, className = "",
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const formId = useId();
+  const submit = async (e) => {
+    e.preventDefault();
+    if (busy || submitDisabled) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const keepOpen = await onSubmit?.();
+      if (keepOpen !== false) onClose?.();
+    } catch (err) {
+      setError(err?.message || String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal
+      title={title}
+      width={width}
+      className={className}
+      onClose={() => !busy && onClose?.()}
+      footer={
+        <>
+          {extraActions && <div className="uik-modal-foot-extra">{extraActions}</div>}
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>{cancelLabel}</button>
+          <button type="submit" form={formId} className={`btn ${danger ? "btn-danger" : "btn-primary"}`} disabled={busy || submitDisabled}>
+            {busy ? "Saving…" : submitLabel}
+          </button>
+        </>
+      }
+    >
+      <form id={formId} className="uik-form" onSubmit={submit} noValidate={false}>
+        {children}
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </form>
+    </Modal>
   );
 }
 

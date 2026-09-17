@@ -81,6 +81,15 @@ recommendation: <a, because ...>
 blocked-task: <T-x>
 ```
 
+## Forms live in modals (DR-019)
+
+No form is ever laid out on a page. A page shows a button ("Log weight",
+"New task"); the button opens `FormModal` from `src/components/ui`
+(`<FormModal title onClose onSubmit submitLabel>` + `<Field label>`). The modal
+owns submit, busy state and the error message; a thrown error keeps it open with
+what was typed. Search boxes, filters, toggles and the chat input are controls,
+not forms, and stay inline.
+
 ## People space = Orbit (DR-017)
 
 `orbit/` is a **read-only copy** of the Orbit repo (`~/Documents/GitHub/orbit`),
