@@ -40,7 +40,7 @@ function pacman(usd) {
     document.addEventListener('keydown',function(e){var m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]}[e.key];if(m){e.preventDefault();pnext=m;}});
     done.addEventListener('click',function(){kiwiComplete(bonus(),eaten);});
     reset();upd();draw();setInterval(function(){pstep();draw();},200);setInterval(function(){gstep();draw();},260);cv.focus();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

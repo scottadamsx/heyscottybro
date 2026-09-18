@@ -17,7 +17,7 @@ function stroop(usd) {
     function start(){score=0;left=30;playing=true;done.disabled=true;render();next();statusEl.textContent='Score: 0 \xB7 30s';iv=setInterval(function(){left--;statusEl.textContent='Score: '+score+' \xB7 '+left+'s';if(left<=0){clearInterval(iv);playing=false;wordEl.textContent='Time!';wordEl.style.color='var(--fg)';statusEl.textContent='Final score: '+score;done.disabled=false;done.textContent='Claim ${reward(usd)} + bonus';}},1000);}
     document.getElementById('startb').addEventListener('click',start);
     done.addEventListener('click',function(){kiwiComplete(Math.min(12,Math.round(score/2)),score);});
-  <\/script>
+  </script>
 </div>`;
 }
 export {

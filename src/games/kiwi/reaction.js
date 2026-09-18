@@ -23,7 +23,7 @@ function reaction(usd) {
       if(state==='between'){nextRound();return;}
     });
     done.addEventListener('click',function(){var avg=Number(pad.dataset.avg||'500');kiwiComplete(Math.max(0,Math.round((450-avg)/30)),avg);});
-  <\/script>
+  </script>
 </div>`;
 }
 export {

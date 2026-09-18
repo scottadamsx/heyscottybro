@@ -1,6 +1,6 @@
 import { downloadText } from "../../lib/exporter";
 import { useState } from "react";
-import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, parseDate, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
+import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getPeriodHistory, getLastIncome, projectNextPeriod } from "../../utils/budgetAnalytics";
 import "./budget.css";

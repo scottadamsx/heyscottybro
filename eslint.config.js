@@ -55,6 +55,14 @@ export default defineConfig([
     rules: reactRules,
   },
 
+  // Monopoly Banker (public/games) is a plain <script> game: their top-level functions
+  // are globals called from the page's HTML (onclick="setupGame()"), which ESLint can't see.
+  {
+    files: ['public/games/monopoly-banker/*.js'],
+    languageOptions: { sourceType: 'script' },
+    rules: { 'no-unused-vars': ['error', { vars: 'local', args: 'none' }] },
+  },
+
   // Node: serverless handlers, build config, and the node-run test suites.
   // No React plugins here — these files never render.
   {

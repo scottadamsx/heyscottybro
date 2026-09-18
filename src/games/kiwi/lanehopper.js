@@ -78,7 +78,7 @@ function lanehopper(usd) {
     document.getElementById('reset').addEventListener('click',reset);
     done.addEventListener('click',function(){var bonus=crossings>=10?8:(crossings>=5?4:0);kiwiComplete(bonus,crossings,crossings>=5);});
     unlocked=false;reset();if(timer)clearInterval(timer);timer=setInterval(tick,1000/30);
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -18,7 +18,7 @@ function pig(usd) {
     document.getElementById('hold').addEventListener('click',function(){if(over||turn===0)return;you+=turn;turn=0;upd();if(you>=50){fin(true);return;}statusEl.textContent='Banked. CPU\u2019s go.';cpuTurn();});
     done.addEventListener('click',function(){kiwiComplete(you>cpu?4:0,you,you>cpu);});
     upd();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -24,7 +24,7 @@ function connect4(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(wins*4,wins,wins>0);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

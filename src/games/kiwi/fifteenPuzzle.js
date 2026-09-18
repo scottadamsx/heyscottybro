@@ -33,7 +33,7 @@ function fifteen(usd) {
     skip.addEventListener('click',function(){if(!skip.disabled)kiwiComplete(0);});
     var sk=30;var iv=setInterval(function(){sk--;if(sk<=0){clearInterval(iv);if(!solved){skip.disabled=false;skip.textContent='Skip';}}else if(!solved){skip.textContent='Skip in '+sk+'s';}},1000);
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

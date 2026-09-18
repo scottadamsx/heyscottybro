@@ -71,7 +71,7 @@ function reversi(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var c=counts(grid);var margin=c.x-c.o;var bonus=winner?(margin>=20?8:6):0;kiwiComplete(bonus,margin,winner);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

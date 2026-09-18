@@ -69,7 +69,7 @@ function blockcascade(usd) {
     document.getElementById('reset').addEventListener('click',init);
     done.addEventListener('click',function(){var bonus=lines>=bonusGoal?8:(lines>=goal?4:0);kiwiComplete(bonus,lines,lines>=goal);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

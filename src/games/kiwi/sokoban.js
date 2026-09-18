@@ -23,7 +23,7 @@ function sokoban(usd) {
     document.getElementById('resetb').addEventListener('click',load);
     done.addEventListener('click',function(){kiwiComplete(Math.min(10,(lvl+(solvedAll?1:0))*3),lvl);});
     load();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -34,7 +34,7 @@ function flyer(usd) {
     cv.addEventListener('mousedown',act);document.addEventListener('keydown',function(e){if(e.key===' '||e.key==='ArrowUp'){act(e);}});
     done.addEventListener('click',function(){kiwiComplete(bonus(),score);});
     reset();setInterval(tick,1000/45);cv.focus();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

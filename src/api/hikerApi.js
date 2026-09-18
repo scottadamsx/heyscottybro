@@ -211,7 +211,7 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
   const updatedIds = new Set();
 
   for (const row of rows.slice(1)) {
-    let first = "", last = "", email = "", phone = "";
+    let first, last;
 
     if (nameIdx >= 0 && row[nameIdx]?.trim()) {
       [first, last] = splitName(row[nameIdx]);
@@ -221,8 +221,8 @@ export async function importCSV(fileText, filename, hikeName, hikeDate) {
     }
     if (!first && !last) continue;
 
-    email = row[emailIdx]?.trim() ?? "";
-    phone = cleanPhone(row[phoneIdx] ?? "");
+    const email = row[emailIdx]?.trim() ?? "";
+    const phone = cleanPhone(row[phoneIdx] ?? "");
     first = toTitle(first);
     last = toTitle(last);
 

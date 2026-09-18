@@ -144,7 +144,7 @@ function checkers(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var c=counts(grid);var bonus=winner?(kingsLostByPlayer===0?8:5):0;kiwiComplete(bonus,c.r-c.b,winner);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

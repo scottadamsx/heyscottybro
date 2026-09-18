@@ -80,7 +80,7 @@ function nonogram(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var bonus=mistakes===0?7:4;kiwiComplete(bonus,mistakes,solved);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

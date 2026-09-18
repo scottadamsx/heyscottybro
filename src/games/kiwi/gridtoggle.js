@@ -34,7 +34,7 @@ function gridtoggle(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(withinPar?6:0,moves,withinPar);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

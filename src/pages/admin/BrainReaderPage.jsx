@@ -18,7 +18,7 @@ import "./reader.css";
 // the header; wikilinks and blockquote markers read badly raw. Clean them up so
 // the body renders as an article, not a source file.
 function prepArticle(body = "") {
-  let t = String(body).replace(/^﻿/, "");
+  let t = String(body).replace(/^\uFEFF/, "");
   t = t.replace(/^---\n[\s\S]*?\n---\n?/, "");            // drop frontmatter block
   t = t.replace(/^\s*#\s+.*(\r?\n)+/, "");                 // drop the leading title line
   t = t.replace(/\[\[([^\]]+)\]\]/g, (_, inner) => {       // [[target|label]] -> label

@@ -87,7 +87,7 @@ function pipes(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(rotations<=20?6:4,rotations,solved);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -19,7 +19,7 @@ function lightsout(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(solved?6:0,moves);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

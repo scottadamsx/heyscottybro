@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
@@ -148,13 +148,11 @@ export default function AccountabilityPage() {
   // Load from Supabase; re-load whenever any surface (Today card, an agent)
   // writes the blob. Nothing is ever auto-saved from here — every user action
   // is its own versioned write via updateAccountability().
-  const mounted = useRef(true);
   // Re-arm on mount — StrictMode (dev) remounts with the same ref.
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const load = useCallback(() => {
     return loadAccountability()
-      .then((d) => { if (mounted.current) { setData(d); setLoadError(null); setReady(true); } })
-      .catch((err) => { if (mounted.current) { setLoadError(err?.message || "Couldn't load habits"); setReady(true); } });
+      .then((d) => { setData(d); setLoadError(null); setReady(true); })
+      .catch((err) => { setLoadError(err?.message || "Couldn't load habits"); setReady(true); });
   }, []);
   useEffect(() => { load(); return onDataChange("accountability", load); }, [load]);
 
@@ -172,7 +170,7 @@ export default function AccountabilityPage() {
   const mutate = async (fn) => {
     try {
       const next = await updateAccountability(fn);
-      if (mounted.current) setData(next);
+      setData(next);
       return true;
     } catch (err) {
       addToast(err?.message || "Couldn't save habits", "error");
@@ -186,7 +184,7 @@ export default function AccountabilityPage() {
     let next;
     try { next = await updateAccountability(fn); }
     catch (err) { throw new Error(err?.message || "Couldn't save habits", { cause: err }); }
-    if (mounted.current) setData(next);
+    setData(next);
   };
 
   const addTracker = async () => {
@@ -200,12 +198,6 @@ export default function AccountabilityPage() {
     if (!await confirm("Delete this tracker and its history?", { title: "Delete tracker", confirmLabel: "Delete" })) return;
     if (!await mutate((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); })) return;
     if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
-  };
-  const logOn = async (trackerId, date) => {
-    const t = data.trackers.find((x) => x.id === trackerId);
-    if (!t) return;
-    try { const next = await logHabitDone(t, date); if (mounted.current) setData(next); }
-    catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
   const deleteLog = (id) => mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
   const saveTrackerEdit = async (id) => {
@@ -223,7 +215,7 @@ export default function AccountabilityPage() {
     const already = (logsByTracker[t.id] || []).some((l) => l.date === todayStr);
     try {
       const next = t.mode === "check" && already ? await unlogHabitDone(t, todayStr) : await logHabitDone(t, todayStr);
-      if (mounted.current) setData(next);
+      setData(next);
     } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
   const logPast = async (t, date) => {
@@ -233,7 +225,7 @@ export default function AccountabilityPage() {
     if (t.mode === "check" && (logsByTracker[t.id] || []).some((l) => l.date === date)) return;
     try {
       const next = await logHabitDone(t, date);
-      if (mounted.current) setData(next);
+      setData(next);
     } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
 
@@ -247,7 +239,7 @@ export default function AccountabilityPage() {
   const setMissed = async (t, missed) => {
     try {
       const next = await (missed ? logHabitMissed(t, todayStr) : unlogHabitMissed(t, todayStr));
-      if (mounted.current) setData(next);
+      setData(next);
     } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
 

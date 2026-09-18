@@ -45,7 +45,7 @@ function snake(usd) {
     cv.addEventListener('keydown',function(e){var m={ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1}}[e.key];if(!m)return;e.preventDefault();if(dead){init();return;}if(m.x!==-dir.x||m.y!==-dir.y)dir=m;});
     document.getElementById('playAgain').addEventListener('click',init);
     document.getElementById('reset').addEventListener('click',init);done.addEventListener('click',kiwiComplete);init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

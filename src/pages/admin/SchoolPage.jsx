@@ -56,10 +56,10 @@ export default function SchoolPage() {
     } catch (e) { setLoadError(e.message); addToast(e.message, "error"); }
     setReady(true);
   };
-  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { refresh(); }, []);
 
   const courseGrades = (c) => grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code));
-  const gradesByCourse = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, courseGrades(c)])), [courses, grades]); // eslint-disable-line react-hooks/exhaustive-deps
+  const gradesByCourse = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, courseGrades(c)])), [courses, grades]);
   const courseStats = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, gradeStats(gradesByCourse[c.id] || [])])), [courses, gradesByCourse]);
 
   // Deadlines = incomplete course-tagged reminders, soonest first.

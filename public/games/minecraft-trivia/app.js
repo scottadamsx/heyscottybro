@@ -42,8 +42,7 @@ addNewBtn.addEventListener("click", () => {
     newQuestionDiv.appendChild(radio)
     newQuestionDiv.appendChild(document.createElement("br"))
 
-    let questionLabel = document.createElement("label")
-    questionLabel = "Question:"
+    const questionLabel = "Question:"
     let question = document.createElement("input")
     newQuestionDiv.append(questionLabel)
     newQuestionDiv.append(question)
@@ -195,7 +194,7 @@ function convertFromStorage(jsonString) {
 }
 
 
-document.addEventListener("DOMContentLoaded", evt => {
+document.addEventListener("DOMContentLoaded", () => {
 
     const music = document.getElementById("minecraftTheme")
     music.volume = 1.0

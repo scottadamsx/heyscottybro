@@ -43,7 +43,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       .catch((err) => { console.warn("[doc-links] load failed", err); addToast(`Couldn't load linked docs: ${err?.message || err}`, "error"); })
       .finally(() => setLoading(false));
   };
-  useEffect(() => { if (entityId) refresh(); /* eslint-disable-next-line */ }, [entityType, entityId]);
+  useEffect(() => { if (entityId) refresh(); }, [entityType, entityId]);
 
   // Close the picker on outside click.
   useEffect(() => {

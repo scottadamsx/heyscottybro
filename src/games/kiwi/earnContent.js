@@ -191,7 +191,7 @@ function survey(usd, count, area) {
     }
     next.addEventListener('click',function(){ if(picked===null)return; try{KM.qChoice=picked;}catch(e){} i++; show(); });
     show();
-  <\/script>
+  </script>
 </div>`;
 }
 const ARTICLES = [
@@ -333,7 +333,7 @@ function article(usd, articles, readTitles) {
       if(nz.length){var mean=nz.reduce(function(a,b){return a+b;},0)/nz.length; var vv=nz.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/nz.length; KM.dwellCV=mean>0?Math.round(Math.sqrt(vv)/mean*100)/100:0;}
     },500);
     idx=nextIdx(-1); render();
-  <\/script>
+  </script>
   </div>`;
 }
 function watch(usd) {
@@ -377,7 +377,7 @@ function watch(usd) {
     another.addEventListener('click', function(){ if(failed){ kiwiComplete(0); return; } idx=(idx+1)%V.length; watched=0; load(); statusEl.textContent='Loaded another \xB7 watch to earn'; });
     done.addEventListener('click', function(){ if(credited)return; credited=true; kiwiComplete(bonus, Math.round(v.currentTime||watched)); });
     load(); start();
-  <\/script>`;
+  </script>`;
 }
 function ad(usd) {
   const ADS = [
@@ -419,7 +419,7 @@ function ad(usd) {
     var iv=setInterval(function(){t--;count.textContent=Math.max(0,t)+'s left';if(t<=0){clearInterval(iv);if(!over){over=true;skip.style.display='none';done.disabled=false;count.textContent='Ad finished \u2014 claim your reward';}}},1000);
     skip.addEventListener('click',function(){if(over)return;over=true;clearInterval(iv);kiwiComplete(0);});
     done.addEventListener('click',function(){kiwiComplete(4);});
-  <\/script>
+  </script>
   </div>`;
 }
 function surveyWall(url) {
@@ -478,7 +478,7 @@ function kiwiQuestion(spec) {
       body.appendChild(op2);
     }
     go.addEventListener('click',function(){kiwiComplete(0,S.type==='rating'?(KM.qRating||0):0);});
-  <\/script>`;
+  </script>`;
 }
 function earnActivityHtml(opp, rewardUsd, opts = {}) {
   const id = opp.id.toLowerCase();
@@ -504,7 +504,7 @@ function earnActivityHtml(opp, rewardUsd, opts = {}) {
     body = article(rewardUsd);
   }
   const best = Math.max(0, Math.round(opts.bestScore || 0));
-  const bestJs = `<script>window.__KIWI_BEST=${best};<\/script>`;
+  const bestJs = `<script>window.__KIWI_BEST=${best};</script>`;
   const htmlAttr = opts.dark ? ' data-kiwi-theme="dark"' : "";
   return `<!DOCTYPE html><html${htmlAttr}><head>${shellHead(opts.dark)}</head><body>${bestJs}${COMPLETE_JS}${body}</body></html>`;
 }

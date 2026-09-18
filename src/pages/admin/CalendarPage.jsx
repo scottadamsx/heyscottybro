@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams , useNavigate } from "react-router-dom";
 import {
-  loadReminders, loadEvents, loadTransactions, newEvent, updateEvent, deleteEvent,
+  loadReminders, loadEvents, loadTransactions, updateEvent, deleteEvent,
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
   loadJournal,
 } from "../../api/plannerApi";
@@ -139,7 +139,7 @@ export default function CalendarPage() {
       setMonth(m - 1);
       openDay(d);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [params]);
 
   const itemsByDate = useMemo(() => {
@@ -491,7 +491,9 @@ export default function CalendarPage() {
       {/* ── Under the calendar: what's coming, half and half ── */}
       {(() => {
         const todayS = toDateStr(new Date());
-        const horizon = toDateStr(new Date(Date.now() + 30 * 86400000));
+        const horizonDate = new Date();
+        horizonDate.setDate(horizonDate.getDate() + 30);
+        const horizon = toDateStr(horizonDate);
         const upEvents = expandEvents(events.filter(byProject), todayS, horizon)
           .sort((a, b) => a.date.localeCompare(b.date) || String(a.start_time || "99").localeCompare(String(b.start_time || "99"))).slice(0, 8);
         const upTasks = expandReminders(reminders.filter((r) => !r.completed && byProject(r)), todayS, horizon)

@@ -168,7 +168,7 @@ export const COMPLETE_JS = `<script>
     function attach(){ var st = document.getElementById('status'); if (st) { try { new MutationObserver(tick).observe(st, { childList: true, characterData: true, subtree: true }); } catch(e){} tick(); } }
     if (document.readyState !== 'loading') { attach(); } else { document.addEventListener('DOMContentLoaded', attach); }
   })();
-<\/script>`;
+</script>`;
 
 export function shellHead(dark) {
   return dark ? SHELL_HEAD + DARK_SHELL_STYLE : SHELL_HEAD;

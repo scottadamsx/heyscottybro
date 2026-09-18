@@ -73,7 +73,7 @@ function twentyfour(usd) {
     document.getElementById('newb').addEventListener('click',newRound);
     done.addEventListener('click',function(){var bonus=roundsSolved>=5?7:(roundsSolved>=3?4:0);kiwiComplete(bonus,roundsSolved,roundsSolved>=3);});
     nextId=0;roundsSolved=0;newRound();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -16,7 +16,7 @@ export default function ConnectionStatus() {
     const off = onConnectionChange(setConnected);
     refresh();
     return off;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const toggleLocal = (e) => {

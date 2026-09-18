@@ -53,7 +53,7 @@ function bullscows(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var bonus=solved&&tries<=5?7:4;kiwiComplete(bonus,tries,solved);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

@@ -93,7 +93,7 @@ function dotsboxes(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var margin=youScore-cpuScore;var bonus=winner?(margin>=5?8:6):0;kiwiComplete(bonus,margin,winner);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

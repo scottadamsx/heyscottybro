@@ -22,7 +22,7 @@ function tictactoe(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(wins*2,wins,wins>0);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

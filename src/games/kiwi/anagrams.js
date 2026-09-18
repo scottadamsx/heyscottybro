@@ -62,7 +62,7 @@ function anagrams(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var bonus=foundSet.length>=BONUS_GOAL?8:4;kiwiComplete(bonus,foundSet.length,foundSet.length>=GOAL);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

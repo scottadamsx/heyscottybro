@@ -103,7 +103,7 @@ export default function HikerPage() {
       setView(v);
       setSelectedHike(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [params, hikes]);
 
   const copyEmails = () => {

@@ -2,7 +2,7 @@
 // Run with: node src/lib/budgetProjection.test.js
 // (No test framework — plain assertions. Exits non-zero on first failure.)
 
-import { buildProjection, defaultHorizon, fulfillmentStatus } from "./budgetProjection.js";
+import { buildProjection, defaultHorizon } from "./budgetProjection.js";
 
 let passed = 0;
 let failed = 0;

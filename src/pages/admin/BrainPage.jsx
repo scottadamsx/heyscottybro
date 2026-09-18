@@ -464,7 +464,7 @@ function NodeGraphModal({ node, data, colors, mobile, onClose, onOpenInGraph }) 
   const W = Math.min(typeof window !== "undefined" ? window.innerWidth * 0.86 : 560, 560);
   const H = mobile ? 300 : 380;
   const neighbourCount = sub.nodes.length - 1;
-  fitted.current = false; // re-fit whenever the centre changes
+  useEffect(() => { fitted.current = false; }, [center]); // re-fit whenever the centre changes
 
   return (
     <div className="brain-modal-backdrop" onClick={onClose}>

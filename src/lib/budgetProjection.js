@@ -184,7 +184,6 @@ export function onTrackStatus(projection) {
   if (!projection.length) return { label: "", delta: 0, projectedEnd: 0 };
   const last = projection[projection.length - 1];
   const first = projection[0];
-  const target = (first.openingBalance + last.closingBalance) / 2; // midpoint isn't ideal but fine heuristic
   // Find current or last-past month for comparison
   const reference = projection.find(p => p.isCurrent) || [...projection].reverse().find(p => p.isPast) || first;
   const straightLineIndex = projection.indexOf(reference);

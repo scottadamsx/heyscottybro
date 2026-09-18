@@ -45,8 +45,10 @@ export function AgentRuntimeProvider({ children }) {
 
   // Refs so the run callbacks can read the latest state without being
   // re-created on every keystroke (and without stale-closure bugs).
-  const threadsRef = useRef(threads); threadsRef.current = threads;
-  const busyRef = useRef(busy); busyRef.current = busy;
+  const threadsRef = useRef(threads);
+  const busyRef = useRef(busy);
+  useEffect(() => { threadsRef.current = threads; }, [threads]);
+  useEffect(() => { busyRef.current = busy; }, [busy]);
 
   const refreshActions = useCallback(
     () => loadAgentActions(60).then(setActions).catch(() => {}),

@@ -75,7 +75,7 @@ function rhythmtaps(usd) {
     startB.addEventListener('click',start);
     done.addEventListener('click',function(){var bonus=accuracy>=95?8:5;kiwiComplete(bonus,accuracy,accuracy>=80);});
     buildLanes();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

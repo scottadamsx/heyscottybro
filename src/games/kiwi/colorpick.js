@@ -19,7 +19,7 @@ function colorpick(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(Math.min(15,level-1),level-1);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

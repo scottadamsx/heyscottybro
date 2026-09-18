@@ -25,7 +25,7 @@ export async function uploadDocument(file, { name, description = "", tags = [] }
   const userId = await uid();
   const docId = crypto.randomUUID();
   // Keep the original filename but strip anything weird from the path.
-  const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+  const safeName = file.name.replace(/[^\w.-]+/g, "_");
   const storagePath = `${userId}/${docId}/${safeName}`;
 
   const { error: uploadError } = await supabase.storage

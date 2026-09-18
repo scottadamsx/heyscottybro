@@ -40,7 +40,7 @@ function game2048(usd) {
       if(g.join()!==before){KM.moves++;mergedBoard=mb;spawnIdx=add();draw();}}
     board.addEventListener('keydown',function(e){var k={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D'}[e.key];if(k){e.preventDefault();move(k);}});
     document.getElementById('reset').addEventListener('click',init);done.addEventListener('click',function(){kiwiComplete(bonus2048(Math.max.apply(null,g)),score);});init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

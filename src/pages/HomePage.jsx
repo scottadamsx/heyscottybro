@@ -171,7 +171,18 @@ export default function HomePage() {
     const onResize = () => setFloating(window.innerWidth > 720);
     window.addEventListener("resize", onResize); return () => window.removeEventListener("resize", onResize);
   }, []);
-  const geomFor = (id, index) => geoms[id] || defaultGeom(id, index, areaRef.current?.clientWidth || 1000);
+  // Width of the window area, measured after layout (reading the ref while rendering is stale).
+  const [areaW, setAreaW] = useState(1000);
+  useEffect(() => {
+    const el = areaRef.current;
+    if (!el) return undefined;
+    const measure = () => setAreaW(el.clientWidth || 1000);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const geomFor = (id, index) => geoms[id] || defaultGeom(id, index, areaW);
   const setGeom = (id, g) => setGeoms((prev) => { const next = { ...prev, [id]: g }; writeGeom(next); return next; });
 
   useEffect(() => {

@@ -20,7 +20,7 @@ function aimtrainer(usd) {
     function start(){score=0;left=20;playing=true;done.disabled=true;slowUntil=0;cx=tx=150;cy=ty=130;spawn();if(raf)cancelAnimationFrame(raf);loop();statusEl.textContent='Hits: 0 \xB7 20s';iv=setInterval(function(){left--;statusEl.textContent='Hits: '+score+' \xB7 '+left+'s';if(left<=0){clearInterval(iv);playing=false;if(dot)dot.remove();if(raf){cancelAnimationFrame(raf);raf=null;}statusEl.textContent='Final: '+score+' hits';done.disabled=false;done.textContent='Claim ${reward(usd)} + bonus';}},1000);}
     startB.addEventListener('click',start);
     done.addEventListener('click',function(){kiwiComplete(Math.min(12,Math.round(score/3)),score);});
-  <\/script>
+  </script>
 </div>`;
 }
 export {

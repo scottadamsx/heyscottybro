@@ -47,7 +47,7 @@ function simon(usd) {
     function press(i){if(!playing)return;flash(i);if(i!==seq[step]){statusEl.textContent='Wrong! Reached level '+(seq.length-1)+'. Press Start to retry.';playing=false;setTurn(true);return;}step++;if(step===seq.length){playing=false;setTurn(true);if(seq.length>=goal){done.disabled=false;if(N===4&&!u6){u6=true;lss('kiwi.simon.u6','1');refreshLocks();statusEl.textContent='Level '+seq.length+'! 6-colour mode unlocked \u2014 claim or keep going.';}else if(N===6&&!u8){u8=true;lss('kiwi.simon.u8','1');refreshLocks();statusEl.textContent='Level '+seq.length+'! 8-colour mode unlocked \u2014 claim or keep going.';}else{statusEl.textContent='Level '+seq.length+'! Claim, or keep going.';}}setTimeout(add,600);}}
     selMode(4);
     document.getElementById('go').addEventListener('click',start);done.addEventListener('click',kiwiComplete);
-  <\/script>
+  </script>
 </div>`;
 }
 export {

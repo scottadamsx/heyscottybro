@@ -26,7 +26,7 @@ export default function BudgetVsActual({ projection, recurringBills }) {
       }
     }
 
-    let unexpectedIncome = 0, unexpectedExpenses = 0;
+    let unexpectedIncome = 0;
     for (const m of past) {
       for (const tx of m.events) {
         const signed = Number(tx.amount || 0);
@@ -47,7 +47,7 @@ export default function BudgetVsActual({ projection, recurringBills }) {
     })).sort((a, b) => b.budgeted - a.budgeted);
 
     // Unexpected expenses = categories with no budget
-    unexpectedExpenses = categories.filter(c => c.budgeted === 0).reduce((s, c) => s + c.actual, 0);
+    const unexpectedExpenses = categories.filter(c => c.budgeted === 0).reduce((s, c) => s + c.actual, 0);
 
     return { categories, unexpectedIncome, unexpectedExpenses };
   }, [projection, recurringBills]);

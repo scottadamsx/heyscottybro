@@ -25,7 +25,7 @@ function mastermind(usd) {
     document.getElementById('clear').addEventListener('click',function(){guess=[];renderCur();});
     done.addEventListener('click',function(){kiwiComplete(solved?(MAX-tries+2):0,solved?(MAX-tries):0);});
     code=[];for(var i=0;i<4;i++)code.push(Math.floor(Math.random()*6));guess=[];tries=0;renderPal();renderCur();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

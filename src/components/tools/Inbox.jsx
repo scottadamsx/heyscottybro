@@ -38,7 +38,7 @@ export default function Inbox() {
   const [sending, setSending] = useState(null);     // id currently sending
 
   const refresh = () => loadMessages().then((r) => { setRows(r); setReady(true); }).catch((e) => { addToast(e.message, "error"); setReady(true); });
-  useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { refresh(); }, []);
 
   const sync = async () => {
     setSyncing(true);

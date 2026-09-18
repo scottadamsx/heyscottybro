@@ -98,7 +98,7 @@ export function withCacheMarkers(msgs) {
       if (!isLast) return m;
       content = [{ type: "text", text: content }];
     } else {
-      content = content.map(({ cache_control, ...b }) => b);
+      content = content.map((b) => { const copy = { ...b }; delete copy.cache_control; return copy; }); // strip old cache markers
     }
     if (isLast && content.length > 0) {
       content = content.map((b, j) => (j === content.length - 1 ? { ...b, cache_control: { type: "ephemeral" } } : b));

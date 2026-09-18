@@ -15,7 +15,7 @@ function diceduel(usd) {
     document.getElementById('roll').addEventListener('click',function(){if(over)return;round++;var y=roll3(),c=roll3();youEl.textContent=y.f;cpuEl.textContent=c.f;var res=y.s>c.s?'You win':y.s<c.s?'CPU wins':'Tie';if(y.s>c.s)yw++;else if(y.s<c.s)cw++;rd.textContent='Round '+round+': '+y.s+' vs '+c.s+' \u2014 '+res;statusEl.textContent='You '+yw+' \u2014 '+cw+' CPU';if(round>=MAX){over=true;var w=yw>cw;statusEl.textContent=(w?'You win the duel! ':'You lost. ')+'('+yw+'\u2013'+cw+')';done.disabled=false;done.textContent='Claim ${reward(usd)}'+(w?' + bonus':'');}});
     done.addEventListener('click',function(){kiwiComplete(yw>cw?3:0,yw);});
     statusEl.textContent='You 0 \u2014 0 CPU';
-  <\/script>
+  </script>
 </div>`;
 }
 export {

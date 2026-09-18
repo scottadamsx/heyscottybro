@@ -24,7 +24,7 @@ function tripeaks(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(Math.round(cleared/3),cleared);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

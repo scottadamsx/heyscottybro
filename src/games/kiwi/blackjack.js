@@ -23,7 +23,7 @@ function blackjack(usd) {
     dealB.addEventListener('click',deal);
     done.addEventListener('click',function(){kiwiComplete(wins*3,wins,wins>0);});
     deal();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

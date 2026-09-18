@@ -3,7 +3,7 @@
    Makes the installed PWA usable on flaky mobile connections. */
 const CACHE = "hsb-v2";
 
-self.addEventListener("install", (e) => self.skipWaiting());
+self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });

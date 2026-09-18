@@ -22,7 +22,7 @@ function videopoker(usd) {
     drawB.addEventListener('click',function(){if(phase==='hold')drawCards();else deal();});
     done.addEventListener('click',function(){kiwiComplete(Math.max(0,Math.round((chips-15)/2)),chips);});
     deal();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

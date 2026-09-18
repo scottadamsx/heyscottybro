@@ -43,7 +43,7 @@ export async function lazyImport(loader, label = "module") {
       // Never resolves; the page is going away.
       await new Promise(() => {});
     }
-    throw new Error(`This tab is running an old version of the app and couldn't load ${label}. Reload the page and try again.`);
+    throw new Error(`This tab is running an old version of the app and couldn't load ${label}. Reload the page and try again.`, { cause: err });
   }
 }
 

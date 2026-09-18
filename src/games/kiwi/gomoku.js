@@ -82,7 +82,7 @@ function gomoku(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){kiwiComplete(winner?4:0,grid.filter(function(v){return v!==0;}).length,winner);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

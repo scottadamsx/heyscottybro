@@ -16,7 +16,7 @@ function war(usd) {
     document.getElementById('flip').addEventListener('click',function(){if(round>=MAX)return;round++;var a=rc(),b=rc();var res=a>b?'You win':a<b?'CPU wins':'Tie';if(a>b)you++;else if(a<b)cpu++;tbl.innerHTML=card(a)+'<span class="vs">VS</span>'+card(b);rd.textContent='Round '+round+': '+res;statusEl.textContent='You '+you+' \u2014 '+cpu+' CPU';if(round>=MAX){var w=you>cpu;statusEl.textContent=(w?'You win the war! ':'War lost. ')+'('+you+'\u2013'+cpu+')';done.disabled=false;done.textContent='Claim ${reward(usd)}'+(w?' + bonus':'');}});
     done.addEventListener('click',function(){kiwiComplete(you>cpu?4:0,you,you>cpu);});
     statusEl.textContent='You 0 \u2014 0 CPU';
-  <\/script>
+  </script>
 </div>`;
 }
 export {

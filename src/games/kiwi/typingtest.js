@@ -18,7 +18,7 @@ function typingtest(usd) {
     document.getElementById('newb').addEventListener('click',pick);
     done.addEventListener('click',function(){var w=Number(inp.dataset.wpm||'0'),a=Number(inp.dataset.acc||'0');kiwiComplete(a>=85?Math.min(12,Math.round(w/8)):2,w);});
     pick();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

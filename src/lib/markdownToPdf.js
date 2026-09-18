@@ -41,7 +41,7 @@ function sanitize(s) {
     .replace(/[–—−]/g, "-")
     .replace(/[•·●▪]/g, "*")
     .replace(/…/g, "...")
-    .replace(/ /g, " ")
+    .replace(/\u00a0/g, " ")
     .replace(/\t/g, "    ")
     .replace(/[^\x20-\x7E]/g, "?");
 }

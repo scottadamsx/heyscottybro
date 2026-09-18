@@ -317,7 +317,6 @@ export default function ProjectsPage() {
   const parentProject = selectedProject?.parent_id
     ? projects.find(p => String(p.id) === String(selectedProject.parent_id))
     : null;
-  const taskCountFor = (pid) => projectTasks.filter(t => String(t.project_id) === String(pid)).length;
 
   return (
     <div className="module-page">

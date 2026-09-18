@@ -38,7 +38,7 @@ function paddlebreak(usd) {
     document.getElementById('newb').addEventListener('click',reset);
     done.addEventListener('click',function(){var perfect=ballsLostTotal===0;var bonus=unlocked?(perfect?8:5):0;kiwiComplete(bonus,score,unlocked);});
     reset();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

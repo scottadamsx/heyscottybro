@@ -77,7 +77,7 @@ function ladder(usd) {
     document.getElementById('newb').addEventListener('click',newPuzzle);
     done.addEventListener('click',function(){var steps=chain.length-1;var bonus=withinGate?(steps===optimal?7:5):0;kiwiComplete(bonus,steps,withinGate);});
     newPuzzle();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

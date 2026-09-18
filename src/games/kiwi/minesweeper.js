@@ -42,7 +42,7 @@ function minesweeper(usd) {
       if(oc===N*N-M){over=true;won=true;statusEl.textContent='Cleared! Claim your reward.';done.disabled=false;done.textContent='Claim ${reward(usd)} + bonus';stage.classList.add('k-winglow');}}
     function flag(i){if(over||opened[i])return;if(flags[i]){delete flags[i];cells[i].textContent='';}else{flags[i]=1;cells[i].textContent='\u2691';}var fc=0;for(var z in flags)fc++;statusEl.textContent='Mines left: '+(M-fc)+' \xB7 one chance';}
     build();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

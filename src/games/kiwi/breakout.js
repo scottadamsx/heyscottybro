@@ -24,7 +24,7 @@ function breakout(usd) {
     document.getElementById('newb').addEventListener('click',reset);
     done.addEventListener('click',function(){kiwiComplete(Math.min(12,score),score);});
     reset();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

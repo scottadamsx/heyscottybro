@@ -786,7 +786,7 @@ async function createReminderPlanned(clean) {
   try {
     plan = planReminderRows(clean, { todayStr: toDateStr(now), nowMinutes: now.getHours() * 60 + now.getMinutes() });
   } catch (e) {
-    throw new Error(`reminder not created: ${e.message}`);
+    throw new Error(`reminder not created: ${e.message}`, { cause: e });
   }
   const rows = [];
   for (const r of plan.rows) rows.push(await newReminder(r));

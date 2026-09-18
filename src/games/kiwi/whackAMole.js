@@ -37,7 +37,7 @@ function whack(usd) {
     function start(){score=0;time=ROUND;combo=0;updCombo();done.disabled=true;upd();updRing();pop();t1=setInterval(pop,800);t2=setInterval(function(){time--;upd();updRing();if(time<=0)end(score>=goal);},1000);}
     function end(win){clearInterval(t1);clearInterval(t2);holes.forEach(function(h){h.classList.remove('up');});if(win){statusEl.textContent='Got '+score+'! Claim your reward.';done.disabled=false;}else{statusEl.textContent='Time! Score '+score+'. Press Start to retry.';}}
     document.getElementById('go').addEventListener('click',start);done.addEventListener('click',kiwiComplete);
-  <\/script>
+  </script>
 </div>`;
 }
 export {

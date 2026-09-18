@@ -41,7 +41,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
     .catch((e) => { setLoadError(e.message); setReady(true); });
   // After a write: the owner re-fetches (controlled) or we do (standalone).
   const changed = () => (controlled ? onChanged?.() : refreshOwn());
-  useEffect(() => { if (!controlled) refreshOwn(); /* eslint-disable-next-line */ }, [controlled]);
+  useEffect(() => { if (!controlled) refreshOwn(); }, [controlled]);
 
   const stats = useMemo(() => gradeStats(rows), [rows]);
 

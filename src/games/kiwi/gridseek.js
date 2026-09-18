@@ -99,7 +99,7 @@ function gridseek(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var bonus=won?(elapsedAtWin<=90?6:4):0;kiwiComplete(bonus,found,won);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

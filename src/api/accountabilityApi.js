@@ -130,7 +130,7 @@ export async function loadAccountability() {
     return empty();
   } catch (err) {
     console.error("[accountability] load failed", err);
-    throw new Error(`Couldn't load accountability from Supabase: ${err?.message || err}`);
+    throw new Error(`Couldn't load accountability from Supabase: ${err?.message || err}`, { cause: err });
   }
 }
 
@@ -143,7 +143,7 @@ export async function loadAccountability() {
 export async function updateAccountability(mutator) {
   let userId;
   try { userId = await uid(); }
-  catch (err) { throw new Error(`Couldn't save accountability: ${err?.message || err}`); }
+  catch (err) { throw new Error(`Couldn't save accountability: ${err?.message || err}`, { cause: err }); }
 
   for (let attempt = 0; attempt < 2; attempt++) {
     let row, next, saved;
@@ -154,7 +154,7 @@ export async function updateAccountability(mutator) {
       saved = await writeVersioned(userId, next, row.state.version, row.exists, row.hadVersion);
     } catch (err) {
       console.error("[accountability] update failed", err);
-      throw new Error(`Couldn't save accountability to Supabase: ${err?.message || err}`);
+      throw new Error(`Couldn't save accountability to Supabase: ${err?.message || err}`, { cause: err });
     }
     if (saved) {
       writeLocal(saved);
@@ -180,7 +180,7 @@ export async function saveAccountability(data) {
   if (!hasVersion) console.warn("[accountability] unversioned save — caller should use updateAccountability(mutator)");
   let userId;
   try { userId = await uid(); }
-  catch (err) { throw new Error(`Couldn't save accountability: ${err?.message || err}`); }
+  catch (err) { throw new Error(`Couldn't save accountability: ${err?.message || err}`, { cause: err }); }
 
   let saved;
   try {
@@ -189,7 +189,7 @@ export async function saveAccountability(data) {
     saved = await writeVersioned(userId, next, expected, row.exists, row.hadVersion);
   } catch (err) {
     console.error("[accountability] save failed", err);
-    throw new Error(`Couldn't save accountability to Supabase: ${err?.message || err}`);
+    throw new Error(`Couldn't save accountability to Supabase: ${err?.message || err}`, { cause: err });
   }
   if (!saved) {
     throw new Error("Accountability changed elsewhere since it was loaded — your change was NOT saved. Reload and try again.");

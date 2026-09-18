@@ -63,7 +63,7 @@ function rps(usd) {
     btnP.addEventListener('click',function(){go(1);});
     btnSc.addEventListener('click',function(){go(2);});
     done.addEventListener('click',function(){kiwiComplete(you>cpu?3:0,you,you>cpu);});
-  <\/script>
+  </script>
 </div>`;
 }
 export {

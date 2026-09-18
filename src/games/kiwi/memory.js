@@ -40,7 +40,7 @@ function memory(usd) {
       if(deck[first.k]===deck[k]){first.b.classList.remove('up');first.b.classList.add('done');b.classList.add('done');first=null;matched++;updPips();if(matched===EM.length){statusEl.textContent='Solved in '+moves+' moves!';done.disabled=false;done.classList.add('k-earn-ready');}}
       else{lock=true;var f=first;first=null;setTimeout(function(){f.b.classList.add('mismatch');b.classList.add('mismatch');setTimeout(function(){f.b.classList.remove('up','mismatch');b.classList.remove('up','mismatch');lock=false;},420);},700);}}
     document.getElementById('reset').addEventListener('click',init);done.addEventListener('click',kiwiComplete);init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

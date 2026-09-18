@@ -86,7 +86,7 @@ function sudokumini(usd) {
     document.getElementById('hint').addEventListener('click',hint);
     done.addEventListener('click',function(){var bonus=hintUsed?4:7;kiwiComplete(bonus,hintUsed?0:1,solved);});
     buildPad();init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

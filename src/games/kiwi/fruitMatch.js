@@ -34,7 +34,7 @@ function fruitMatch(usd) {
     function pick(i){if(busy)return;if(sel===null){sel=i;paint();return;}if(sel===i){sel=null;paint();return;}
       if(adj(sel,i)){var a=sel;sel=null;swap(a,i);if(findMatches().length){paint();resolve();}else{swap(a,i);paint();}}else{sel=i;paint();}}
     document.getElementById('reset').addEventListener('click',build);done.addEventListener('click',function(){kiwiComplete(Math.round(score/8),score);});build();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

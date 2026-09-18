@@ -11,7 +11,7 @@ import { earnActivityHtml } from "../../games/kiwi/earnContent";
 export default function GameFrame({ opp, kiwiQ, best = 0, onComplete }) {
   const ref = useRef(null);
   const cbRef = useRef(onComplete);
-  cbRef.current = onComplete;
+  useEffect(() => { cbRef.current = onComplete; }, [onComplete]);
 
   const srcDoc = useMemo(
     () => earnActivityHtml(opp, 0.5, { bestScore: best, kiwiQ }),

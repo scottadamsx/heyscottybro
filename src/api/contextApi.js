@@ -65,7 +65,7 @@ export async function replaceContext(entries) {
 export async function syncLocalToCloud() {
   const userId = await uid();
   if (!userId) throw new Error("Sign in to sync context to the cloud.");
-  let legacy = [];
+  let legacy;
   try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY)) || []; } catch { legacy = []; }
 
   const norm = (t) => (t || "").trim().toLowerCase().replace(/\s+/g, " ");

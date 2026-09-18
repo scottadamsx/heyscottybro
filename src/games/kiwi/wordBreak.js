@@ -70,7 +70,7 @@ function wordle(usd) {
     document.addEventListener('click',function(){try{window.focus();}catch(e){}});
     setTimeout(function(){try{window.focus();}catch(e){}},150);
     setStatus();
-  <\/script>
+  </script>
   </div>`;
 }
 export {

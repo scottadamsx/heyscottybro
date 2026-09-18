@@ -65,7 +65,7 @@ export default function PdfViewer({ fileUrl, blob, title = "Document", filename 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [numPages]);
 
   const baseWidth = Math.max(280, Math.min(containerWidth - 24, 1400));

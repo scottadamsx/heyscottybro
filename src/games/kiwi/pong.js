@@ -28,7 +28,7 @@ function pong(usd) {
     cv.addEventListener('mousemove',function(e){var r=cv.getBoundingClientRect();py=Math.max(0,Math.min(H-PH,(e.clientY-r.top)*(H/r.height)-PH/2));});
     document.addEventListener('keydown',function(e){if(e.key==='ArrowUp'){e.preventDefault();py=Math.max(0,py-24);}else if(e.key==='ArrowDown'){e.preventDefault();py=Math.min(H-PH,py+24);}});
     document.getElementById('reset').addEventListener('click',reset);done.addEventListener('click',function(){kiwiComplete(ps,ps);});reset();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

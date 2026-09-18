@@ -61,7 +61,7 @@ function bankroll21(usd) {
     document.getElementById('newb').addEventListener('click',init);
     done.addEventListener('click',function(){var profit=chips-START;var bonus=profit>=15?9:6;kiwiComplete(bonus,profit,true);});
     init();
-  <\/script>
+  </script>
 </div>`;
 }
 export {

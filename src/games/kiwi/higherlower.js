@@ -16,7 +16,7 @@ function higherlower(usd) {
     document.getElementById('lo').addEventListener('click',function(){guess(false);});
     done.addEventListener('click',function(){kiwiComplete(Math.min(15,best),best);});
     show();statusEl.textContent='Streak: 0 \xB7 best 0';
-  <\/script>
+  </script>
 </div>`;
 }
 export {
