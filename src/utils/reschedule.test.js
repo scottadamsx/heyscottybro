@@ -82,3 +82,35 @@ test('overlap + first free slot respect existing blocks', () => {
   assert.equal(snap(532), 525);
   assert.equal(snap(538), 540);
 });
+
+import { hasEnded, missedToday } from './reschedule.js';
+
+test('hasEnded: tasks end at time + duration (30 min default)', () => {
+  const t = { date: '2026-09-17', time: '09:00' };
+  assert.equal(hasEnded(t, 'task', '2026-09-17', 9 * 60 + 29), false);
+  assert.equal(hasEnded(t, 'task', '2026-09-17', 9 * 60 + 30), true);
+  assert.equal(hasEnded({ ...t, duration_min: 90 }, 'task', '2026-09-17', 10 * 60), false);
+  assert.equal(hasEnded({ date: '2026-09-17', time: null }, 'task', '2026-09-17', 23 * 60), false, 'untimed never ends');
+  assert.equal(hasEnded({ date: '2026-09-18', time: '09:00' }, 'task', '2026-09-17', 23 * 60), false, 'future day');
+});
+
+test('hasEnded: events use end time, else start + 60, and multi-day only on the last day', () => {
+  assert.equal(hasEnded({ date: '2026-09-17', start_time: '17:00', end_time: '18:00' }, 'event', '2026-09-17', 17 * 60 + 30), false);
+  assert.equal(hasEnded({ date: '2026-09-17', start_time: '17:00', end_time: '18:00' }, 'event', '2026-09-17', 18 * 60), true);
+  assert.equal(hasEnded({ date: '2026-09-17', start_time: '16:30' }, 'event', '2026-09-17', 17 * 60 + 30), true);
+  assert.equal(hasEnded({ date: '2026-09-17' }, 'event', '2026-09-17', 23 * 60), false, 'all-day stays for the day');
+  const trip = { date: '2026-09-15', end_date: '2026-09-18', start_time: '09:00', end_time: '12:00' };
+  assert.equal(hasEnded(trip, 'event', '2026-09-17', 23 * 60), false, 'still going tomorrow');
+  assert.equal(hasEnded(trip, 'event', '2026-09-18', 12 * 60), true);
+});
+
+test('missedToday: unfinished timed tasks whose slot has passed, earliest first', () => {
+  const rs = [
+    { id: 'a', date: '2026-09-17', time: '14:00' },
+    { id: 'b', date: '2026-09-17', time: '08:00' },
+    { id: 'c', date: '2026-09-17', time: '08:00', completed: true },
+    { id: 'd', date: '2026-09-17', time: '20:00' },
+    { id: 'e', date: '2026-09-17' },
+  ];
+  assert.deepEqual(missedToday(rs, '2026-09-17', 15 * 60).map((r) => r.id), ['b', 'a']);
+});

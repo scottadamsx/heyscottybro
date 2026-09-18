@@ -12,7 +12,7 @@ import { buildBrief } from "../../lib/brief";
 import { ExportKit } from "../../components/ui";
 import LineChart from "../../components/ui/LineChart";
 import RescheduleSheet from "../../components/RescheduleSheet";
-import { overdueReminders } from "../../utils/reschedule";
+import { canReschedule, hasEnded, missedToday, overdueReminders } from "../../utils/reschedule";
 import { useToast } from "../../contexts/ToastContext";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
@@ -46,6 +46,12 @@ export default function DashboardPage() {
   const [showWeek, setShowWeek] = useState(false);
   const [range, setRange] = useState(7);
   const [scheduling, setScheduling] = useState(null); // { item, kind } in the Fit-it-in dialog
+  // Ticks every minute so things whose time has passed drop out of Up next on their own.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60000);
+    return () => clearInterval(t);
+  }, []);
   const navigate = useNavigate();
   const { addToast } = useToast();
   // After a reschedule, re-read just the plan data so Up next / counts move.
@@ -99,8 +105,9 @@ export default function DashboardPage() {
 
   if (loading) return <div className="module-page"><p className="no-entries">Loading today…</p></div>;
 
-  const today = new Date();
+  const today = new Date(nowTick);
   const todayStr = toDateStr(today);
+  const nowMin = today.getHours() * 60 + today.getMinutes();
   const todayLong = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   // ── Money: the SAME snapshot the Money page uses, so figures always match ──
@@ -128,7 +135,8 @@ export default function DashboardPage() {
   // ── Tasks + events ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
   const todayItems = remindersForDay(activeReminders, todayStr);
-  const overdue = overdueReminders(activeReminders, todayStr);
+  // Overdue = earlier days, plus anything today whose time slot has already passed.
+  const overdue = [...overdueReminders(activeReminders, todayStr), ...missedToday(todayItems, todayStr, nowMin)];
   const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30)).sort((a, b) => a.date.localeCompare(b.date));
   const anytimeItems = undatedReminders(activeReminders);
   const weekEnd = addDaysStr(todayStr, 6);
@@ -140,8 +148,8 @@ export default function DashboardPage() {
   const courseById = Object.fromEntries(school.courses.map((c) => [c.id, c]));
   const projectById = Object.fromEntries(data.projects.map((p) => [p.id, p]));
   const upNext = [
-    ...todayItems.map((r) => ({ kind: r.course_id ? "school" : "task", id: `t-${r.id}-${r.date}`, raw: r, title: r.name, date: todayStr, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
-    ...eventsThisWeek.map((e) => ({ kind: "event", id: `e-${e.id}`, title: e.title, date: e.date < todayStr ? todayStr : e.date, time: e.start_time, sub: "Event", go: () => navigate(`/admin/planner?date=${e.date}`) })),
+    ...todayItems.filter((r) => !hasEnded(r, "task", todayStr, nowMin)).map((r) => ({ kind: r.course_id ? "school" : "task", id: `t-${r.id}-${r.date}`, raw: r, title: r.name, date: todayStr, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
+    ...eventsThisWeek.filter((e) => !hasEnded(e, "event", todayStr, nowMin)).map((e) => ({ kind: "event", id: `e-${e.id}`, title: e.title, date: e.date < todayStr ? todayStr : e.date, time: e.start_time, sub: "Event", go: () => navigate(`/admin/planner?date=${e.date}`) })),
     ...upcomingAll.slice(0, 8).map((r) => ({ kind: r.course_id ? "school" : "task", id: `u-${r.id}-${r.date}`, raw: data.reminders.find((x) => x.id === r.id), title: r.name, date: r.date, time: r.time, sub: courseById[r.course_id]?.name || projectById[r.project_id]?.name || "Task", go: () => openTask(r.id) })),
   ].sort((a, b) => a.date.localeCompare(b.date) || String(a.time || "99").localeCompare(String(b.time || "99"))).slice(0, 5);
   const whenLabel = (it) => {
@@ -268,15 +276,17 @@ export default function DashboardPage() {
               <div className="db-subhead">Overdue <span className="db-count">{overdue.length}</span></div>
               <ul className="un-list">
                 {overdue.slice(0, 4).map((r) => (
-                  <li key={`o-${r.id}`} className="un-item">
+                  <li key={`o-${r.id}-${r.date}`} className="un-item">
                     <div className="un-row" role="button" tabIndex={0} onClick={() => openTask(r.id)} onKeyDown={onActivate(() => openTask(r.id))}>
                       <span className="un-icon kind-overdue" aria-hidden="true"><i className="fa-solid fa-clock-rotate-left" /></span>
                       <span className="un-main">
                         <span className="un-title">{r.name}</span>
-                        <span className="un-sub is-overdue">Was due {shortDate(r.date)}</span>
+                        <span className="un-sub is-overdue">Was due {r.date === todayStr ? (r.time ? formatTime12(r.time) : "today") : shortDate(r.date)}</span>
                       </span>
                     </div>
-                    <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setScheduling({ item: r, kind: "task" })}>Fit it in</button>
+                    {canReschedule(r) && (
+                      <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setScheduling({ item: data.reminders.find((x) => x.id === r.id) || r, kind: "task" })}>Fit it in</button>
+                    )}
                   </li>
                 ))}
               </ul>

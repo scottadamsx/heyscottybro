@@ -136,3 +136,29 @@ export function firstFreeSlot(dur, timed, from = DAY_START) {
   }
   return null;
 }
+
+/**
+ * Has this item already finished today? Only items dated `todayStr` with a time can have
+ * ended: a task ends at its time + duration (30 min if not estimated), an event at its end
+ * time (or start + 60 min). A multi-day event only ends on its last day. Untimed and
+ * future items never have. `nowMin` = minutes since local midnight.
+ */
+export function hasEnded(item, kind, todayStr, nowMin) {
+  if (!item) return false;
+  if (kind === "event") {
+    const lastDay = item.end_date && item.end_date > item.date ? item.end_date : item.date;
+    if (lastDay !== todayStr) return false;
+    const end = item.end_time ? toMin(item.end_time)
+      : item.start_time && lastDay === item.date ? toMin(item.start_time) + DEFAULT_EVENT_MIN : null;
+    return end != null && end <= nowMin;
+  }
+  if (item.date !== todayStr || !item.time) return false;
+  return toMin(item.time) + itemDuration(item, "task") <= nowMin;
+}
+
+/** Unfinished tasks dated today whose time has already passed (a missed slot, not "up next"). */
+export function missedToday(reminders, todayStr, nowMin) {
+  return (reminders || [])
+    .filter((r) => !r.completed && hasEnded(r, "task", todayStr, nowMin))
+    .sort((a, b) => String(a.time).localeCompare(String(b.time)));
+}
