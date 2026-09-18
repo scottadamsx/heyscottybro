@@ -264,6 +264,7 @@ export default function ProjectsPage() {
   const removeAutoTask = async (etId, task) => {
     const et = eventTypes.find(x => x.id === etId);
     if (!et) return;
+    if (!await confirm(`Remove "${task.name}" from ${et.name}'s auto-tasks?`, { title: "Remove auto-task", confirmLabel: "Remove" })) return;
     const updated = et.auto_tasks.filter((t) => t !== task);
     try { await updateEventType(etId, { auto_tasks: updated }); await loadAll(); }
     catch (err) { addToast(`Couldn't remove auto-task: ${err?.message || "unknown error"}`, "error"); }
@@ -513,7 +514,7 @@ export default function ProjectsPage() {
                     <DocLinks entityType="initiative" entityId={i.id} title="Documents" compact />
                   </div>
                   <button type="button" className="btn-mini" onClick={() => setInitEdit({ id: i.id, name: i.name || "", description: i.description || "", recurrence: i.recurrence || "weekly" })} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
-                  <button type="button" className="icon-x sm" onClick={() => deleteInitiative(i.id).then(() => loadProjectDetail(selected)).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${i.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                  <button type="button" className="icon-x sm" onClick={async () => { if (!await confirm(`Delete the initiative "${i.name}"?`, { title: "Delete initiative", confirmLabel: "Delete" })) return; deleteInitiative(i.id).then(() => loadProjectDetail(selected)).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error")); }} aria-label={`Delete ${i.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                 </div>
               ))}
             </div>
@@ -543,7 +544,7 @@ export default function ProjectsPage() {
                   onClick={() => setEditingAutoTasks(editingAutoTasks === et.id ? null : et.id)}>
                   {editingAutoTasks === et.id ? "Done" : "Edit tasks"}
                 </button>
-                <button type="button" className="icon-x sm" onClick={() => deleteEventType(et.id).then(loadAll).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error"))} aria-label={`Delete ${et.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                <button type="button" className="icon-x sm" onClick={async () => { if (!await confirm(`Delete the event type "${et.name}" and its auto-tasks? Events already created keep their tasks.`, { title: "Delete event type", confirmLabel: "Delete" })) return; deleteEventType(et.id).then(loadAll).catch((err) => addToast(`Couldn't delete: ${err?.message || "unknown error"}`, "error")); }} aria-label={`Delete ${et.name}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
               {(et.auto_tasks || []).length > 0 && (
                 <div className="auto-tasks-list event-type-tasks">

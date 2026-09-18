@@ -4,6 +4,8 @@ import { loadDocLinks, attachDoc, attachFile, fileLinkUrl, detachDoc, setDocRead
 import { loadBrain } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import "./doclinks.css";
+import { SkeletonList } from "../Skeleton";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const TYPE_ICON = {
   note: "fa-note-sticky", memory: "fa-brain", project: "fa-diagram-project",
@@ -24,6 +26,7 @@ const icon = (t) => (t === "image" ? "fa-image" : t === "file" ? "fa-file" : TYP
  */
 export default function DocLinks({ entityType, entityId, title = "Linked documents", compact = false, onChange }) {
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const navigate = useNavigate();
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +127,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   }
 
   async function remove(link) {
+    if (!await confirm(`Unlink "${link.node_title || "this document"}"? The note stays in your Brain.`, { title: "Unlink document", confirmLabel: "Unlink" })) return;
     try { await detachDoc(link.id); setLinks((ls) => { const next = ls.filter((l) => l.id !== link.id); summarize(next); return next; }); }
     catch (e) { addToast(e.message || "Could not remove", "error"); }
   }
@@ -132,6 +136,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
 
   return (
     <div className={`doclinks${dragOver ? " drag-over" : ""}`} onDrop={onDrop} onDragOver={onDragOver} onDragLeave={() => setDragOver(false)} onPaste={onPaste}>
+      {dialog}
       <button type="button" className="doclinks-head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} aria-hidden="true" />
         <i className="fa-solid fa-paperclip" aria-hidden="true" />
@@ -141,7 +146,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
 
       {open && (
         <div className="doclinks-body">
-          {loading && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
+          {loading && <SkeletonList rows={2} label="Loading linked documents" />}
           {!loading && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
           {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
 

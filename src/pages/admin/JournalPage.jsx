@@ -9,6 +9,8 @@ import { useToast } from "../../contexts/ToastContext";
 import { loadDraft, saveDraft, clearDraft, JOURNAL_NEW_DRAFT, journalEditDraft } from "../../utils/drafts";
 import { journalToMarkdown, journalExportFilename } from "../../utils/journalExport";
 import { downloadMarkdown } from "../../lib/exporter";
+import UpdatedMeta from "../../components/UpdatedMeta";
+import { SkeletonRegion, SkeletonRows } from "../../components/Skeleton";
 
 const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
 const shortDay = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -109,7 +111,7 @@ export default function JournalPage() {
     const fields = { title: editForm.title.trim() || formatDisplayDate(editForm.date), entry: editForm.entry.trim(), date: editForm.date };
     const prev = selectedEntry;
     // Optimistic: show the edit immediately; on failure roll back and keep the modal open with the error.
-    setEntries((list) => list.map((x) => x.id === prev.id ? { ...x, ...fields } : x));
+    setEntries((list) => list.map((x) => x.id === prev.id ? { ...x, ...fields, updated_at: new Date().toISOString() } : x));
     try {
       await updateJournalEntry(prev.id, fields);
     } catch (err) {
@@ -119,6 +121,7 @@ export default function JournalPage() {
     clearDraft(journalEditDraft(prev.id));
     closeEdit();
     addToast("Entry updated.", "success");
+    load(); // pick up the server's updated_at (set by the journal_updated_at trigger)
     return false; // already closed (closeEdit), without dismissEdit's draft check
   };
 
@@ -219,6 +222,7 @@ export default function JournalPage() {
                   </div>
                 </div>
                 <h2 className="journal-sheet-title">{selectedEntry.title}</h2>
+                <UpdatedMeta at={selectedEntry.updated_at} createdAt={selectedEntry.created_at} className="journal-sheet-updated" />
                 <p className="journal-sheet-body">{selectedEntry.entry}</p>
               </article>
             )}
@@ -233,7 +237,7 @@ export default function JournalPage() {
               {ready && <span className="db-count">{sortedEntries.length}<span className="visually-hidden"> {sortedEntries.length === 1 ? "entry" : "entries"}</span></span>}
             </div>
             {!ready ? (
-              <p className="no-entries">Loading…</p>
+              <SkeletonRegion label="Loading journal entries" inline><SkeletonRows rows={6} actions={false} /></SkeletonRegion>
             ) : sortedEntries.length === 0 ? (
               <p className="no-entries">No journal entries yet. Start writing!</p>
             ) : (

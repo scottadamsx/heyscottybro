@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import UpdatedMeta from "../../components/UpdatedMeta";
+import { PageSkeleton } from "../../components/Skeleton";
 import { useToast } from "../../contexts/ToastContext";
 import { AGENTS } from "../../agents/registry";
 import {
@@ -28,7 +30,14 @@ export default function ResearchPage() {
   const [showNew, setShowNew] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
-  const refresh = () => { setLoading(true); loadResearchRequests().then(setRequests).catch(() => {}).finally(() => setLoading(false)); };
+  const [loadError, setLoadError] = useState(null); // a failed read is NOT "no requests yet"
+  const refresh = () => {
+    setLoading(true);
+    loadResearchRequests()
+      .then((rows) => { setRequests(rows); setLoadError(null); })
+      .catch((err) => { console.error("[research] load failed", err); setLoadError(`Couldn't load research requests: ${err?.message || err}`); })
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { refresh(); }, []);
 
   const visible = useMemo(
@@ -50,7 +59,7 @@ export default function ResearchPage() {
   async function setStatus(r, status) {
     try {
       await updateResearchRequest(r.id, { status });
-      setRequests((rs) => rs.map((x) => (x.id === r.id ? { ...x, status } : x)));
+      setRequests((rs) => rs.map((x) => (x.id === r.id ? { ...x, status, updated_at: new Date().toISOString() } : x)));
     } catch (err) { addToast(err.message || "Could not update", "error"); }
   }
 
@@ -93,8 +102,14 @@ export default function ResearchPage() {
         </FormModal>
       )}
 
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
-      {!loading && visible.length === 0 && <p className="no-entries">No research requests yet. Create one with New request, then attach deliverable docs from your Brain as they’re ready.</p>}
+      {loading && <PageSkeleton variant="list" label="Loading research requests" header={false} page={false} />}
+      {loadError && (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{loadError}</p>
+          <button type="button" className="btn btn-sm" onClick={refresh}>Retry</button>
+        </div>
+      )}
+      {!loading && !loadError && visible.length === 0 && <p className="no-entries">No research requests yet. Create one with New request, then attach deliverable docs from your Brain as they’re ready.</p>}
 
       <div className="research-list">
         {visible.map((r) => {
@@ -112,6 +127,7 @@ export default function ResearchPage() {
               <DocLinks entityType="research" entityId={r.id} title="Deliverables" />
 
               <div className="research-card-foot">
+                <UpdatedMeta at={r.updated_at} createdAt={r.created_at} className="research-updated" />
                 <select aria-label="Status" value={r.status} onChange={(e) => setStatus(r, e.target.value)} className="research-status-select">
                   {RESEARCH_STATUSES.map((s) => <option key={s} value={s}>{STATUS_META[s]?.label || s}</option>)}
                 </select>

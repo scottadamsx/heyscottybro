@@ -7,6 +7,7 @@ import TaskFormModal, { taskToForm } from "../../components/TaskFormModal";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./plan.css";
+import { PageSkeleton } from "../../components/Skeleton";
 
 const RECUR_LABEL = { none: "One-time", daily: "Daily", weekly: "Weekly", monthly: "Monthly" };
 
@@ -84,7 +85,8 @@ export default function TaskDetailPage() {
 
   const handleReopen = async () => {
     setTask((prev) => ({ ...prev, completed: false, completed_date: null }));
-    try { await updateReminder(id, { completed: false, completed_date: null }); } catch { await load(); }
+    try { await updateReminder(id, { completed: false, completed_date: null }); }
+    catch (err) { await load(); setLoadError(`Couldn't reopen: ${err?.message || err}`); }
   };
 
   const handleDelete = async () => {
@@ -92,15 +94,16 @@ export default function TaskDetailPage() {
     try {
       await deleteReminder(id);
       navigate("/admin/planner");
-    } catch {
+    } catch (err) {
       await load();
+      setLoadError(`Couldn't delete: ${err?.message || err}`);
     }
   };
 
   if (loading) {
     return (
       <div className="module-page">
-        <p className="no-entries" role="status"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading task…</p>
+        <PageSkeleton variant="detail" label="Loading task" header={false} page={false} />
       </div>
     );
   }

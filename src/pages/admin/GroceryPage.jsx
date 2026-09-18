@@ -10,6 +10,7 @@ import "./grocery.css";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
+import { SkeletonList } from "../../components/Skeleton";
 
 const money = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 const blankItem = () => ({ raw_text: "", quantity: 1, unit_price: "", total_price: "" });
@@ -285,7 +286,7 @@ export default function GroceryPage() {
           </button>
         </div>
         <p className="money-card-note">Snap or upload a photo of a grocery receipt and AI pulls out the items and total.</p>
-        {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
+        {loading && <SkeletonList rows={4} label="Loading receipts" />}
         {!loading && loadError && (
           <div className="load-error" role="alert">
             <p className="load-error-msg">{loadError}</p>

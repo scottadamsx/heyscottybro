@@ -4,6 +4,7 @@ import { loadAgentActions } from "../../api/plannerApi";
 import { getAgent } from "../../agents/registry";
 import { StatTile } from "../../components/ui";
 import "./mission.css";
+import { PageSkeleton } from "../../components/Skeleton";
 
 const dollars = (cents) => "$" + (Number(cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function tokens(n) {
@@ -95,12 +96,12 @@ export default function UsagePage() {
     <div className="module-page usage-page">
       <div className="module-header">
         <h1>Claude usage</h1>
-        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchAll} disabled={status === "loading"}>
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchAll} disabled={status === "loading"} aria-busy={status === "loading" || undefined}>
           <i className={`fa-solid ${status === "loading" ? "fa-spinner fa-spin" : "fa-rotate-right"}`} aria-hidden="true" /> Refresh
         </button>
       </div>
 
-      {status === "loading" && <p className="no-entries">Loading…</p>}
+      {status === "loading" && <PageSkeleton variant="money" label="Loading usage" header={false} page={false} />}
 
       {status === "ready" && (
         <>

@@ -4,6 +4,7 @@ import { toDateStr } from "../utils/plannerUtils";
 import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../api/accountabilityApi";
 import { onDataChange } from "../utils/dataEvents";
 import { useToast } from "../contexts/ToastContext";
+import { SkeletonList } from "./Skeleton";
 
 function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
 
@@ -72,7 +73,7 @@ export default function AccountabilitySummary() {
       </div>
 
       {!ready ? (
-        <p className="no-entries">Loading…</p>
+        <SkeletonList rows={3} label="Loading habits" />
       ) : loadError ? (
         <div className="load-error" role="alert">
           <p className="load-error-msg">{loadError}</p>

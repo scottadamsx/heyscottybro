@@ -11,6 +11,7 @@ import { dueHabits, missedHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
 import RescheduleSheet from "../../components/RescheduleSheet";
 import "./plan.css";
+import { PageSkeleton, SkeletonList } from "../../components/Skeleton";
 
 export default function RemindersPage() {
   const [params] = useSearchParams();
@@ -49,6 +50,7 @@ export default function RemindersPage() {
     ["habits", loadAccountability, setHabits],
   ];
   const [loadErrors, setLoadErrors] = useState([]);
+  const [loaded, setLoaded] = useState(false); // until the first read lands, show a skeleton — not "All clear"
   const load = async () => {
     const results = await Promise.allSettled(LOAD_SOURCES.map(([, fn]) => fn()));
     const failed = [];
@@ -58,6 +60,7 @@ export default function RemindersPage() {
       else { console.error(`[tasks] failed to load ${name}`, res.reason); failed.push(`${name} (${res.reason?.message || res.reason})`); }
     });
     setLoadErrors(failed);
+    setLoaded(true);
   };
 
   useEffect(() => { load(); }, []);
@@ -134,7 +137,7 @@ export default function RemindersPage() {
     const r = list.find((x) => x.id === id);
     if (!(await confirm(`Delete "${r?.name || "this task"}"?`, { title: "Delete task", confirmLabel: "Delete" }))) return;
     setList((prev) => prev.filter((x) => x.id !== id));
-    try { await deleteReminder(id); } catch { await load(); }
+    try { await deleteReminder(id); } catch (err) { addToast(`Couldn't delete task: ${err?.message || err}`, "error"); await load(); }
   };
 
   // Saves throw on failure so the modal stays open with the error and what
@@ -273,7 +276,8 @@ export default function RemindersPage() {
             ? <DueHabitReminders rows={habitRows} missedRows={missedRows} busyId={habitSaving} onDone={completeHabit}
                 onMiss={(t) => setHabitMissed(t, true)} onUnmiss={(t) => setHabitMissed(t, false)}
                 onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
-            : <p className="field-hint" role="status">Loading due habits…</p>)}
+            : <SkeletonList rows={2} label="Loading due habits" />)}
+          {!loaded ? <PageSkeleton variant="tasks" label="Loading tasks" header={false} page={false} /> : (<>
           <section className="db-card" aria-label="Active tasks">
             <div className="db-card-header"><h3 className="db-card-title">Active ({active.length})</h3></div>
             {active.length === 0 && <p className="no-entries">No active tasks. All clear.</p>}
@@ -306,6 +310,7 @@ export default function RemindersPage() {
               </div>
             </section>
           )}
+          </>)}
         </div>
       </div>
     </div>

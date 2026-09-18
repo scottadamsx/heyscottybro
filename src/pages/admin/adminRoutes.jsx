@@ -3,6 +3,7 @@
  */
 import { lazy, Suspense } from "react";
 import ErrorBoundary from "../../components/ErrorBoundary";
+import { PageSkeleton } from "../../components/Skeleton";
 
 const DashboardPage   = lazy(() => import("./DashboardPage.jsx"));
 const PlannerPage     = lazy(() => import("./PlannerPage.jsx"));
@@ -25,7 +26,7 @@ const BrainReaderPage = lazy(() => import("./BrainReaderPage.jsx"));
 /** Each lazy page gets its own ErrorBoundary — navigating away resets it. */
 export const Lazy = (el) => (
   <ErrorBoundary>
-    <Suspense fallback={<div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>}>
+    <Suspense fallback={<PageSkeleton label="Loading page" />}>
       {el}
     </Suspense>
   </ErrorBoundary>

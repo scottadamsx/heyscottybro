@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
+import { useConfirm } from "../../hooks/useConfirm";
+import { copyText } from "../../utils/clipboard";
+import { SkeletonList } from "../Skeleton";
 import {
   createShareToken,
   loadDocumentShares,
@@ -16,6 +19,9 @@ export default function ShareModal({ doc, onClose }) {
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [sendingId, setSendingId] = useState(null);
+  const [revokingId, setRevokingId] = useState(null);
+  const [announce, setAnnounce] = useState("");
+  const { confirm, dialog } = useConfirm();
 
   const buildShareUrl = (token) => `${window.location.origin}/doc/${token}`;
 
@@ -34,22 +40,38 @@ export default function ShareModal({ doc, onClose }) {
       const share = await createShareToken(doc.id, { sharedWithEmail: email || null, expiresInDays });
       setShares((s) => [share, ...s]);
       setEmail("");
-    } catch {
-      /* surfaced by disabled state; keep simple */
+    } catch (err) {
+      addToast(`Couldn't create a share link: ${err?.message || err}`, "error");
     } finally {
       setCreating(false);
     }
   };
 
-  const handleCopy = (share) => {
-    navigator.clipboard?.writeText(buildShareUrl(share.token));
-    setCopiedId(share.id);
-    setTimeout(() => setCopiedId((c) => (c === share.id ? null : c)), 1500);
+  const handleCopy = async (share) => {
+    setAnnounce("");
+    try {
+      await copyText(buildShareUrl(share.token));
+      setCopiedId(share.id);
+      setAnnounce("Share link copied to clipboard");
+      setTimeout(() => setCopiedId((c) => (c === share.id ? null : c)), 1500);
+    } catch (err) {
+      setAnnounce("Couldn't copy the share link");
+      addToast(`Couldn't copy the link: ${err?.message || err}`, "error");
+    }
   };
 
-  const handleRevoke = async (shareId) => {
-    await revokeShare(shareId);
-    setShares((s) => s.filter((sh) => sh.id !== shareId));
+  const handleRevoke = async (share) => {
+    if (!await confirm(`Revoke this link${share.shared_with_email ? ` for ${share.shared_with_email}` : ""}? Anyone who has it will stop being able to open "${doc.name}".`, { title: "Revoke share link", confirmLabel: "Revoke" })) return;
+    setRevokingId(share.id);
+    try {
+      await revokeShare(share.id);
+      setShares((s) => s.filter((sh) => sh.id !== share.id));
+      addToast("Share link revoked.", "success");
+    } catch (err) {
+      addToast(`Couldn't revoke the link: ${err?.message || err}`, "error");
+    } finally {
+      setRevokingId(null);
+    }
   };
 
   const mailto = (shareUrl) => {
@@ -96,14 +118,15 @@ export default function ShareModal({ doc, onClose }) {
                 <option value="7">7 days</option>
                 <option value="30">30 days</option>
               </select>
-              <button className="btn" type="submit" disabled={creating}>
+              <button className="btn" type="submit" disabled={creating} aria-busy={creating || undefined}>
                 {creating ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /><span className="visually-hidden">Generating link…</span></> : "Generate link"}
               </button>
             </div>
           </form>
 
           <div className="doc-share-list">
-            {loading && <p className="no-entries">Loading…</p>}
+            {loading && <SkeletonList rows={2} label="Loading share links" />}
+            <span className="visually-hidden" aria-live="polite">{announce}</span>
             {!loading && shares.length === 0 && <p className="no-entries">No share links yet.</p>}
             {shares.map((sh) => (
               <div className="doc-share-row" key={sh.id}>
@@ -124,7 +147,7 @@ export default function ShareModal({ doc, onClose }) {
                   <button type="button" className="btn-mini share-btn" onClick={() => handleEmailShare(sh)} disabled={sendingId === sh.id} title="Email this link" aria-label="Email this link">
                     <i className={`fa-solid ${sendingId === sh.id ? "fa-spinner fa-spin" : "fa-envelope"}`} aria-hidden="true" />
                   </button>
-                  <button type="button" className="btn-mini danger share-btn" onClick={() => handleRevoke(sh.id)} title="Revoke" aria-label="Revoke link">
+                  <button type="button" className="btn-mini danger share-btn" onClick={() => handleRevoke(sh)} disabled={revokingId === sh.id} aria-busy={revokingId === sh.id || undefined} title="Revoke" aria-label="Revoke link">
                     <i className="fa-solid fa-ban" aria-hidden="true" />
                   </button>
                 </div>
@@ -132,6 +155,7 @@ export default function ShareModal({ doc, onClose }) {
             ))}
           </div>
         </div>
+        {dialog}
       </div>
     </div>
   );

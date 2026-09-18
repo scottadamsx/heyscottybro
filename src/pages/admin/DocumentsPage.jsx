@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useConfirm } from "../../hooks/useConfirm";
+import { PageSkeleton } from "../../components/Skeleton";
 import { loadDocuments, deleteDocument, getSignedUrl, updateDocument } from "../../api/documentsApi";
 import DocumentCard from "../../components/documents/DocumentCard";
 import DocumentUploader from "../../components/documents/DocumentUploader";
@@ -23,16 +26,18 @@ export default function DocumentsPage() {
   const [viewing, setViewing] = useState(null);          // non-PDF (image/other) → DocumentViewer
   const [pdfView, setPdfView] = useState(null);          // { url, doc } → full PdfViewer
   const [sharing, setSharing] = useState(null);
-  const [search, setSearch] = useState("");
+  const [params] = useSearchParams();
+  // ?q= arrives from the search palette: open already filtered to that document.
+  const [search, setSearch] = useState(() => params.get("q") || "");
   const [onlyAgent, setOnlyAgent] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const { confirm, dialog } = useConfirm();
 
   function load() {
     setLoading(true);
     setError(null);
     loadDocuments()
       .then(setDocs)
-      .catch(() => setError("Failed to load documents."))
+      .catch((err) => { console.error("[documents] load failed", err); setError(`Couldn't load documents: ${err?.message || err}`); })
       .finally(() => setLoading(false));
   }
   useEffect(() => { load(); }, []);
@@ -57,12 +62,12 @@ export default function DocumentsPage() {
   };
 
   const handleDelete = async (doc) => {
+    if (!await confirm(`Delete "${doc.name}"? This also revokes any share links and cannot be undone.`, { title: "Delete document", confirmLabel: "Delete" })) return;
     try {
       await deleteDocument(doc);
       setDocs((d) => d.filter((x) => x.id !== doc.id));
-      setConfirmDelete(null);
-    } catch {
-      setError("Failed to delete document.");
+    } catch (err) {
+      setError(`Couldn't delete "${doc.name}": ${err?.message || err}`);
     }
   };
 
@@ -131,14 +136,17 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      {loading && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
+      {loading && <PageSkeleton variant="cards" label="Loading documents" header={false} page={false} />}
       {error && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">{error}</p>
           <button type="button" className="btn btn-sm" onClick={load}>Retry</button>
         </div>
       )}
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && docs.length > 0 && filtered.length === 0 && search && (
+        <p className="no-entries">No documents match “{search}”.</p>
+      )}
+      {!loading && !error && filtered.length === 0 && !(docs.length > 0 && search) && (
         <p className="no-entries">
           {onlyAgent ? "No agent work yet. Agents publish here by uploading a PDF tagged “agent”." : "No documents yet. Upload one to get started."}
         </p>
@@ -152,24 +160,13 @@ export default function DocumentsPage() {
             agentLabel={isAgentDoc(doc) ? (agentLabel(doc) || "Agent") : null}
             onView={handleView}
             onShare={setSharing}
-            onDelete={setConfirmDelete}
+            onDelete={handleDelete}
             onUpdate={handleUpdate}
           />
         ))}
       </div>
 
-      {confirmDelete && (
-        <div className="doc-viewer-overlay" onClick={() => setConfirmDelete(null)}>
-          <div className="doc-confirm" role="alertdialog" aria-modal="true" aria-labelledby="doc-confirm-msg" onClick={(e) => e.stopPropagation()}>
-            <p id="doc-confirm-msg" className="doc-confirm-msg">Delete <strong>{confirmDelete.name}</strong>? This also revokes any share links and cannot be undone.</p>
-            <div className="doc-confirm-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>Cancel</button>
-              <button type="button" className="btn danger" onClick={() => handleDelete(confirmDelete)}>Yes, delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {dialog}
       {viewing && <DocumentViewer doc={viewing} onClose={() => setViewing(null)} />}
       {pdfView && (
         <PdfViewer

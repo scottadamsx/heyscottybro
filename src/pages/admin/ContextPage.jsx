@@ -180,7 +180,7 @@ export default function ContextPage() {
         <h1>Context</h1>
         <span className="module-header-sub">{items.length} saved fact{items.length !== 1 ? "s" : ""}</span>
         <div className="header-actions ctx-header-actions">
-          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={runSync} disabled={syncing}>
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={runSync} disabled={syncing} aria-busy={syncing || undefined}>
             {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Sync local facts</>}
           </button>
           <button type="button" className="btn btn-sm" onClick={() => setShowAdd(true)}>

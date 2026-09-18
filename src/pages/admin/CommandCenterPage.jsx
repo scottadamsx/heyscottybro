@@ -4,6 +4,8 @@ import { resolveTools, agentConnector, agentProtocol, modelLabel } from "../../a
 import { loadBrain } from "../../api/brainApi";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { renderMarkdown } from "../../utils/markdown";
+import MarkdownBody from "../../components/MarkdownBody";
+import { copyText } from "../../utils/clipboard";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
@@ -165,7 +167,7 @@ export default function CommandCenterPage() {
     <div className="module-page cmd-page">
       <div className="module-header">
         <h1>Command Center</h1>
-        <button type="button" className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel}>
+        <button type="button" className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel} aria-busy={!!busy.galadriel || undefined}>
           <i className={`fa-solid ${busy.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" /> Run daily summary
         </button>
       </div>
@@ -244,7 +246,7 @@ export default function CommandCenterPage() {
                 {((selected.kind === "api" && thread.display.length > 0) || selBusy) && (
                   <div className="cmd-chat-actions">
                     {selected.kind === "api" && thread.display.length > 0 && (
-                      <button type="button" className="btn-mini muted" onClick={doClearThread} disabled={selBusy} title={`Clear the conversation with ${selected.name}`}>
+                      <button type="button" className="btn-mini muted" onClick={doClearThread} disabled={selBusy} aria-busy={selBusy || undefined} title={`Clear the conversation with ${selected.name}`}>
                         <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Clear thread
                       </button>
                     )}
@@ -307,7 +309,7 @@ export default function CommandCenterPage() {
                             >
                               <i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" />
                             </button>
-                            <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                            <MarkdownBody className="chat-md" html={renderMarkdown(m.text)} />
                           </>
                         ) : (
                           <>
@@ -413,14 +415,14 @@ export default function CommandCenterPage() {
                 <button type="button" className="btn-mini" title="View as PDF" aria-label="View as PDF" onClick={() => { openAsPdf(viewerDoc.title || viewerDoc.slug, viewerDoc.body); setViewerDoc(null); }}>
                   <i className="fa-solid fa-file-pdf" aria-hidden="true" />
                 </button>
-                <button type="button" className="btn-mini" title="Copy markdown" aria-label="Copy markdown" onClick={() => navigator.clipboard?.writeText(viewerDoc.body || "").then(() => addToast("Copied.", "success")).catch(() => {})}>
+                <button type="button" className="btn-mini" title="Copy markdown" aria-label="Copy markdown" onClick={() => copyText(viewerDoc.body || "").then(() => addToast("Markdown copied.", "success")).catch((err) => addToast(`Couldn't copy: ${err?.message || err}`, "error"))}>
                   <i className="fa-solid fa-copy" aria-hidden="true" />
                 </button>
                 {viewerDoc.slug && <a className="btn-mini" href="/admin/mission?tab=brain" title="Open in Brain" aria-label="Open in Brain"><i className="fa-solid fa-diagram-project" aria-hidden="true" /></a>}
                 <button type="button" className="btn-mini" onClick={() => setViewerDoc(null)} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
               </div>
             </div>
-            <div className="cmd-viewer-body chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(viewerDoc.body || "*(empty document)*") }} />
+            <MarkdownBody className="cmd-viewer-body chat-md" html={renderMarkdown(viewerDoc.body || "*(empty document)*")} />
           </div>
         </div>
       )}

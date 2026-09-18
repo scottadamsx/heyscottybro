@@ -58,7 +58,7 @@ export default function ExportKit({ exporter }) {
       {open && (
         <div className="export-kit-menu">
           {actions.map((a) => (
-            <button key={a.key} type="button" onClick={run(a.key, a.fn)} disabled={!!busy}>
+            <button key={a.key} type="button" onClick={run(a.key, a.fn)} disabled={!!busy} aria-busy={busy === a.key || undefined}>
               <i className={`fa-solid ${busy === a.key ? "fa-spinner fa-spin" : a.icon}`} /> {a.label}
             </button>
           ))}

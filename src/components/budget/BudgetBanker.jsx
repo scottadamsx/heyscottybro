@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../../utils/markdown";
+import MarkdownBody from "../MarkdownBody";
 import { runBanker, BANKER } from "../../api/banker";
 import { getAuthHeaders } from "../../utils/supabase";
 import "./budget.css";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const STORE_KEY = "banker_chat_session";
 const TTL_MS = 60 * 60 * 1000;
@@ -69,12 +71,17 @@ export default function BudgetBanker({ onChanged }) {
 
   const onKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
   const grow = (e) => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${e.target.scrollHeight}px`; };
-  const clear = () => { setDisplay([]); setHistory([]); };
+  const { confirm, dialog } = useConfirm();
+  const clear = async () => {
+    if (!await confirm("Clear the whole conversation with Griphook? It can't be brought back.", { title: "Clear conversation", confirmLabel: "Clear" })) return;
+    setDisplay([]); setHistory([]);
+  };
 
   // Bubbles reuse the app chat's own classes (.chat-msg / .chat-md / .chat-send)
   // so Griphook reads exactly like Frodo's panel; only the frame is local.
   return (
     <div className="db-card banker">
+      {dialog}
       {/* Header */}
       <div className="banker-head">
         <span className="banker-avatar" aria-hidden="true"><i className={`fa-solid ${BANKER.icon}`} /></span>
@@ -108,7 +115,7 @@ export default function BudgetBanker({ onChanged }) {
             ? <div key={i} className="chat-msg user">{m.text}</div>
             : <div key={i} className="chat-msg assistant chat-md">
                 <span className="chat-author">{BANKER.name}</span>
-                <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                <MarkdownBody html={renderMarkdown(m.text)} />
               </div>
         ))}
         {loading && (
