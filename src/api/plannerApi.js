@@ -516,7 +516,7 @@ async function loadBudgetConfigUncached() {
       // settings-shaped data. Same return shape as always, so nothing
       // downstream (budgetCalc, budgetSummary, the Budget page) changes.
       const [cfgRes, billsRes, incomeRes] = await Promise.all([
-        supabase.from("budget_config").select("*").eq("user_id", userId).single(),
+        supabase.from("budget_config").select("*").eq("user_id", userId).maybeSingle(), // no row yet = defaults (no 406 in the console)
         supabase.from("recurring_bills").select("id, data").eq("user_id", userId).order("created_at"),
         supabase.from("income_sources").select("id, data").eq("user_id", userId).order("created_at"),
       ]);
