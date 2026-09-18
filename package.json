@@ -8,9 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "agents": "node agent-server/server.mjs",
-    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js src/utils/reschedule.test.js scripts/orbit-route.test.js src/utils/networkError.test.js src/utils/overload.test.js src/utils/plates.test.js src/utils/healthInsights.test.js src/api/_cache.test.js src/utils/memoLast.test.js",
+    "test": "node src/lib/budgetProjection.test.js && node src/utils/plannerUtils.test.js && node src/utils/recurrence.test.js && node src/agents/loop.test.js && node --test src/utils/habitSchedule.test.js src/components/DueHabitReminders.test.js src/utils/drafts.test.js src/utils/journalExport.test.js src/utils/reschedule.test.js scripts/orbit-route.test.js src/utils/networkError.test.js src/utils/overload.test.js src/utils/plates.test.js src/utils/healthInsights.test.js src/utils/utm.test.js src/utils/newsletter.test.js src/api/_cache.test.js src/utils/memoLast.test.js",
     "lint": "eslint . --max-warnings=0",
-    "sync-orbit": "node scripts/sync-orbit.mjs"
+    "sync-orbit": "node scripts/sync-orbit.mjs",
+    "page-dates": "node scripts/page-dates.mjs"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.177",

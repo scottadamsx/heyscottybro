@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ScrollProgress } from "../../components/Reveal";
 import { STEPS } from "./steps";
 import GuideBottomNav from "./GuideBottomNav";
+import LastUpdated from "./LastUpdated";
 
 export default function GuideLayout() {
   const { pathname } = useLocation();
@@ -11,7 +12,7 @@ export default function GuideLayout() {
   useEffect(() => { window.scrollTo({ top: 0 }); }, [pathname]);
 
   return (
-    <div className="lp">
+    <main className="lp" id="main" tabIndex={-1}>
       <ScrollProgress />
 
       <header className="lp-subhero">
@@ -47,11 +48,12 @@ export default function GuideLayout() {
 
           <div className="lp-guide-body">
             <Outlet />
+            <LastUpdated />
           </div>
         </div>
       </section>
 
       <GuideBottomNav />
-    </div>
+    </main>
   );
 }

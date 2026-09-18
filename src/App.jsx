@@ -4,6 +4,7 @@
 import { lazyWithReload as lazy } from "./utils/lazyWithReload.js";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastProvider } from "./contexts/ToastContext";
+import PublicChrome, { PublicSkipLink } from "./components/public/PublicChrome.jsx";
 import { ADMIN_PAGES, ADMIN_REDIRECTS, Lazy } from "./pages/admin/adminRoutes.jsx";
 
 // Every page is its own chunk: a visitor to the public site never downloads the admin (or
@@ -26,6 +27,8 @@ const SharedDocPage = lazy(() => import("./pages/SharedDocPage.jsx"));
 const AdminLogin    = lazy(() => import("./pages/admin/AdminLogin.jsx"));
 const AdminShell    = lazy(() => import("./pages/admin/AdminShell.jsx"));
 const MotionScope   = lazy(() => import("./components/motion/MotionScope.jsx"));
+const NotFoundPage  = lazy(() => import("./pages/NotFoundPage.jsx"));
+const AdminNotFound = lazy(() => import("./pages/admin/AdminNotFound.jsx"));
 
 /** A public page with the site's nav and footer, loaded as one unit. */
 const withChrome = (page) => Lazy(<MotionScope><Navbar />{page}<Footer /></MotionScope>);
@@ -33,6 +36,7 @@ const withChrome = (page) => Lazy(<MotionScope><Navbar />{page}<Footer /></Motio
 export default function App() {
   return (
     <ToastProvider>
+      <PublicSkipLink />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={Lazy(<HomePage />)} />
@@ -59,10 +63,12 @@ export default function App() {
           <Route index element={<Navigate to="/admin/today" replace />} />
           {ADMIN_PAGES.map((p) => <Route key={p.path} path={p.path} element={Lazy(p.element)} />)}
           {ADMIN_REDIRECTS.map(([from, to]) => <Route key={from} path={from} element={<Navigate to={to} replace />} />)}
+          <Route path="*" element={Lazy(<AdminNotFound />)} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={withChrome(<NotFoundPage />)} />
       </Routes>
+      <PublicChrome />
     </ToastProvider>
   );
 }

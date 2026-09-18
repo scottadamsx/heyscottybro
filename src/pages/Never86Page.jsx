@@ -14,7 +14,7 @@ const FEATURES = [
 
 export default function Never86Page() {
   return (
-    <div className="lp">
+    <main className="lp" id="main" tabIndex={-1}>
       <ScrollProgress />
 
       {/* Hero */}
@@ -40,7 +40,7 @@ export default function Never86Page() {
           viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7, ease: ease.out }}
           style={{ borderRadius: "var(--t-r)", overflow: "hidden", border: "1px solid var(--t-line-br)", boxShadow: "0 40px 90px -50px #000" }}
         >
-          <img src="/images/never86_website_concept.jpg" alt="NEVER86 dashboard" loading="lazy" style={{ width: "100%", display: "block" }} />
+          <img src="/images/never86_website_concept.jpg" alt="NEVER86 dashboard" width={1400} height={933} decoding="async" fetchpriority="high" style={{ width: "100%", height: "auto", display: "block" }} />
         </motion.div>
       </section>
 
@@ -94,6 +94,6 @@ export default function Never86Page() {
           </div>
         </Reveal>
       </section>
-    </div>
+    </main>
   );
 }

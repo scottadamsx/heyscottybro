@@ -51,7 +51,7 @@ export default function TicTacToePage() {
   else status = `Player ${xIsNext ? "X" : "O"}'s turn`;
 
   return (
-    <main className="ttt-page section-gap">
+    <main className="ttt-page section-gap" id="main" tabIndex={-1}>
       <div className="section-label" style={{ justifyContent: "center" }}>Game</div>
       <h1 className="section-title" style={{ textAlign: "center" }}>Tic-Tac-Toe</h1>
 

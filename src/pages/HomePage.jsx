@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { tagOutboundHref } from "../utils/utm";
 import "./xp-desktop.css";
 
 /* ── Featured (open on boot) ─────────────────────────────── */
@@ -98,7 +99,7 @@ function defaultGeom(id, index, areaW) {
   return { x: 40 + (index % 6) * 28, y: 40 + (index % 6) * 28, w: 360, h: null };
 }
 
-function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }) {
+function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating, z }) {
   const featured = !!w.body;
   const ref = useRef(null);
   const drag = useRef(null);
@@ -108,7 +109,8 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
   const go = (e) => {
     if (e.target.closest("a, button, .xpd-resize")) return;
     if (w.to) navigate(w.to);
-    else if (w.href) window.open(w.href, w.href.startsWith("mailto:") ? "_self" : "_blank", "noopener");
+    // Not an <a>, so the site-wide UTM click handler can't see it — tag here.
+    else if (w.href) window.open(tagOutboundHref(w.href, { origin: window.location.origin, pathname: window.location.pathname }), w.href.startsWith("mailto:") ? "_self" : "_blank", "noopener");
   };
 
   const startDrag = (e, mode) => {
@@ -127,7 +129,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
     e.preventDefault();
   };
 
-  const style = floating ? { left: geom.x, top: geom.y, width: geom.w, height: geom.h || undefined } : undefined;
+  const style = floating ? { left: geom.x, top: geom.y, width: geom.w, height: geom.h || undefined, zIndex: z } : undefined;
   return (
     <section ref={ref} style={style} className={`xpd-win${active ? " active" : ""}${featured ? " featured" : ""}${floating ? " floating" : ""}`} onPointerDown={onFocus} aria-label={w.title}>
       <header className="xpd-title" onPointerDown={(e) => startDrag(e, "move")} onDoubleClick={() => floating && onGeom({ ...geom, w: 380, h: null })}>
@@ -140,7 +142,8 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating }
       </header>
       <div className={`xpd-body${w.href || w.to ? " linked" : ""}`} onClick={go} role={w.href || w.to ? "link" : undefined} tabIndex={w.href || w.to ? 0 : undefined} onKeyDown={(e) => { if (e.key === "Enter" && (w.href || w.to)) go(e); }}>
         {floating && <span className="xpd-resize" onPointerDown={(e) => startDrag(e, "resize")} aria-hidden="true" />}
-        {w.img && <img className="xpd-shot" src={w.img} alt="" loading="lazy" />}
+        {/* The boot-time featured window's shot is the first thing painted: eager + high priority. */}
+        {w.img && <img className="xpd-shot" src={w.img} alt="" width={1200} height={800} decoding="async" {...(featured ? { fetchpriority: "high" } : { loading: "lazy" })} />}
         {w.kicker && <div className="xpd-kicker">{w.kicker}</div>}
         {w.tag && !w.kicker && <div className="xpd-kicker">{w.tag}</div>}
         {w.body ? w.body.map((p, i) => <p key={i}>{p}</p>) : <p>{w.desc}</p>}
@@ -197,11 +200,15 @@ export default function HomePage() {
   const minimize = (id) => setMinimized((m) => (m.includes(id) ? m : [...m, id]));
   const launch = (id) => focus(id);
   const top = open[open.length - 1];
-  const visible = open.filter((id) => !minimized.includes(id));
+  // Windows render in a STABLE order and stack by z-index. Re-ordering the DOM on
+  // pointerdown (the old way) moved the node mid-click, so the first click on a
+  // background window's link was swallowed — and on phones the tapped window
+  // jumped to the bottom of the list.
+  const visible = ALL.map((w) => w.id).filter((id) => open.includes(id) && !minimized.includes(id));
 
   return (
     <div className="xpd">
-      <main className="xpd-desktop">
+      <main className="xpd-desktop" id="main" tabIndex={-1}>
         {/* Icons: the "side" column of every other project */}
         <nav className="xpd-icons" aria-label="Projects">
           {ICONS.map((p) => (
@@ -220,7 +227,7 @@ export default function HomePage() {
           {visible.map((id) => {
             const w = byId(id);
             const index = ALL.findIndex((x) => x.id === id);
-            return w && <XpWindow key={id} w={w} active={id === top} onFocus={() => focus(id)} onClose={() => close(id)} onMin={() => minimize(id)} geom={geomFor(id, index)} onGeom={(g) => setGeom(id, g)} floating={floating} />;
+            return w && <XpWindow key={id} w={w} active={id === top} onFocus={() => focus(id)} onClose={() => close(id)} onMin={() => minimize(id)} geom={geomFor(id, index)} onGeom={(g) => setGeom(id, g)} floating={floating} z={open.indexOf(id) + 1} />;
           })}
         </div>
       </main>
@@ -233,7 +240,7 @@ export default function HomePage() {
           </button>
           {startOpen && (
             <div className="xpd-startmenu" role="menu">
-              <div className="xpd-sm-head"><img src="/images/scott_headshot.JPEG" alt="" /> <span>Scott Adams</span></div>
+              <div className="xpd-sm-head"><img src="/images/scott_headshot.JPEG" alt="" width={40} height={40} loading="lazy" decoding="async" /> <span>Scott Adams</span></div>
               <div className="xpd-sm-cols">
                 <div className="xpd-sm-col">
                   <div className="xpd-sm-label">Featured</div>

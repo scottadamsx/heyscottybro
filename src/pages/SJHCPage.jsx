@@ -12,16 +12,28 @@ const FEATURES = [
   { icon: "fa-water", title: "Coastal Exploration", desc: "Discover the wild, rugged coastlines of the Avalon Peninsula." },
 ];
 
+// width/height = the files' real pixel size, so the browser reserves the box
+// before the image arrives (CSS sets the displayed size: .lp-photos img).
 const PHOTOS = [
-  { src: "/images/hike4.1.JPG", alt: "Group hike" },
-  { src: "/images/exec_team1.JPG", alt: "Executive team" },
-  { src: "/images/sponsors1.JPG", alt: "Sponsors" },
-  { src: "/images/kaleb_claire.JPG", alt: "Hikers" },
+  { src: "/images/hike4.1.JPG", alt: "Group hike", w: 1200, h: 800 },
+  { src: "/images/exec_team1.JPG", alt: "Executive team", w: 800, h: 1200 },
+  { src: "/images/sponsors1.JPG", alt: "Sponsors", w: 1200, h: 800 },
+  { src: "/images/kaleb_claire.JPG", alt: "Hikers", w: 800, h: 1200 },
+];
+
+/* Only what the public pages already say about the club (this page, the home
+   page's Hike Club window, stjohnshikeclub.com links) — nothing invented. */
+const FAQ = [
+  ["How do I join a hike?", "Hikes, the schedule and sign-ups all live on stjohnshikeclub.com — that's the place to see what's coming up and get in touch with the club."],
+  ["Does it cost anything?", "The 2026 season is 18 free group hikes, backed by local sponsors like Quidi Vidi and The Oat Company. For anything beyond the group hikes (like merch), check stjohnshikeclub.com."],
+  ["Who runs the club?", "St. John's Hike Club is a community non-profit founded by Scott Adams, run with an executive team and supported by local business partners."],
+  ["Where do the hikes go?", "Trails around St. John's and across Newfoundland — including the rugged coastline of the Avalon Peninsula."],
+  ["How big is it?", "More than 4,400 people follow the club on Instagram, and group hikes regularly draw 80+ people."],
 ];
 
 export default function SJHCPage() {
   return (
-    <div className="lp">
+    <main className="lp" id="main" tabIndex={-1}>
       <ScrollProgress />
 
       {/* Hero */}
@@ -44,8 +56,9 @@ export default function SJHCPage() {
       {/* Photo grid */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-photos">
+          {/* First row sits in the opening viewport: load it straight away. */}
           {PHOTOS.map((p, i) => (
-            <motion.img key={p.src} src={p.src} alt={p.alt} loading="lazy"
+            <motion.img key={p.src} src={p.src} alt={p.alt} width={p.w} height={p.h} decoding="async"
               initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: i * 0.06 }} />
           ))}
@@ -93,11 +106,27 @@ export default function SJHCPage() {
       {/* More photos */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-photos" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
-          <motion.img src="/images/forks2.jpg" alt="Trail" loading="lazy" style={{ height: 300 }}
+          <motion.img src="/images/forks2.jpg" alt="Trail" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }}
             initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out }} />
-          <motion.img src="/images/hikeclub.JPG" alt="Hike Club" loading="lazy" style={{ height: 300 }}
+          <motion.img src="/images/hikeclub.JPG" alt="Hike Club" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }}
             initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: 0.06 }} />
         </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="lp-section" style={{ paddingTop: 0 }} aria-labelledby="sjhc-faq">
+        <Reveal>
+          <span className="lp-kicker">faq --short</span>
+          <h2 className="lp-h2" id="sjhc-faq">Common questions</h2>
+          <div className="lp-faq pub-faq-narrow">
+            {FAQ.map(([q, a]) => (
+              <details key={q}>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
+            ))}
+          </div>
+        </Reveal>
       </section>
 
       {/* CTA */}
@@ -112,6 +141,6 @@ export default function SJHCPage() {
           </div>
         </Reveal>
       </section>
-    </div>
+    </main>
   );
 }

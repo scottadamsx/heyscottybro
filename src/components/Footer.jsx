@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import NewsletterForm from "./public/NewsletterForm.jsx";
 
 export default function Footer() {
   return (
@@ -13,19 +14,20 @@ export default function Footer() {
               Building things that make life smoother — one line at a time.
             </p>
             <div className="footer-socials">
-              <a href="https://github.com/scotty3xe" target="_blank" rel="noreferrer" title="GitHub">
-                <i className="fa-brands fa-github" />
+              <a href="https://github.com/scotty3xe" target="_blank" rel="noreferrer" title="GitHub" aria-label="GitHub (opens in a new tab)">
+                <i className="fa-brands fa-github" aria-hidden="true" />
               </a>
-              <a href="https://instagram.com/scotty3xe" target="_blank" rel="noreferrer" title="Instagram">
-                <i className="fa-brands fa-instagram" />
+              <a href="https://instagram.com/scotty3xe" target="_blank" rel="noreferrer" title="Instagram" aria-label="Instagram (opens in a new tab)">
+                <i className="fa-brands fa-instagram" aria-hidden="true" />
               </a>
-              <a href="https://linkedin.com/in/scottadams" target="_blank" rel="noreferrer" title="LinkedIn">
-                <i className="fa-brands fa-linkedin-in" />
+              <a href="https://linkedin.com/in/scottadams" target="_blank" rel="noreferrer" title="LinkedIn" aria-label="LinkedIn (opens in a new tab)">
+                <i className="fa-brands fa-linkedin-in" aria-hidden="true" />
               </a>
-              <a href="https://open.spotify.com/artist/2cLUqlaPtqUPBAMn5gdRbe" target="_blank" rel="noreferrer" title="Spotify">
-                <i className="fa-brands fa-spotify" />
+              <a href="https://open.spotify.com/artist/2cLUqlaPtqUPBAMn5gdRbe" target="_blank" rel="noreferrer" title="Spotify" aria-label="Spotify (opens in a new tab)">
+                <i className="fa-brands fa-spotify" aria-hidden="true" />
               </a>
             </div>
+            <NewsletterForm source="footer" />
           </div>
 
           {/* Projects */}

@@ -5,6 +5,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { fetchSharedDoc } from "../api/documentsApi";
 import { formatBytes } from "../components/documents/DocumentCard";
+import PublicLoader from "../components/public/PublicLoader.jsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -35,23 +36,20 @@ export default function SharedDocPage() {
   }, [token]);
 
   if (loading) return (
-    <div className="shared-doc-page">
-      <div className="shared-doc-center">
-        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "2rem" }} />
-        <p>Loading document…</p>
-      </div>
-    </div>
+    <main className="shared-doc-page" id="main" tabIndex={-1}>
+      <PublicLoader variant="plain" label="Loading document…" />
+    </main>
   );
 
   if (error || !doc) return (
-    <div className="shared-doc-page">
+    <main className="shared-doc-page" id="main" tabIndex={-1}>
       <div className="shared-doc-center">
         <i className="fa-solid fa-link-slash" style={{ fontSize: "3rem", opacity: 0.4 }} />
         <h2>Link unavailable</h2>
         <p>{error || "This share link is invalid, expired, or has been revoked."}</p>
         <a className="btn" href="/">Go to heyScottyBro</a>
       </div>
-    </div>
+    </main>
   );
 
   const isPdf = doc.mime_type === "application/pdf";
@@ -67,13 +65,13 @@ export default function SharedDocPage() {
         </a>
       </header>
 
-      <main className="shared-doc-body">
+      <main className="shared-doc-body" id="main" tabIndex={-1}>
         {isPdf && (
           <div className="shared-doc-pdf">
             <Document
               file={url}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-              loading={<div className="shared-doc-center"><i className="fa-solid fa-spinner fa-spin" /></div>}
+              loading={<PublicLoader variant="plain" fullscreen={false} label="Rendering PDF…" />}
               error={<div className="shared-doc-center">Could not render this PDF. Try downloading it.</div>}
             >
               <Page pageNumber={pageNumber} width={Math.min(window.innerWidth - 40, 860)} />

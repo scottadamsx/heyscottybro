@@ -621,9 +621,11 @@
 
 /* ═══════════════ SCROLL PROGRESS ═══════════════ */
 .scroll-progress {
-  position: fixed; top: 0; left: 0; height: 2px; z-index: 60;
+  position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 60;
   background: var(--t-green); box-shadow: 0 0 10px var(--t-green-glow);
-  transition: width .1s linear;
+  transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform .1s linear;
+  pointer-events: none;
 }
 
 /* ═══════════════ RESPONSIVE ═══════════════ */
@@ -640,6 +642,7 @@
 @media (max-width: 520px) { .footer-grid { grid-template-columns: 1fr; } }
 
 @media (prefers-reduced-motion: reduce) {
+  .scroll-progress { transition: none; }
   .lp-marquee-track { animation: none; }
   .nav-logo::after, .term-cursor { animation: none; }
   .lp-card:hover, .pill:hover, .lp-skill:hover, .footer-socials a:hover { transform: none; }
