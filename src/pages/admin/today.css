@@ -1,7 +1,9 @@
 /* ── Today — the reference layout: numbers + feature panel, activity + list,
    a tinted "spaces" band, then detail cards. Tokens only (globals.css). ── */
 
-.today { display: flex; flex-direction: column; gap: var(--space-2xl); container: today / inline-size; }
+/* Page root is .today-page, not .today: .today also marks today's date in the calendar and
+   date picker, and this page's layout (48px gaps, size container) used to leak onto them. */
+.today-page { display: flex; flex-direction: column; gap: var(--space-2xl); container: today / inline-size; }
 .today-head { align-items: flex-end; }
 .today-date { margin: var(--space-2xs) 0 0; font-size: var(--text-base); color: var(--text-secondary); }
 
@@ -135,4 +137,4 @@
   .admin-shell .take-go:hover { transform: none; }
   .admin-shell .spaces { padding: var(--space-2xl) var(--space-md) var(--space-lg); }
 }
-@media (max-width: 640px) { .today { gap: var(--space-xl); } }
+@media (max-width: 640px) { .today-page { gap: var(--space-xl); } }

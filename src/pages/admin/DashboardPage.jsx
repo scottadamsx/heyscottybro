@@ -177,7 +177,7 @@ export default function DashboardPage() {
   const remaining = currentWeek?.remaining ?? null;
 
   return (
-    <Stagger className="today">
+    <Stagger className="today-page">
       {/* ── Header ── */}
       <Item className="module-header today-head">
         <div>
