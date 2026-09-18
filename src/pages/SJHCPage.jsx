@@ -106,10 +106,8 @@ export default function SJHCPage() {
       {/* More photos */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-photos" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
-          <motion.img src="/images/forks2.jpg" alt="Trail" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }}
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out }} />
           <motion.img src="/images/hikeclub.JPG" alt="Hike Club" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }}
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: 0.06 }} />
+            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out }} />
         </div>
       </section>
 
