@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { MotionConfig } from "framer-motion";
 import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { reloadOnceForStaleChunk } from "./utils/lazyWithReload.js";
@@ -30,10 +29,8 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        {/* reducedMotion="user" → respects prefers-reduced-motion app-wide */}
-        <MotionConfig reducedMotion="user">
-          <App />
-        </MotionConfig>
+        {/* prefers-reduced-motion is honoured by MotionScope inside the areas that animate */}
+        <App />
       </BrowserRouter>
     </ErrorBoundary>
   </StrictMode>

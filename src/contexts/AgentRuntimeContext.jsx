@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { runAgent } from "../agents/runAgent";
-import { runOverseer as runOverseerAgent } from "../agents/overseer";
+// The agent code (loop, tools, Library, prompts) is large and only needed once an agent runs,
+// so it loads on first use instead of with every admin page.
+import { lazyImport } from "../lib/lazyImport";
 import { getAuthHeaders } from "../utils/supabase";
 import { loadAgentActions } from "../api/plannerApi";
 import { loadAgentSessions, saveAgentSession, clearAgentSession, ccSessionKey } from "../api/agentSessionsApi";
@@ -54,12 +55,17 @@ export function AgentRuntimeProvider({ children }) {
     () => loadAgentActions(60).then(setActions).catch(() => {}),
     []
   );
-  useEffect(() => { refreshActions(); }, [refreshActions]);
   // Restore saved conversations so they survive a refresh. Command Center
   // rows live under `${id}:cc` so they don't collide with the ChatBot's Frodo.
   // Stored history wins unless the live thread already has messages (a run
   // that started before the load resolved).
+  // Mission Control's agents need their history, the activity feed and the Aulë socket; nothing
+  // else does, so they start when the Agents tab first mounts (activate), not on every page.
+  const [active, setActive] = useState(false);
+  const activate = useCallback(() => setActive(true), []);
+  useEffect(() => { if (active) refreshActions(); }, [active, refreshActions]);
   useEffect(() => {
+    if (!active) return;
     loadAgentSessions()
       .then((s) => {
         const restored = {};
@@ -79,7 +85,7 @@ export function AgentRuntimeProvider({ children }) {
         console.error("[AgentRuntime] session load failed:", e);
         addToast(`Couldn't load agent chat history: ${e.message}`, "error");
       });
-  }, [addToast]);
+  }, [active, addToast]);
 
   // What goes to Supabase: no base64. A screenshot is 1–3 MB of base64 and a
   // handful would blow the row up; the model already saw it, so the stored
@@ -135,6 +141,7 @@ export function AgentRuntimeProvider({ children }) {
     let committed = null;
     try {
       const authHeaders = await getAuthHeaders();
+      const { runAgent } = await lazyImport(() => import("../agents/runAgent"), "the agent runner");
       const { text: reply, history } = await runAgent({
         agent, messages: convo, authHeaders,
         onStatus: (s) => setStatusFor(agent.id, s),
@@ -184,6 +191,7 @@ export function AgentRuntimeProvider({ children }) {
     pushDisplay(id, { role: "user", text: "Run yesterday's summary and file it into the Brain." });
     try {
       const authHeaders = await getAuthHeaders();
+      const { runOverseer: runOverseerAgent } = await lazyImport(() => import("../agents/overseer"), "the overseer");
       const { text, history } = await runOverseerAgent({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
       // Compute the next thread inside the updater, persist OUTSIDE it — an
       // updater must stay pure (React may run it twice).
@@ -255,11 +263,12 @@ export function AgentRuntimeProvider({ children }) {
     ws.onerror = () => setAuleStatus("offline");
   }, [auleConfigured, aulePush]);
 
-  // Connect once for the life of the admin area; close only when leaving /admin.
+  // Connect once Mission Control has opened; close only when leaving /admin.
   useEffect(() => {
+    if (!active) return undefined;
     auleConnect();
     return () => { try { wsRef.current?.close(); } catch { /* noop */ } };
-  }, [auleConnect]);
+  }, [active, auleConnect]);
 
   // Dev-only: ask the Vite server to spawn `npm run agents`, then reconnect.
   const auleTurnOn = useCallback(async () => {
@@ -307,7 +316,7 @@ export function AgentRuntimeProvider({ children }) {
     selectedId, setSelectedId, view, setView,
     // API agents
     threads, busy, statuses, inputs,
-    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions,
+    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions, activate,
     // local agent (Aulë)
     aule: {
       configured: auleConfigured,
@@ -317,7 +326,7 @@ export function AgentRuntimeProvider({ children }) {
     auleConnect, auleTurnOn, aulePickRepo, auleSend, auleInterrupt,
   }), [
     selectedId, view, threads, busy, statuses, inputs, setInputFor, sendTo, clearThread, runOverseer,
-    actions, refreshActions, auleConfigured, auleStatus, auleRepos, auleCwd, auleThread,
+    actions, refreshActions, activate, auleConfigured, auleStatus, auleRepos, auleCwd, auleThread,
     auleBusy, auleStatusLine, auleStarting, auleRecent, auleConnect, auleTurnOn,
     aulePickRepo, auleSend, auleInterrupt,
   ]);

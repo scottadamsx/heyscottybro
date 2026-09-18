@@ -13,6 +13,7 @@
  */
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
+import { cachedRead, invalidateReads } from "./_cache";
 
 export const ccSessionKey = (agentId) => `${agentId}:cc`;
 
@@ -21,7 +22,12 @@ async function softUid() {
 }
 
 /** Returns a map: { [agentId]: { display, convo } }. Throws on a real load error. */
-export async function loadAgentSessions() {
+/** Shared read: the chat and the agent runtime both ask on the same page load. */
+export function loadAgentSessions() {
+  return cachedRead("loadAgentSessions", "agent_sessions", loadAgentSessionsUncached);
+}
+
+async function loadAgentSessionsUncached() {
   const userId = await softUid();
   if (!userId) return {};
   const { data, error } = await supabase
@@ -36,6 +42,7 @@ export async function loadAgentSessions() {
 }
 
 export async function saveAgentSession(agentId, { display, convo }) {
+  invalidateReads("agent_sessions");
   const userId = await softUid();
   if (!userId) return;
   const { error } = await supabase.from("agent_sessions").upsert(
@@ -49,6 +56,7 @@ export async function saveAgentSession(agentId, { display, convo }) {
 }
 
 export async function clearAgentSession(agentId) {
+  invalidateReads("agent_sessions");
   const userId = await softUid();
   if (!userId) return;
   const { error } = await supabase.from("agent_sessions").delete().eq("user_id", userId).eq("agent_id", agentId);

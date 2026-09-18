@@ -2,7 +2,8 @@ import { Fragment, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
 import DatePicker from "../../components/DatePicker";
-import { FormModal, Field } from "../../components/ui";
+import { FormModal, Field, ShowMore } from "../../components/ui";
+import { usePaged } from "../../hooks/usePaged";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -141,6 +142,7 @@ export default function JournalPage() {
 
   // Sort entries newest first for the list
   const sortedEntries = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const entryPage = usePaged(sortedEntries, 60);
 
   const openCompose = () => {
     // Preserve other params (e.g. tab=journal when embedded in Life)
@@ -238,7 +240,7 @@ export default function JournalPage() {
               <p className="no-entries">No journal entries yet. Start writing!</p>
             ) : (
               <div className="journal-list">
-                {sortedEntries.map((e, i) => {
+                {entryPage.visible.map((e, i) => {
                   const month = monthLabel(e.date);
                   const isActive = String(e.id) === String(selectedId);
                   return (
@@ -266,6 +268,7 @@ export default function JournalPage() {
                     </Fragment>
                   );
                 })}
+                <ShowMore remaining={entryPage.remaining} pageSize={60} onClick={entryPage.showMore} noun="entries" />
               </div>
             )}
           </aside>

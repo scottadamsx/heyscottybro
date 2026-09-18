@@ -13,8 +13,8 @@ const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 // Docked full-height on the right (≥641px, see index.css) instead of a small
 // floating popover — `onOpenChange` lets AdminLayout reserve that space from
 // the page content instead of Frodo just overlapping it.
-export default function ChatBot({ onOpenChange, onUnreadChange } = {}) {
-  const [open, setOpen] = useState(false);
+export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = false } = {}) {
+  const [open, setOpen] = useState(initialOpen);
   const [expanded, setExpanded] = useState(false);
   const [shots, setShots] = useState([]);     // { id, dataUrl, media_type, path, uploading }
   const [dragOver, setDragOver] = useState(false);

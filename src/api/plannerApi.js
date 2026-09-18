@@ -10,6 +10,7 @@
  *   localStorage consistently — handy for offline testing.
  */
 import { isNetworkError } from "../utils/networkError";
+import { cachedRead, invalidateReads } from "./_cache";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
 import { toDateStr, nextOccurrence } from "../utils/plannerUtils";
@@ -92,7 +93,12 @@ function isMissingColumn(err, column) {
 const byDateAsc = (k = "date") => (a, b) => String(a[k] || "").localeCompare(String(b[k] || ""));
 
 /* ── Reminders ───────────────────────────────── */
-export async function loadReminders() {
+// Shared read: see api/_cache.js (dropped on any write to reminders).
+export function loadReminders() {
+  return cachedRead("loadReminders", "reminders", loadRemindersUncached);
+}
+
+async function loadRemindersUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -234,7 +240,12 @@ export async function deleteReminder(id) {
 }
 
 /* ── Journal ─────────────────────────────────── */
-export async function loadJournal() {
+// Shared read: see api/_cache.js (dropped on any write to journal).
+export function loadJournal() {
+  return cachedRead("loadJournal", "journal", loadJournalUncached);
+}
+
+async function loadJournalUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -277,7 +288,12 @@ export async function deleteJournalEntry(id) {
 }
 
 /* ── Events ──────────────────────────────────── */
-export async function loadEvents() {
+// Shared read: see api/_cache.js (dropped on any write to events).
+export function loadEvents() {
+  return cachedRead("loadEvents", "events", loadEventsUncached);
+}
+
+async function loadEventsUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -362,7 +378,12 @@ function signTx(tx) {
   return { ...tx, amount: signed };
 }
 
-export async function loadTransactions() {
+// Shared read: see api/_cache.js (dropped on any write to transactions).
+export function loadTransactions() {
+  return cachedRead("loadTransactions", "transactions", loadTransactionsUncached);
+}
+
+async function loadTransactionsUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -482,7 +503,12 @@ const DEFAULT_CONFIG = {
  * bill and income row got wiped once). Defaults appear only for a genuinely
  * fresh account (no config row yet), which the DB tells us apart from an error.
  */
-export async function loadBudgetConfig() {
+// Shared read: see api/_cache.js (dropped on any write to budget_config).
+export function loadBudgetConfig() {
+  return cachedRead("loadBudgetConfig", "budget_config", loadBudgetConfigUncached);
+}
+
+async function loadBudgetConfigUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -691,7 +717,12 @@ export async function deleteRecurringBill(id) {
 export async function addIncome(income) { return addIncomeSource(income); }
 
 /* ── Projects ────────────────────────────────── */
-export async function loadProjects() {
+// Shared read: see api/_cache.js (dropped on any write to projects).
+export function loadProjects() {
+  return cachedRead("loadProjects", "projects", loadProjectsUncached);
+}
+
+async function loadProjectsUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -771,7 +802,12 @@ export async function deleteProject(id) {
 }
 
 /* ── Event Types ─────────────────────────────── */
-export async function loadEventTypes() {
+// Shared read: see api/_cache.js (dropped on any write to event_types).
+export function loadEventTypes() {
+  return cachedRead("loadEventTypes", "event_types", loadEventTypesUncached);
+}
+
+async function loadEventTypesUncached() {
   return op(
     async () => {
       const userId = await uid();
@@ -881,6 +917,7 @@ export async function loginWithGoogle() {
 }
 
 export async function logout() {
+  invalidateReads(); // a different account must never see this one's cached reads
   if (isLocalMode()) { try { localStorage.removeItem("localSession"); } catch { /* noop */ } return; }
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

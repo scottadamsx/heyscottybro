@@ -58,7 +58,7 @@ const FEATURED = [
 
 /* ── Everything else — desktop icons ─────────────────────── */
 const ICONS = [
-  { id: "never86", title: "NEVER86", icon: "fa-utensils", href: "https://never86.ca", tag: "Live product", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", img: "/images/never86_website_concept.png" },
+  { id: "never86", title: "NEVER86", icon: "fa-utensils", href: "https://never86.ca", tag: "Live product", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", img: "/images/never86_website_concept.jpg" },
   { id: "clubhouse", title: "Clubhouse", icon: "fa-store", href: "https://clubhouse-management.vercel.app", tag: "SaaS · Live", desc: "The CRM behind myBackyard — clubs and local businesses manage their members, their myBackyard page and their sales in one place." },
   { id: "kiwi-ide", title: "Kiwi IDE", icon: "fa-kiwi-bird", href: null, tag: "Flagship · Private beta", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with agents. Agent, live preview, ambient code stream, and “earn while you wait”." },
   { id: "kiwi-games", title: "Kiwi Games", icon: "fa-gamepad", href: "https://scottadamsx.github.io/kiwiGames/", tag: "50 browser games", desc: "Snake, 2048, Minesweeper, solitaire, word games and more. No sign-up, no install, works offline." },

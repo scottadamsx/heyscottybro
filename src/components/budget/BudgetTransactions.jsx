@@ -4,7 +4,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
 import "./budget.css";
 import DatePicker from "../DatePicker";
-import { FormModal, Field } from "../ui";
+import { FormModal, Field, ShowMore } from "../ui";
+import { usePaged } from "../../hooks/usePaged";
 
 const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "", fulfills_recurring_id: "", is_bill: false };
 
@@ -37,6 +38,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
     });
     return r;
   }, [transactions, filterType, filterCat, filterFrom, filterTo, sortCol, sortAsc]);
+  const txPage = usePaged(filtered, 100, `${filterType}|${filterCat}|${filterFrom}|${filterTo}|${sortCol}|${sortAsc}`);
 
   const ledgerRows = useMemo(() => getLedgerRows(transactions, startingBalance), [transactions, startingBalance]);
 
@@ -209,7 +211,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(t => (
+                    {txPage.visible.map(t => (
                       <tr key={t.id}>
                         <td className="is-date">{t.date}</td>
                         <td className="is-desc">
@@ -240,6 +242,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                     ))}
                   </tbody>
                 </table>
+                <ShowMore remaining={txPage.remaining} pageSize={100} onClick={txPage.showMore} noun="transactions" />
               </div>
             )
           }

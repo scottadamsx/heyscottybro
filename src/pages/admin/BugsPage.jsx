@@ -6,7 +6,8 @@ import {
   addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip, buildFixPrompt,
 } from "../../api/bugsApi";
 import { toUploadableImage } from "../../utils/image";
-import { FormModal, Field } from "../../components/ui";
+import { FormModal, Field, ShowMore } from "../../components/ui";
+import { usePaged } from "../../hooks/usePaged";
 import "./mission.css";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
@@ -85,6 +86,7 @@ export default function BugsPage() {
     filter === "active" ? ["open", "in_progress"].includes(b.status) :
     b.status === filter
   );
+  const bugPage = usePaged(filtered, 40, `${kind}|${filter}`);
   const counts = {
     all:        byKind.length,
     active:     byKind.filter(b => ["open", "in_progress"].includes(b.status)).length,
@@ -292,7 +294,7 @@ export default function BugsPage() {
       )}
 
       <div className="bug-list">
-      {filtered.map(bug => {
+      {bugPage.visible.map(bug => {
         const isOpen = expanded === bug.id;
         const type = TYPE_META[bug.type] || TYPE_META.bug;
         const shots = bug.screenshots || [];
@@ -439,6 +441,7 @@ export default function BugsPage() {
         );
       })}
       </div>
+      <ShowMore remaining={bugPage.remaining} pageSize={40} onClick={bugPage.showMore} noun="items" />
       {dialog}
     </div>
   );

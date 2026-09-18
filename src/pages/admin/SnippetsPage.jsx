@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useDeferredValue } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -58,6 +58,7 @@ export default function SnippetsPage() {
 
   // UI
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search); // typing stays instant; filtering catches up
   const [revealed, setRevealed] = useState(() => new Set());
   const [copiedId, setCopiedId] = useState(null);
 
@@ -190,7 +191,7 @@ export default function SnippetsPage() {
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return items.filter((i) =>
       (typeFilter === "all" || i.type === typeFilter) &&
       (!q ||
@@ -198,7 +199,7 @@ export default function SnippetsPage() {
         i.value.toLowerCase().includes(q) ||
         (i.notes ?? "").toLowerCase().includes(q))
     );
-  }, [items, typeFilter, search]);
+  }, [items, typeFilter, deferredSearch]);
 
   const formFields = (form, setForm) => (
     <>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useDeferredValue } from "react";
 import { loadDocuments, deleteDocument, getSignedUrl, updateDocument } from "../../api/documentsApi";
 import DocumentCard from "../../components/documents/DocumentCard";
 import DocumentUploader from "../../components/documents/DocumentUploader";
@@ -24,6 +24,7 @@ export default function DocumentsPage() {
   const [pdfView, setPdfView] = useState(null);          // { url, doc } → full PdfViewer
   const [sharing, setSharing] = useState(null);
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search); // typing stays instant; filtering catches up
   const [onlyAgent, setOnlyAgent] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -75,8 +76,8 @@ export default function DocumentsPage() {
 
   const filtered = docs.filter((d) => {
     if (onlyAgent && !isAgentDoc(d)) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
+    if (!deferredSearch) return true;
+    const q = deferredSearch.toLowerCase();
     return (
       d.name.toLowerCase().includes(q) ||
       (d.description || "").toLowerCase().includes(q) ||

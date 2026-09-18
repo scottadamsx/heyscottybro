@@ -26,9 +26,11 @@ export default function CommandCenterPage() {
   const {
     selectedId, setSelectedId, view, setView,
     threads, busy, statuses, inputs,
-    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions,
+    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions, activate,
     aule,
   } = useAgentRuntime();
+  // Start the agent runtime (history, activity feed, Aulë socket) the first time this opens.
+  useEffect(() => { activate(); }, [activate]);
 
   const [nodes, setNodes] = useState([]);        // brain nodes, for per-agent documents
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer

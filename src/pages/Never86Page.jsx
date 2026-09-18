@@ -40,7 +40,7 @@ export default function Never86Page() {
           viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7, ease: ease.out }}
           style={{ borderRadius: "var(--t-r)", overflow: "hidden", border: "1px solid var(--t-line-br)", boxShadow: "0 40px 90px -50px #000" }}
         >
-          <img src="/images/never86_website_concept.png" alt="NEVER86 dashboard" loading="lazy" style={{ width: "100%", display: "block" }} />
+          <img src="/images/never86_website_concept.jpg" alt="NEVER86 dashboard" loading="lazy" style={{ width: "100%", display: "block" }} />
         </motion.div>
       </section>
 

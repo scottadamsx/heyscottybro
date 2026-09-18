@@ -21,6 +21,7 @@ import { validateHabitSchedule } from "../utils/habitSchedule";
 import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
+import { cachedRead } from "./_cache";
 import { loadWorkLog, createWorkLog, deleteWorkLog } from "./workLogApi";
 
 export const ACCOUNTABILITY_SCHEMA = 2;
@@ -119,7 +120,12 @@ async function writeVersioned(userId, next, expectedVersion, exists, hadVersion)
   return data && data.length > 0 ? state : null;
 }
 
-export async function loadAccountability() {
+/** Shared read (api/_cache.js): dropped by every versioned write, which emits "accountability". */
+export function loadAccountability() {
+  return cachedRead("loadAccountability", "accountability", loadAccountabilityUncached);
+}
+
+async function loadAccountabilityUncached() {
   try {
     const userId = await uid();
     const row = await loadRow(userId);

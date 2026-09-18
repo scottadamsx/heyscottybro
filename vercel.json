@@ -38,7 +38,25 @@
       ]
     },
     {
-      "source": "/((?!assets/).*)",
+      "source": "/(images|fonts|games)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/(icon-.*|apple-touch-icon.png|favicon.svg|app-icon.svg|pdf.worker.min.mjs)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/((?!assets/|images/|fonts/|games/|icon-|apple-touch-icon|favicon|app-icon|pdf\\.worker).*)",
       "headers": [
         {
           "key": "Cache-Control",

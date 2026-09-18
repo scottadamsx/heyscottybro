@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useDeferredValue } from "react";
 import { loadContext, addContextEntry, deleteContextEntry, refineContextEntry, syncLocalToCloud } from "../../api/contextApi";
 import { supabase } from "../../utils/supabase";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -62,6 +62,7 @@ export default function ContextPage() {
   const [items, setItems] = useState([]);
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search); // typing stays instant; filtering catches up
   const [filterBy, setFilterBy] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -163,13 +164,13 @@ export default function ContextPage() {
   const editingItem = items.find((i) => i.id === editingId);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return items.filter(item => {
       if (filterBy !== "all" && item.by !== filterBy) return false;
       if (!q) return true;
       return item.text.toLowerCase().includes(q) || (item.tags || []).join(" ").toLowerCase().includes(q);
     });
-  }, [items, search, filterBy]);
+  }, [items, deferredSearch, filterBy]);
 
   const bys = [...new Set(items.map(i => i.by))];
 

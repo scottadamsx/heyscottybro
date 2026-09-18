@@ -18,6 +18,7 @@ import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
 import { Stagger, Item } from "../../components/motion/Stagger";
+import { memoLast } from "../../utils/memoLast";
 import "./today.css";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
@@ -31,6 +32,36 @@ const compactMoney = (v) => (v >= 1000 ? `$${(v / 1000).toFixed(v >= 10000 ? 0 :
 
 /** Enter/Space activate a div[role=button] the same way a click does. */
 const onActivate = (fn) => (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } };
+
+// Costly derivations, recomputed only when their inputs change (the page re-renders every minute).
+const moneyView = memoLast((config, transactions, todayStr, range) => {
+  const budgetConfig = apiToPage(config || {});
+  const budgetTx = (transactions || []).map(uiShape);
+  const budget = computeBudgetSnapshot(budgetConfig, budgetTx, todayStr);
+  const upcomingBills = getUpcomingBills(budgetConfig, budgetTx, todayStr, 6);
+
+  // Spending = expenses that aren't bill payments (the weekly-allowance rule).
+  const byDay = new Map();
+  for (const t of budgetTx) {
+    if (t.type !== "expense" || t.is_bill || t.fulfills_recurring_id) continue;
+    byDay.set(t.date, (byDay.get(t.date) || 0) + cents(t.amount));
+  }
+  const spendCents = (ds) => byDay.get(ds) || 0;
+  const series = Array.from({ length: range }, (_, i) => {
+    const ds = addDaysStr(todayStr, i - (range - 1));
+    const every = range <= 7 ? 1 : 5;
+    const fromEnd = range - 1 - i;
+    return { key: ds, label: fromEnd % every === 0 ? (range <= 7 ? shortDow(ds) : shortDate(ds)) : "", title: weekdayLabel(ds), value: spendCents(ds) / 100 };
+  });
+  const last7 = Array.from({ length: 7 }, (_, i) => spendCents(addDaysStr(todayStr, -i))).reduce((a, b) => a + b, 0);
+  const prev7 = Array.from({ length: 7 }, (_, i) => spendCents(addDaysStr(todayStr, -7 - i))).reduce((a, b) => a + b, 0);
+  const spendDelta = prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : null;
+  const rangeTotal = series.reduce((s, p) => s + cents(p.value), 0) / 100;
+  return { budget, upcomingBills, series, last7, spendDelta, rangeTotal };
+});
+
+const courseStatsFor = memoLast((courses, grades) => Object.fromEntries(courses.map((c) => [c.id,
+  gradeStats(grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code)))])));
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -111,26 +142,8 @@ export default function DashboardPage() {
   const todayLong = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   // ── Money: the SAME snapshot the Money page uses, so figures always match ──
-  const budgetConfig = apiToPage(data.config || {});
-  const budgetTx = (data.transactions || []).map(uiShape);
-  const budget = computeBudgetSnapshot(budgetConfig, budgetTx, todayStr);
+  const { budget, upcomingBills, series, last7, spendDelta, rangeTotal } = moneyView(data.config, data.transactions, todayStr, range);
   const currentWeek = budget.currentWeek;
-  const upcomingBills = getUpcomingBills(budgetConfig, budgetTx, todayStr, 6);
-
-  // Spending = expenses that aren't bill payments (the weekly-allowance rule).
-  const spendCents = (ds) => budgetTx
-    .filter((t) => t.type === "expense" && t.date === ds && !t.is_bill && !t.fulfills_recurring_id)
-    .reduce((s, t) => s + cents(t.amount), 0);
-  const series = Array.from({ length: range }, (_, i) => {
-    const ds = addDaysStr(todayStr, i - (range - 1));
-    const every = range <= 7 ? 1 : 5;
-    const fromEnd = range - 1 - i;
-    return { key: ds, label: fromEnd % every === 0 ? (range <= 7 ? shortDow(ds) : shortDate(ds)) : "", title: weekdayLabel(ds), value: spendCents(ds) / 100 };
-  });
-  const last7 = Array.from({ length: 7 }, (_, i) => spendCents(addDaysStr(todayStr, -i))).reduce((a, b) => a + b, 0);
-  const prev7 = Array.from({ length: 7 }, (_, i) => spendCents(addDaysStr(todayStr, -7 - i))).reduce((a, b) => a + b, 0);
-  const spendDelta = prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : null;
-  const rangeTotal = series.reduce((s, p) => s + cents(p.value), 0) / 100;
 
   // ── Tasks + events ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
@@ -164,8 +177,7 @@ export default function DashboardPage() {
   const lastEntry = data.journal.length ? data.journal[data.journal.length - 1] : null;
 
   // ── Morning Brief (data-first; exportable) ──
-  const courseStats = Object.fromEntries(school.courses.map((c) => [c.id,
-    gradeStats(school.grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code)))]));
+  const courseStats = courseStatsFor(school.courses, school.grades);
   const schoolDeadlines = data.reminders.filter((r) => r.course_id && !r.completed && r.date).sort((a, b) => a.date.localeCompare(b.date));
   const brief = buildBrief({
     reminders: data.reminders, events: data.events, budget, upcomingBills,

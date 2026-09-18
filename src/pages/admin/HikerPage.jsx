@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
 import { toDateStr } from "../../utils/plannerUtils";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import DatePicker from "../../components/DatePicker";
 import "./mission.css";
-import { RowChevron, FormModal, Field } from "../../components/ui";
+import { RowChevron, FormModal, Field, ShowMore } from "../../components/ui";
+import { usePaged } from "../../hooks/usePaged";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -43,7 +45,16 @@ export default function HikerPage() {
   };
 
   useEffect(() => { reload(); reloadHistory(); }, []);
-  useEffect(() => { loadMembers(search).then(setMembers); }, [search]);
+  // Searching hits the database: wait until typing pauses, and ignore answers to older searches.
+  const searchQuery = useDebouncedValue(search, 250);
+  const [searchError, setSearchError] = useState(null);
+  useEffect(() => {
+    let current = true;
+    loadMembers(searchQuery)
+      .then((m) => { if (current) { setMembers(m); setSearchError(null); } })
+      .catch((err) => { if (current) setSearchError(err?.message || "Search failed"); });
+    return () => { current = false; };
+  }, [searchQuery]);
 
   const openImport = () => {
     setPendingFiles(null);
@@ -120,6 +131,7 @@ export default function HikerPage() {
     va = String(va).toLowerCase(); vb = String(vb).toLowerCase();
     return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
   });
+  const memberPage = usePaged(sorted, 100, `${searchQuery}|${sortCol}|${sortDir}`);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -273,6 +285,7 @@ export default function HikerPage() {
             <span className="vault-count">
               {sorted.length} result{sorted.length !== 1 ? "s" : ""}
             </span>
+            {searchError && <p className="load-error-msg" role="alert">Couldn't search: {searchError}</p>}
             <button className="btn-sm btn-secondary-sm btn" onClick={() => exportCSV(sorted)}>
               <i className="fa-solid fa-download" aria-hidden="true" /> Export
             </button>
@@ -295,7 +308,7 @@ export default function HikerPage() {
                     No members yet. Upload a CSV to get started.
                   </td></tr>
                 )}
-                {sorted.map(m => (
+                {memberPage.visible.map(m => (
                   <tr key={m.id}>
                     <td>{m.first}</td>
                     <td>{m.last}</td>
@@ -310,6 +323,7 @@ export default function HikerPage() {
                 ))}
               </tbody>
             </table>
+            <ShowMore remaining={memberPage.remaining} pageSize={100} onClick={memberPage.showMore} noun="members" />
           </div>
         </>
       )}

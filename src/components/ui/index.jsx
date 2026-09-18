@@ -120,6 +120,18 @@ export function Field({ label, hint, children, className = "" }) {
   );
 }
 
+/** "Show 50 more (120 left)" under a paged list (hooks/usePaged). Renders nothing when all are shown. */
+export function ShowMore({ remaining, pageSize = 50, onClick, noun = "more" }) {
+  if (!(remaining > 0)) return null;
+  return (
+    <div className="uik-show-more">
+      <button type="button" className="btn btn-secondary btn-sm" onClick={onClick}>
+        Show {Math.min(remaining, pageSize)} {noun} <span className="uik-show-more-left">({remaining} left)</span>
+      </button>
+    </div>
+  );
+}
+
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**

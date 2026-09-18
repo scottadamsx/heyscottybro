@@ -274,12 +274,14 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
+            // React itself gets its own chunk; otherwise Rollup parks the JSX runtime inside
+            // whichever vendor chunk it meets first and that chunk becomes a startup download.
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "vendor-react";
             if (id.includes("react-force-graph-3d") || id.includes("three")) return "vendor-graph";
             if (id.includes("react-pdf") || id.includes("pdfjs-dist")) return "vendor-pdf";
             if (id.includes("framer-motion")) return "vendor-motion";
             if (id.includes("@supabase/supabase-js")) return "vendor-supabase";
             if (id.includes("react-router") || id.includes("@remix-run")) return "vendor-router";
-            if (id.includes("@anthropic-ai/claude-agent-sdk")) return "vendor-agent-sdk";
             if (id.includes("lucide-react")) return "vendor-icons";
           },
         },

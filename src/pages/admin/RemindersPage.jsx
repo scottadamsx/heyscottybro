@@ -10,6 +10,8 @@ import { loadAccountability, logHabitDone, logHabitMissed, unlogHabitMissed } fr
 import { dueHabits, missedHabits } from "../../utils/habitSchedule";
 import DueHabitReminders from "../../components/DueHabitReminders";
 import RescheduleSheet from "../../components/RescheduleSheet";
+import { ShowMore } from "../../components/ui";
+import { usePaged } from "../../hooks/usePaged";
 import "./plan.css";
 
 export default function RemindersPage() {
@@ -106,6 +108,7 @@ export default function RemindersPage() {
     .sort((a, b) => String(a.next || a.date).localeCompare(String(b.next || b.date))), [filtered, todayStr]);
   const noDate = useMemo(() => filtered.filter((r) => !r.completed && !r.date), [filtered]);
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
+  const donePage = usePaged(completed, 30, filter);
 
   const handleComplete = async (r) => {
     const recurring = r.recurrence && r.recurrence !== "none";
@@ -290,7 +293,7 @@ export default function RemindersPage() {
             <section className="db-card" aria-label="Completed tasks">
               <div className="db-card-header"><h3 className="db-card-title">Completed ({completed.length})</h3></div>
               <div className="db-list task-list">
-                {completed.map((r) => (
+                {donePage.visible.map((r) => (
                   <div className="db-list-item task-row is-done" key={r.id}>
                     <span className="db-list-item-content">
                       <span className="db-list-item-title task-row-title">{r.name}</span>
@@ -304,6 +307,7 @@ export default function RemindersPage() {
                   </div>
                 ))}
               </div>
+              <ShowMore remaining={donePage.remaining} pageSize={30} onClick={donePage.showMore} noun="completed" />
             </section>
           )}
         </div>

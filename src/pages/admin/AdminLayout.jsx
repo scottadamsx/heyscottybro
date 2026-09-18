@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
-import ChatBot from "../../components/ChatBot";
+import { lazyWithReload as lazy } from "../../utils/lazyWithReload";
 import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 import { useHiddenPages } from "../../utils/settings";
+
+// Frodo's panel (and the whole agent stack behind it) loads alongside the page instead of
+// holding up the first paint of every admin page.
+const ChatBot = lazy(() => import("../../components/ChatBot"));
 
 // The spaces — one nav slot per life question (see MASTERPLAN.md §2.1).
 // Exported so Settings can build the "hide this page" list from the same
@@ -46,6 +50,8 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);   // phone/tablet sidebar
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatLoaded, setChatLoaded] = useState(false);   // the lazy panel has mounted
+  const [chatPending, setChatPending] = useState(false); // tapped the chat button before it loaded
   const [chatUnread, setChatUnread] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -90,7 +96,7 @@ export default function AdminLayout() {
             <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
           </button>
           {/* Frodo lives up here on small screens, so no floating button sits on content */}
-          <button type="button" className="icon-btn topbar-chat" onClick={() => window.dispatchEvent(new Event("hsb:toggle-chat"))}
+          <button type="button" className="icon-btn topbar-chat" onClick={() => (chatLoaded ? window.dispatchEvent(new Event("hsb:toggle-chat")) : setChatPending(true))}
             aria-label={chatOpen ? "Close assistant" : chatUnread ? "Open assistant — Frodo has a reply for you" : "Open assistant"} aria-pressed={chatOpen}>
             <i className="fa-solid fa-comment-dots" aria-hidden="true" />
             {chatUnread && !chatOpen && <span className="topbar-dot" aria-hidden="true" />}
@@ -152,7 +158,13 @@ export default function AdminLayout() {
         </ErrorBoundary>
       </main>
 
-      <ChatBot onOpenChange={setChatOpen} onUnreadChange={setChatUnread} />
+      <Suspense fallback={null}>
+        <ChatBot
+          initialOpen={chatPending}
+          onOpenChange={(open) => { setChatOpen(open); setChatLoaded(true); }}
+          onUnreadChange={setChatUnread}
+        />
+      </Suspense>
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
     </div>
   );
