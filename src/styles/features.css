@@ -83,13 +83,6 @@
 .uik-form .doc-dropzone { margin-bottom: 0; }
 .doc-upload-error { margin: 0; font-size: var(--text-sm); font-weight: 500; color: var(--red); }
 
-.doc-confirm {
-  width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-lg);
-  background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-modal);
-}
-.doc-confirm-msg { margin: 0; line-height: var(--leading-normal); color: var(--text-primary); }
-.doc-confirm-actions { display: flex; justify-content: flex-end; gap: var(--space-xs); }
-
 /* Modal shell (shared by docs and the share dialog) */
 .doc-viewer-overlay {
   position: fixed; inset: 0; z-index: 1000;

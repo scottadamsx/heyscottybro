@@ -8,6 +8,7 @@ import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
+import { PageSkeleton } from "../../components/Skeleton";
 
 const COLORS = ["#4f7cff", "#22d3ee", "#34d399", "var(--orange)", "#f87171", "#a78bfa", "var(--cyan)", "#ec4899"];
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
@@ -199,7 +200,12 @@ export default function AccountabilityPage() {
     if (!await mutate((d) => { d.trackers = d.trackers.filter((t) => t.id !== id); d.logs = d.logs.filter((l) => l.trackerId !== id); })) return;
     if (detailId === id) { setDetailId(null); setTrackerEdit(null); }
   };
-  const deleteLog = (id) => mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
+  const deleteLog = async (id) => {
+    const log = data.logs.find((l) => l.id === id);
+    const when = log ? (log.date === todayStr ? "today" : formatDisplayDate(log.date)) : "that day";
+    if (!await confirm(`Remove the log from ${when}? That day will count as not done.`, { title: "Remove log", confirmLabel: "Remove" })) return;
+    mutate((d) => { d.logs = d.logs.filter((l) => l.id !== id); });
+  };
   const saveTrackerEdit = async (id) => {
     if (!trackerEdit?.name.trim()) return false;
     const schedule = scheduleFromForm(trackerEdit); // throws a readable validation message
@@ -407,7 +413,7 @@ export default function AccountabilityPage() {
     );
   };
 
-  if (!ready) return <p className="life-loading">Loading…</p>;
+  if (!ready) return <PageSkeleton variant="habits" label="Loading habits" header={false} page={false} />;
 
   // A failed load is an error, not "no trackers" — never render an empty state
   // (or accept new writes) over data we couldn't read.

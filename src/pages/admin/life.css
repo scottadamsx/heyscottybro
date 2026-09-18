@@ -29,6 +29,7 @@
 .journal-sheet-date { margin: 0; font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
 .journal-sheet-actions { display: flex; align-items: center; gap: var(--space-xs); }
 .admin-shell .journal-sheet-title { margin: 0; font-size: var(--text-xl); line-height: 2rem; font-weight: 700; overflow-wrap: anywhere; }
+.journal-sheet-updated { margin-top: var(--space-2xs); }
 .journal-sheet-body { margin: var(--space-xs) 0 0; max-width: 68ch; font-size: var(--text-md); line-height: var(--leading-relaxed); color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* Compose / edit modal — a large writing field. */

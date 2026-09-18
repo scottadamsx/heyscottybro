@@ -19,6 +19,7 @@ import BudgetBanker from "../../components/budget/BudgetBanker";
 // Config/transaction normalisers live in budgetSummary so the home Dashboard
 // widget and this page read the data in exactly the same shape.
 import { DEFAULT_CONFIG, apiToPage, uiShape, computeBudgetSnapshot } from "../../components/budget/budgetSummary";
+import { PageSkeleton } from "../../components/Skeleton";
 
 // Transactions now live in the standalone `transactions` table (shared with
 // Frodo), NOT the config blob — so we persist an empty array here to keep the
@@ -300,7 +301,7 @@ export default function BudgetPage() {
       </div>
     );
   }
-  if (!ready) return <div className="module-page"><p className="no-entries">Loading…</p></div>;
+  if (!ready) return <PageSkeleton variant="money" label="Loading money" actions={2} />;
 
   return (
     <div className="combined-page">

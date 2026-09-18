@@ -9,6 +9,7 @@ import { toUploadableImage } from "../../utils/image";
 import { FormModal, Field, ShowMore } from "../../components/ui";
 import { usePaged } from "../../hooks/usePaged";
 import "./mission.css";
+import { PageSkeleton } from "../../components/Skeleton";
 
 const PRIORITIES = ["low", "medium", "high", "critical"];
 const STATUSES   = ["open", "in_progress", "resolved", "closed"];
@@ -180,6 +181,7 @@ export default function BugsPage() {
   };
 
   const handleRemoveShot = async (bug, path) => {
+    if (!await confirm("Remove this screenshot? The image file is deleted.", { title: "Remove screenshot", confirmLabel: "Remove" })) return;
     try {
       const updated = await removeScreenshot(bug, path);
       setBugs(prev => prev.map(b => b.id === updated.id ? updated : b));
@@ -282,7 +284,7 @@ export default function BugsPage() {
         </div>
       </div>
 
-      {loading && <p className="no-entries">Loading…</p>}
+      {loading && <PageSkeleton variant="list" label="Loading the build board" header={false} page={false} />}
       {!loading && loadError && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">{loadError}</p>

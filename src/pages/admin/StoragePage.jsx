@@ -88,7 +88,7 @@ export default function StoragePage() {
     <div className="module-page storage-page">
       <div className="module-header">
         <h1>Storage</h1>
-        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchUsage} disabled={status === "loading"}>
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchUsage} disabled={status === "loading"} aria-busy={status === "loading" || undefined}>
           <i className={`fa-solid fa-rotate-right ${status === "loading" ? "fa-spin" : ""}`} aria-hidden="true" /> Refresh
         </button>
       </div>

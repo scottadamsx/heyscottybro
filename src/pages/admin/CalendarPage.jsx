@@ -19,6 +19,7 @@ import { overdueReminders } from "../../utils/reschedule";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
 import "./plan.css";
 import { RowChevron } from "../../components/ui";
+import { PageSkeleton } from "../../components/Skeleton";
 
 function monthLabel(year, month) {
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
@@ -83,6 +84,7 @@ export default function CalendarPage() {
   // event form
   const timeRange = (e) => e.start_time ? `${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "All day";
   const [loadErrors, setLoadErrors] = useState([]);
+  const [loaded, setLoaded] = useState(false); // first read done — until then the grid is a skeleton, not an empty month
   const [selectedProject, setSelectedProject] = useState("");
   // task form
   const [taskName, setTaskName] = useState("");
@@ -114,6 +116,7 @@ export default function CalendarPage() {
     setEventTypes(et);
     setJournal(j);
     setHabits(acc?.trackers ? acc : { trackers: [], logs: [] });
+    setLoaded(true);
   };
 
   useEffect(() => { load(); }, []);
@@ -353,6 +356,7 @@ export default function CalendarPage() {
         <h1>Calendar</h1>
       </div>
 
+      {!loaded ? <PageSkeleton variant="calendar" label="Loading calendar" header={false} page={false} /> : (
       <div className="db-card cal-card">
         {/* One header: month · Today · prev/next */}
         <div className="cal-head">
@@ -487,9 +491,10 @@ export default function CalendarPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* ── Under the calendar: what's coming, half and half ── */}
-      {(() => {
+      {loaded && (() => {
         const todayS = toDateStr(new Date());
         const horizonDate = new Date();
         horizonDate.setDate(horizonDate.getDate() + 30);

@@ -15,3 +15,5 @@
 .research-card-foot { display: flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-2xs); padding-top: var(--space-md); border-top: 1px solid var(--border-subtle); }
 .admin-shell .research-status-select { width: auto; min-width: 160px; min-height: var(--control-h-sm); font-size: var(--text-sm); }
 .research-card-foot .btn-mini { margin-left: auto; }
+.research-card-foot .research-updated { order: 2; margin-left: auto; }
+.research-card-foot .research-updated + .research-status-select + .btn-mini { order: 3; margin-left: 0; }

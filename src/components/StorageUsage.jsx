@@ -57,7 +57,7 @@ export default function StorageUsage() {
     <div className="db-card col-6">
       <div className="db-card-header">
         <h3 className="db-card-title">Storage</h3>
-        <button type="button" className="icon-x" onClick={fetchUsage} disabled={status === "loading"} aria-label="Refresh storage usage">
+        <button type="button" className="icon-x" onClick={fetchUsage} disabled={status === "loading"} aria-busy={status === "loading" || undefined} aria-label="Refresh storage usage">
           <i className={`fa-solid fa-rotate-right ${status === "loading" ? "fa-spin" : ""}`} aria-hidden="true" />
         </button>
       </div>

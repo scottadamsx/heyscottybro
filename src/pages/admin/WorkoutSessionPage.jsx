@@ -11,6 +11,7 @@ import { loadHint } from "../../utils/plates";
 import { formatDisplayDate } from "../../utils/plannerUtils";
 import { toDateStr } from "../../utils/dates";
 import "./health.css";
+import { PageSkeleton } from "../../components/Skeleton";
 
 /**
  * A workout, live or finished (/admin/health/workout/:id). Live: each exercise shows
@@ -94,7 +95,7 @@ export default function WorkoutSessionPage() {
     return { exercises, volume, prCount, knownNames: [...new Set(history.map((h) => h.exercise))].sort() };
   }, [state]);
 
-  if (state.status === "loading") return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>;
+  if (state.status === "loading") return <PageSkeleton variant="workout" label="Loading workout" actions={2} />;
   if (state.status === "missing") {
     return (
       <div className="combined-page">
@@ -251,6 +252,7 @@ export default function WorkoutSessionPage() {
           onClose={() => setModal(null)}
           onSave={(values) => api.updateSet(modal.set.id, { exercise: modal.set.exercise, setNumber: modal.set.setNumber, ...values })}
           onDelete={async () => {
+            if (!await confirm(`Delete set ${modal.set.setNumber} of ${modal.item.ex.name}?`, { title: "Delete set", confirmLabel: "Delete" })) return;
             try {
               await api.deleteSet(modal.set.id);
               setModal(null);

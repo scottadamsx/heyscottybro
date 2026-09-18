@@ -118,7 +118,7 @@ export default function SettingsPage() {
               stale. Your saved context, habits, tasks, and everything else stay put.
             </div>
           </div>
-          <button className="btn btn-sm btn-secondary-sm" onClick={clearAllChatHistory} disabled={clearingChat}>
+          <button className="btn btn-sm btn-secondary-sm" onClick={clearAllChatHistory} disabled={clearingChat} aria-busy={clearingChat || undefined}>
             {clearingChat ? "Clearing…" : "Clear all"}
           </button>
         </div>

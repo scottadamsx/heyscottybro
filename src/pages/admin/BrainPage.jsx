@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { loadBrain, syncFromVault } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import { renderMarkdown } from "../../utils/markdown";
+import MarkdownBody from "../../components/MarkdownBody";
 import CopyId, { docId } from "../../components/CopyId";
 import { AGENTS } from "../../agents/registry";
 import { resolveTools, modelLabel } from "../../agents/agentProfile";
@@ -142,10 +143,10 @@ export default function BrainPage() {
         <h1>Brain</h1>
         {tab === "graph" && (
           <div className="header-actions">
-            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchBrain} disabled={status === "loading"}>
+            <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchBrain} disabled={status === "loading"} aria-busy={status === "loading" || undefined}>
               <i className={`fa-solid ${status === "loading" ? "fa-spinner fa-spin" : "fa-rotate-right"}`} aria-hidden="true" /> Refresh
             </button>
-            <button type="button" className="btn btn-sm" onClick={handleSync} disabled={syncing}>
+            <button type="button" className="btn btn-sm" onClick={handleSync} disabled={syncing} aria-busy={syncing || undefined}>
               <i className={`fa-solid ${syncing ? "fa-spinner fa-spin" : "fa-cloud-arrow-down"}`} aria-hidden="true" /> {syncing ? "Syncing…" : "Sync from vault"}
             </button>
           </div>
@@ -253,7 +254,7 @@ export default function BrainPage() {
                 <CopyId id={docId(selected.title, selected.slug)} />
               </div>
               {selected.source && <div className="brain-source">{selected.source}</div>}
-              <div className="chat-md brain-panel-body" dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.body || "*(empty note)*") }} />
+              <MarkdownBody className="chat-md brain-panel-body" html={renderMarkdown(selected.body || "*(empty note)*")} />
             </aside>
           )}
         </div>

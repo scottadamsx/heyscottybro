@@ -16,6 +16,7 @@ import { suggestNext } from "../../utils/overload";
 import { toDateStr } from "../../utils/dates";
 import { addDaysStr, formatDisplayDate } from "../../utils/plannerUtils";
 import "./health.css";
+import { PageSkeleton } from "../../components/Skeleton";
 
 /**
  * HEALTH — Achilles inside heyScottyBro (DR-018): food, body weight, workouts built by
@@ -69,7 +70,7 @@ export default function HealthPage() {
     };
   }, [data, today]);
 
-  if (data.status === "loading") return <div className="module-page"><p className="no-entries"><i className="fa-solid fa-spinner fa-spin" /> Loading…</p></div>;
+  if (data.status === "loading") return <PageSkeleton variant="health" label="Loading health" actions={2} />;
   if (data.status === "error") {
     return (
       <div className="combined-page">
@@ -391,7 +392,7 @@ function Overview({ d, profile, data, today, onLogFood, onLogWeight, onGoals, se
       <section className="db-card">
         <div className="db-card-header">
           <h3 className="db-card-title">Insights</h3>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={askCoach} disabled={coach.status === "loading"}>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={askCoach} disabled={coach.status === "loading"} aria-busy={coach.status === "loading" || undefined}>
             <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> {coach.status === "loading" ? "Thinking…" : coach.status === "ready" ? "Ask again" : "Coach's take"}
           </button>
         </div>

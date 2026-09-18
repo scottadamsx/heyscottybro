@@ -12,6 +12,7 @@ import {
   importSnippets,
 } from "../../api/snippetsApi";
 import { FormModal, Field } from "../../components/ui";
+import { copyText } from "../../utils/clipboard";
 import "./mission.css";
 
 const TYPES = [
@@ -57,7 +58,9 @@ export default function SnippetsPage() {
   const [editForm, setEditForm] = useState({});
 
   // UI
-  const [search, setSearch] = useState("");
+  // ?q= arrives from the ⌘K search: open the Vault already filtered to that item.
+  const [search, setSearch] = useState(() => params.get("q") || "");
+  const [announce, setAnnounce] = useState("");
   const deferredSearch = useDeferredValue(search); // typing stays instant; filtering catches up
   const [revealed, setRevealed] = useState(() => new Set());
   const [copiedId, setCopiedId] = useState(null);
@@ -156,11 +159,18 @@ export default function SnippetsPage() {
   const toggleReveal = (id) =>
     setRevealed((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
-  const copy = (item) => {
-    navigator.clipboard?.writeText(item.value).then(() => {
+  // "Copied" only after the clipboard really took it; a blocked clipboard says so.
+  const copy = async (item) => {
+    setAnnounce("");
+    try {
+      await copyText(item.value);
       setCopiedId(item.id);
+      setAnnounce(`${item.title} copied to clipboard`);
       setTimeout(() => setCopiedId((c) => (c === item.id ? null : c)), 1500);
-    });
+    } catch (err) {
+      setAnnounce(`Couldn't copy ${item.title}`);
+      addToast(`Couldn't copy ${item.title}: ${err?.message || err}`, "error");
+    }
   };
 
   async function handleImport() {
@@ -185,7 +195,8 @@ export default function SnippetsPage() {
     }
   }
 
-  function dismissImport() {
+  async function dismissImport() {
+    if (!await confirm(`Discard the ${importCount} snippet${importCount === 1 ? "" : "s"} saved in this browser without importing ${importCount === 1 ? "it" : "them"}? They can't be recovered.`, { title: "Discard local snippets", confirmLabel: "Discard" })) return;
     localStorage.removeItem("vaultSnippets");
     setImportCount(0);
   }
@@ -268,7 +279,7 @@ export default function SnippetsPage() {
         <div className="banner-info">
           <i className="fa-solid fa-box-archive" aria-hidden="true" />
           <span>You have {importCount} snippet{importCount !== 1 ? "s" : ""} saved locally from before.</span>
-          <button type="button" className="btn-mini accent" onClick={handleImport} disabled={importing}>
+          <button type="button" className="btn-mini accent" onClick={handleImport} disabled={importing} aria-busy={importing || undefined}>
             {importing ? "Importing…" : "Import to vault"}
           </button>
           <button type="button" className="btn-mini" onClick={dismissImport}>Discard</button>
@@ -296,14 +307,18 @@ export default function SnippetsPage() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {loading && <SkeletonList rows={4} />}
+      {loading && <SkeletonList rows={4} label="Loading the vault" />}
+      <span className="visually-hidden" aria-live="polite">{announce}</span>
       {error && (
         <div className="load-error" role="alert">
           <p className="load-error-msg">{error}</p>
           <button type="button" className="btn btn-sm" onClick={loadItems}>Retry</button>
         </div>
       )}
-      {!loading && !error && filtered.length === 0 && (
+      {!loading && !error && items.length > 0 && filtered.length === 0 && (
+        <p className="no-entries">Nothing in the vault matches “{search}”.</p>
+      )}
+      {!loading && !error && items.length === 0 && (
         <EmptyState icon="fa-key" title="Vault is empty" description="Store passwords, codes, Wi-Fi credentials, and more. They're hidden until you reveal them." action={<button type="button" className="btn" onClick={openAdd}>Add first snippet</button>} />
       )}
 

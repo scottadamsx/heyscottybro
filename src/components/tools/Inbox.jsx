@@ -5,6 +5,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FormModal, Field } from "../ui";
 import "./tools.css";
+import { PageSkeleton } from "../Skeleton";
 
 const CHANNELS = ["manual", "email", "slack", "discord"];
 const CHANNEL = {
@@ -100,6 +101,7 @@ export default function Inbox() {
   };
 
   const remove = async (m) => {
+    if (!await confirm(`Delete the message${m.subject ? ` "${m.subject}"` : ""}? This removes it from the AI Inbox.`, { title: "Delete message", confirmLabel: "Delete" })) return;
     try { await deleteMessage(m.id); setRows((rs) => rs.filter((x) => x.id !== m.id)); }
     catch (e) { addToast(e.message, "error"); }
   };
@@ -120,7 +122,7 @@ export default function Inbox() {
     finally { setSending(null); }
   };
 
-  if (!ready) return <p className="no-entries">Loading inbox…</p>;
+  if (!ready) return <PageSkeleton variant="list" label="Loading inbox" header={false} page={false} />;
 
   const visible = rows.filter((m) => (showArchived ? true : m.status !== "archived"));
 
@@ -131,7 +133,7 @@ export default function Inbox() {
         <button type="button" className="btn btn-sm" onClick={() => setShowAdd(true)}>
           <i className="fa-solid fa-plus" aria-hidden="true" /> Add message
         </button>
-        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={sync} disabled={syncing}>
+        <button type="button" className="btn btn-sm btn-secondary-sm" onClick={sync} disabled={syncing} aria-busy={syncing || undefined}>
           {syncing ? <><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Syncing…</> : <><i className="fa-solid fa-rotate" aria-hidden="true" /> Sync from Gmail</>}
         </button>
         <label className="inbox-toggle">

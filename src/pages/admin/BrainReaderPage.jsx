@@ -4,6 +4,9 @@ import { getNodeBySlug, setDocRead } from "../../api/docLinksApi";
 import { renderMarkdown } from "../../utils/markdown";
 import CopyId, { docId } from "../../components/CopyId";
 import { ExportKit } from "../../components/ui";
+import MarkdownBody from "../../components/MarkdownBody";
+import UpdatedMeta from "../../components/UpdatedMeta";
+import { PageSkeleton } from "../../components/Skeleton";
 import "./reader.css";
 
 /**
@@ -37,15 +40,21 @@ export default function BrainReaderPage() {
   const linkId = search.get("link");
 
   const [node, setNode] = useState(undefined); // undefined = loading, null = not found
+  const [loadError, setLoadError] = useState(null); // a failed read is NOT "not in your Brain"
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
     setNode(undefined);
+    setLoadError(null);
     getNodeBySlug(slug)
       .then((n) => { if (alive) setNode(n || null); })
-      .catch(() => { if (alive) setNode(null); });
+      .catch((err) => {
+        console.error("[brain-reader] load failed", err);
+        if (alive) { setLoadError(`Couldn't load this note: ${err?.message || err}`); setNode(false); }
+      });
     return () => { alive = false; };
-  }, [slug]);
+  }, [slug, attempt]);
 
   // Mark the originating doc link read, once, when arriving from a host item.
   useEffect(() => { if (linkId) setDocRead(linkId, true).catch((err) => console.warn("[brain-reader] mark doc link read failed", err)); }, [linkId]);
@@ -54,8 +63,6 @@ export default function BrainReaderPage() {
     () => (node ? renderMarkdown(prepArticle(node.body || "_(empty document)_")) : ""),
     [node],
   );
-
-  const updated = node?.updated_at ? new Date(node.updated_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : null;
 
   return (
     <div className="reader-page">
@@ -78,7 +85,16 @@ export default function BrainReaderPage() {
       </div>
 
       {node === undefined && (
-        <p className="no-entries reader-loading"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>
+        <div className="reader-article reader-loading"><PageSkeleton variant="reader" label="Loading note" header={false} page={false} /></div>
+      )}
+
+      {loadError && (
+        <div className="reader-article">
+          <div className="load-error" role="alert">
+            <p className="load-error-msg">{loadError}</p>
+            <button type="button" className="btn btn-sm" onClick={() => setAttempt((a) => a + 1)}>Retry</button>
+          </div>
+        </div>
       )}
 
       {node === null && (
@@ -97,10 +113,10 @@ export default function BrainReaderPage() {
             <div className="reader-meta">
               {node.type && node.type !== "note" && <span className="reader-pill">{node.type}</span>}
               {(node.tags || []).slice(0, 6).map((t) => <span key={t} className="reader-tag">#{t}</span>)}
-              {updated && <span className="reader-date">Updated {updated}</span>}
+              <UpdatedMeta at={node.updated_at} always className="reader-date" />
             </div>
           </header>
-          <div className="reader-body chat-md" dangerouslySetInnerHTML={{ __html: html }} />
+          <MarkdownBody className="reader-body chat-md" html={html} />
           <footer className="reader-foot">
             <CopyId id={docId(node.title, node.slug)} />
           </footer>

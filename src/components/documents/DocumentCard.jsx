@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getSignedUrl } from "../../api/documentsApi";
 import { FormModal, Field } from "../ui";
+import UpdatedMeta from "../UpdatedMeta";
 
 const ICON_MAP = {
   "application/pdf": "fa-file-pdf",
@@ -65,6 +66,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
         <div className="doc-card-meta">
           {formatBytes(doc.size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
         </div>
+        <UpdatedMeta at={doc.updated_at} createdAt={doc.created_at} />
         {doc.description && <div className="doc-card-desc">{doc.description}</div>}
         {Array.isArray(doc.tags) && doc.tags.length > 0 && (
           <div className="doc-card-tags">{doc.tags.map((t) => <span className="doc-card-tag" key={t}>{t}</span>)}</div>
@@ -74,7 +76,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
         <button type="button" className="btn-mini doc-card-btn" onClick={() => onView(doc)} title="View" aria-label={`View ${doc.name}`}>
           <i className="fa-solid fa-eye" aria-hidden="true" />
         </button>
-        <button type="button" className="btn-mini doc-card-btn" onClick={handleDownload} disabled={downloading} title="Download" aria-label={`Download ${doc.name}`}>
+        <button type="button" className="btn-mini doc-card-btn" onClick={handleDownload} disabled={downloading} aria-busy={downloading || undefined} title="Download" aria-label={`Download ${doc.name}`}>
           <i className={`fa-solid ${downloading ? "fa-spinner fa-spin" : "fa-download"}`} aria-hidden="true" />
         </button>
         {onUpdate && (

@@ -4,6 +4,7 @@ import { formatMoney, genId } from "../../utils/budgetCalc";
 import { useToast } from "../../contexts/ToastContext";
 import { FormModal, Field } from "../ui";
 import "./statementImport.css";
+import { useConfirm } from "../../hooks/useConfirm";
 
 /**
  * Statement Import — real banking, so the pipeline is paranoid by design:
@@ -69,6 +70,7 @@ function verifyMatch(entry, tx) {
 
 export default function StatementImport({ transactions, setTransactions, categories = [], onSetBalance }) {
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState("idle"); // idle | busy | review | done
   const [paste, setPaste] = useState("");
@@ -195,7 +197,11 @@ export default function StatementImport({ transactions, setTransactions, categor
     addToast(`Applied: ${updates.length} updated, ${news.length} added.`, "success");
   };
 
-  const reset = () => { setPhase("idle"); setRows([]); setPaste(""); setPeriod(null); setBalance(null); setSummary(null); };
+  const reset = async () => {
+    if (rows.length && !await confirm(`Start over? The ${rows.length} row${rows.length === 1 ? "" : "s"} read from this statement will be discarded (nothing has been imported yet).`, { title: "Start over", confirmLabel: "Discard" })) return;
+    resetNow();
+  };
+  const resetNow = () => { setPhase("idle"); setRows([]); setPaste(""); setPeriod(null); setBalance(null); setSummary(null); };
 
   const checkedCount = rows.filter((r) => r.checked).length;
   const conf = (c) => <span className={`si-conf ${c}`}>{c}</span>;
@@ -203,7 +209,7 @@ export default function StatementImport({ transactions, setTransactions, categor
   // One modal, four phases. The primary button does the phase's job:
   // idle → Analyze pasted text · busy → locked · review → Apply · done → Import another.
   // Analyze runs in the background (its own spinner), so the modal stays open.
-  const close = () => { setOpen(false); if (phase === "done") reset(); };
+  const close = () => { setOpen(false); if (phase === "done") resetNow(); };
   const submit = () => {
     if (phase === "idle") {
       if (!paste.trim()) throw new Error("Choose a statement file or paste its text first.");
@@ -211,7 +217,7 @@ export default function StatementImport({ transactions, setTransactions, categor
       return false;
     }
     if (phase === "review") { apply(); return false; }
-    if (phase === "done") { reset(); return false; }
+    if (phase === "done") { resetNow(); return false; }
     return false;
   };
   const submitLabel = phase === "review"
@@ -223,6 +229,7 @@ export default function StatementImport({ transactions, setTransactions, categor
 
   return (
     <>
+      {dialog}
       <button type="button" className="btn btn-secondary" onClick={() => setOpen(true)}>
         <i className="fa-solid fa-file-invoice" aria-hidden="true" /> Import statement
       </button>

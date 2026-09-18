@@ -19,6 +19,7 @@ import AccountabilitySummary from "../../components/AccountabilitySummary";
 import StorageUsage from "../../components/StorageUsage";
 import { Stagger, Item } from "../../components/motion/Stagger";
 import { memoLast } from "../../utils/memoLast";
+import { PageSkeleton } from "../../components/Skeleton";
 import "./today.css";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
@@ -134,7 +135,7 @@ export default function DashboardPage() {
     }
   }, [data]);
 
-  if (loading) return <div className="module-page"><p className="no-entries">Loading today…</p></div>;
+  if (loading) return <PageSkeleton variant="today" label="Loading today" actions={2} />;
 
   const today = new Date(nowTick);
   const todayStr = toDateStr(today);
@@ -244,7 +245,7 @@ export default function DashboardPage() {
               : <p className="take-text">Two lines on today, read from everything below.</p>}
           </div>
           <div className="take-art" aria-hidden="true"><i /><i /><i /><i /></div>
-          <button type="button" className="take-go" onClick={fetchBriefing} disabled={aiLoading} aria-label={aiText ? "Refresh Frodo's take" : "Get Frodo's take on today"}>
+          <button type="button" className="take-go" onClick={fetchBriefing} disabled={aiLoading} aria-busy={aiLoading || undefined} aria-label={aiText ? "Refresh Frodo's take" : "Get Frodo's take on today"}>
             {aiLoading ? <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> : aiText ? "Again" : "Ask"}
           </button>
         </Item>

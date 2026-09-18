@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { renderMarkdown } from "../utils/markdown";
+import MarkdownBody from "./MarkdownBody";
 import useAIAgent, { MAX_INPUT_CHARS } from "../hooks/useAIAgent";
 import { TIERS } from "../api/aiTiers";
 import { stageScreenshot } from "../api/bugsApi";
 import { setPendingScreenshots } from "../api/pendingScreenshots";
 import { readDataUrl, normaliseImage } from "../utils/image";
 import { useToast } from "../contexts/ToastContext";
+import { useConfirm } from "../hooks/useConfirm";
 
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 
@@ -21,6 +23,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   const [hasUnread, setHasUnread] = useState(false);
   const { displayMsgs, input, setInput, loading, status, sendMessage, clearHistory, hydrating, saveError } = useAIAgent();
   const { addToast } = useToast();
+  const { confirm, dialog } = useConfirm();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -127,6 +130,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
 
   return (
     <>
+      {dialog}
       <button className={`chat-fab ${open ? "open" : ""}`} onClick={() => setOpen((v) => !v)} aria-label={open ? "Close assistant" : hasUnread ? "Open assistant — Frodo has a reply for you" : "Open assistant"}>
         <i className={`fa-solid ${open ? "fa-xmark" : "fa-comment-dots"}`} />
         {/* Purely decorative — the state is already in the button's aria-label above. */}
@@ -144,7 +148,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
               <button type="button" className="btn-mini muted" onClick={() => setExpanded((v) => !v)} title={expanded ? "Shrink" : "Full screen"}>
                 <i className={`fa-solid ${expanded ? "fa-compress" : "fa-expand"}`} />
               </button>
-              <button type="button" className="btn-mini muted" onClick={clearHistory} title="Clear conversation">
+              <button type="button" className="btn-mini muted" onClick={async () => { if (await confirm("Clear your conversation with Frodo? It's deleted from every device.", { title: "Clear conversation", confirmLabel: "Clear" })) clearHistory(); }} title="Clear conversation">
                 <i className="fa-solid fa-rotate-left" /> Clear
               </button>
               <button type="button" className="btn-mini muted" onClick={() => setOpen(false)} title="Close" aria-label="Close assistant">
@@ -174,7 +178,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
                 return (
                   <div key={i} className="chat-msg assistant chat-md">
                     {tier.id !== "frodo" && <span className={`chat-author ${tier.id}`}><i className={`fa-solid ${tier.icon}`} /> {tier.label}</span>}
-                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                    <MarkdownBody html={renderMarkdown(m.text)} />
                   </div>
                 );
               }

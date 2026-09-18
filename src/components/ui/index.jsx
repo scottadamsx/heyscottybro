@@ -14,9 +14,9 @@ export function RowChevron() {
   return <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />;
 }
 
-export function Card({ title, icon, actions, className = "", children }) {
+export function Card({ title, icon, actions, className = "", id, children }) {
   return (
-    <section className={`uik-card ${className}`}>
+    <section className={`uik-card ${className}`} id={id}>
       {(title || actions) && (
         <div className="uik-card-head">
           {title && <h3>{icon && <i className={`fa-solid ${icon}`} />} {title}</h3>}
@@ -144,7 +144,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([t
  */
 export function FormModal({
   title, onClose, onSubmit, submitLabel = "Save", cancelLabel = "Cancel",
-  submitDisabled = false, danger = false, width = 520, children, extraActions = null, className = "",
+  submitDisabled = false, danger = false, width = 520, children, extraActions = null, className = "", busyLabel,
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -173,8 +173,8 @@ export function FormModal({
         <>
           {extraActions && <div className="uik-modal-foot-extra">{extraActions}</div>}
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>{cancelLabel}</button>
-          <button type="submit" form={formId} className={`btn ${danger ? "btn-danger" : "btn-primary"}`} disabled={busy || submitDisabled}>
-            {busy ? "Saving…" : submitLabel}
+          <button type="submit" form={formId} className={`btn ${danger ? "btn-danger" : "btn-primary"}`} disabled={busy || submitDisabled} aria-busy={busy || undefined}>
+            {busy ? (busyLabel || (danger ? "Working…" : "Saving…")) : submitLabel}
           </button>
         </>
       }

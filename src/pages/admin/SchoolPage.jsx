@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "../../api/coursesApi";
 import { loadGrades, gradeStats } from "../../api/gradesApi";
 import { loadReminders, newReminder, completeReminder } from "../../api/plannerApi";
@@ -12,6 +12,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import "./school.css";
 import DatePicker from "../../components/DatePicker";
+import { PageSkeleton } from "../../components/Skeleton";
 
 /**
  * SCHOOL — the semester at a glance. Courses are first-class; deadlines are
@@ -57,6 +58,15 @@ export default function SchoolPage() {
     setReady(true);
   };
   useEffect(() => { refresh(); }, []);
+
+  // ?course=<id> (from the search palette): open that course's card and bring it into view.
+  const [params] = useSearchParams();
+  const courseParam = params.get("course");
+  useEffect(() => {
+    if (!ready || !courseParam) return;
+    setOpen(courseParam);
+    requestAnimationFrame(() => document.getElementById(`course-${courseParam}`)?.scrollIntoView({ block: "start" }));
+  }, [ready, courseParam]);
 
   const courseGrades = (c) => grades.filter((g) => g.course_id === c.id || (g.course && g.course === c.code));
   const gradesByCourse = useMemo(() => Object.fromEntries(courses.map((c) => [c.id, courseGrades(c)])), [courses, grades]);
@@ -131,7 +141,7 @@ export default function SchoolPage() {
     })),
   };
 
-  if (!ready) return <div className="module-page"><p className="no-entries">Loading school…</p></div>;
+  if (!ready) return <PageSkeleton variant="school" label="Loading school" actions={3} />;
   if (loadError) {
     return (
       <div className="module-page">
@@ -185,7 +195,7 @@ export default function SchoolPage() {
         const expanded = open === c.id;
         const onTarget = st.projectedFinal != null && c.target_grade != null ? st.projectedFinal >= c.target_grade : null;
         return (
-          <Card key={c.id} className="school-course">
+          <Card key={c.id} className="school-course" id={`course-${c.id}`}>
             <button type="button" className="school-course-head" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : c.id)}>
               <span className="school-course-code" style={{ background: c.color || "var(--accent)" }}>{c.code}</span>
               <span className="school-course-main">

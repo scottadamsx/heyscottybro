@@ -4,6 +4,7 @@ import { computeBudgetSnapshot } from "./budgetSummary";
 import "./budget.css";
 import DatePicker from "../DatePicker";
 import { FormModal, Field } from "../ui";
+import { useConfirm } from "../../hooks/useConfirm";
 
 function MoneyChart({ config, transactions, period }) {
   const W = 600, H = 160, padY = 8;
@@ -114,7 +115,10 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
     if (!(amt > 0)) throw new Error("Enter a monthly amount greater than zero.");
     onSetCategoryBudget?.(budgetForm.cat, amt);
   };
-  const removeBudget = () => { onSetCategoryBudget?.(budgetForm.cat, 0); closeBudget(); };
+  const removeBudget = async () => {
+    if (!await confirm(`Remove the budget for ${budgetForm.cat}? Its spending stays; it just stops having a limit.`, { title: "Remove budget", confirmLabel: "Remove" })) return;
+    onSetCategoryBudget?.(budgetForm.cat, 0); closeBudget();
+  };
 
   // Savings-goal modal state
   const [goalForm, setGoalForm] = useState({ name: "", target: "", targetDate: "", saved: "" });
@@ -132,7 +136,12 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
   };
   const openNewGoal = () => { setGoalEditId(null); setGoalForm({ name: "", target: "", targetDate: "", saved: "" }); setGoalOpen(true); };
   const editGoal = (g) => { setGoalEditId(g.id); setGoalForm({ name: g.name, target: String(g.target), targetDate: g.targetDate || "", saved: String(g.saved || "") }); setGoalOpen(true); };
-  const deleteGoal = (id) => onSaveGoals?.((config.savingsGoals || []).filter(g => g.id !== id));
+  const { confirm, dialog } = useConfirm();
+  const deleteGoal = async (id) => {
+    const goal = (config.savingsGoals || []).find((g) => g.id === id);
+    if (!await confirm(`Delete the savings goal "${goal?.name || "this goal"}"?`, { title: "Delete goal", confirmLabel: "Delete" })) return;
+    onSaveGoals?.((config.savingsGoals || []).filter(g => g.id !== id));
+  };
 
   // Scope Recent to the selected period so the list always agrees with the
   // period's Spent total (otherwise an all-time list looks inconsistent with a
@@ -188,6 +197,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
 
   return (
     <>
+    {dialog}
     <div className="money">
       {/* Pay-period navigator */}
       <div className="money-period">

@@ -308,7 +308,7 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
 
         <div className="uik-modal-foot">
           <button type="button" className="btn-sm btn-secondary-sm" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn btn-sm" disabled={!target || saving} onClick={save}>
+          <button type="button" className="btn btn-sm" disabled={!target || saving} aria-busy={saving || undefined} onClick={save}>
             {saving ? "Saving…" : !target ? "Pick a day" : `Schedule ${target === today ? "today" : `${dow(target)} ${dayNum(target)}`}${!noTime && start != null ? ` · ${hm(start)}` : ""}`}
           </button>
         </div>

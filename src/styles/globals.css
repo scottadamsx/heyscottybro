@@ -36,6 +36,7 @@
   --bg-card: #FFFFFF;
   --bg-raised: #F8F4F0;          /* insets, inputs, segmented tracks */
   --bg-hover: #F2EBE4;
+  --bg-active: #EAE0D6;          /* a row, tab or chip while it is pressed */
   --bg-selected: #FFFFFF;        /* selected row on cream */
   --bg-inverse: #221E1B;         /* primary button, strong chips */
   --bg-inverse-hover: #3A342F;
@@ -172,6 +173,7 @@
   --bg-card: #211E1B;
   --bg-raised: #2A2622;
   --bg-hover: #302B27;
+  --bg-active: #3A342F;
   --bg-selected: #2E2925;
   --bg-inverse: #F4EFEA;
   --bg-inverse-hover: #DDD6CF;

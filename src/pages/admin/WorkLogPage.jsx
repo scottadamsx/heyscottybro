@@ -12,6 +12,7 @@ import { useToast } from "../../contexts/ToastContext";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
 import "./plan.css";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const emptyForm = () => ({ date: toDateStr(new Date()), task: "", notes: "", project_id: "", minutes: "" });
 
@@ -45,6 +46,7 @@ function WorkLogFields({ form, setForm, projects }) {
 }
 
 export default function WorkLogPage() {
+  const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
   const [rows, setRows] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -99,6 +101,7 @@ export default function WorkLogPage() {
   };
 
   const remove = async (r) => {
+    if (!await confirm(`Delete the work log entry "${r.task || "this entry"}"?`, { title: "Delete entry", confirmLabel: "Delete" })) return;
     setRows((prev) => prev.filter((x) => x.id !== r.id));
     try { await deleteWorkLog(r.id); } catch (err) { addToast(`Couldn't delete: ${err.message}`, "error"); load(); }
   };
@@ -128,6 +131,7 @@ export default function WorkLogPage() {
 
   return (
     <div className="module-page worklog-page">
+      {dialog}
       <div className="module-header worklog-head">
         <h1>Work log</h1>
         <button type="button" className="btn btn-primary worklog-log-btn" onClick={() => setShowLog(true)}>

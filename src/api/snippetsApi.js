@@ -19,6 +19,21 @@ export async function getSnippets() {
   return data ?? [];
 }
 
+/**
+ * Titles only, for the ⌘K search: the stored value is never selected, so a
+ * secret can't reach the palette (or its memory) by accident.
+ */
+export async function listSnippetTitles() {
+  const userId = await uid();
+  const { data, error } = await supabase
+    .from("snippets")
+    .select("id, title, type, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
 /** Insert a new snippet. */
 export async function createSnippet({ title, value, type, secret, notes }) {
   const userId = await uid();

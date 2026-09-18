@@ -7,6 +7,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FormModal, Field } from "../ui";
 import "./tools.css";
+import { SkeletonList } from "../Skeleton";
 
 const EMPTY = { course: "", name: "", earned: "", max: "100", weight: "", feedback: "" };
 const pct = (e, m) => (e != null && e !== "" && Number(m) > 0 ? Math.round((Number(e) / Number(m)) * 100) : null);
@@ -111,7 +112,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
     if (failures.length) addToast(`${failures.length} task${failures.length === 1 ? "" : "s"} couldn't be added — ${failures[0]}`, "error");
   };
 
-  if (!ready) return <p className="no-entries">Loading grades…</p>;
+  if (!ready) return <SkeletonList rows={3} label="Loading grades" />;
   if (loadError) {
     return (
       <div className="load-error" role="alert">

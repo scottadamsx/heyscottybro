@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { renderMarkdown } from "../../utils/markdown";
+import MarkdownBody from "../../components/MarkdownBody";
 import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
 
 const repoName = (p) => (p || "").split("/").filter(Boolean).pop();
@@ -71,7 +72,7 @@ export default function AulePanel({ agent, onOpenDoc }) {
             return (
               <div key={i} className={`cmd-msg ${m.isError ? "error" : "assistant"}`}>
                 <button type="button" className="cmd-msg-expand" title="Open in viewer" aria-label="Open result in viewer" onClick={() => onOpenDoc?.({ title: `${agent.name} · result`, body: m.text || "" })}><i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" /></button>
-                <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text || "_(done)_") }} />
+                <MarkdownBody className="chat-md" html={renderMarkdown(m.text || "_(done)_")} />
                 {typeof m.cost === "number" && <div className="aule-cost">Max plan · ~${m.cost.toFixed(3)} equivalent</div>}
               </div>
             );
@@ -79,7 +80,7 @@ export default function AulePanel({ agent, onOpenDoc }) {
           return (
             <div key={i} className={`cmd-msg ${m.role}`}>
               {m.role === "assistant"
-                ? <div className="chat-md" dangerouslySetInnerHTML={{ __html: renderMarkdown(m.text) }} />
+                ? <MarkdownBody className="chat-md" html={renderMarkdown(m.text)} />
                 : <span>{m.text}</span>}
             </div>
           );
