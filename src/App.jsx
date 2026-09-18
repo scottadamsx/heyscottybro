@@ -25,6 +25,10 @@ import TicTacToePage from "./pages/TicTacToePage.jsx";
 
 // Combined portal pages (lazy — each bundles only what their tab needs)
 const SharedDocPage      = lazy(() => import("./pages/SharedDocPage.jsx"));
+const NotFoundPage       = lazy(() => import("./pages/NotFoundPage.jsx"));
+const AdminNotFound      = lazy(() => import("./pages/admin/AdminNotFound.jsx"));
+import PublicChrome, { PublicSkipLink } from "./components/public/PublicChrome.jsx";
+import PublicLoader from "./components/public/PublicLoader.jsx";
 
 import AdminLogin from "./pages/admin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
@@ -34,6 +38,7 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 export default function App() {
   return (
     <ToastProvider>
+      <PublicSkipLink />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />
@@ -50,7 +55,7 @@ export default function App() {
         <Route path="/games/minecraft-trivia" element={<GameEmbed src="/games/minecraft-trivia/index.html" title="Minecraft Trivia" />} />
         <Route path="/games/monopoly-banker"  element={<GameEmbed src="/games/monopoly-banker/index.html" title="Monopoly Banker" />} />
         <Route path="/games/tictactoe" element={<><Navbar /><TicTacToePage /><Footer /></>} />
-        <Route path="/doc/:token" element={Lazy(<SharedDocPage />)} />
+        <Route path="/doc/:token" element={<ErrorBoundary><Suspense fallback={<PublicLoader variant="plain" label="Loading document…" />}><SharedDocPage /></Suspense></ErrorBoundary>} />
 
         {/* Admin login */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -60,10 +65,12 @@ export default function App() {
           <Route index element={<Navigate to="/admin/today" replace />} />
           {ADMIN_PAGES.map((p) => <Route key={p.path} path={p.path} element={Lazy(p.element)} />)}
           {ADMIN_REDIRECTS.map(([from, to]) => <Route key={from} path={from} element={<Navigate to={to} replace />} />)}
+          <Route path="*" element={Lazy(<AdminNotFound />)} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<><Navbar /><Suspense fallback={<PublicLoader />}><NotFoundPage /></Suspense><Footer /></>} />
       </Routes>
+      <PublicChrome />
     </ToastProvider>
   );
 }

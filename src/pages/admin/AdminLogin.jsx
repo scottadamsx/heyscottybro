@@ -4,6 +4,7 @@ import { login, loginWithGoogle, getSession } from "../../api/plannerApi";
 
 export default function AdminLogin() {
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -29,7 +30,9 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="auth-wrap">
+    <>
+    <a className="pub-skip auth-skip" href="#main">Skip to sign in</a>
+    <main className="auth-wrap" id="main" tabIndex={-1}>
       <div className="auth-card">
         <span className="auth-mark" aria-hidden="true"><i /><i /><i /><i /></span>
         <h2>
@@ -51,16 +54,32 @@ export default function AdminLogin() {
 
         <form onSubmit={submit}>
           <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            autoComplete="current-password"
-            required
-          />
-          {error && <p className="error-message">{error}</p>}
+          <div className="auth-pw">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              required
+            />
+            <button
+              type="button"
+              className="auth-pw-toggle"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-pressed={showPassword}
+              aria-controls="password"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              <i className={`fa-regular ${showPassword ? "fa-eye-slash" : "fa-eye"}`} aria-hidden="true" />
+            </button>
+          </div>
+          {error && <p className="error-message" role="alert">{error}</p>}
           <button type="submit" className="btn auth-submit" disabled={loading}>
             {loading ? "Logging in..." : "Log In"}
           </button>
@@ -70,6 +89,7 @@ export default function AdminLogin() {
           <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to heyScottyBro
         </Link>
       </div>
-    </div>
+    </main>
+    </>
   );
 }

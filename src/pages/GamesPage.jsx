@@ -35,7 +35,7 @@ const GAMES = [
 
 export default function GamesPage() {
   return (
-    <div className="lp">
+    <main className="lp" id="main" tabIndex={-1}>
       <ScrollProgress />
 
       {/* Hero */}
@@ -73,6 +73,6 @@ export default function GamesPage() {
           ))}
         </div>
       </section>
-    </div>
+    </main>
   );
 }

@@ -40,3 +40,45 @@
   .print-sheet pre { padding: 8pt; border: 0.75pt solid #ccc; page-break-inside: avoid; }
   .print-sheet ul, .print-sheet ol { padding-left: 18pt; }
 }
+
+/* ── Public pages (guide, /sjhc, /never86, /games, 404) ─────────────────────
+   Paper wants the words: drop the chrome, flatten the dark terminal look,
+   print where external links go, and keep blocks from splitting. <details>
+   are opened for print by PublicChrome (beforeprint) so FAQ answers show. */
+@media print {
+  .pub-dock, .pub-skip, .pub-contact, .scroll-progress, .lp-gnav, .lp-gnav-sheet,
+  .lp-guide-toc, .footer, .lp-subhero-cta, .lp-step-nav, .lp-prompt-copy,
+  .lp-prompt-hint, .game-embed-stage .pub-loader { display: none !important; }
+
+  .lp, .lp * {
+    background: transparent !important; color: #111 !important;
+    box-shadow: none !important; text-shadow: none !important;
+  }
+  .lp { min-height: 0 !important; font-size: 11pt; line-height: 1.5; }
+  .lp::before { display: none !important; }
+  /* Scroll-reveal content that was never scrolled into view is still at opacity 0. */
+  .lp [style*="opacity"] { opacity: 1 !important; transform: none !important; }
+  .lp-subhero { padding: 0 0 12pt !important; text-align: left !important; }
+  .lp-section { padding: 0 !important; }
+  .lp-guide-layout { display: block !important; }
+  .lp-guide-body { max-width: none !important; padding: 0 !important; }
+
+  .lp h1, .lp h2, .lp h3 { break-after: avoid; page-break-after: avoid; }
+  .lp p, .lp li { orphans: 3; widows: 3; }
+  .lp-prompt, .lp-figure, .lp-setup-card, .lp-guide-callout, .lp-faq details,
+  .lp-feature, .lp-card, .lp-photos img, .pub-404-term {
+    break-inside: avoid; page-break-inside: avoid;
+    border: 0.75pt solid #999 !important;
+  }
+  .lp-prompt-body { white-space: pre-wrap !important; font-size: 9.5pt; }
+  .lp-faq summary { font-weight: 600; }
+  .lp-photos { grid-template-columns: repeat(2, 1fr) !important; }
+  .lp-photos img { height: auto !important; max-height: 60mm; }
+
+  /* External links: print the destination after the text. */
+  .lp a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt; font-weight: 400; word-break: break-all;
+  }
+  .lp a[href^="http"] i { display: none; }
+}

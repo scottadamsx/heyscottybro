@@ -174,7 +174,7 @@
 @media (prefers-reduced-motion: reduce) { .xpd-win, .xpd-startmenu { animation: none; } }
 
 /* ── Floating windows (desktop): drag by caption, resize by corner ── */
-.xpd-windows.floating { display: block; position: relative; min-height: 100%; }
+.xpd-windows.floating { display: block; position: relative; min-height: 100%; isolation: isolate; } /* window z-indexes stay below the taskbar + start menu */
 .xpd-win.floating { position: absolute; display: flex; flex-direction: column; min-width: 260px; max-width: calc(100% - 4px); }
 .xpd-win.floating .xpd-title { cursor: move; }
 .xpd-win.floating .xpd-body { flex: 1; overflow: auto; position: relative; }
