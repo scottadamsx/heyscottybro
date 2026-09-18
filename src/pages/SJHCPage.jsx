@@ -59,7 +59,9 @@ export default function SJHCPage() {
           {/* First row sits in the opening viewport: load it straight away. */}
           {PHOTOS.map((p, i) => (
             <motion.img key={p.src} src={p.src} alt={p.alt} width={p.w} height={p.h} decoding="async"
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+              loading={i < 2 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : undefined}
+              // The opening row is the page's largest paint: show it at once instead of fading in.
+              initial={i < 2 ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: i * 0.06 }} />
           ))}
         </div>

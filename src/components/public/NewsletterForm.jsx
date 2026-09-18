@@ -1,5 +1,4 @@
 import { useId, useState } from "react";
-import { supabase } from "../../utils/supabase";
 import { subscribe, validateEmail } from "../../utils/newsletter";
 import "../../styles/public.css";
 
@@ -21,6 +20,8 @@ export default function NewsletterForm({ source = "site", variant = "terminal", 
     setState("sending");
     setError("");
     try {
+      // The Supabase client loads on submit, so public pages don't download it up front.
+      const { supabase } = await import("../../utils/supabase");
       await subscribe(supabase, v.email, source);
       setState("done");
     } catch (err) {
