@@ -2,6 +2,8 @@
 
 Personal portfolio + all-in-one admin site built with React + Vite + Supabase.
 
+> Contributors and coding agents must begin with [`AGENTS.md`](AGENTS.md) and [`docs/README.md`](docs/README.md) before changing application code.
+
 ## Stack
 - **Frontend**: React 18 + React Router + Vite
 - **Database / Auth**: Supabase (magic link auth, PostgreSQL)
