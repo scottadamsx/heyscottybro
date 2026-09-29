@@ -22,6 +22,7 @@
 - Verify desktop and mobile layouts using real rendered UI.
 - Check keyboard operation, focus visibility, labels, contrast, touch targets, reduced motion, loading, empty, and error states.
 - Test long text, overlapping content, and narrow screens when relevant.
+- For every card with repeated list rows, verify an associated small count is accurate after filtering, pagination, truncation, display limits, refresh, and empty results. Use `N of M` whenever not all loaded rows are visible; never show a fabricated loading/error count.
 - Capture visual evidence in the feature document.
 
 ## Final automated checks

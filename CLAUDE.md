@@ -66,6 +66,12 @@ do not reintroduce theme packs.
   system SF for reading; radii 6/8/12/16/24 + capsule buttons/tabs;
   controls 32/40/48 (44 on touch); every text colour ≥ 4.5:1; no uppercase
   tracked micro-labels; page titles carry no icons.
+- **List-card counts** — every settled card containing repeated item rows shows
+  a small readable count associated with its list heading. Show `N` when all
+  loaded rows are visible, `N of M` when filtering, pagination, truncation, or
+  a display limit hides rows, and `0` for a loaded empty list. Derive the count
+  from the rendered collection, update it with the list, and never fabricate a
+  number during an unresolved loading or error state.
 
 ## The escalation rule (QF-8) — verbatim
 

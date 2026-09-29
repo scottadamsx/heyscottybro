@@ -32,6 +32,7 @@ What the inspected code and product do now.
 - Mobile:
 - Keyboard and screen reader:
 - Loading, empty, and error states:
+- List-card counts (`N`, `N of M`, `0`, or not applicable):
 
 ## Acceptance criteria
 

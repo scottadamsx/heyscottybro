@@ -1,9 +1,12 @@
 # Session transcript
 
+- **SAI ID:** SAI00000001
 - **Thread:** 01a0ea22-5d76-7502-a006-a16c39e7c228
-- **Title:** Identify project purpose
+- **Title:** Bonsai Chat SAI00000001
+- **Original title:** Identify project purpose
+- **Bootstrap:** Retrospective seed session; the thread predates the Project Manager injection contract.
 - **Started:** 2026-09-28T22:28:35.000Z
-- **Archive cutoff:** 2026-09-29T11:54:25.489Z
+- **Archive cutoff:** 2026-09-29T12:22:47.573Z
 - **Timezone:** America/St_Johns
 - **Source:** Complete local thread event log, filtered to user-visible messages.
 - **Scope:** All Scott messages and root-assistant commentary/final messages through the cutoff. Hidden instructions, reasoning, tools, subagents, raw outputs, injected environment/context messages, and ambient browser scaffolding are excluded.
@@ -1671,3 +1674,152 @@ okay its fine, jsut finish it and update me so I can expire this chat. should wr
 ## 2026-09-29T11:54:25.489Z — Codex (commentary)
 
 Let’s use **“session closed”**: finished, documented, committed, and pushed. I’m completing that approved closure now—no new bug fixes and no live AI calls.
+
+## 2026-09-29T11:54:55.334Z — Codex (commentary)
+
+The archive rules are confirmed. I’m adding the missing visible conversation and closure records now; sensitive live-test details stay omitted.
+
+## 2026-09-29T11:56:48.615Z — Codex (commentary)
+
+The product and architecture docs now match the actual implementation. I’m running the final local test, lint, build, and integrity gates in parallel—no external AI usage.
+
+## 2026-09-29T12:00:39.257Z — Codex (commentary)
+
+All local quality gates pass: 255 tests, lint, and production build. I’m doing the final archive/privacy scan now, then I’ll make the already-approved commit and push.
+
+## 2026-09-29T12:02:17.961Z — Codex (commentary)
+
+The archive and privacy audit is clean. I’m staging the settled tree now, reviewing exactly what will be committed, then I’ll make the one approved commit and push it.
+
+## 2026-09-29T12:03:27.544Z — Codex (commentary)
+
+Everything intended is staged and the staged diff is clean. I’m creating the single approved closure commit now.
+
+## 2026-09-29T12:03:47.740Z — Codex (commentary)
+
+The commit and push succeeded. I’m doing the final Git verification now—commit hash, remote-tracking branch, and clean working tree.
+
+## 2026-09-29T12:03:55.403Z — Codex (final)
+
+**Session closed.** You can expire this chat.
+
+- Commit: `0760393`
+- Pushed successfully to `origin/main`
+- Working tree is clean
+- 255 tests, lint, build, privacy, and archive checks passed
+- `BUG-055/056` are logged as deferred, not worked
+- No deployment or further live AI calls occurred
+- The session summary and manifest are complete.
+
+## 2026-09-29T12:06:32.208Z — Scott
+
+every chat is assigned its own unique id, Bonsai Chat SAI10838245 or something like that, which will become the title of the chat. every chat starts with an injection prompt from the project manager
+
+## 2026-09-29T12:06:41.799Z — Codex (final)
+
+Understood. One clarification before I draft the contract: does **“every chat”** mean Codex development sessions, or every user-facing AI conversation inside heyScottyBro?
+
+## 2026-09-29T12:07:21.851Z — Scott
+
+coded development sessions. not in heyscottybro frodo doesnt need to do this
+
+## 2026-09-29T12:07:40.647Z — Codex (final)
+
+Got it—Codex development sessions only.
+
+Proposed standard:
+
+- Human ID: `SAI` plus eight unique digits, e.g. `SAI10838245`
+- Chat title: `Bonsai Chat SAI10838245`
+- The permanent Codex thread ID remains stored internally for traceability.
+- The Project Manager creates the ID, checks for duplicates, sets the title, and sends the first visible bootstrap prompt.
+- That prompt includes the task, repository, required startup files, Git state, approval status, usage budget, relevant prior-session links, known risks, and closure requirements.
+- No coding begins until the agent reads the injection and completes startup.
+- The SAI ID appears in the session folder, transcript, summary, manifest, worklog, and commits where useful.
+- Frodo and other heyScottyBro product chats are excluded.
+- Existing closed sessions remain unchanged unless you request migration.
+
+Pseudocode:
+
+```text
+GENERATE unused SAI######## ID
+SET chat title to "Bonsai Chat <ID>"
+CREATE session folder and manifest
+SEND Project Manager bootstrap prompt
+AGENT reads required workspace records
+AGENT reports plan and waits for approval
+BEGIN approved work
+```
+
+If you say **go**, I’ll document and implement this development-session standard.
+
+## 2026-09-29T12:08:22.474Z — Scott
+
+It is the project mamagers job to keep track of all id numbers it creates, and makes surte it has a glossary for them
+
+## 2026-09-29T12:08:31.207Z — Codex (final)
+
+Added to the proposed contract:
+
+- The Project Manager exclusively assigns every `SAI########` ID.
+- IDs are permanent and never reused—even for abandoned sessions.
+- Before assignment, it checks the complete registry for collisions.
+- `docs/sessions/GLOSSARY.md` provides the readable session catalog.
+- `docs/sessions/registry.jsonl` is the append-only machine-readable source of truth.
+- Each record includes the SAI ID, Codex thread ID, title, purpose, project, status, dates, parent session, archive path, and summary link.
+- The friendly topic belongs in the glossary; the chat title remains exactly `Bonsai Chat SAI########`.
+
+No files changed yet. Say **go** when you want this implemented.
+
+## 2026-09-29T12:08:38.967Z — Scott
+
+go
+
+## 2026-09-29T12:09:09.547Z — Codex (commentary)
+
+I’m implementing this as a future-session standard: a permanent ID registry, human glossary, Project Manager injection template, collision rules, and startup enforcement. This already-closed legacy chat will not be renamed retroactively.
+
+## 2026-09-29T12:09:10.832Z — Scott
+
+make this chat SAIxx...x01
+
+## 2026-09-29T12:09:19.378Z — Codex (commentary)
+
+I’ll register this as the first sequential ID: **SAI00000001**, with the chat title **Bonsai Chat SAI00000001**. Then I’ll build the registry and glossary around sequential, never-reused IDs.
+
+## 2026-09-29T12:09:59.698Z — Codex (commentary)
+
+This chat is now titled **Bonsai Chat SAI00000001**. I’m registering that ID in the project’s permanent session records now; no product code will change.
+
+## 2026-09-29T12:11:03.412Z — Codex (commentary)
+
+The seed ID is recorded. I’m adding the two-part tracking system now: an immutable event registry for correctness and a short glossary for humans.
+
+## 2026-09-29T12:12:22.267Z — Scott
+
+also add to dev rules, any card with rows of items in it in a list. must contain a number somewhwre on the page, to prevent the user from ever needing to count how many are visislbe, a little sub number
+
+## 2026-09-29T12:12:31.044Z — Codex (final)
+
+Understood. Proposed dev rule:
+
+- Every card containing list rows must show a small item count.
+- Fully shown list: `5`
+- Truncated/paginated list: `5 of 12`
+- Filtered list: `3 of 12`
+- Empty list: `0`
+- Counts must update with the visible rows.
+
+No change made yet. Say **go** and I’ll add it to the development/design rules.
+
+## 2026-09-29T12:20:44.827Z — Scott
+
+go
+
+## 2026-09-29T12:20:48.200Z — Codex (commentary)
+
+Approved. I’ll record the list-count rule in the permanent design/development standards, then finish the SAI session system and validate both together.
+
+## 2026-09-29T12:22:47.573Z — Codex (commentary)
+
+The registry guard is working: it validates `SAI00000001`, identifies `SAI00000002` as the only next ID, and all seven collision/order tests pass.

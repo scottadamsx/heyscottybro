@@ -1,14 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "thread": {
+    "sai_id": "SAI00000001",
     "id": "01a0ea22-5d76-7502-a006-a16c39e7c228",
-    "title": "Identify project purpose",
+    "title": "Bonsai Chat SAI00000001",
+    "original_title": "Identify project purpose",
+    "bootstrap_mode": "retrospective_seed",
     "started_at": "2026-09-28T22:28:35.000Z",
-    "archive_cutoff": "2026-09-29T11:54:25.489Z",
+    "archive_cutoff": "2026-09-29T12:22:47.573Z",
     "timezone": "America/St_Johns",
     "visible_message_counts": {
-      "scott": 66,
-      "root_assistant": 185
+      "scott": 73,
+      "root_assistant": 202
     }
   },
   "workspace": "heyscottybro",
@@ -22,7 +25,11 @@
       "93268c460b511825d5d53062255403e42f75bf0e",
       "2648c289a5c4f71cc8ec0d159aa3fc52945b51a3",
       "c2b87004278dd14d2a509b2ad6cb993daa2b832e"
-    ]
+    ],
+    "prior_closure_commit": "0760393f5a7bd843f37012f408ebce83236c340a",
+    "current_work_base": "0760393f5a7bd843f37012f408ebce83236c340a",
+    "remote_main_at_identity_work": "0760393f5a7bd843f37012f408ebce83236c340a",
+    "current_changes_committed": false
   },
   "approvals": [
     {
@@ -84,6 +91,16 @@
       "timestamp": "2026-09-29T11:44:27.647Z",
       "message": "go",
       "scope": "Record the log-only rule and defer BUG-055/056 without application or test changes."
+    },
+    {
+      "timestamp": "2026-09-29T12:08:38.967Z",
+      "message": "go",
+      "scope": "Implement the coded-development-session SAI identity, Project Manager injection, registry, glossary, startup enforcement, and local validation contract."
+    },
+    {
+      "timestamp": "2026-09-29T12:20:44.827Z",
+      "message": "go",
+      "scope": "Add the permanent list-card count requirement to the development and design rules; no application-wide retrofit."
     }
   ],
   "artifacts": {
@@ -106,12 +123,19 @@
       "docs/development/WORKLOG.md",
       "docs/features/frodo-mobile-chat-reliability.md",
       "docs/features/hourly-day-calendar-panel.md",
+      "docs/features/bonsai-development-session-identities.md",
+      "docs/features/list-card-item-counts.md",
       "docs/features/session-archive-hygiene.md",
       "docs/features/today-schedule-and-day-modal-polish.md",
       "docs/sessions/README.md",
+      "docs/sessions/GLOSSARY.md",
+      "docs/sessions/PROJECT_MANAGER_INJECTION.md",
+      "docs/sessions/registry.jsonl",
       "docs/sessions/2026/2026-09-28-01a0ea22-identify-project-purpose/TRANSCRIPT.md",
       "docs/sessions/2026/2026-09-28-01a0ea22-identify-project-purpose/SESSION_SUMMARY.md",
       "docs/sessions/2026/2026-09-28-01a0ea22-identify-project-purpose/manifest.json",
+      "scripts/session-registry.mjs",
+      "scripts/session-registry.test.js",
       "scripts/service-worker.test.js",
       "src/api/agentSessionsCore.js",
       "src/api/agentSessionsCore.test.js",
@@ -192,18 +216,21 @@
       "MASTERPLAN.md",
       "docs/sessions/README.md",
       "docs/development/POST_TASK_CHECKLIST.md",
+      "docs/development/WORKFLOW.md",
+      "docs/development/ONBOARDING.md",
+      "docs/development/QUALITY_GATES.md",
       "docs/rebuild/current-system.md",
       "CLAUDE.md",
       "ledger.jsonl"
     ],
-    "purpose": "Governance and session records; Planner and Today UI milestones; owner-bound Frodo, Command Center, and Griphook reliability/privacy; focused regression coverage; current-system and decision documentation.",
-    "final_state": "Present in the settled working tree; application changes are locally validated and awaiting the already-approved closure commit and push."
+    "purpose": "Governance and session records; Planner and Today UI milestones; owner-bound Frodo, Command Center, and Griphook reliability/privacy; Bonsai SAI session identities; list-card count standards; focused regression coverage; current-system and decision documentation.",
+    "final_state": "The earlier application work was committed and pushed as 0760393. The SAI identity system and list-card count standards are locally validated and remain uncommitted without commit or push approval."
   },
   "validation": [
     {
       "check": "npm test",
       "result": "pass",
-      "evidence": "255 tests passed, 0 failed"
+      "evidence": "262 tests passed, 0 failed, including 7 SAI registry regressions"
     },
     {
       "check": "npm run lint",
@@ -237,6 +264,16 @@
       "check": "direct assembled-production integration tests",
       "result": "unverified",
       "evidence": "Deferred as BUG-055 and BUG-056"
+    },
+    {
+      "check": "npm run session-registry:check",
+      "result": "pass",
+      "evidence": "SAI00000001 is valid and SAI00000002 is the next reservable ID"
+    },
+    {
+      "check": "node --test scripts/session-registry.test.js",
+      "result": "pass",
+      "evidence": "7/7 registry, sequence, collision, title, binding, and glossary regressions passed"
     }
   ],
   "bugs": {
@@ -338,17 +375,17 @@
     "No separate software-keyboard-open browser automation was available.",
     "Cross-device stale-writer prevention still needs a separately approved server-side tombstone or version contract.",
     "SEC-001 remains queued and unstarted.",
-    "No deployment was requested or performed."
+    "No deployment was requested or performed.",
+    "The SAI identity and list-card governance changes remain uncommitted; no commit or push is approved."
   ],
   "risks": [
     "Existing Vite mixed-import and large-chunk advisories remain.",
     "Deterministic tests cover production primitives, but direct assembled-production integration coverage is deferred.",
-    "Messages after the archive cutoff must be reconciled by the next session; the containing Git commit records itself."
+    "Messages after the archive cutoff must be reconciled before the next session closure; the containing Git commit records itself."
   ],
   "handoff_actions": [
-    "Complete the recorded privacy/secret/archive integrity scan.",
-    "Commit the settled tree once under the existing approval.",
-    "Push main to origin/main and verify the commit, remote ref, and clean working tree.",
-    "Treat the session as closed after reporting that verification."
+    "Complete local lint, full-test, registry, JSONL, archive-count, and diff validation for the SAI and list-count governance work.",
+    "Present the uncommitted result to Scott.",
+    "Commit or push only after a separate exact approval."
   ]
 }

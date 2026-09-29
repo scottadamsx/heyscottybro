@@ -16,7 +16,7 @@ This repository contains Scott's personal operating system. It holds private pla
 - `supabase/` and root migrations — database definitions and migrations
 - `docs/features/` — approved behavior, pseudocode, implementation record, and evidence
 - `docs/development/` — workflow, active work, quality gates, bug log, and work log
-- `docs/sessions/` — sanitized per-thread transcripts, manifests, and supervisor-ready summaries
+- `docs/sessions/` — Project Manager-owned SAI registry/glossary, startup injection, and sanitized per-thread archives
 - `ledger.jsonl` — append-only architectural decision record
 
 `orbit/` is a synchronized read-only copy. Never edit it here.
@@ -31,13 +31,14 @@ This repository contains Scott's personal operating system. It holds private pla
 
 ## Start a task
 
-1. Follow the startup sequence in `AGENTS.md`.
-2. Confirm the working tree and preserve unrelated changes.
-3. Find the task in `ACTIVE_WORK.md`; create a feature document from `FEATURE_TEMPLATE.md` if none exists.
-4. Inspect the real behavior and record findings in the feature document.
-5. Write testable acceptance criteria and pseudocode.
-6. Wait for Scott's approval before implementation.
+1. Confirm the Project Manager bootstrap, SAI identity, exact Bonsai title, registry binding, and glossary entry. Stop before code changes if any are absent.
+2. Follow the startup sequence in `AGENTS.md`.
+3. Confirm the working tree and preserve unrelated changes.
+4. Find the task in `ACTIVE_WORK.md`; create a feature document from `FEATURE_TEMPLATE.md` if none exists.
+5. Inspect the real behavior and record findings in the feature document.
+6. Write testable acceptance criteria and pseudocode.
+7. Wait for Scott's approval before implementation.
 
 ## End a work session
 
-Update the active feature status, validation evidence, `ACTIVE_WORK.md`, and `WORKLOG.md`. Record discovered bugs in `BUGS.md`. Follow `docs/sessions/README.md` to refresh the current thread's transcript, manifest, and summary through a recorded cutoff. State clearly what changed, what remains, and whether anything is unverified. Never commit, push, migrate, or deploy without Scott's approval.
+Update the active feature status, validation evidence, `ACTIVE_WORK.md`, and `WORKLOG.md`. Record discovered bugs in `BUGS.md`. Follow `docs/sessions/README.md` to refresh the current session's transcript, manifest, summary, registry state, and glossary through a recorded cutoff. State clearly what changed, what remains, and whether anything is unverified. Never commit, push, migrate, or deploy without Scott's approval.

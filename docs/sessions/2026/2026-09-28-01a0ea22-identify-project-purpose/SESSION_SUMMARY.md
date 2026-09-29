@@ -1,10 +1,19 @@
 # Session summary
 
+## Session identity
+
+- **SAI ID:** `SAI00000001`
+- **Exact title:** `Bonsai Chat SAI00000001`
+- **Codex thread:** `01a0ea22-5d76-7502-a006-a16c39e7c228`
+- **Bootstrap:** Retrospective seed. This thread predates the Project Manager injection contract, so the original archive path remains stable and future sessions follow the new creation sequence.
+
 ## Objective and approval
 
-This session established the repository's human-controlled agent workflow, shipped the Planner hourly day view and dense Today dashboard, imported the supplied bug backlog, then completed the approved Frodo reliability/mobile/privacy program and permanent session-archive system.
+This session established the repository's human-controlled agent workflow, shipped the Planner hourly day view and dense Today dashboard, imported the supplied bug backlog, completed the approved Frodo reliability/mobile/privacy program and permanent session archives, then became the seed for the Bonsai development-session identity system.
 
 Scott approved each implementation slice before application changes. His exact `go` at `2026-09-29T04:13:41.082Z` authorized the coordinated Frodo fixes, validation, archive, one commit, and push to `origin/main`. It did not authorize deployment, dependencies, migrations, or unrelated production writes. At `2026-09-29T11:44:27.647Z`, Scott separately approved recording—not fixing—new unrelated findings.
+
+After that work was committed and pushed as `0760393`, Scott reopened the thread. His exact `go` at `2026-09-29T12:08:38.967Z` approved SAI identities, the Project Manager injection, registry, glossary, startup enforcement, and local validation for coded development sessions only. His exact `go` at `2026-09-29T12:20:44.827Z` approved the permanent list-card count rule. Neither approval authorizes a new commit or push.
 
 ## Outcome
 
@@ -16,12 +25,17 @@ Scott approved each implementation slice before application changes. His exact `
 - Coordinated Settings Clear across current-account Frodo, Command Center, Griphook, mounted state, and staging while preserving unowned quarantine and reporting partial failures honestly.
 - Added a central generic-memory disclosure rule so Frodo does not volunteer sensitive personal or access facts.
 - Created the permanent documentation, bug/work/change ledgers, approval gates, per-session transcript policy, this summary, and a machine-readable manifest.
+- Registered this thread as `SAI00000001`, changed its exact title, created the append-only registry and human glossary, and added a reusable Project Manager startup injection plus collision validation.
+- Added a permanent design floor: settled cards with repeated rows show `N`, partial collections show `N of M`, and loaded empty lists show `0`; unresolved loading/error states never invent a count.
 
 No dependency, migration, deployment, destructive production write, or production Brain write was performed.
 
 ## Important decisions and corrections
 
 - Chat is coordination, never durable truth; relevant instructions and actions must immediately enter repository records.
+- The Project Manager alone reserves sequential never-reused SAI IDs, binds Codex thread IDs, creates exact Bonsai titles, sends startup injections, and maintains the registry/glossary. This applies only to coded development sessions.
+- Existing session archives are not moved automatically. New archives use SAI-based names while full Codex thread IDs remain the immutable technical binding.
+- List-card counts come from the same rendered collection and distinguish complete from partial results.
 - Only Scott's exact approval phrases authorize planned changes. Discovery of another bug authorizes logging only; unrelated findings remain deferred.
 - Chat images reuse the existing private owner-scoped bucket. Conversation rows contain versioned metadata, never image bytes.
 - Malformed, future, wrong-owner, or unowned history fails closed. Unowned legacy backups remain quarantined rather than guessed, displayed, or deleted.
@@ -30,11 +44,13 @@ No dependency, migration, deployment, destructive production write, or productio
 
 ## Validation evidence
 
-- `npm test`: 255/255 passed.
+- `npm test`: 262/262 passed, including the seven SAI registry regressions.
 - `npm run lint`: passed with zero warnings.
 - `npm run build`: passed; 3,148 modules transformed. The existing mixed dynamic/static import and large-chunk advisories remain non-failing.
 - `git diff --check`: passed.
 - `ledger.jsonl`: every line parsed as JSON.
+- `npm run session-registry:check`: passed; `SAI00000002` is the only next reservable ID.
+- `node --test scripts/session-registry.test.js`: 7/7 passed across sequence, collision, event order, title, binding, and glossary coverage.
 - Authenticated responsive checks covered 320, 390, 430, 640, 641, 900, and 901 px plus 844×390 landscape; focus, Escape/return, safe areas, scroll lock, newest-message position, long-table containment, Settings copy, and Money/Griphook rendering passed.
 - Approved read-only live checks verified Life › Habits grounding, authoritative zero-result reminder lookup, and cross-session recall. No post-fix live privacy pass is claimed.
 
@@ -58,9 +74,9 @@ Known limitations, not hidden:
 ## Productivity and supervisor evidence
 
 - Thread span through archive cutoff: about 13 hours 26 minutes, including a roughly five-hour inactive gap.
-- Visible archive: 66 Scott messages, 185 root-assistant messages, and 3 verified attachment stubs.
-- Repository footprint: 97 distinct paths created or modified across governance, two UI milestones, Frodo reliability, tests, and session closure.
-- Final automated evidence: 255 tests, lint, build, whitespace, and JSONL validation all passed.
+- Visible archive through the current cutoff: 73 Scott messages, 202 root-assistant messages, and 3 verified attachment stubs.
+- Repository footprint: 104 distinct paths created or modified across governance, two UI milestones, Frodo reliability, tests, session closure, SAI identities, and the list-card standard.
+- Final automated evidence: 262 tests, lint, build, whitespace, manifest JSON, registry/decision JSONL, transcript-count, and next-ID validation all passed.
 - Defect disposition: 46 Frodo/agent defects resolved; 2 coverage gaps deferred; 6 unrelated imported bugs remain open.
 - Human control evidence: plans/pseudocode preceded code, approval messages are preserved, no dependency/migration/deployment occurred, and the final deferred findings followed Scott's log-only correction.
 - Documentation evidence: feature contracts, decision ledger, bug ledger, changelog, work log, current-system reference, transcript, summary, and manifest accompany the code.
@@ -69,4 +85,4 @@ The session achieved a broad outcome, but efficiency was poor. Too many serial r
 
 ## Handoff
 
-The approved closure action is to commit the settled tree once and push `main` to `origin/main`, then verify the commit hash, remote branch, and clean working tree. Future work on `BUG-055`, `BUG-056`, `SEC-001`, deployment, or cross-device tombstones requires separate approval.
+The prior Frodo closure is complete at pushed commit `0760393`. The new SAI identity system and list-card governance changes are locally validated but uncommitted; they require separate exact approval before any commit or push. Future product work on legacy list-card compliance, `BUG-055`, `BUG-056`, `SEC-001`, deployment, or cross-device tombstones also requires separate approval.
