@@ -1,6 +1,6 @@
 # Feature: Vercel function-limit repair
 
-**Status:** Release approved — commit, push, and production verification in progress
+**Status:** Complete and released
 
 **Owner:** Scott
 
@@ -62,10 +62,10 @@ Restore successful automatic production deployment from `main` without removing 
 - [x] Focused Kiwi, routing, and function-count regressions pass.
 - [x] `npm run lint`, `npm test`, and `npm run build` pass on the settled tree.
 - [x] No dependency, schema, production-data, secret, or unrelated application change is introduced.
-- [ ] After separate release approval, Vercel reports a successful Production deployment from the repaired `main` commit.
-- [ ] `https://heyscottybro.vercel.app/admin/today` shows the committed thin Priority/Agenda/Money brief and paired schedule layout.
-- [ ] Frodo opens and retains the committed desktop/mobile reliability behavior through non-destructive checks.
-- [ ] Production verification states that `BUG-055` and `BUG-056` remain deferred direct-composition test gaps.
+- [x] Vercel reports a successful Production deployment from repaired `main` commit `7cc8db44966d4cc9674564bd19b766444f3cbc9b`.
+- [x] `https://heyscottybro.vercel.app/admin/today` shows the committed thin Priority/Agenda/Money brief and paired schedule layout after a full-origin refresh.
+- [x] Frodo opens, expands, closes, exposes labeled controls, and keeps its empty composer disabled in the live installed app without sending a message or changing production data.
+- [x] Production verification states that `BUG-055` and `BUG-056` remain deferred direct-composition test gaps.
 
 ## Edge cases
 
@@ -122,8 +122,8 @@ AFTER Scott reviews the settled implementation and separately approves release
 - [x] Step 6 — Add and run focused route, Kiwi, and function-count regressions.
 - [x] Step 7 — Run full quality gates and review the settled diff.
 - [x] Step 8 — Present the implementation and exact release target for separate commit, push, and deployment approval.
-- [ ] Step 9 — After release approval, commit, push, verify the Vercel Production deployment, and inspect Today/Frodo non-destructively.
-- [ ] Step 10 — Complete the post-task records and session handoff.
+- [x] Step 9 — After release approval, commit, push, verify the Vercel Production deployment, and inspect Today/Frodo non-destructively.
+- [x] Step 10 — Complete the post-task records and session handoff.
 
 ## Implementation record
 
@@ -134,6 +134,8 @@ AFTER Scott reviews the settled implementation and separately approves release
 ## Validation
 
 - Automated: The combined Kiwi, marked-dispatch, exact-rewrite, and 12-function focused suite passes 10/10. The registry suite passes 7/7. All 264 registered tests pass. Full and scoped ESLint pass with zero warnings. The 3,148-module production build passes with the existing mixed-import and large-chunk advisories. Registry validation passes for two IDs and selects `SAI00000003`; `git diff --check` passes.
-- Desktop visual check: Live installed app inspected at `https://heyscottybro.vercel.app/admin/today`; it shows the older dashboard without the committed Today schedule layout.
-- Mobile visual check: Await successful deployment; no production release is approved yet.
-- Known limitations: Vercel build logs require account access, but the GitHub deployment boundary, first failing commit, 12-to-13 function change, repeated later failures, and repository's recorded Hobby limit establish the cause. Production verification cannot occur until Scott separately approves commit, push, and deployment. `BUG-055` and `BUG-056` remain deferred.
+- Pre-release baseline: Before `7cc8db4` was deployed, the live installed app showed the older dashboard without the committed Today schedule layout.
+- Production release: Commit `7cc8db44966d4cc9674564bd19b766444f3cbc9b` was pushed to `origin/main`. GitHub deployment `6736243162` reports Vercel Production success at `https://heyscottybro-3dkp8tc7c-scottadamsxs-projects.vercel.app`, and the production alias serves the new build.
+- Desktop visual check: After a full-origin refresh of the authenticated installed app, Today showed the thin one-item Priority/Agenda/Money brief, Today's schedule with its timed-commitment count and hourly blocks, and the paired Up next card. Frodo opened, expanded, closed, exposed labeled controls, and kept Send disabled with an empty composer; no message was sent and no production data changed.
+- Mobile visual check: The release is live, but this closeout did not resize the installed app to a mobile viewport. The existing focused mobile regressions and prior authenticated mobile verification remain the evidence for safe-area, newest-message, containment, and touch-target behavior.
+- Known limitations: `BUG-055` and `BUG-056` remain deferred direct-composition coverage gaps. The live check was intentionally non-destructive and did not make a model request or write production data.

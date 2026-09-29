@@ -3,7 +3,7 @@
 - **SAI ID:** `SAI00000002`
 - **Thread:** `01a0ed47-5171-74d2-9227-ef3782f9356f`
 - **Title:** `Bonsai Chat SAI00000002`
-- **Cutoff:** `2026-09-29T13:36:08.548Z`
+- **Cutoff:** `2026-09-29T13:41:26.493Z`
 
 ## Project Manager bootstrap — 2026-09-29T13:07:49Z
 
@@ -211,3 +211,27 @@ go
 ## Agent — commentary
 
 Release approved. I’m having the Project Manager reactivate this session and record the approval first; then I’ll commit, push, and verify the production rollout and live app.
+
+## Agent — commentary
+
+The Project Manager has reactivated and validated the session. I’m recording the release approval, reviewing the exact staged scope, and then I’ll run the final pre-release checks before committing.
+
+## Agent — commentary
+
+Final checks are clean: 264 tests, zero-warning lint, production build, registry validation, and whitespace review all pass. I’m staging the reviewed repair and its required governance/session records as one release commit now.
+
+## Agent — commentary
+
+Commit `7cc8db4` is clean and contains exactly the reviewed 19-file release scope. I’m pushing it to `origin/main`; that will trigger the approved Vercel production deployment.
+
+## Agent — commentary
+
+The push succeeded and Vercel should now be building commit `7cc8db4`. I’m tracking the deployment to its final Production status, then I’ll inspect the live Today and Frodo surfaces without changing data.
+
+## Agent — commentary
+
+Vercel reports Production success for commit `7cc8db4`. I’m doing the final live checks now: confirm the production alias serves the new Today layout and that Frodo opens with the released interface, without sending messages or modifying account data.
+
+## Agent — commentary
+
+Production is live. After a full-origin refresh, Today shows the new thin Morning Brief and hourly schedule; Frodo opens, expands, closes, and keeps the empty composer safely disabled. No message was sent and no production data was changed. I’m recording that evidence and completing the required session closeout now.

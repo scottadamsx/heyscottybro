@@ -8,12 +8,12 @@
     "workspace": "<repo>",
     "timezone": "America/St_Johns",
     "started_at": "2026-09-29T13:07:49Z",
-    "archive_cutoff": "2026-09-29T13:36:08.548Z"
+    "archive_cutoff": "2026-09-29T13:41:26.493Z"
   },
   "transcript": {
     "source": "Codex user-visible messages for the bound thread",
     "visible_user_messages": 3,
-    "visible_assistant_messages": 30,
+    "visible_assistant_messages": 36,
     "excluded": "environment-supplied AGENTS.md wrapper, hidden reasoning, commands, tool output, and inter-thread messages",
     "attachments": []
   },
@@ -23,8 +23,13 @@
     "intended_push_target": "origin/main",
     "archive_path": "docs/sessions/2026/2026-09-29-SAI00000002",
     "current_changes_committed": false,
+    "released_commit": "7cc8db44966d4cc9674564bd19b766444f3cbc9b",
+    "released_commit_pushed_to_origin_main": true,
+    "post_release_documentation_uncommitted": true,
     "production_target": "scottadamsxs-projects/heyscottybro / main / https://heyscottybro.vercel.app",
-    "last_successful_production_commit": "b1cb1b69c1b87ff1691914f90fe4712299f2cee5"
+    "previous_successful_production_commit": "b1cb1b69c1b87ff1691914f90fe4712299f2cee5",
+    "production_deployment_id": "6736243162",
+    "production_deployment_url": "https://heyscottybro-3dkp8tc7c-scottadamsxs-projects.vercel.app"
   },
   "objective": "Diagnose the live Vercel deployment mismatch, deploy the committed Today and Frodo work only after Scott's exact approval, and verify production.",
   "approval_state": {
@@ -56,6 +61,7 @@
     "modified": [
       "docs/sessions/registry.jsonl",
       "docs/sessions/GLOSSARY.md",
+      "CHANGELOG.md",
       "api/fetch.js",
       "docs/development/ACTIVE_WORK.md",
       "docs/development/BUGS.md",
@@ -79,16 +85,19 @@
     {"check":"npm run build","result":"passed","evidence":"3,148 modules; existing mixed-import and large-chunk advisories"},
     {"check":"npm run session-registry:check","result":"passed","evidence":"two IDs; next SAI00000003"},
     {"check":"git diff --check and JSON parsing","result":"passed"},
-    {"check":"Vercel Production build and Today/Frodo live verification","result":"unverified","evidence":"release not approved or performed"}
+    {"check":"Vercel Production deployment","result":"passed","evidence":"GitHub deployment 6736243162 reports success for 7cc8db44966d4cc9674564bd19b766444f3cbc9b"},
+    {"check":"authenticated live Today UI","result":"passed","evidence":"Morning Brief, hourly schedule with two timed commitments, Up next, and later dashboard content after full-origin refresh"},
+    {"check":"authenticated live Frodo UI","result":"passed","evidence":"opened, expanded, closed, labeled controls, empty composer Send disabled; no model request"},
+    {"check":"mobile viewport and live Frodo model interaction","result":"unverified","evidence":"not run during non-destructive release closeout"}
   ],
   "unresolved_work": [
-    "Commit and push the reviewed repair to origin/main and confirm the resulting Vercel Production deployment under Scott's recorded release approval.",
-    "Verify the deployed Git commit, production alias, Today, and Frodo after release.",
-    "Reconcile post-cutoff messages and update CHANGELOG.md after a successful user-visible release."
+    "Review and separately approve a documentation-only commit for post-release records; do not amend 7cc8db4.",
+    "Include the completed CHANGELOG.md release note in the separately approved documentation closeout commit.",
+    "Reconcile any messages after this archive cutoff in a future session update."
   ],
   "risks": [
     "BUG-055 and BUG-056 remain deferred production-composition test gaps and must not be represented as resolved by deployment alone.",
-    "A local Vite build does not prove that Vercel will accept the repaired hosted-function set; Production verification remains required."
+    "The release closeout did not test a mobile viewport or send a live Frodo model request."
   ],
   "redactions": {
     "count": 0

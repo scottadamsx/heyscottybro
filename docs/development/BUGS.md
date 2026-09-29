@@ -751,7 +751,7 @@ Every discovered software defect belongs here, including defects found while bui
 
 ### BUG-057 — Vercel function limit blocks every production deployment after Kiwi tasks
 
-- **Status:** Resolved locally — production release pending
+- **Status:** Resolved and released in `7cc8db4`
 - **Discovered:** 2026-09-29
 - **Area:** Vercel deployment and Kiwi shared-tasks routing
 - **Observed:** The live alias remains on successful commit `b1cb1b6`. Vercel Production deployments for `76f4473`, Frodo `0760393`, and current `d24492f` failed and were not promoted.
@@ -759,7 +759,7 @@ Every discovered software defect belongs here, including defects found while bui
 - **Impact:** The committed Today dashboard and Frodo reliability work are absent from production even though they are present on local and remote `main`.
 - **Cause:** Commit `76f4473` added `api/kiwi-tasks.js`, increasing non-underscore deployable `api/*.js` entries from the Vercel Hobby limit of 12 to 13. Local Vite builds do not enforce this hosted-function limit.
 - **Fix:** `/api/kiwi-tasks` now rewrites to the existing `/api/fetch` entry with an explicit internal marker. The Kiwi implementation lives in underscore-prefixed `api/_kiwi-tasks.js`, and unmarked fetch requests retain the existing behavior.
-- **Regression coverage:** The combined Kiwi, route-selection, exact-rewrite, and function-count suite passes 10/10; all 264 repository tests, full zero-warning ESLint, the production build, registry validation, and `git diff --check` pass.
+- **Regression coverage:** The combined Kiwi, route-selection, exact-rewrite, and function-count suite passes 10/10; all 264 repository tests, full zero-warning ESLint, the production build, registry validation, and `git diff --check` pass. GitHub deployment `6736243162` reports Vercel Production success for commit `7cc8db44966d4cc9674564bd19b766444f3cbc9b`, and the production alias serves the released Today/Frodo build.
 - **Related work:** `docs/features/vercel-function-limit-repair.md`.
 
 ### BUG-058 — Session-registry regression hard-codes the seed-session count

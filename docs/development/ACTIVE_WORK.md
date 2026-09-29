@@ -7,10 +7,10 @@
 - **Feature document:** `docs/features/vercel-function-limit-repair.md`
 - **Requested scope:** Restore successful Vercel Production deployment from `main` while preserving the public Kiwi shared-tasks API and the committed Today/Frodo behavior.
 - **Approval:** Scott approved the recorded contract and pseudocode with exact **“go”** on 2026-09-29. After reviewing the settled implementation and exact release target, Scott said exact **“go”** again on 2026-09-29, authorizing commit, push to `origin/main`, automatic Vercel Production deployment, and live verification.
-- **Current state:** Implemented, locally validated, and release-approved. `/api/kiwi-tasks` is preserved through the shared `/api/fetch` function, the deployable count is 12, all 264 tests and zero-warning lint pass, the production build passes, registry validation selects `SAI00000003`, and `git diff --check` passes. The Project Manager reactivated SAI00000002 and reconciled the release approval before release work resumed.
-- **Next permitted work:** Commit the reviewed tree to `main`, push to `origin/main`, verify the resulting Vercel Production deployment, and inspect Today/Frodo non-destructively.
+- **Current state:** Complete and released from commit `7cc8db44966d4cc9674564bd19b766444f3cbc9b`. GitHub deployment `6736243162` reports Vercel Production success, the production alias serves the new thin Morning Brief and hourly Today schedule after a full-origin refresh, Frodo passed non-destructive open/expand/close checks, and the Project Manager closed and reconciled SAI00000002. No model request or production-data write occurred.
+- **Next permitted work:** Present the documentation-only post-release closeout diff for separate commit approval; no further application or production work remains.
 - **Release target:** Vercel project `scottadamsxs-projects/heyscottybro`, branch `main`, production alias `https://heyscottybro.vercel.app`.
-- **Deferred findings:** `BUG-055` and `BUG-056` remain validation debt and are not included in this repair.
+- **Deferred findings:** `BUG-055` and `BUG-056` remain direct-composition validation debt and were not expanded into this repair.
 
 ## Bonsai development session identities
 
