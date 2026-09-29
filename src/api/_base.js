@@ -9,12 +9,13 @@
  *  - fail(): wraps supabase errors into a readable Error with context.
  */
 import { supabase } from "../utils/supabase";
+import { captureEstablishedOwnerId, verifyEstablishedOwnerId } from "../utils/authIdentityBoundary";
 
 /** Current user id or THROW — the standard for all data modules. */
-export async function uid() {
+export async function uid(expectedOwnerId = captureEstablishedOwnerId()) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user?.id) throw new Error("Not authenticated");
-  return session.user.id;
+  return verifyEstablishedOwnerId(expectedOwnerId, session.user.id);
 }
 
 /** Current user id or null — for optional/telemetry paths only. */

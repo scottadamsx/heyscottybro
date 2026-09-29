@@ -15,6 +15,19 @@ import DocLinks from "../../components/docs/DocLinks";
 import PdfViewer from "../../components/PdfViewer";
 import { markdownToPdfBlob } from "../../lib/markdownToPdf";
 import { readDataUrl, normaliseImage } from "../../utils/image";
+import {
+  agentAttachmentIntakePolicy,
+  agentAttachmentSnapshot,
+  beginAgentAttachmentWork,
+  bindAgentAttachmentDraft,
+  canBeginAttachmentSafeClear,
+  clearAgentAttachments,
+  createAgentAttachmentDraft,
+  finishAgentAttachmentWork,
+  publishAgentAttachment,
+  removeAgentAttachment,
+} from "../../utils/chatAttachments";
+import { genId } from "../../api/_base";
 import "./command.css";
 
 const todayStr = () => toDateStr(new Date());
@@ -27,8 +40,9 @@ export default function CommandCenterPage() {
   // This page is just a view onto that state.
   const {
     selectedId, setSelectedId, view, setView,
-    threads, busy, statuses, inputs,
-    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions, activate,
+    threads, busy, clearingThreads, statuses, inputs, sessionSaveErrors,
+    setInputFor, sendTo, clearThread, retryThreadSave, runOverseer, actions, refreshActions, activate,
+    sessionHistoryStatus, sessionHistoryError, sessionHistoryReady, retrySessionHistory,
     aule,
   } = useAgentRuntime();
   // Start the agent runtime (history, activity feed, Aulë socket) the first time this opens.
@@ -37,15 +51,27 @@ export default function CommandCenterPage() {
   const [nodes, setNodes] = useState([]);        // brain nodes, for per-agent documents
   const [viewerDoc, setViewerDoc] = useState(null); // { title, body, slug? } open in the markdown viewer
   const [pdfDoc, setPdfDoc] = useState(null);        // { blob, title, filename } open in the PDF viewer
-  const [shots, setShots] = useState([]);            // staged images for the next message: { id, dataUrl, media_type }
+  const [attachmentDraft, setAttachmentDraft] = useState(() => createAgentAttachmentDraft(selectedId));
   const [dragOver, setDragOver] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
   const chatRef = useRef(null);
   const didMount = useRef(false);
+  const attachmentDraftRef = useRef(attachmentDraft);
+  const clearDialogRef = useRef(false);
+  const clearInFlightRef = useRef(new Set());
+  const sendInFlightRef = useRef(new Set());
 
-  // Staged images belong to the agent you're messaging — clear them on switch.
-  useEffect(() => { setShots([]); }, [selectedId]);
+  // The state tag keeps the old agent's images invisible during the render
+  // before this effect runs. The generation also invalidates late image work.
+  useEffect(() => {
+    const current = attachmentDraftRef.current;
+    const next = bindAgentAttachmentDraft(current, selectedId);
+    if (next !== current) {
+      attachmentDraftRef.current = next;
+      setAttachmentDraft(next);
+    }
+  }, [selectedId]);
 
   // The agent cards sit above the chat panel, so picking one (especially on a
   // phone) leaves the chat off-screen. Bring it into view when the selection
@@ -65,7 +91,34 @@ export default function CommandCenterPage() {
   const thread = (selectedId && threads[selectedId]) || { convo: [], display: [] };
   const draft = (selectedId && inputs[selectedId]) || "";
   const selBusy = selectedId ? !!busy[selectedId] : false;
+  const selClearing = selectedId ? !!clearingThreads[selectedId] : false;
+  const selLocked = selBusy || selClearing;
   const selStatus = (selectedId && statuses[selectedId]) || "";
+  const selSaveError = (selectedId && sessionSaveErrors[selectedId]) || "";
+  const attachmentSnapshot = agentAttachmentSnapshot(attachmentDraft, selectedId);
+  const shots = attachmentSnapshot.shots;
+  const attachmentWorkCount = attachmentSnapshot.activeWorkCount;
+  const attachmentIntake = agentAttachmentIntakePolicy({
+    busy: selBusy,
+    clearing: selClearing,
+    mutationInFlight: false,
+    historyReady: sessionHistoryReady,
+  });
+
+  const updateAttachmentDraft = (update) => {
+    const current = attachmentDraftRef.current;
+    const next = update(current);
+    if (next !== current) {
+      attachmentDraftRef.current = next;
+      setAttachmentDraft(next);
+    }
+    return next;
+  };
+
+  const selectAgent = (agentId) => {
+    updateAttachmentDraft((current) => bindAgentAttachmentDraft(current, agentId));
+    setSelectedId(agentId);
+  };
 
   // Brain notes power each agent's "Documents" — nodes are attributed by source.
   useEffect(() => { loadBrain().then((b) => setNodes(b.nodes || [])).catch(() => {}); }, []);
@@ -109,25 +162,55 @@ export default function CommandCenterPage() {
   // capped, so phone photos don't arrive as 8 MB HEIC the model can't read.
   const isImageFile = (f) => (f.type || "").startsWith("image/") || /\.(hei[cf])$/i.test(f.name || "");
   const addFiles = async (fileList) => {
+    const initiatingAgentId = selectedId;
+    const intake = agentAttachmentIntakePolicy({
+      busy: selBusy,
+      clearing: selClearing,
+      mutationInFlight: initiatingAgentId
+        ? sendInFlightRef.current.has(initiatingAgentId) || clearInFlightRef.current.has(initiatingAgentId)
+        : false,
+      historyReady: sessionHistoryReady,
+    });
+    if (!initiatingAgentId || !intake.allowed) {
+      if (initiatingAgentId && intake.message) addToast(intake.message, "error");
+      return false;
+    }
     const all = [...fileList];
     const files = all.filter(isImageFile);
     const rejected = all.length - files.length;
     if (rejected > 0) addToast(`${rejected} file${rejected === 1 ? " isn't" : "s aren't"} an image — only images can be attached.`, "error");
     for (const original of files) {
-      const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-      let dataUrl;
-      try { dataUrl = await readDataUrl(original); }
-      catch (err) { addToast(`Couldn't read ${original.name || "that image"}: ${err?.message || "read failed"}`, "error"); continue; }
-      const norm = await normaliseImage(original, dataUrl);
-      if (!norm && !(original.type || "").startsWith("image/")) {
-        // HEIC outside Safari: the browser can't decode it and the model can't either.
-        addToast(`${original.name || "That image"} couldn't be decoded in this browser — export it as JPEG/PNG and try again.`, "error");
-        continue;
+      const id = genId("attachment");
+      const started = beginAgentAttachmentWork(attachmentDraftRef.current, initiatingAgentId);
+      if (!started.token) return false;
+      attachmentDraftRef.current = started.draft;
+      setAttachmentDraft(started.draft);
+      try {
+        let dataUrl;
+        try { dataUrl = await readDataUrl(original); }
+        catch (err) { addToast(`Couldn't read ${original.name || "that image"}: ${err?.message || "read failed"}`, "error"); continue; }
+        const norm = await normaliseImage(original, dataUrl);
+        if (!norm && !(original.type || "").startsWith("image/")) {
+          // HEIC outside Safari: the browser can't decode it and the model can't either.
+          addToast(`${original.name || "That image"} couldn't be decoded in this browser — export it as JPEG/PNG and try again.`, "error");
+          continue;
+        }
+        updateAttachmentDraft((current) => publishAgentAttachment(current, started.token, {
+          id,
+          dataUrl: norm?.dataUrl || dataUrl,
+          media_type: norm?.media_type || original.type,
+        }));
+      } finally {
+        updateAttachmentDraft((current) => finishAgentAttachmentWork(current, started.token));
       }
-      setShots((prev) => [...prev, { id, dataUrl: norm?.dataUrl || dataUrl, media_type: norm?.media_type || original.type }]);
     }
+    return true;
   };
-  const removeShot = (id) => setShots((prev) => prev.filter((s) => s.id !== id));
+  const removeShot = (id) => {
+    if (!attachmentIntake.allowed) return;
+    const token = agentAttachmentSnapshot(attachmentDraftRef.current, selectedId).token;
+    updateAttachmentDraft((current) => removeAgentAttachment(current, token, id));
+  };
   const onPaste = (e) => {
     const imgs = [...(e.clipboardData?.items || [])].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
     if (imgs.length) { e.preventDefault(); addFiles(imgs); }
@@ -139,29 +222,57 @@ export default function CommandCenterPage() {
     addFiles(e.dataTransfer.files);
   };
 
-  const doSend = () => {
-    if (!selected || selBusy) return;
-    const attachments = shots.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
+  const doSend = async () => {
+    const currentAttachments = agentAttachmentSnapshot(attachmentDraftRef.current, selected?.id);
+    if (!selected || selLocked || clearInFlightRef.current.has(selected.id) || currentAttachments.activeWorkCount > 0 || !sessionHistoryReady) return;
+    const attachments = currentAttachments.shots.map((s) => ({ media_type: s.media_type, data: s.dataUrl.split(",")[1] }));
     if (!draft.trim() && attachments.length === 0) return;
-    sendTo(selected, draft, attachments);
-    setShots([]);
+    sendInFlightRef.current.add(selected.id);
+    try {
+      const accepted = await sendTo(selected, draft, attachments);
+      if (accepted) {
+        updateAttachmentDraft((current) => clearAgentAttachments(current, currentAttachments.token));
+      }
+    } finally {
+      sendInFlightRef.current.delete(selected.id);
+    }
   };
 
   // Wipe this agent's thread — state and the stored agent_sessions row. Asks
   // first (it's not undoable), and reports a storage failure instead of
   // pretending the thread is gone.
   const doClearThread = async () => {
-    if (!selected || selBusy) return;
-    const ok = await confirm(
-      `Clear the whole conversation with ${selected.name}? ${selected.name} will forget everything discussed so far. This can't be undone.`,
-      { title: "Clear thread", confirmLabel: "Clear" },
-    );
+    if (!selected || selLocked || clearDialogRef.current || clearInFlightRef.current.has(selected.id) || !sessionHistoryReady) return;
+    const initialAttachments = agentAttachmentSnapshot(attachmentDraftRef.current, selected.id);
+    if (!canBeginAttachmentSafeClear(initialAttachments.shots, initialAttachments.activeWorkCount)) {
+      addToast("Wait for the image to finish preparing, then clear the thread.", "error");
+      return;
+    }
+    clearDialogRef.current = true;
+    let ok;
+    try {
+      ok = await confirm(
+        `Clear the whole conversation with ${selected.name}? ${selected.name} will forget everything discussed so far. This can't be undone.`,
+        { title: "Clear thread", confirmLabel: "Clear" },
+      );
+    } finally {
+      clearDialogRef.current = false;
+    }
     if (!ok) return;
+    const confirmedAttachments = agentAttachmentSnapshot(attachmentDraftRef.current, selected.id);
+    if (!canBeginAttachmentSafeClear(confirmedAttachments.shots, confirmedAttachments.activeWorkCount)) {
+      addToast("Wait for the image to finish preparing, then clear the thread.", "error");
+      return;
+    }
+    clearInFlightRef.current.add(selected.id);
     try {
       await clearThread(selected.id);
+      updateAttachmentDraft((current) => clearAgentAttachments(current, confirmedAttachments.token));
       addToast(`Cleared ${selected.name}'s thread.`, "success");
     } catch (e) {
       addToast(e?.message || `Couldn't clear ${selected.name}'s thread.`, "error");
+    } finally {
+      clearInFlightRef.current.delete(selected.id);
     }
   };
 
@@ -169,8 +280,8 @@ export default function CommandCenterPage() {
     <div className="module-page cmd-page">
       <div className="module-header">
         <h1>Command Center</h1>
-        <button type="button" className="btn btn-sm" onClick={runOverseer} disabled={!!busy.galadriel} aria-busy={!!busy.galadriel || undefined}>
-          <i className={`fa-solid ${busy.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" /> Run daily summary
+        <button type="button" className="btn btn-sm" onClick={runOverseer} disabled={!sessionHistoryReady || !!busy.galadriel || !!clearingThreads.galadriel} aria-busy={!!busy.galadriel || !!clearingThreads.galadriel || undefined}>
+          <i className={`fa-solid ${busy.galadriel || clearingThreads.galadriel ? "fa-spinner fa-spin" : "fa-wand-magic-sparkles"}`} aria-hidden="true" /> Run daily summary
         </button>
       </div>
 
@@ -181,6 +292,18 @@ export default function CommandCenterPage() {
         and in your <a href="/admin/mission?tab=brain">Brain</a>.
       </p>
 
+      {(sessionHistoryStatus === "idle" || sessionHistoryStatus === "loading") && (
+        <div className="load-error" role="status">
+          <p><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading agent chat history…</p>
+        </div>
+      )}
+      {sessionHistoryStatus === "failed" && (
+        <div className="load-error" role="alert">
+          <p>Couldn't load agent chat history: {sessionHistoryError}</p>
+          <button type="button" className="btn btn-sm" onClick={retrySessionHistory}>Retry</button>
+        </div>
+      )}
+
       <div className="cmd-grid">
         {AGENTS.map((a) => {
           const isLocal = a.kind === "local";
@@ -189,19 +312,20 @@ export default function CommandCenterPage() {
           // when he isn't actually connected to the local agent server.
           const offline = isLocal ? aule.status !== "online" : false;
           const isBusy = isLocal ? aule.busy : !!busy[a.id];
+          const isClearing = !isLocal && !!clearingThreads[a.id];
           const recent = isLocal ? aule.recent : "";
           const foot = isLocal
             ? (isBusy ? "working…" : recent || (offline ? "off" : "online"))
-            : (isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—");
-          const state = isBusy ? "working" : offline ? "off" : "idle";
-          const stateLabel = state === "working" ? "Working" : state === "off" ? "Offline" : "Idle";
+            : (isClearing ? "clearing…" : isBusy ? "working…" : todayCounts[a.id] ? `${todayCounts[a.id]} today` : "—");
+          const state = isBusy || isClearing ? "working" : offline ? "off" : "idle";
+          const stateLabel = isClearing ? "Clearing" : state === "working" ? "Working" : state === "off" ? "Offline" : "Idle";
           return (
             <button
               type="button"
               key={a.id}
               className={`cmd-card${selectedId === a.id ? " selected" : ""}${offline ? " offline" : ""}`}
               aria-pressed={selectedId === a.id}
-              onClick={() => setSelectedId(a.id)}
+              onClick={() => selectAgent(a.id)}
             >
               <div className="cmd-card-top">
                 <span className="cmd-avatar" style={{ background: a.color }} aria-hidden="true">
@@ -245,14 +369,15 @@ export default function CommandCenterPage() {
                   <h3 className="db-card-title">{selected.name}</h3>
                   <div className="cmd-chat-sub">{selected.title} · <span className="cmd-model">{selected.model}</span></div>
                 </div>
-                {((selected.kind === "api" && thread.display.length > 0) || selBusy) && (
+                {((selected.kind === "api" && thread.display.length > 0) || selBusy || selClearing) && (
                   <div className="cmd-chat-actions">
                     {selected.kind === "api" && thread.display.length > 0 && (
-                      <button type="button" className="btn-mini muted" onClick={doClearThread} disabled={selBusy} aria-busy={selBusy || undefined} title={`Clear the conversation with ${selected.name}`}>
-                        <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Clear thread
+                      <button type="button" className="btn-mini muted" onClick={doClearThread} disabled={selLocked || attachmentWorkCount > 0 || !sessionHistoryReady} aria-busy={selClearing || undefined} title={`Clear the conversation with ${selected.name}`}>
+                        <i className={`fa-solid ${selClearing ? "fa-spinner fa-spin" : "fa-rotate-left"}`} aria-hidden="true" /> {selClearing ? "Clearing…" : "Clear thread"}
                       </button>
                     )}
                     {selBusy && <span className="cmd-chip-working"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> working</span>}
+                    {selClearing && <span className="cmd-chip-working" role="status"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> clearing</span>}
                   </div>
                 )}
               </div>
@@ -285,6 +410,12 @@ export default function CommandCenterPage() {
 
               {view === "work" && selected.kind === "api" && (
                 <>
+                  {selSaveError && (
+                    <div className="cmd-save-warning" role="alert">
+                      <span><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> This chat is visible but its latest history did not save: {selSaveError}</span>
+                      <button type="button" className="btn-mini" onClick={() => retryThreadSave(selected.id)} disabled={selLocked || !sessionHistoryReady}>Retry save</button>
+                    </div>
+                  )}
                   <div className="cmd-thread" ref={scrollRef}>
                     {thread.display.length === 0 && (
                       <p className="no-entries">Say hello, or give {selected.name} a task.</p>
@@ -338,7 +469,7 @@ export default function CommandCenterPage() {
                       {shots.map((s) => (
                         <div key={s.id} className="cmd-shot">
                           <img src={s.dataUrl} alt="attachment" />
-                          <button type="button" className="cmd-shot-x" onClick={() => removeShot(s.id)} aria-label="Remove image"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+                          <button type="button" className="cmd-shot-x" onClick={() => removeShot(s.id)} disabled={!attachmentIntake.allowed} aria-label="Remove image"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                         </div>
                       ))}
                     </div>
@@ -346,7 +477,7 @@ export default function CommandCenterPage() {
                   <form
                     className={`cmd-input-row${dragOver ? " drag-over" : ""}`}
                     onSubmit={(e) => { e.preventDefault(); doSend(); }}
-                    onDragOver={(e) => { if (e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
+                    onDragOver={(e) => { if (attachmentIntake.allowed && e.dataTransfer?.types?.includes("Files")) { e.preventDefault(); setDragOver(true); } }}
                     onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
                     onDrop={onDropFiles}
                   >
@@ -356,20 +487,21 @@ export default function CommandCenterPage() {
                       accept="image/*"
                       multiple
                       hidden
+                      disabled={!attachmentIntake.allowed}
                       onChange={(e) => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }}
                     />
-                    <button type="button" className="btn-secondary-sm cmd-icon-btn" onClick={() => fileInputRef.current?.click()} disabled={selBusy} title="Attach image" aria-label="Attach image">
+                    <button type="button" className="btn-secondary-sm cmd-icon-btn" onClick={() => fileInputRef.current?.click()} disabled={selLocked || !sessionHistoryReady} title="Attach image" aria-label="Attach image">
                       <i className="fa-solid fa-paperclip" aria-hidden="true" />
                     </button>
                     <input
                       aria-label={`Message ${selected.name}`}
-                      placeholder={selBusy ? `${selected.name} is working…` : dragOver ? "Drop image to attach…" : `Message ${selected.name}…`}
+                      placeholder={!sessionHistoryReady ? "Loading chat history…" : selClearing ? `Clearing ${selected.name}'s conversation…` : selBusy ? `${selected.name} is working…` : dragOver ? "Drop image to attach…" : `Message ${selected.name}…`}
                       value={draft}
                       onChange={(e) => setInputFor(selected.id, e.target.value)}
                       onPaste={onPaste}
-                      disabled={selBusy}
+                      disabled={selLocked || !sessionHistoryReady}
                     />
-                    <button className="btn cmd-icon-btn" type="submit" disabled={selBusy || (!draft.trim() && shots.length === 0)} aria-label="Send">
+                    <button className="btn cmd-icon-btn" type="submit" disabled={!sessionHistoryReady || selLocked || attachmentWorkCount > 0 || (!draft.trim() && shots.length === 0)} aria-label="Send">
                       <i className="fa-solid fa-paper-plane" aria-hidden="true" />
                     </button>
                   </form>

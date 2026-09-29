@@ -1,10 +1,39 @@
 /**
- * Tiny bridge between the Frodo chat (which stages dropped screenshots to
- * storage) and the log_bug tool (which attaches them to a freshly-created
- * bug). The chat sets the pending paths right before each send; the tool
- * takes-and-clears them, so they never leak into a later, unrelated bug.
+ * Evidence belongs to one live agent turn. Callers carry this context through
+ * executeTool so concurrent chats can never consume each other's screenshots.
  */
-let pending = [];
+export function createPendingScreenshotContext(paths = [], ownerId = null) {
+  return {
+    pendingScreenshots: [...new Set((paths || []).filter(Boolean))],
+    ownerId,
+  };
+}
 
-export function setPendingScreenshots(paths = []) { pending = paths; }
-export function takePendingScreenshots() { const p = pending; pending = []; return p; }
+function requireContext(context) {
+  if (!context || !Array.isArray(context.pendingScreenshots)) {
+    throw new Error("Screenshot evidence context is missing for this agent turn.");
+  }
+  return context;
+}
+
+export function setPendingScreenshots(context, paths = []) {
+  requireContext(context).pendingScreenshots = [...new Set((paths || []).filter(Boolean))];
+}
+
+export function takePendingScreenshots(context) {
+  const scoped = requireContext(context);
+  const paths = scoped.pendingScreenshots;
+  scoped.pendingScreenshots = [];
+  return paths;
+}
+
+/**
+ * Tool execution adds a per-action checkpoint callback without cloning the
+ * mutable turn context. Screenshot evidence is a one-shot queue, so every
+ * tool in the turn must observe and consume the same object.
+ */
+export function withCheckpointProgress(context, checkpointProgress) {
+  const scoped = requireContext(context);
+  scoped.checkpointProgress = checkpointProgress;
+  return scoped;
+}

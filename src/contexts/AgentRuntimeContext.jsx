@@ -4,8 +4,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { lazyImport } from "../lib/lazyImport";
 import { getAuthHeaders } from "../utils/supabase";
 import { loadAgentActions } from "../api/plannerApi";
-import { loadAgentSessions, saveAgentSession, clearAgentSession, ccSessionKey } from "../api/agentSessionsApi";
+import { loadAgentSessions, saveAgentSession, clearAgentSession, ccSessionKey, listAgentSessionIds } from "../api/agentSessionsApi";
 import { useToast } from "./ToastContext";
+import {
+  commitRuntimeThreadSnapshot,
+  commandCenterThreadsFromSessions,
+  createAgentRuntimeMutationGate,
+  createAgentRuntimeSessionGate,
+  persistRuntimeCheckpoint,
+} from "../utils/agentRuntimeSessionPolicy";
+import { closePendingTurnForPersistence } from "../utils/chatSessionPolicy";
+import { captureEstablishedOwnerId } from "../utils/authIdentityBoundary";
 
 /**
  * App-level agent runtime. This lives ABOVE the router (mounted once around the
@@ -40,16 +49,19 @@ export function AgentRuntimeProvider({ children }) {
   // ---- API agents: everything keyed BY AGENT ID so each chat is independent ----
   const [threads, setThreads] = useState({}); // id -> { convo:[], display:[] }
   const [busy, setBusy] = useState({});        // id -> true while running
+  const [clearingThreads, setClearingThreads] = useState({}); // id -> true while durable Clear runs
   const [statuses, setStatuses] = useState({}); // id -> live status line
   const [inputs, setInputs] = useState({});     // id -> draft message
+  const [sessionSaveErrors, setSessionSaveErrors] = useState({}); // id -> retryable persistence warning
   const [actions, setActions] = useState([]);   // recent agent_actions feed
 
   // Refs so the run callbacks can read the latest state without being
   // re-created on every keystroke (and without stale-closure bugs).
   const threadsRef = useRef(threads);
   const busyRef = useRef(busy);
-  useEffect(() => { threadsRef.current = threads; }, [threads]);
-  useEffect(() => { busyRef.current = busy; }, [busy]);
+  const mutationGateRef = useRef(createAgentRuntimeMutationGate());
+  const sessionGateRef = useRef(createAgentRuntimeSessionGate());
+  const sessionLoadAttemptRef = useRef(0);
 
   const refreshActions = useCallback(
     () => loadAgentActions(60).then(setActions).catch(() => {}),
@@ -57,40 +69,55 @@ export function AgentRuntimeProvider({ children }) {
   );
   // Restore saved conversations so they survive a refresh. Command Center
   // rows live under `${id}:cc` so they don't collide with the ChatBot's Frodo.
-  // Stored history wins unless the live thread already has messages (a run
-  // that started before the load resolved).
+  // Mutations stay locked until this load succeeds, so restored state can
+  // replace the empty runtime wholesale without racing a premature send.
   // Mission Control's agents need their history, the activity feed and the Aulë socket; nothing
   // else does, so they start when the Agents tab first mounts (activate), not on every page.
   const [active, setActive] = useState(false);
+  const [sessionHistory, setSessionHistory] = useState({ status: "idle", error: "" });
   const activate = useCallback(() => setActive(true), []);
   useEffect(() => { if (active) refreshActions(); }, [active, refreshActions]);
+  const retrySessionHistory = useCallback(async () => {
+    const attempt = ++sessionLoadAttemptRef.current;
+    sessionGateRef.current.begin();
+    threadsRef.current = {};
+    setThreads({});
+    setSessionHistory({ status: "loading", error: "" });
+    try {
+      const ownerId = captureEstablishedOwnerId();
+      const sessions = await loadAgentSessions(ownerId);
+      if (attempt !== sessionLoadAttemptRef.current) return false;
+      const restored = commandCenterThreadsFromSessions(sessions);
+      threadsRef.current = restored;
+      setThreads(restored);
+      sessionGateRef.current.ready();
+      setSessionHistory({ status: "ready", error: "" });
+      return true;
+    } catch (error) {
+      if (attempt !== sessionLoadAttemptRef.current) return false;
+      const message = error?.message || "Agent chat history failed to load.";
+      console.error("[AgentRuntime] session load failed:", error);
+      sessionGateRef.current.fail();
+      setSessionHistory({ status: "failed", error: message });
+      addToast(`Couldn't load agent chat history: ${message}`, "error");
+      return false;
+    }
+  }, [addToast]);
   useEffect(() => {
-    if (!active) return;
-    loadAgentSessions()
-      .then((s) => {
-        const restored = {};
-        for (const [key, val] of Object.entries(s || {})) {
-          if (key.endsWith(":cc")) restored[key.slice(0, -3)] = val;
-        }
-        if (!Object.keys(restored).length) return;
-        setThreads((prev) => {
-          const next = { ...prev };
-          for (const [id, val] of Object.entries(restored)) {
-            if (!prev[id]?.display?.length && !prev[id]?.convo?.length) next[id] = val;
-          }
-          return next;
-        });
-      })
-      .catch((e) => {
-        console.error("[AgentRuntime] session load failed:", e);
-        addToast(`Couldn't load agent chat history: ${e.message}`, "error");
-      });
-  }, [active, addToast]);
+    if (active && sessionHistory.status === "idle") retrySessionHistory();
+  }, [active, retrySessionHistory, sessionHistory.status]);
+  useEffect(() => () => { sessionLoadAttemptRef.current += 1; }, []);
 
   // What goes to Supabase: no base64. A screenshot is 1–3 MB of base64 and a
   // handful would blow the row up; the model already saw it, so the stored
   // turn keeps a placeholder. React state keeps the real thing for this session.
-  const persistThread = useCallback((id, thread) => {
+  const persistThread = useCallback((id, thread, ownerId = captureEstablishedOwnerId()) => {
+    if (!sessionGateRef.current.canMutate()) {
+      const message = "Agent history must load successfully before it can be saved.";
+      setSessionSaveErrors((current) => ({ ...current, [id]: message }));
+      addToast(message, "error");
+      return false;
+    }
     const convo = (thread.convo || []).map((m) => (Array.isArray(m.content)
       ? { ...m, content: m.content.map((b) => (b.type === "image" ? { type: "text", text: "[screenshot attached earlier]" } : b)) }
       : m));
@@ -99,25 +126,65 @@ export function AgentRuntimeProvider({ children }) {
       const { images, ...rest } = m;
       return { ...rest, shots: images.length };
     });
-    saveAgentSession(ccSessionKey(id), { convo, display }).catch((e) => {
-      console.error(`[AgentRuntime] session save failed for ${id}:`, e);
-      addToast(e.message || `Chat history isn't saving for ${id}.`, "error");
-    });
+    return saveAgentSession(ccSessionKey(id), { convo, display }, ownerId)
+      .then(() => {
+        setSessionSaveErrors((current) => {
+          if (!current[id]) return current;
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+        return true;
+      })
+      .catch((e) => {
+        console.error(`[AgentRuntime] session save failed for ${id}:`, e);
+        const message = e.message || `Chat history isn't saving for ${id}.`;
+        setSessionSaveErrors((current) => ({ ...current, [id]: message }));
+        addToast(message, "error");
+        return false;
+      });
   }, [addToast]);
 
-  const pushDisplay = useCallback((id, msg) =>
-    setThreads((prev) => {
-      const cur = prev[id] || { convo: [], display: [] };
-      return { ...prev, [id]: { ...cur, display: [...cur.display, msg] } };
-    }), []);
-  const setBusyFor = useCallback((id, v) => setBusy((b) => ({ ...b, [id]: v })), []);
+  const commitThread = useCallback((id, { convo, displayMessage, persist = false, ownerId = null }) => (
+    commitRuntimeThreadSnapshot({
+      currentThreads: threadsRef.current,
+      agentId: id,
+      convo,
+      displayMessage,
+      publishThreads: (nextThreads) => {
+        threadsRef.current = nextThreads;
+        setThreads(nextThreads);
+      },
+      persistThread: persist ? ((agentId, thread) => persistThread(agentId, thread, ownerId)) : null,
+    })
+  ), [persistThread]);
+
+  const setBusyFor = useCallback((id, v) => {
+    const next = { ...busyRef.current, [id]: v };
+    busyRef.current = next;
+    setBusy(next);
+  }, []);
+  const setClearingFor = useCallback((id, v) => setClearingThreads((current) => ({ ...current, [id]: v })), []);
   const setStatusFor = useCallback((id, s) => setStatuses((p) => ({ ...p, [id]: s })), []);
-  const setInputFor = useCallback((id, v) => setInputs((p) => ({ ...p, [id]: v })), []);
+  const setInputFor = useCallback((id, v) => {
+    if (!mutationGateRef.current.canMutate(id)) return false;
+    setInputs((p) => ({ ...p, [id]: v }));
+    return true;
+  }, []);
 
   // attachments: [{ media_type, data }] — base64 images for vision-capable agents.
   const sendTo = useCallback(async (agent, text, attachments = []) => {
     const trimmed = (text || "").trim();
-    if ((!trimmed && attachments.length === 0) || busyRef.current[agent.id]) return;
+    if ((!trimmed && attachments.length === 0) || busyRef.current[agent.id]) return false;
+    if (!mutationGateRef.current.canMutate(agent.id)) {
+      addToast(`${agent.name || agent.id}'s conversation is being cleared.`, "error");
+      return false;
+    }
+    if (!sessionGateRef.current.canMutate()) {
+      addToast("Wait for agent chat history to load, then try again.", "error");
+      return false;
+    }
+    const ownerId = captureEstablishedOwnerId();
     setBusyFor(agent.id, true);
     const cur = threadsRef.current[agent.id] || { convo: [], display: [] };
     // With image attachments the user turn becomes a content array (vision),
@@ -130,88 +197,280 @@ export function AgentRuntimeProvider({ children }) {
       : trimmed;
     const convo = [...cur.convo, { role: "user", content: userContent }];
     const images = attachments.map((a) => `data:${a.media_type};base64,${a.data}`);
-    setThreads((prev) => {
-      const t = prev[agent.id] || { convo: [], display: [] };
-      return { ...prev, [agent.id]: { convo, display: [...t.display, { role: "user", text: trimmed, images }] } };
+    const accepted = commitThread(agent.id, {
+      convo,
+      displayMessage: { role: "user", text: trimmed, images },
     });
     setInputFor(agent.id, "");
     // Last fully-completed tool exchange. If the run dies mid-loop AFTER tools
     // ran, this is what we keep so the next turn knows what already changed
     // (mirrors useAIAgent's `committed`).
-    let committed = null;
+    let committed = convo;
     try {
-      const authHeaders = await getAuthHeaders();
+      await persistRuntimeCheckpoint({
+        agentId: agent.id,
+        thread: accepted.thread,
+        history: committed,
+        persistThread,
+        ownerId,
+      });
+      const authHeaders = await getAuthHeaders(ownerId);
       const { runAgent } = await lazyImport(() => import("../agents/runAgent"), "the agent runner");
       const { text: reply, history } = await runAgent({
-        agent, messages: convo, authHeaders,
+        agent, messages: convo, authHeaders, ownerId,
+        resolveAuthHeaders: getAuthHeaders,
         onStatus: (s) => setStatusFor(agent.id, s),
-        onCommit: (h) => { committed = h; },
+        onCommit: async (h, checkpoint) => {
+          committed = h;
+          await persistRuntimeCheckpoint({
+            agentId: agent.id,
+            thread: threadsRef.current[agent.id] || accepted.thread,
+            history: committed,
+            persistThread,
+            ownerId,
+            note: "turn interrupted during agent tool work",
+            phase: checkpoint?.phase || `Completed ${agent.name || agent.id} tool work`,
+          });
+        },
       });
-      let saved;
-      setThreads((prev) => {
-        const t = prev[agent.id] || { convo: [], display: [] };
-        saved = { convo: history, display: [...t.display, { role: "assistant", text: reply }] };
-        return { ...prev, [agent.id]: saved };
+      const { persistence } = commitThread(agent.id, {
+        convo: history,
+        displayMessage: { role: "assistant", text: reply },
+        persist: true,
+        ownerId,
       });
-      if (saved) persistThread(agent.id, saved);
+      await persistence;
       refreshActions();
     } catch (e) {
       const msg = e.message || "Something went wrong.";
       // Close with an assistant turn so roles still alternate on the next send.
-      const partial = committed
-        ? [...committed, { role: "assistant", content: [{ type: "text", text: `(turn interrupted: ${msg})` }] }]
-        : null;
-      let saved;
-      setThreads((prev) => {
-        const t = prev[agent.id] || { convo: [], display: [] };
-        saved = { convo: partial || t.convo, display: [...t.display, { role: "error", text: msg }] };
-        return { ...prev, [agent.id]: saved };
+      const partial = closePendingTurnForPersistence(committed, `turn interrupted: ${msg}`);
+      const { persistence } = commitThread(agent.id, {
+        convo: partial,
+        displayMessage: { role: "error", text: msg },
+        persist: true,
+        ownerId,
       });
-      if (saved) persistThread(agent.id, saved);
-      if (partial) refreshActions();
+      await persistence;
+      if (committed.length > convo.length) refreshActions();
     } finally {
       setBusyFor(agent.id, false);
       setStatusFor(agent.id, "");
     }
-  }, [setBusyFor, setInputFor, setStatusFor, refreshActions, persistThread]);
+    return true;
+  }, [addToast, commitThread, persistThread, setBusyFor, setInputFor, setStatusFor, refreshActions]);
+
+  const retryThreadSave = useCallback(async (id) => {
+    if (!sessionGateRef.current.canMutate()) return false;
+    const thread = threadsRef.current[id];
+    if (!thread) return false;
+    const saved = await persistThread(id, thread, captureEstablishedOwnerId());
+    if (saved) addToast("Agent chat history saved.", "success");
+    return saved;
+  }, [addToast, persistThread]);
 
   /** Wipe one agent's thread (state + the agent_sessions row). Throws on a
    *  storage failure so the caller can say so — never a silent no-op. */
   const clearThread = useCallback(async (id) => {
+    if (!sessionGateRef.current.canMutate()) throw new Error("Agent chat history must load successfully before it can be cleared.");
     if (busyRef.current[id]) throw new Error(`${id} is still working — wait for it to finish.`);
-    await clearAgentSession(ccSessionKey(id));
-    setThreads((prev) => { const next = { ...prev }; delete next[id]; return next; });
-  }, []);
+    if (!mutationGateRef.current.beginClear(id)) throw new Error(`${id}'s conversation is already being cleared.`);
+    setClearingFor(id, true);
+    const ownerId = captureEstablishedOwnerId();
+    try {
+      await clearAgentSession(ccSessionKey(id), ownerId);
+      const next = { ...threadsRef.current };
+      delete next[id];
+      threadsRef.current = next;
+      setThreads(next);
+    } finally {
+      mutationGateRef.current.finishClear(id);
+      setClearingFor(id, false);
+    }
+  }, [setClearingFor]);
+
+  const prepareAllThreadClear = useCallback(async (agentIds, expectedOwnerId = captureEstablishedOwnerId()) => {
+    const runtimeAgentIds = [...new Set((agentIds || []).filter(Boolean))];
+    const busyIds = runtimeAgentIds.filter((id) => busyRef.current[id]);
+    if (busyIds.length) throw new Error(`${busyIds.join(", ")} is still working — wait for every agent to finish.`);
+    if (sessionHistory.status === "loading") throw new Error("Agent chat history is still loading — wait for it to finish.");
+
+    const locked = [];
+    for (const id of runtimeAgentIds) {
+      if (!mutationGateRef.current.beginClear(id)) {
+        locked.forEach((lockedId) => mutationGateRef.current.finishClear(lockedId));
+        throw new Error(`${id}'s conversation is already being cleared.`);
+      }
+      locked.push(id);
+    }
+    setClearingThreads((current) => ({
+      ...current,
+      ...Object.fromEntries(runtimeAgentIds.map((id) => [id, true])),
+    }));
+
+    let ownerId;
+    try {
+      ownerId = expectedOwnerId;
+      const storedIds = await listAgentSessionIds(ownerId);
+      return {
+        ownerId,
+        runtimeAgentIds,
+        // Frodo's floating chat owns its unsuffixed row and preserves an
+        // authoritative empty snapshot to suppress legacy resurrection.
+        sessionIds: storedIds.filter((id) => id !== "frodo"),
+        previousSessionStatus: sessionHistory.status,
+      };
+    } catch (error) {
+      runtimeAgentIds.forEach((id) => mutationGateRef.current.finishClear(id));
+      setClearingThreads((current) => {
+        const next = { ...current };
+        runtimeAgentIds.forEach((id) => { delete next[id]; });
+        return next;
+      });
+      throw error;
+    }
+  }, [sessionHistory.status]);
+
+  const clearAllThreads = useCallback(async (preparation) => {
+    const {
+      ownerId,
+      runtimeAgentIds = [],
+      sessionIds = [],
+      previousSessionStatus,
+    } = preparation || {};
+    if (!ownerId) throw new Error("The authenticated owner is unavailable for Command Center Clear.");
+
+    try {
+      const results = await Promise.allSettled(sessionIds.map((id) => clearAgentSession(id, ownerId)));
+      const failures = results.flatMap((result, index) => (
+        result.status === "rejected" ? [{ id: sessionIds[index], error: result.reason }] : []
+      ));
+      const failedIds = new Set(failures.map(({ id }) => id));
+      const clearedRuntimeIds = runtimeAgentIds.filter((id) => !failedIds.has(ccSessionKey(id)));
+
+      const nextThreads = { ...threadsRef.current };
+      clearedRuntimeIds.forEach((id) => { delete nextThreads[id]; });
+      threadsRef.current = nextThreads;
+      setThreads(nextThreads);
+      setInputs((current) => {
+        const next = { ...current };
+        clearedRuntimeIds.forEach((id) => { delete next[id]; });
+        return next;
+      });
+      setStatuses((current) => {
+        const next = { ...current };
+        clearedRuntimeIds.forEach((id) => { delete next[id]; });
+        return next;
+      });
+      setSessionSaveErrors((current) => {
+        const next = { ...current };
+        clearedRuntimeIds.forEach((id) => { delete next[id]; });
+        return next;
+      });
+
+      if (failures.length) {
+        const error = new Error(`Couldn't clear ${failures.length} saved Command Center thread${failures.length === 1 ? "" : "s"}.`);
+        error.causes = failures.map(({ error: cause }) => cause);
+        error.failedSessionIds = failures.map(({ id }) => id);
+        throw error;
+      }
+
+      if (active) {
+        sessionGateRef.current.ready();
+        setSessionHistory({ status: "ready", error: "" });
+      } else if (previousSessionStatus === "failed") {
+        sessionGateRef.current.fail();
+      }
+      return { clearedSessionIds: sessionIds };
+    } finally {
+      runtimeAgentIds.forEach((id) => mutationGateRef.current.finishClear(id));
+      setClearingThreads((current) => {
+        const next = { ...current };
+        runtimeAgentIds.forEach((id) => { delete next[id]; });
+        return next;
+      });
+    }
+  }, [active]);
 
   const runOverseer = useCallback(async () => {
     const id = "galadriel";
+    if (!sessionGateRef.current.canMutate()) {
+      addToast("Wait for agent chat history to load, then try again.", "error");
+      return;
+    }
+    if (!mutationGateRef.current.canMutate(id)) {
+      addToast("Galadriel's conversation is being cleared.", "error");
+      return;
+    }
     if (busyRef.current[id]) return;
+    const ownerId = captureEstablishedOwnerId();
     setSelectedId(id);
     setBusyFor(id, true);
-    pushDisplay(id, { role: "user", text: "Run yesterday's summary and file it into the Brain." });
+    const requestText = "Run yesterday's summary and file it into the Brain.";
+    const requestHistory = [{ role: "user", content: requestText }];
+    const accepted = commitThread(id, {
+      convo: requestHistory,
+      displayMessage: { role: "user", text: requestText },
+    });
+    let committed = requestHistory;
     try {
-      const authHeaders = await getAuthHeaders();
-      const { runOverseer: runOverseerAgent } = await lazyImport(() => import("../agents/overseer"), "the overseer");
-      const { text, history } = await runOverseerAgent({ authHeaders, onStatus: (s) => setStatusFor(id, s) });
-      // Compute the next thread inside the updater, persist OUTSIDE it — an
-      // updater must stay pure (React may run it twice).
-      let saved;
-      setThreads((prev) => {
-        const t = prev[id] || { convo: [], display: [] };
-        saved = { convo: history, display: [...t.display, { role: "assistant", text }] };
-        return { ...prev, [id]: saved };
+      await persistRuntimeCheckpoint({
+        agentId: id,
+        thread: accepted.thread,
+        history: committed,
+        persistThread,
+        ownerId,
       });
-      if (saved) persistThread(id, saved);
-      addToast("Galadriel filed the daily summary into the Brain.", "success");
+      const authHeaders = await getAuthHeaders(ownerId);
+      const { runOverseer: runOverseerAgent } = await lazyImport(() => import("../agents/overseer"), "the overseer");
+      const checkpoint = async (history, note, phase = "Overseer durable checkpoint") => {
+        committed = history;
+        await persistRuntimeCheckpoint({
+          agentId: id,
+          thread: threadsRef.current[id] || accepted.thread,
+          history,
+          persistThread,
+          ownerId,
+          note,
+          phase,
+        });
+      };
+      const { text, history } = await runOverseerAgent({
+        authHeaders,
+        ownerId,
+        resolveAuthHeaders: getAuthHeaders,
+        onStatus: (s) => setStatusFor(id, s),
+        onInput: (history) => checkpoint(history, "Overseer interrupted before a reply"),
+        onCommit: (history, details) => checkpoint(
+          history,
+          "Overseer interrupted during tool work",
+          details?.phase,
+        ),
+      });
+      const { persistence } = commitThread(id, {
+        convo: history,
+        displayMessage: { role: "assistant", text },
+        persist: true,
+        ownerId,
+      });
+      const saved = await persistence;
+      if (saved === true) addToast("Galadriel filed the daily summary into the Brain.", "success");
+      else addToast("Galadriel finished, but her chat history didn't save. Retry the save in her thread.", "error");
       refreshActions();
     } catch (e) {
-      pushDisplay(id, { role: "error", text: e.message || "Run failed." });
+      const { persistence } = commitThread(id, {
+        convo: closePendingTurnForPersistence(committed, `Overseer interrupted: ${e.message || "Run failed."}`),
+        displayMessage: { role: "error", text: e.message || "Run failed." },
+        persist: true,
+        ownerId,
+      });
+      await persistence;
       addToast("Overseer run failed.", "error");
     } finally {
       setBusyFor(id, false);
       setStatusFor(id, "");
     }
-  }, [addToast, pushDisplay, setBusyFor, setStatusFor, refreshActions, persistThread]);
+  }, [addToast, commitThread, persistThread, setBusyFor, setStatusFor, refreshActions]);
 
   // ---- Local agent (Aulë): the live Claude Code WebSocket lives HERE now ----
   const auleConfigured = Boolean(AULE_URL && AULE_TOKEN);
@@ -315,8 +574,12 @@ export function AgentRuntimeProvider({ children }) {
     // shared selection
     selectedId, setSelectedId, view, setView,
     // API agents
-    threads, busy, statuses, inputs,
-    setInputFor, sendTo, clearThread, runOverseer, actions, refreshActions, activate,
+    threads, busy, clearingThreads, statuses, inputs, sessionSaveErrors,
+    setInputFor, sendTo, clearThread, retryThreadSave, prepareAllThreadClear, clearAllThreads, runOverseer, actions, refreshActions, activate,
+    sessionHistoryStatus: sessionHistory.status,
+    sessionHistoryError: sessionHistory.error,
+    sessionHistoryReady: sessionHistory.status === "ready",
+    retrySessionHistory,
     // local agent (Aulë)
     aule: {
       configured: auleConfigured,
@@ -325,8 +588,9 @@ export function AgentRuntimeProvider({ children }) {
     },
     auleConnect, auleTurnOn, aulePickRepo, auleSend, auleInterrupt,
   }), [
-    selectedId, view, threads, busy, statuses, inputs, setInputFor, sendTo, clearThread, runOverseer,
-    actions, refreshActions, activate, auleConfigured, auleStatus, auleRepos, auleCwd, auleThread,
+    selectedId, view, threads, busy, clearingThreads, statuses, inputs, sessionSaveErrors, setInputFor, sendTo, clearThread, retryThreadSave, prepareAllThreadClear, clearAllThreads, runOverseer,
+    actions, refreshActions, activate, sessionHistory.status, sessionHistory.error, retrySessionHistory,
+    auleConfigured, auleStatus, auleRepos, auleCwd, auleThread,
     auleBusy, auleStatusLine, auleStarting, auleRecent, auleConnect, auleTurnOn,
     aulePickRepo, auleSend, auleInterrupt,
   ]);

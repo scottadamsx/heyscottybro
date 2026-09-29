@@ -42,6 +42,7 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 
 - Scott owns product and architecture decisions. Do not expand scope without approval.
 - Only Scott's exact phrases **“go”** or **“I approve”** authorize a planned change. For a presented commit only, **“go commit”** is also valid. Similar wording, past approval, implied consent, misspellings, and acknowledgements do not authorize edits.
+- A defect discovered during approved work is logged immediately, but discovery alone never authorizes a fix. Leave unrelated findings deferred. Fix a discovered defect only when it directly affects the approved task and the fix remains inside its approved contract; otherwise present it as separate work and wait for approval.
 - Inspect and plan before editing application code.
 - Show Scott the feature plan and pseudocode before implementation begins.
 - Never commit, push, deploy, change dependencies, run a database migration, write production data, or delete data without explicit approval.
@@ -55,6 +56,9 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 - Before reporting a task complete, follow `docs/development/POST_TASK_CHECKLIST.md` and update every affected record.
 - Never begin the next task while the current task's documentation, validation, bug entries, work log, or handoff state is incomplete.
 - A Git commit records itself in Git history. After committing, verify and report its hash and repository state; do not create an infinite chain of commits whose only purpose is recording the previous commit hash.
+- Every Codex development thread has one archive folder under `docs/sessions/`, keyed by its immutable thread ID. Before session closure, update its sanitized user-visible transcript, manifest, and session summary through a recorded cutoff.
+- Session archives never contain hidden instructions, reasoning, raw tool output, secrets, or unapproved binary attachments. Follow `docs/sessions/README.md` exactly.
+- Review the session summary and every file listed in its manifest before commit or handoff. The next session reconciles any user-visible messages that occur after the previous archive cutoff.
 
 ## Documentation-first development
 

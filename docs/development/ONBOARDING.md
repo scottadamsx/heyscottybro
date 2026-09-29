@@ -16,6 +16,7 @@ This repository contains Scott's personal operating system. It holds private pla
 - `supabase/` and root migrations — database definitions and migrations
 - `docs/features/` — approved behavior, pseudocode, implementation record, and evidence
 - `docs/development/` — workflow, active work, quality gates, bug log, and work log
+- `docs/sessions/` — sanitized per-thread transcripts, manifests, and supervisor-ready summaries
 - `ledger.jsonl` — append-only architectural decision record
 
 `orbit/` is a synchronized read-only copy. Never edit it here.
@@ -39,4 +40,4 @@ This repository contains Scott's personal operating system. It holds private pla
 
 ## End a work session
 
-Update the active feature status, validation evidence, `ACTIVE_WORK.md`, and `WORKLOG.md`. Record discovered bugs in `BUGS.md`. State clearly what changed, what remains, and whether anything is unverified. Never commit, push, migrate, or deploy without Scott's approval.
+Update the active feature status, validation evidence, `ACTIVE_WORK.md`, and `WORKLOG.md`. Record discovered bugs in `BUGS.md`. Follow `docs/sessions/README.md` to refresh the current thread's transcript, manifest, and summary through a recorded cutoff. State clearly what changed, what remains, and whether anything is unverified. Never commit, push, migrate, or deploy without Scott's approval.

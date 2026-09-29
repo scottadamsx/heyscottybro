@@ -12,14 +12,22 @@ import { parseJsonResponse } from "../lib/http.js";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** POST /api/chat with exponential-backoff retries on transient failures. */
-export async function callClaude(payload, headers) {
+/** POST /api/chat with exponential-backoff retries on transient failures.
+ *
+ * A long agent turn may outlive an auth refresh or account transition. When a
+ * resolver is supplied, re-check the captured owner immediately before every
+ * transmission (including retries) instead of reusing an earlier token.
+ */
+export async function callClaude(payload, headers, { resolveHeaders } = {}) {
   for (let attempt = 0; ; attempt++) {
+    // Auth/owner failures are not transient network failures. Resolve outside
+    // the retry catch so an identity mismatch aborts immediately with no fetch.
+    const requestHeaders = resolveHeaders ? await resolveHeaders() : headers;
     let res;
     try {
       res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...headers },
+        headers: { "Content-Type": "application/json", ...requestHeaders },
         body: JSON.stringify(payload),
       });
     } catch (err) {
@@ -37,6 +45,147 @@ export async function callClaude(payload, headers) {
     if (!res.ok) throw new Error(data.error?.message || (typeof data.error === "string" ? data.error : "") || `API error ${res.status}`);
     return data;
   }
+}
+
+export const DURABLE_CHECKPOINT_ERROR_CODE = "DURABLE_CHECKPOINT_FAILED";
+
+function checkpointError(error, phase) {
+  if (error?.code === DURABLE_CHECKPOINT_ERROR_CODE) return error;
+  const wrapped = new Error(`${phase} could not be saved; the turn stopped before continuing.`, { cause: error });
+  wrapped.code = DURABLE_CHECKPOINT_ERROR_CODE;
+  return wrapped;
+}
+
+function provisionalToolResult(block, kind) {
+  const content = kind === "active"
+    ? "This tool's outcome was not durably confirmed before interruption. Do not retry it automatically; inspect the affected data first."
+    : "This tool was not started because the turn was interrupted. Do not run it automatically on reload.";
+  return {
+    type: "tool_result",
+    tool_use_id: block.id,
+    is_error: true,
+    content: JSON.stringify({ error: content }),
+  };
+}
+
+export function toolResultBlock(block, result, { isError = Boolean(result?.error) } = {}) {
+  return {
+    type: "tool_result",
+    tool_use_id: block.id,
+    ...(isError ? { is_error: true } : {}),
+    content: JSON.stringify(result),
+  };
+}
+
+/**
+ * Build a valid, restartable history for a partially executed tool batch.
+ * Every assistant tool_use receives exactly one result. Completed results are
+ * preserved; the active result is explicitly uncertain; later tools are
+ * explicitly unstarted. A caller may safely append an assistant closure.
+ */
+export function toolBatchCheckpointHistory({
+  baseHistory = [],
+  assistantContent = [],
+  toolBlocks = [],
+  completedResults = [],
+  activeIndex = null,
+  activeResult = null,
+}) {
+  const results = toolBlocks.map((block, index) => {
+    if (completedResults[index]) return completedResults[index];
+    if (index === activeIndex && activeResult) return activeResult;
+    return provisionalToolResult(block, index === activeIndex ? "active" : "future");
+  });
+  return [
+    ...baseHistory,
+    { role: "assistant", content: assistantContent },
+    { role: "user", content: results },
+  ];
+}
+
+async function saveToolCheckpoint(checkpoint, history, phase, details) {
+  if (typeof checkpoint !== "function") {
+    throw checkpointError(new Error("No durable checkpoint handler is available."), phase);
+  }
+  try {
+    await checkpoint(history, { phase, ...details });
+  } catch (error) {
+    throw checkpointError(error, phase);
+  }
+}
+
+/**
+ * Execute a model's tool batch behind per-action durable boundaries.
+ *
+ * The first checkpoint arms tool one. Every later checkpoint both confirms the
+ * preceding result and arms the next tool. Nested agents can publish partial
+ * progress through `checkpointProgress`, which is persisted as the current
+ * parent tool result before their next model/tool step.
+ */
+export async function executeToolBatchWithCheckpoints({
+  baseHistory = [],
+  assistantContent = [],
+  toolBlocks = [],
+  execute,
+  checkpoint,
+  phaseLabel = "Agent tool work",
+}) {
+  const completedResults = [];
+
+  if (toolBlocks.length > 0) {
+    const first = toolBatchCheckpointHistory({
+      baseHistory,
+      assistantContent,
+      toolBlocks,
+      completedResults,
+      activeIndex: 0,
+    });
+    await saveToolCheckpoint(
+      checkpoint,
+      first,
+      `${phaseLabel}: before ${toolBlocks[0].name}`,
+      { block: toolBlocks[0], index: 0, stage: "before" },
+    );
+  }
+
+  for (let index = 0; index < toolBlocks.length; index++) {
+    const block = toolBlocks[index];
+    const checkpointProgress = async (progress) => {
+      const progressResult = toolResultBlock(block, progress, { isError: true });
+      const partial = toolBatchCheckpointHistory({
+        baseHistory,
+        assistantContent,
+        toolBlocks,
+        completedResults,
+        activeIndex: index,
+        activeResult: progressResult,
+      });
+      await saveToolCheckpoint(checkpoint, partial, `${phaseLabel}: during ${block.name}`, { block, index, stage: "progress" });
+    };
+
+    const result = await execute(block, checkpointProgress);
+    completedResults[index] = toolResultBlock(block, result);
+
+    const nextIndex = index + 1 < toolBlocks.length ? index + 1 : null;
+    const after = toolBatchCheckpointHistory({
+      baseHistory,
+      assistantContent,
+      toolBlocks,
+      completedResults,
+      activeIndex: nextIndex,
+    });
+    const nextName = nextIndex === null ? "batch complete" : `before ${toolBlocks[nextIndex].name}`;
+    await saveToolCheckpoint(checkpoint, after, `${phaseLabel}: ${nextName}`, { block, index, stage: "after" });
+  }
+
+  return {
+    results: completedResults,
+    history: [
+      ...baseHistory,
+      { role: "assistant", content: assistantContent },
+      { role: "user", content: completedResults },
+    ],
+  };
 }
 
 /**

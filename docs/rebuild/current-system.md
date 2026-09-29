@@ -219,7 +219,7 @@ One row per user. Column `state` jsonb, schema **2** (`src/api/accountabilityApi
 
 ### Agents and knowledge
 - **`agent_actions`:** `agent_id`, `tool`, `collection`, `item_id`, `args` jsonb, `status` (`ok|error`), `error`, `created_at`.
-- **`agent_sessions`:** `agent_id` (`frodo`, or `<agent>:cc` for Command Center threads), `display` jsonb (images replaced by a count), `convo` jsonb (Anthropic messages, trimmed to 60,000 characters). Unique on (user_id, agent_id).
+- **`agent_sessions`:** `agent_id` (`frodo`, or `<agent>:cc` for Command Center threads), `display` jsonb, and `convo` jsonb. Frodo keeps at most 200 display rows and 60,000 characters of model history; image bytes never enter the row. Frodo display rows keep versioned owner-scoped staging metadata so signed previews can be restored, while Command Center rows retain only image counts. Every read/write is bound to the authenticated owner, ordered behind that owner's earlier mutations, and blocked until supported history hydrates successfully. Unique on (user_id, agent_id).
 - **`brain_nodes`:** `slug` (unique per user), `title`, `body` (vault sync caps it at 4,000 characters), `type` (`root|projects|checkpoints|procedures|note`), `tags text[]`, `source` (`vault`, `manual`, or an agent id).
 - **`brain_links`:** `source_slug` → `target_slug`, joined by slug with no foreign key.
 - **`doc_links`:** `entity_type` (reminder, event, project, initiative, agent, research), `entity_id` text, and **exactly one** of `node_slug` / `document_id`; plus `read` and `read_at`.
@@ -319,7 +319,7 @@ One row per user. Column `state` jsonb, schema **2** (`src/api/accountabilityApi
   - **Statement import:** the AI proposes matches, and a deterministic check rejects matches unless the date is within ±6 days, the amount within max($5, 20%), and the direction agrees. Nothing is written until Apply.
 - **Bills & Income:** income sources, recurring bills (including variable "envelope" bills), pay schedule, categories, starting balance, fresh-start reset.
 - **Receipts:** photo → AI draft (store, date, items, totals) → optionally posted as a Groceries expense.
-- **Banker:** chat with Griphook. Its history lives in sessionStorage for 1 hour.
+- **Banker:** chat with Griphook. Its history lives for one hour in a versioned, authenticated-owner-keyed sessionStorage envelope. Unowned, wrong-owner, malformed, and future envelopes are quarantined without being displayed or overwritten.
 - **Tools:** reconcile the last 6 periods; a what-if simulator whose runs are saved in `budget_config.simulations`.
 - **Rules** (`utils/budgetCalc.js`):
   - **Income** = logged income if there is any, otherwise scheduled income.
@@ -373,12 +373,12 @@ One row per user. Column `state` jsonb, schema **2** (`src/api/accountabilityApi
 ### Settings
 - **Appearance:** Light / Dark / Automatic.
 - **Hidden pages:** per space.
-- **Clear AI chat history:** does not clear the Banker's session or the Command Center threads.
+- **Clear AI chat history:** coordinates Frodo, every Command Center thread, current-owner Griphook history, mounted chat state, and staged screenshots. It preflights active work, reports partial failures, preserves Frodo's authoritative empty row, and deliberately leaves unowned quarantined backups untouched.
 
 ### Shell and cross-cutting features
 - Collapsible sidebar; top bar on phones (menu, search, chat).
 - ⌘K command palette.
-- Frodo chat docked on the right (top half of the screen on phones), with an unread dot.
+- Frodo chat is a 380 px right-side dock above 900 px. At 900 px and below it becomes a safe-area-aware full-viewport sheet with fixed header/composer, message-only scrolling, contained wide content, modal focus/Escape behavior, and touch-safe controls.
 - `ExportKit` (Print / PDF / CSV / Markdown / Email me) on Today, Plan, Money, School and the readers.
 - In-tab data-change events (`utils/dataEvents.js`) refresh open pages when an agent writes. There is **no Supabase Realtime and no sync across tabs or devices.**
 - Local mode (`localStorage.forceLocal=1`) stores planner data in `localdb:<table>`. It is used for testing only.
@@ -483,10 +483,10 @@ The Library tools, plus:
 - `accountability`: habit mirror, used only to seed a new account
 - `adminRailCollapsed`
 - `forceLocal`, `localSession`, `localdb:<table>`: test mode
-- Legacy keys read once for migration: `context_store_v1`, `frodo_chat_session`, `vaultSnippets`
+- Legacy keys read once for migration: `context_store_v1`, owner-attributed Frodo session keys, and `vaultSnippets`. The old process-global `frodo_chat_session` value has no provable owner, so it is only detected and quarantined with a content-free warning; it is never parsed, displayed, imported, or deleted automatically.
 - Arcade and landing-page keys: `hsb_break_tokens`, `hsb_arcade_best`, `kiwi.*`, `xpd-geom-v1`
 
-**sessionStorage:** `banker_chat_session` (1 hour), `budgetTab`, and two chunk-reload guards.
+**sessionStorage:** versioned `banker_chat_session:<encoded-owner>` envelopes (1 hour), the quarantined historical unowned `banker_chat_session`, `budgetTab`, and two chunk-reload guards.
 
 ---
 
@@ -551,7 +551,8 @@ The Library tools, plus:
 - **One owner per concept.** Tasks and habits currently exist in both heyScottyBro and Calendula (same Supabase project, separate tables).
 - **Recurrence:** a real recurrence model (multi-day events can't repeat today; `recur_times` counts from the series start).
 - **Change propagation:** no Realtime, no sync across tabs or devices. The Frame promise "appears within a minute" needs a real sync mechanism.
-- **Chat history:** in three places today (`agent_sessions`, Banker sessionStorage, legacy localStorage).
+- **Chat history:** Frodo and Command Center persist in owner-bound `agent_sessions`; Griphook uses a versioned owner-keyed one-hour sessionStorage envelope with a shared turn/Clear gate and owner-scoped update publication. Only an owner-attributed legacy Frodo value may be recovered or removed after a confirmed remote save/Clear. Historical unowned Frodo and Griphook values stay quarantined and untouched because ownership cannot be proven.
+- **Cross-device Clear:** this client deletes its durable row and current session, but there is no realtime invalidation, durable tombstone, or server version check. A dormant tab/device can still resave stale history later, so the UI does not promise deletion from every device; final stale-writer prevention needs an approved server-enforced concurrency contract.
 - **Loads:** Today, Research and Projects swallow load errors.
 - **Unbuilt decisions:** DR-006 (learning model for facts) and DR-007 (a "How it works" page with provenance) were decided but never built.
 

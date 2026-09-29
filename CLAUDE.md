@@ -130,8 +130,18 @@ endpoint must replace one or be folded into an existing handler.
   `src/components/ui/`. New pages do not
   ship inline-style blocks.
 - **Agents** — one loop core (`agents/loop.js`); the Brain is single-writer
-  (Bilbo) and the policy lives in `aiTools.brainWriteDenial`; conversations
-  persist in `agent_sessions`, not localStorage.
+  (Bilbo) and the policy lives in `aiTools.brainWriteDenial`. Frodo and Command
+  Center conversations persist in owner-bound `agent_sessions`; Griphook uses
+  a versioned, owner-keyed one-hour `sessionStorage` envelope. History must
+  hydrate successfully before send, clear, or automatic save is enabled;
+  malformed, future, unowned, or wrong-owner payloads fail closed. An
+  established auth-owner loss or change hard-reloads the protected app so old
+  UI and in-flight work cannot cross accounts.
+- **Chat images** — never put base64 bytes in `agent_sessions`. Store only
+  versioned metadata for paths inside the authenticated owner's private
+  `bug-screenshots/<uid>/_staging` prefix, restore previews with signed URLs,
+  copy claimed evidence into the bug folder, and on confirmed Clear delete the
+  durable session before staging cleanup. Cleanup failures stay visible.
 
 ## Cadence
 

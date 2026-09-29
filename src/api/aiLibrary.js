@@ -41,6 +41,7 @@ import { loadReceipts } from "./groceryApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
 import { planReminderRows, normalizeTime } from "../utils/recurrence";
 import { toDateStr } from "../utils/plannerUtils";
+import { HABITS_COLLECTION_CONTRACT } from "../config/assistantContracts";
 import { supabase } from "../utils/supabase";
 import { uid as authUid } from "./_base";
 
@@ -96,18 +97,10 @@ const COLLECTIONS = {
     echoFields: ["id", "name", "date", "time", "recurrence", "recur_until", "recur_times", "project_id"],
   },
   habits: {
+    ...HABITS_COLLECTION_CONTRACT,
     // No `table`: trackers are a jsonb blob inside accountability_state (one
     // row per user), so there is no PostgREST path — reads go through load().
-    description: "Habit / accountability trackers (Life › Habits). Each tracker is a habit Scott logs daily (checkbox) or tallies (count). Use log_habit to record a day.",
-    searchFields: ["name"],
-    defaultFields: ["id", "name", "emoji", "mode", "created"],
     confirmDelete: "Deleting a habit tracker also wipes ALL of its logged history — every day it was ever checked off is gone with it.",
-    fields: {
-      name: { type: "string", required: true },
-      emoji: { type: "string" },
-      mode: { type: "enum", values: ["check", "count"], description: "check = once a day, count = tally taps" },
-      created: { type: "date", updateOnly: true },
-    },
     load: async () => (await loadAccountability()).trackers,
     create: async (data) => {
       const state = await loadAccountability();

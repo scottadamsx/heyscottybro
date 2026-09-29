@@ -69,7 +69,7 @@ FORMAT: reply in Markdown. LEAD WITH THE ANSWER, then put supporting records in 
  * only), and never consults himself, so consult_archivist isn't on his belt.
  * @returns {Promise<{text: string, history: Array}>}
  */
-export async function runArchivist({ messages, authHeaders, onStatus, maxToolTurns = 12 }) {
+export async function runArchivist({ messages, authHeaders, ownerId, resolveAuthHeaders, onStatus, onCommit, maxToolTurns = 12 }) {
   return runAgent({
     agent: {
       id: "bilbo",
@@ -82,6 +82,9 @@ export async function runArchivist({ messages, authHeaders, onStatus, maxToolTur
     },
     messages,
     authHeaders,
+    ownerId,
+    resolveAuthHeaders,
     onStatus,
+    onCommit,
   });
 }

@@ -2,13 +2,24 @@ import { useState } from "react";
 import { THEMES, useTheme, setTheme } from "../../utils/theme";
 import { useHiddenPages, toggleHiddenPage } from "../../utils/settings";
 import { NAV_ITEMS } from "./AdminLayout";
-import { clearAgentSession } from "../../api/agentSessionsApi";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
+import { useAgentRuntime } from "../../contexts/AgentRuntimeContext";
+import { API_AGENTS } from "../../agents/registry";
+import { captureEstablishedOwnerId } from "../../utils/authIdentityBoundary";
+import {
+  cancelOwnerBoundBankerClear,
+  clearOwnerBoundBankerSession,
+  prepareOwnerBoundBankerClear,
+} from "../../utils/bankerSessionPolicy";
+import {
+  clearAllAIChatHistory,
+  GLOBAL_CHAT_CLEAR_CONFIRMATION,
+  GLOBAL_CHAT_CLEAR_SUCCESS,
+} from "../../utils/globalChatHistory";
 
-// The chat-backed agents (agent_sessions rows) — "aule" runs locally in a
-// terminal and has no session to clear.
-const CHAT_AGENT_IDS = ["frodo", "elrond", "bilbo", "luthien", "banker"];
+// Aulë runs in a local terminal and is intentionally not an app chat session.
+const COMMAND_CENTER_AGENT_IDS = API_AGENTS.map(({ id }) => id);
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -30,16 +41,35 @@ export default function SettingsPage() {
   const hiddenPages = useHiddenPages();
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
+  const { prepareAllThreadClear, clearAllThreads } = useAgentRuntime();
   const [clearingChat, setClearingChat] = useState(false);
 
   const clearAllChatHistory = async () => {
-    if (!await confirm("Clear every AI chat thread (Frodo, Bilbo, Elrond, Lúthien, Griphook)? This only removes the conversations — your data, habits, tasks, and everything else is untouched.", { title: "Clear chat history", confirmLabel: "Clear" })) return;
+    if (!await confirm(GLOBAL_CHAT_CLEAR_CONFIRMATION, { title: "Clear this account's chat history", confirmLabel: "Clear" })) return;
     setClearingChat(true);
-    const results = await Promise.allSettled(CHAT_AGENT_IDS.map((id) => clearAgentSession(id)));
-    setClearingChat(false);
-    const failed = results.filter((r) => r.status === "rejected");
-    if (failed.length) addToast(`Cleared ${results.length - failed.length} of ${results.length} — ${failed[0].reason?.message || "one or more failed"}`, "error");
-    else addToast("All chat history cleared.", "success");
+    try {
+      const ownerId = captureEstablishedOwnerId();
+      const result = await clearAllAIChatHistory({
+        prepareBankerClear: () => prepareOwnerBoundBankerClear(ownerId),
+        cancelBankerClear: cancelOwnerBoundBankerClear,
+        prepareCommandCenterClear: () => prepareAllThreadClear(COMMAND_CENTER_AGENT_IDS, ownerId),
+        clearCommandCenter: clearAllThreads,
+        clearBanker: (preparation) => clearOwnerBoundBankerSession(sessionStorage, ownerId, preparation),
+      });
+      if (result.failures.length) {
+        const first = result.failures[0];
+        addToast(`Some chat history could not be cleared. ${first.label}: ${first.error?.message || first.error}`, "error");
+      } else if (result.warnings.length) {
+        const first = result.warnings[0];
+        addToast(`Chat history cleared, but cleanup needs a retry. ${first.label}: ${first.error?.message || first.error}`, "error");
+      } else {
+        addToast(GLOBAL_CHAT_CLEAR_SUCCESS, "success");
+      }
+    } catch (error) {
+      addToast(error?.message || "Chat history could not be cleared.", "error");
+    } finally {
+      setClearingChat(false);
+    }
   };
 
   return (
@@ -113,9 +143,10 @@ export default function SettingsPage() {
               <i className="fa-solid fa-comment-slash" /> Clear AI chat history
             </div>
             <div className="settings-row-meta">
-              Wipes every agent's conversation thread (Frodo, Bilbo, Elrond, Lúthien,
-              Griphook) — a clean slate if a thread's gotten long, confused, or
-              stale. Your saved context, habits, tasks, and everything else stay put.
+              Clears this account's Frodo, Command Center, and Griphook chats plus
+              Frodo's staged screenshots. Quarantined older backups without account
+              ownership stay untouched for explicit recovery. Aulë's local terminal
+              session and your saved context, habits, tasks, and other data stay put.
             </div>
           </div>
           <button className="btn btn-sm btn-secondary-sm" onClick={clearAllChatHistory} disabled={clearingChat} aria-busy={clearingChat || undefined}>

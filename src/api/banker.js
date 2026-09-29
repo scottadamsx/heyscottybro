@@ -60,7 +60,7 @@ FORMAT: reply in Markdown. Use **bold**, bullet lists for steps, and a Markdown 
  * never consults himself, so consult_banker is dropped from his belt.
  * @returns {Promise<{text: string, history: Array}>}
  */
-export async function runBanker({ messages, authHeaders, onStatus, maxToolTurns = 16 }) {
+export async function runBanker({ messages, authHeaders, ownerId, resolveAuthHeaders, onStatus, onCommit, maxToolTurns = 16 }) {
   return runAgent({
     agent: {
       id: "banker",
@@ -73,6 +73,9 @@ export async function runBanker({ messages, authHeaders, onStatus, maxToolTurns 
     },
     messages,
     authHeaders,
+    ownerId,
+    resolveAuthHeaders,
     onStatus,
+    onCommit,
   });
 }

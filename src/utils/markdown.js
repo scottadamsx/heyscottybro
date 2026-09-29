@@ -7,13 +7,80 @@ function escapeHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function inline(s) {
+function escapeHtmlAttribute(s) {
   return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatInlineText(s) {
+  return escapeHtml(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_]+?)__/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+?)\*/g, "<em>$1</em>")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+    .replace(/\*([^*]+?)\*/g, "<em>$1</em>");
+}
+
+function nextMarkdownLink(s, fromIndex) {
+  let start = s.indexOf("[", fromIndex);
+  while (start >= 0) {
+    const labelEnd = s.indexOf("]", start + 1);
+    if (labelEnd < 0) return null;
+    if (s[labelEnd + 1] !== "(") {
+      start = s.indexOf("[", start + 1);
+      continue;
+    }
+
+    let depth = 1;
+    let cursor = labelEnd + 2;
+    while (cursor < s.length && depth > 0) {
+      if (s[cursor] === "(") depth += 1;
+      else if (s[cursor] === ")") depth -= 1;
+      cursor += 1;
+    }
+    if (depth !== 0) return null;
+
+    return {
+      start,
+      end: cursor,
+      label: s.slice(start + 1, labelEnd),
+      href: s.slice(labelEnd + 2, cursor - 1),
+      source: s.slice(start, cursor),
+    };
+  }
+  return null;
+}
+
+function safeHttpUrl(value) {
+  if (!value) return false;
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (/\s/.test(char) || code <= 31 || code === 127) return false;
+  }
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function inline(s) {
+  let html = "";
+  let cursor = 0;
+  for (;;) {
+    const link = nextMarkdownLink(s, cursor);
+    if (!link) break;
+    html += formatInlineText(s.slice(cursor, link.start));
+    html += safeHttpUrl(link.href)
+      ? `<a href="${escapeHtmlAttribute(link.href)}" target="_blank" rel="noreferrer">${formatInlineText(link.label)}</a>`
+      : formatInlineText(link.source);
+    cursor = link.end;
+  }
+  return html + formatInlineText(s.slice(cursor));
 }
 
 function splitRow(line) {
@@ -53,25 +120,25 @@ export function renderMarkdown(text) {
       i += 2;
       const rows = [];
       while (i < lines.length && lines[i].includes("|") && lines[i].trim() !== "") { rows.push(splitRow(lines[i])); i++; }
-      html += "<div class='chat-grid-wrap'><table class='chat-grid'><thead><tr>" + header.map((h) => `<th>${inline(escapeHtml(h))}</th>`).join("") + "</tr></thead><tbody>";
-      html += rows.map((r) => "<tr>" + r.map((c) => `<td>${inline(escapeHtml(c))}</td>`).join("") + "</tr>").join("");
+      html += "<div class='chat-grid-wrap'><table class='chat-grid'><thead><tr>" + header.map((h) => `<th>${inline(h)}</th>`).join("") + "</tr></thead><tbody>";
+      html += rows.map((r) => "<tr>" + r.map((c) => `<td>${inline(c)}</td>`).join("") + "</tr>").join("");
       html += "</tbody></table></div>";
       continue;
     }
 
     const heading = line.match(/^(#{1,6})\s+(.*)$/);
-    if (heading) { closeLists(); const lvl = Math.min(heading[1].length + 3, 6); html += `<h${lvl}>${inline(escapeHtml(heading[2]))}</h${lvl}>`; i++; continue; }
+    if (heading) { closeLists(); const lvl = Math.min(heading[1].length + 3, 6); html += `<h${lvl}>${inline(heading[2])}</h${lvl}>`; i++; continue; }
 
     const ul = line.match(/^\s*[-*]\s+(.*)$/);
-    if (ul) { if (!inUl) { closeLists(); html += "<ul>"; inUl = true; } html += `<li>${inline(escapeHtml(ul[1]))}</li>`; i++; continue; }
+    if (ul) { if (!inUl) { closeLists(); html += "<ul>"; inUl = true; } html += `<li>${inline(ul[1])}</li>`; i++; continue; }
 
     const ol = line.match(/^\s*\d+\.\s+(.*)$/);
-    if (ol) { if (!inOl) { closeLists(); html += "<ol>"; inOl = true; } html += `<li>${inline(escapeHtml(ol[1]))}</li>`; i++; continue; }
+    if (ol) { if (!inOl) { closeLists(); html += "<ol>"; inOl = true; } html += `<li>${inline(ol[1])}</li>`; i++; continue; }
 
     if (line.trim() === "") { closeLists(); i++; continue; }
 
     closeLists();
-    html += `<p>${inline(escapeHtml(line))}</p>`;
+    html += `<p>${inline(line)}</p>`;
     i++;
   }
   closeLists();

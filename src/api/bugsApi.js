@@ -2,8 +2,17 @@ import { supabase } from "../utils/supabase";
 import { uid } from "./_base";
 import { downloadBlob, slugify } from "../lib/exporter";
 import { lazyImport } from "../lib/lazyImport";
+import { BUG_SCREENSHOTS_BUCKET, createBugScreenshotStorage } from "./bugScreenshotStorageCore";
+import { captureEstablishedOwnerId } from "../utils/authIdentityBoundary";
 
-const BUCKET = "bug-screenshots";
+const BUCKET = BUG_SCREENSHOTS_BUCKET;
+const screenshotStorage = createBugScreenshotStorage({
+  captureOwnerId: captureEstablishedOwnerId,
+  getUserId: (expectedOwnerId) => uid(expectedOwnerId),
+  verifyOwnerId: (expectedOwnerId) => uid(expectedOwnerId),
+  getBucket: (bucket) => supabase.storage.from(bucket),
+  randomId: () => (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10)),
+});
 
 
 export async function loadBugs() {
@@ -34,6 +43,7 @@ export async function createBug({ title, description, steps, page, priority = "m
 }
 
 export async function updateBug(id, fields) {
+  await uid();
   const patch = { ...fields };
   if ((fields.status === "resolved" || fields.status === "closed") && !fields.resolved_at) {
     patch.resolved_at = new Date().toISOString();
@@ -44,6 +54,7 @@ export async function updateBug(id, fields) {
 }
 
 export async function deleteBug(id) {
+  await uid();
   // Best-effort: remove this bug's screenshots from storage too.
   try {
     const { data: bug } = await supabase.from("bugs").select("screenshots").eq("id", id).single();
@@ -103,67 +114,64 @@ export function buildFixPrompt(bug) {
 
 // ── Screenshots ────────────────────────────────────────────────────────────
 
-/**
- * A storage-safe object key segment.
- *
- * Supabase Storage validates object keys and rejects anything outside a narrow
- * character set. A camera roll photo can arrive as "IMG 0042 (1).HEIC" or with
- * no name at all (clipboard paste), so deriving the extension straight off
- * `file.name` could produce a key with spaces/parentheses — which Safari
- * surfaced as the useless "the string did not match the expected pattern".
- * Anything that isn't a plain short alphanumeric extension becomes "png".
- */
-function safeExt(file) {
-  const raw = (file?.name || "").split(".").pop() || "";
-  const ext = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (ext && ext.length <= 5) return ext;
-  const fromType = (file?.type || "").split("/")[1]?.replace(/[^a-z0-9]/g, "");
-  return fromType && fromType.length <= 5 ? fromType : "png";
-}
-
-const randId = () => (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10));
-
 // Upload a dropped image to a staging folder before any bug exists (used by
-// Frodo's chat). Returns the storage path; log_bug later claims it.
-export async function stageScreenshot(file) {
-  const userId = await uid();
-  const path = `${userId}/_staging/${Date.now()}-${randId()}.${safeExt(file)}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type || "image/png", upsert: false,
-  });
-  // Storage errors arrive with an opaque `message`; name the bucket so a
-  // missing-bucket or RLS problem is diagnosable from the toast alone.
-  if (error) throw new Error(`Couldn't save the screenshot to "${BUCKET}": ${error.message || error}`);
-  return path;
+// Frodo's chat). Returns versioned path/metadata; no image bytes are persisted.
+export function stageScreenshot(file, originalMetadata, expectedOwnerId = null) {
+  return screenshotStorage.stage(file, originalMetadata, expectedOwnerId);
 }
 
 export async function addScreenshot(bug, file) {
-  const userId = await uid();
-  const ext = safeExt(file);
-  const rand = randId();
-  const path = `${userId}/${bug.id}/${Date.now()}-${rand}.${ext}`;
-  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: file.type || "image/png", upsert: false,
-  });
-  if (upErr) throw upErr;
+  const ownerId = captureEstablishedOwnerId();
+  await uid(ownerId);
+  const path = await screenshotStorage.uploadForBug(bug.id, file, ownerId);
 
   const next = [...(bug.screenshots || []), path];
+  await uid(ownerId);
   const { data, error } = await supabase.from("bugs").update({ screenshots: next }).eq("id", bug.id).select().single();
-  if (error) { await supabase.storage.from(BUCKET).remove([path]); throw error; } // rollback
+  if (error) {
+    try { await screenshotStorage.removePaths([path], "Rolling back the bug screenshot"); } catch { /* keep the database error */ }
+    throw error;
+  }
   return data;
 }
 
 export async function removeScreenshot(bug, path) {
-  await supabase.storage.from(BUCKET).remove([path]);
+  const ownerId = captureEstablishedOwnerId();
+  await uid(ownerId);
+  await screenshotStorage.removePaths([path], "Removing the bug screenshot", ownerId);
   const next = (bug.screenshots || []).filter((p) => p !== path);
+  await uid(ownerId);
   const { data, error } = await supabase.from("bugs").update({ screenshots: next }).eq("id", bug.id).select().single();
   if (error) throw error;
   return data;
 }
 
-export async function screenshotUrl(path, expiresIn = 3600) {
+/** Copy owned chat-staging objects into a bug-specific folder before DB use. */
+export function claimStagedScreenshots(bugId, paths, expectedOwnerId = null) {
+  return screenshotStorage.claim(bugId, paths, expectedOwnerId);
+}
+
+/** Delete only owned chat-staging objects (used after confirmed Clear). */
+export function removeStagedScreenshots(paths, expectedOwnerId = null) {
+  return screenshotStorage.removeStaged(paths, expectedOwnerId);
+}
+
+/** Remove every object under the authenticated owner's chat-staging prefix. */
+export function clearStagedScreenshots(extraPaths = [], expectedOwnerId = null) {
+  return screenshotStorage.clearAllStaged(extraPaths, expectedOwnerId);
+}
+
+/** Roll back copied evidence if recording its DB paths fails. */
+export function removeScreenshotPaths(paths) {
+  return screenshotStorage.removePaths(paths, "Rolling back copied chat evidence");
+}
+
+export async function screenshotUrl(path, expiresIn = 3600, expectedOwnerId = null) {
+  const ownerId = expectedOwnerId || captureEstablishedOwnerId();
+  await uid(ownerId);
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
-  if (error) throw error;
+  if (error) throw new Error(`Couldn't load the screenshot preview from "${BUCKET}": ${error.message || error}`);
+  if (!data?.signedUrl) throw new Error(`Couldn't load the screenshot preview from "${BUCKET}": no signed URL was returned.`);
   return data.signedUrl;
 }
 

@@ -86,6 +86,22 @@
 .admin-shell .segmented.cmd-tabs { align-self: flex-start; margin-bottom: var(--space-md); }
 
 .cmd-thread { flex: 1; max-height: 48vh; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-sm); padding-right: var(--space-2xs); }
+.cmd-save-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--orange) 35%, var(--border-subtle));
+  border-radius: var(--radius-md);
+  background: var(--warn-bg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+.cmd-save-warning span { min-width: 0; }
+.cmd-save-warning i { margin-right: var(--space-2xs); color: var(--orange); }
+.cmd-save-warning button { flex: 0 0 auto; }
 .cmd-msg { position: relative; max-width: 92%; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-md); font-size: var(--text-base); line-height: var(--leading-normal); }
 .cmd-msg.user { align-self: flex-end; background: var(--accent); color: var(--text-on-accent); }
 .cmd-msg.assistant { align-self: flex-start; padding-right: var(--space-2xl); background: var(--bg-raised); color: var(--text-primary); }

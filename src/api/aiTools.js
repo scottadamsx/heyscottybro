@@ -21,6 +21,15 @@ import { toDateStr } from "../utils/dates";
 import { loadProfile as loadHealthProfile, addFood, saveWeight as saveHealthWeight, MEALS } from "./healthApi";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { lazyImport } from "../lib/lazyImport";
+import { uid } from "./_base";
+import { captureEstablishedOwnerId, runOwnerBoundOperation } from "../utils/authIdentityBoundary";
+import {
+  bugReportRollbackError,
+  createKeyedMutex,
+  findCanonicalOpenReport,
+  mergeBugDescription,
+  mergeUniqueScreenshotPaths,
+} from "../utils/bugDedup";
 
 // ── Brain write policy ───────────────────────────────────────────────────────
 // The Brain is single-writer by design: Bilbo (the Archivist) is its keeper and
@@ -55,45 +64,11 @@ function brainWriteDenial(name, input, caller) {
 // conservative: word-overlap on the title, plus a page match — near-misses
 // create a new report, which is the safer failure.
 const PRIORITY_RANK = { low: 0, medium: 1, high: 2, critical: 3 };
-const STOP_WORDS = new Set(["the", "a", "an", "on", "in", "to", "of", "and", "or", "is", "are", "not", "for", "with", "when", "it", "its", "my", "page", "doesnt", "dont", "cant"]);
+const withBugReportLock = createKeyedMutex();
 
-const titleWords = (s) =>
-  new Set(String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
-    .filter((w) => w.length > 2 && !STOP_WORDS.has(w)));
-
-/** Jaccard overlap of the two titles' significant words. */
-function titleSimilarity(a, b) {
-  const A = titleWords(a); const B = titleWords(b);
-  if (!A.size || !B.size) return 0;
-  let shared = 0;
-  A.forEach((w) => { if (B.has(w)) shared++; });
-  return shared / new Set([...A, ...B]).size;
-}
-
-const normPage = (p) => String(p || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-function isSameReport(existing, incoming) {
-  const sim = titleSimilarity(existing.title, incoming.title);
-  if (sim >= 0.7) return true;                       // near-identical title
-  const pageA = normPage(existing.page); const pageB = normPage(incoming.page);
-  const samePage = pageA && pageB && (pageA === pageB || pageA.includes(pageB) || pageB.includes(pageA));
-  return sim >= 0.45 && samePage;                    // same area, same gist
-}
-
-/** Append only the lines the existing report doesn't already have. */
-function mergeDescription(existing, incoming) {
-  const have = new Set(String(existing || "").split("\n").map((l) => l.trim()));
-  const additions = String(incoming || "").split("\n").map((l) => l.trim())
-    .filter((l) => l && !have.has(l));
-  if (!additions.length) return existing;
-  return `${existing || ""}\n\nAlso reported:\n${additions.join("\n")}`.trim();
-}
-
-async function logAction({ agentId, tool, input, result }) {
+async function logAction({ agentId, tool, input, result, ownerId }) {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-    if (!userId) return;
+    const userId = await uid(ownerId);
     const status = result?.error ? "error" : "ok";
     const itemId = result?.id || input?.id || null;
     const collection = input?.collection || null;
@@ -270,7 +245,7 @@ export const TOOLS = [
   },
 ];
 
-async function runTool(name, input) {
+async function runTool(name, input, toolContext) {
   switch (name) {
     case "library_catalog": return await libraryCatalog(input || {});
     case "query": return await libraryQuery(input);
@@ -310,10 +285,21 @@ async function runTool(name, input) {
       // Lazy import to avoid a static cycle (banker.js imports this module).
       // lazyImport survives a stale-deploy chunk miss — see lib/lazyImport.js.
       const { runBanker } = await lazyImport(() => import("./banker.js"), "the banker (Griphook)");
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders(toolContext?.ownerId);
       const { text } = await runBanker({
         messages: [{ role: "user", content: String(input.request || "") }],
         authHeaders,
+        ownerId: toolContext?.ownerId,
+        resolveAuthHeaders: getAuthHeaders,
+        onCommit: async (history, checkpoint) => {
+          await toolContext?.checkpointProgress?.({
+            consultant: "Griphook",
+            status: "in_progress",
+            phase: checkpoint?.phase || "durable nested tool checkpoint",
+            history,
+            warning: "Some ledger work may already be complete. Inspect it before retrying this consultation.",
+          });
+        },
       });
       return { banker: "Griphook", reply: text };
     }
@@ -321,10 +307,21 @@ async function runTool(name, input) {
       // Lazy import to avoid a static cycle (archivist.js → runAgent → aiTools).
       // lazyImport survives a stale-deploy chunk miss — see lib/lazyImport.js.
       const { runArchivist } = await lazyImport(() => import("./archivist.js"), "the archivist (Bilbo)");
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders(toolContext?.ownerId);
       const { text } = await runArchivist({
         messages: [{ role: "user", content: String(input.request || "") }],
         authHeaders,
+        ownerId: toolContext?.ownerId,
+        resolveAuthHeaders: getAuthHeaders,
+        onCommit: async (history, checkpoint) => {
+          await toolContext?.checkpointProgress?.({
+            consultant: "Bilbo",
+            status: "in_progress",
+            phase: checkpoint?.phase || "durable nested tool checkpoint",
+            history,
+            warning: "Some archive work may already be complete. Inspect it before retrying this consultation.",
+          });
+        },
       });
       return { archivist: "Bilbo", reply: text };
     }
@@ -346,8 +343,18 @@ async function runTool(name, input) {
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
     case "export_bugs": { const { exportBugsZip } = await lazyImport(() => import("./bugsApi"), "the bug exporter"); const r = await exportBugsZip(); return { success: true, ...r }; }
     case "log_bug": {
-      const { createBug, updateBug, loadBugs } = await lazyImport(() => import("./bugsApi"), "the bug tracker");
-      const { takePendingScreenshots } = await lazyImport(() => import("./pendingScreenshots"), "the screenshot staging area");
+      const {
+        claimStagedScreenshots,
+        createBug,
+        deleteBug,
+        loadBugs,
+        removeScreenshotPaths,
+        updateBug,
+      } = await lazyImport(() => import("./bugsApi"), "the bug tracker");
+      const { setPendingScreenshots, takePendingScreenshots } = await lazyImport(
+        () => import("./pendingScreenshots"),
+        "the screenshot staging area",
+      );
       // Stitch the five required facets into one fix-ready description. Plain
       // labelled lines render cleanly both in the Bugs page (pre-wrap text) and
       // in the exported Markdown report.
@@ -362,38 +369,46 @@ async function runTool(name, input) {
        .map(([k, v]) => `${k}: ${String(v).trim()}`)
        .join("\n");
       const type = input.type || "bug";
-      const shots = takePendingScreenshots();
+      return withBugReportLock(`log_bug:${type}`, async () => {
 
-      // Don't file the same report twice. Frodo was creating a fresh row for a
-      // report he had already logged moments earlier in the same conversation
-      // (he never checked). Rather than relying on him to remember, the tool
-      // itself looks for a still-open entry of the same type covering the same
-      // ground and updates that one instead.
-      let existing = null;
-      try {
-        const open = (await loadBugs()).filter(
-          (b) => (b.type || "bug") === type && ["open", "in_progress"].includes(b.status),
-        );
-        existing = open.find((b) => isSameReport(b, { title: input.title, page: input.page, description }));
-      } catch { /* if the lookup fails, fall through and just create it */ }
+      // Do not create a row when canonical lookup is unavailable: that could
+      // silently duplicate a report and consume its pending evidence.
+      const existing = await findCanonicalOpenReport({
+        loadReports: loadBugs,
+        type,
+        incoming: { title: input.title, page: input.page, description },
+      });
 
       if (existing) {
-        // Merge: keep the original, add anything genuinely new, attach shots.
-        const patch = {};
-        const merged = mergeDescription(existing.description, description);
-        if (merged !== existing.description) patch.description = merged;
-        if (input.steps && !existing.steps) patch.steps = input.steps;
-        if (input.priority && PRIORITY_RANK[input.priority] > PRIORITY_RANK[existing.priority || "medium"]) {
-          patch.priority = input.priority;
+        const shots = takePendingScreenshots(toolContext);
+        let claimed = [];
+        try {
+          claimed = await claimStagedScreenshots(existing.id, shots);
+          const patch = {};
+          const merged = mergeBugDescription(existing.description, description);
+          if (merged !== existing.description) patch.description = merged;
+          if (input.steps && !existing.steps) patch.steps = input.steps;
+          if (input.priority && PRIORITY_RANK[input.priority] > PRIORITY_RANK[existing.priority || "medium"]) {
+            patch.priority = input.priority;
+          }
+          if (claimed.length) {
+            patch.screenshots = mergeUniqueScreenshotPaths(existing.screenshots, claimed);
+          }
+          const updated = Object.keys(patch).length ? await updateBug(existing.id, patch) : existing;
+          return {
+            success: true, duplicate_of: existing.id, updated_existing: true,
+            id: updated.id, title: updated.title, type,
+            screenshots: (updated.screenshots || []).length,
+            note: `An open ${type === "feature" ? "feature request" : "bug"} already covered this ("${existing.title}"), so it was updated instead of filing a second one. Tell Scott that's what you did.`,
+          };
+        } catch (error) {
+          setPendingScreenshots(toolContext, shots);
+          const cleanupErrors = [];
+          if (claimed.length) {
+            try { await removeScreenshotPaths(claimed); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
+          }
+          throw bugReportRollbackError(error, { reportId: existing.id, cleanupErrors });
         }
-        if (shots.length) patch.screenshots = [...(existing.screenshots || []), ...shots];
-        const updated = Object.keys(patch).length ? await updateBug(existing.id, patch) : existing;
-        return {
-          success: true, duplicate_of: existing.id, updated_existing: true,
-          id: updated.id, title: updated.title, type,
-          screenshots: (updated.screenshots || []).length,
-          note: `An open ${type === "feature" ? "feature request" : "bug"} already covered this ("${existing.title}"), so it was updated instead of filing a second one. Tell Scott that's what you did.`,
-        };
       }
 
       const bug = await createBug({
@@ -401,11 +416,33 @@ async function runTool(name, input) {
         description, steps: input.steps,
         page: input.page, priority: input.priority || "medium",
       });
-      if (shots.length) await updateBug(bug.id, { screenshots: shots });
-      return { success: true, id: bug.id, title: bug.title, type: bug.type, screenshots: shots.length };
+      const shots = takePendingScreenshots(toolContext);
+      let claimed = [];
+      try {
+        claimed = await claimStagedScreenshots(bug.id, shots);
+        const saved = claimed.length
+          ? await updateBug(bug.id, { screenshots: mergeUniqueScreenshotPaths(claimed) })
+          : bug;
+        return {
+          success: true,
+          id: saved.id,
+          title: saved.title,
+          type: saved.type || type,
+          screenshots: claimed.length,
+        };
+      } catch (error) {
+        setPendingScreenshots(toolContext, shots);
+        const cleanupErrors = [];
+        if (claimed.length) {
+          try { await removeScreenshotPaths(claimed); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
+        }
+        try { await deleteBug(bug.id); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
+        throw bugReportRollbackError(error, { reportId: bug.id, cleanupErrors });
+      }
+      });
     }
     case "web_fetch": {
-      const headers = await getAuthHeaders();
+      const headers = await getAuthHeaders(toolContext?.ownerId);
       const res = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ url: input.url }) });
       const data = await res.json();
       if (!res.ok) return { error: data.error || "fetch failed" };
@@ -424,17 +461,21 @@ async function runTool(name, input) {
   }
 }
 
-export async function executeTool(name, input, agentId = "frodo") {
+export async function executeTool(name, input, agentId = "frodo", toolContext = { pendingScreenshots: [] }) {
+  const ownerId = toolContext?.ownerId || captureEstablishedOwnerId();
   const denied = brainWriteDenial(name, input, agentId);
-  if (denied) { logAction({ agentId, tool: name, input, result: denied }); return denied; }
+  if (denied) { logAction({ agentId, tool: name, input, result: denied, ownerId }); return denied; }
   let result;
   try {
-    result = await runTool(name, input);
+    result = await runOwnerBoundOperation(ownerId, uid, () => runTool(name, input, toolContext));
   } catch (err) {
+    // A failed durable checkpoint is a control-plane stop, not a tool result.
+    // Let it abort the parent and nested loops before any later side effect.
+    if (err?.code === "DURABLE_CHECKPOINT_FAILED") throw err;
     result = { error: err.message };
   }
   // Skip logging for read-only / high-frequency tools to avoid noise
   const skipLog = ["library_catalog", "query", "list_context"].includes(name);
-  if (!skipLog) logAction({ agentId, tool: name, input, result });
+  if (!skipLog) logAction({ agentId, tool: name, input, result, ownerId });
   return result;
 }

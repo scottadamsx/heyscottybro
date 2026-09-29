@@ -90,12 +90,13 @@ export async function gatherDay() {
 }
 
 /** Run the daily summary client-side (the Command Center "Run now" button). */
-export async function runOverseer({ authHeaders, onStatus }) {
+export async function runOverseer({ authHeaders, ownerId, resolveAuthHeaders, onStatus, onInput, onCommit }) {
   onStatus?.("Galadriel gathers the day…");
   const { today, text } = await gatherDay();
   const messages = [{
     role: "user",
     content: `Run the daily summary for ${today}. File it into the Brain and connect it where it fits.\n\n${text}`,
   }];
-  return runAgent({ agent: overseerAgent, messages, authHeaders, onStatus });
+  await onInput?.(messages);
+  return runAgent({ agent: overseerAgent, messages, authHeaders, ownerId, resolveAuthHeaders, onStatus, onCommit });
 }

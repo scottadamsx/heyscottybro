@@ -175,7 +175,7 @@
 }
 .admin-shell.is-collapsed .admin-main { margin-left: var(--sidebar-w-collapsed); }
 .admin-shell .admin-main > * { max-width: var(--content-max); margin-inline: auto; }
-@media (min-width: 641px) {
+@media (min-width: 901px) {
   .admin-shell.chat-open .admin-main { margin-right: var(--chat-w); }
 }
 
@@ -757,7 +757,7 @@ body.uik-modal-open { overflow: hidden; }
 .admin-shell .chat-fab:hover { background: var(--bg-inverse-hover); transform: scale(1.04); }
 .admin-shell .chat-panel { background: var(--bg-surface); border-color: var(--border-subtle); }
 .admin-shell .chat-input { min-height: 40px; padding: var(--space-xs) var(--space-md); border-radius: 20px; resize: none; }
-@media (min-width: 641px) {
+@media (min-width: 901px) {
   .admin-shell .chat-panel { width: var(--chat-w); max-width: var(--chat-w); box-shadow: none; border-left: 1px solid var(--border-subtle); }
 }
 
@@ -1160,8 +1160,8 @@ body.uik-modal-open { overflow: hidden; }
   .admin-shell .settings-row { flex-wrap: wrap; }
   .admin-shell .settings-row > .segmented { width: 100%; }
   .admin-shell .settings-row > .segmented .segmented-opt { flex: 1 1 0; }
-  /* (Frodo keeps index.css's phone dock: the top half, clear of the keyboard.
-     His trigger lives in the top bar on small screens.) */
+  /* Frodo uses the visual viewport sheet through 900px; its trigger remains in
+     the top bar rather than floating over page content. */
   .admin-shell .module-header h1,
   .admin-shell .combined-page-title { font-size: var(--text-xl); line-height: 2rem; }
   .admin-shell .db-card,

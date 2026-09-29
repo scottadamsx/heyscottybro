@@ -2,17 +2,15 @@
 
 **Last updated:** 2026-09-29
 
-## Today schedule and refined day modal
+## Frodo reliability closure and session archive
 
-- The 2026-09-29 bug-report import is complete and remains uncommitted.
-- **Feature document:** `docs/features/today-schedule-and-day-modal-polish.md`
-- **Approved scope:** Add a detailed shared hourly schedule to Today and refine the existing Planner day modal's visual hierarchy.
-- **Approval:** Scott said “go” on 2026-09-29 after reviewing the proposed plan.
-- **Final requested layout:** A thin Priority/Agenda/Money Morning Brief under the header; Today's schedule/Up next next; KPI plus Frodo/Habits below; then Spending/This week. Desktop reveals the top of KPI/Frodo and Habits in the opening viewport; mobile uses a compact horizontal brief strip and priority-ordered stacking.
-- **Final approval:** Scott said exactly “go” on 2026-09-29 for this final hierarchy.
-- **Current state:** Implementation, authenticated desktop/mobile rendered verification, lint, all 93 tests, production build, and post-task documentation are complete and approved for commit.
-- **Current gate:** Commit the approved completed workspace, then verify its hash and repository state.
-- **Next permitted action:** No further application edits, push, or deployment is approved.
+- **Feature document:** `docs/features/frodo-mobile-chat-reliability.md`
+- **Coordinated archive document:** `docs/features/session-archive-hygiene.md`
+- **Requested scope:** Fix and verify every Frodo-related defect, fully optimise Frodo on mobile, create the permanent per-session archive system, archive this complete user-visible session, then commit and push.
+- **Current state:** The approved application work, local validation, documentation, and session archive are complete in the settled tree. All 255 tests, zero-warning lint, production build, diff/JSONL checks, and archive/privacy checks pass. The final privacy live retry was intentionally stopped to preserve Scott's usage limit and is not claimed as evidence.
+- **Closure action:** Scott's exact “go” on 2026-09-29 already authorizes one closure commit and the push of `main` to `origin/main`. Git history and the remote ref are authoritative for their result; do not create a follow-up commit merely to record the containing commit hash.
+- **Next permitted work:** None inside this session after the authorized commit/push verification. New product work requires a new approved feature contract.
+- **Deferred findings:** `BUG-055` and `BUG-056` record missing direct production-composition regression coverage. Scott instructed that they be logged without implementation; they are not active work and must not be represented as completed coverage.
 - **Queued separately:** `SEC-001 — Software Security Requirements`; Scott explicitly said not to start it yet.
 
 Only work listed here is active. Adding or changing scope requires Scott's exact “go” or “I approve.”
