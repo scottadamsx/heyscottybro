@@ -44,6 +44,15 @@ Never silently choose between conflicting requirements.
 - Never commit, push, deploy, change dependencies, run a database migration, write production data, or delete data without explicit approval.
 - If requirements are ambiguous, use the `SPEC-GAP` process in `CLAUDE.md` and wait for Scott's decision.
 
+## Action accounting and task closure
+
+- Before starting any task with more than one step, write the ordered steps in the active feature document. Mark them as they are completed.
+- After every substantive action, immediately record what changed, what was verified, and what remains before taking the next action.
+- Documentation and post-task work are part of the task, not optional follow-up.
+- Before reporting a task complete, follow `docs/development/POST_TASK_CHECKLIST.md` and update every affected record.
+- Never begin the next task while the current task's documentation, validation, bug entries, work log, or handoff state is incomplete.
+- A Git commit records itself in Git history. After committing, verify and report its hash and repository state; do not create an infinite chain of commits whose only purpose is recording the previous commit hash.
+
 ## Documentation-first development
 
 - Read `docs/README.md` and `docs/development/WORKFLOW.md` before application work.
@@ -55,6 +64,7 @@ Never silently choose between conflicting requirements.
 - Record user-visible releases in `CHANGELOG.md`.
 - Keep documentation concise, accurate, navigable, and polished. Update existing docs instead of creating conflicting sources of truth.
 - Follow `docs/development/PSEUDOCODE_STANDARD.md`, `docs/development/QUALITY_GATES.md`, and `docs/development/DOCS_STYLE.md`.
+- Follow `docs/development/POST_TASK_CHECKLIST.md` after every work unit.
 
 ## Existing project instructions
 

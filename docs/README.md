@@ -11,6 +11,7 @@ Documentation is part of the product. Code and its documentation must change tog
 - [`development/ACTIVE_WORK.md`](development/ACTIVE_WORK.md) — current approved work and next gate
 - [`development/PSEUDOCODE_STANDARD.md`](development/PSEUDOCODE_STANDARD.md) — required design-before-code format
 - [`development/QUALITY_GATES.md`](development/QUALITY_GATES.md) — test, UI, safety, and review requirements
+- [`development/POST_TASK_CHECKLIST.md`](development/POST_TASK_CHECKLIST.md) — mandatory recording and closure steps
 - [`development/DOCS_STYLE.md`](development/DOCS_STYLE.md) — documentation quality standard
 - [`development/WORKLOG.md`](development/WORKLOG.md) — append-only record of completed work
 - [`development/BUGS.md`](development/BUGS.md) — bugs, causes, fixes, and regression coverage

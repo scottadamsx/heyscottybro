@@ -15,7 +15,8 @@ import DocLinks from "../../components/docs/DocLinks";
 import DatePicker from "../../components/DatePicker";
 import EventForm from "../../components/EventForm";
 import RescheduleSheet from "../../components/RescheduleSheet";
-import { overdueReminders } from "../../utils/reschedule";
+import DayTimeline from "../../components/DayTimeline";
+import { dayBlocks, overdueReminders, plannerTimelineStartMinute } from "../../utils/reschedule";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
 import "./plan.css";
 import { RowChevron } from "../../components/ui";
@@ -43,6 +44,7 @@ export default function CalendarPage() {
   const [habits, setHabits] = useState({ trackers: [], logs: [] });
 
   const [selectedDate, setSelectedDate] = useState("");
+  const [dayPane, setDayPane] = useState("details");
   // Drag an overdue task onto a day → the Fit-it-in dialog opens on that day.
   const [scheduling, setScheduling] = useState(null); // { item, date? }
   const [dragId, setDragId] = useState(null);
@@ -224,6 +226,7 @@ export default function CalendarPage() {
 
   const openDay = (date) => {
     setSelectedDate(date);
+    setDayPane("details");
     setShowAdd(false);
     setAddMode("event");
     resetForms();
@@ -259,6 +262,23 @@ export default function CalendarPage() {
   const dayDone = selectedDate && filterKind !== "events" && showCompleted
     ? reminders.filter((r) => r.completed && r.date === selectedDate && byProject(r))
     : [];
+  // The hourly panel is context, so it deliberately ignores the month filters:
+  // scheduling against a filtered view must never hide a real commitment.
+  const scheduleBlocks = useMemo(() => {
+    if (!selectedDate) return { timed: [], allDay: [] };
+    return dayBlocks(
+      selectedDate,
+      expandReminders(reminders.filter((r) => !r.completed), selectedDate, selectedDate),
+      expandEvents(events, selectedDate, selectedDate),
+    );
+  }, [selectedDate, reminders, events]);
+  const scheduleUnavailable = loadErrors.includes("tasks") || loadErrors.includes("events");
+  const todayStr = toDateStr(now);
+  const scheduleStartMinute = plannerTimelineStartMinute(
+    selectedDate,
+    todayStr,
+    now.getHours() * 60 + now.getMinutes(),
+  );
 
   // The rest of the day — journal, money, habits, dates. Each section
   // only renders when it has something, so the sheet stays focused. Money spent
@@ -556,7 +576,13 @@ export default function CalendarPage() {
               <button type="button" className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
             </div>
 
-            <div className="day-modal-body">
+            <div className="segmented day-view-switch" aria-label="Day view">
+              <button type="button" className={`segmented-opt${dayPane === "details" ? " active" : ""}`} aria-pressed={dayPane === "details"} onClick={() => setDayPane("details")}>Details</button>
+              <button type="button" className={`segmented-opt${dayPane === "schedule" ? " active" : ""}`} aria-pressed={dayPane === "schedule"} onClick={() => setDayPane("schedule")}>Schedule</button>
+            </div>
+
+            <div className={`day-modal-content show-${dayPane}`}>
+            <div className="day-modal-body day-modal-details" id="day-details-panel">
               {/* Events */}
               <div className="day-section">
                 <div className="day-section-head">
@@ -706,6 +732,35 @@ export default function CalendarPage() {
                 </div>
               )}
 
+            </div>
+
+            <aside className="day-modal-schedule" id="day-schedule-panel" aria-label={`Hourly schedule for ${longDate}`}>
+              <div className="day-schedule-head">
+                <div>
+                  <h3>Schedule</h3>
+                  <p>Full day</p>
+                </div>
+                <span className="day-count">{scheduleBlocks.timed.length} timed</span>
+              </div>
+              {scheduleUnavailable ? (
+                <div className="load-error day-schedule-error" role="alert">
+                  <p className="load-error-msg">Schedule unavailable because events or tasks could not be loaded.</p>
+                  <button type="button" className="btn-secondary-sm" onClick={load}>Retry</button>
+                </div>
+              ) : (
+                <DayTimeline
+                  date={selectedDate}
+                  today={todayStr}
+                  blocks={scheduleBlocks}
+                  startMinute={0}
+                  endMinute={24 * 60}
+                  emptyLabel="Nothing has a time on this day."
+                  autoScrollMinute={scheduleStartMinute}
+                  autoScrollKey={dayPane}
+                  pxPerMinute={0.4}
+                />
+              )}
+            </aside>
             </div>
 
             {/* Add */}

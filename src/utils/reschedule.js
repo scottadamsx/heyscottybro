@@ -83,6 +83,14 @@ export const toMinutes = (t) => (t ? toMin(t) : null);
 export const fromMinutes = (m) => fromMin(Math.max(0, Math.round(m)));
 export const snap = (m, step = SNAP) => Math.round(m / step) * step;
 
+/** Planner day view starts at the current hour today, and 8:00 AM otherwise. */
+export function plannerTimelineStartMinute(date, today, currentMinute) {
+  if (date !== today) return 8 * 60;
+  const minute = Number(currentMinute);
+  if (!Number.isFinite(minute)) return 8 * 60;
+  return Math.min(23 * 60, Math.max(0, Math.floor(minute / 60) * 60));
+}
+
 /** Duration an item already implies (minutes). */
 export function itemDuration(item, kind) {
   if (kind === "task") return Number(item.duration_min) > 0 ? Number(item.duration_min) : DEFAULT_TASK_MIN;
@@ -115,6 +123,40 @@ export function dayBlocks(date, reminders = [], events = [], excludeId) {
   }
   timed.sort((a, b) => a.start - b.start || a.end - b.end);
   return { timed, allDay };
+}
+
+/**
+ * Give overlapping timeline blocks adjacent lanes instead of drawing them on
+ * top of one another. Overlap groups are transitive: when A overlaps B and B
+ * overlaps C, all three share one lane count even if A and C do not overlap.
+ */
+export function layoutTimelineBlocks(blocks = []) {
+  const sorted = [...blocks].sort((a, b) => a.start - b.start || a.end - b.end);
+  const result = [];
+
+  for (let i = 0; i < sorted.length;) {
+    const group = [];
+    let groupEnd = sorted[i].end;
+    let j = i;
+    while (j < sorted.length && (j === i || sorted[j].start < groupEnd)) {
+      group.push(sorted[j]);
+      groupEnd = Math.max(groupEnd, sorted[j].end);
+      j += 1;
+    }
+
+    const laneEnds = [];
+    const placed = group.map((block) => {
+      let lane = laneEnds.findIndex((end) => end <= block.start);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = block.end;
+      return { ...block, lane };
+    });
+    const laneCount = Math.max(1, laneEnds.length);
+    result.push(...placed.map((block) => ({ ...block, laneCount })));
+    i = j;
+  }
+
+  return result;
 }
 
 /** Blocks the slot [start, start + dur) collides with. */

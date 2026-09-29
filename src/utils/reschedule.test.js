@@ -46,7 +46,12 @@ test('addDays crosses month ends', () => {
   assert.equal(addDays('2026-03-01', -1), '2026-02-28');
 });
 
-import { dayBlocks, overlapsWith, firstFreeSlot, itemDuration, snap, DAY_START } from './reschedule.js';
+import { dayBlocks, layoutTimelineBlocks, overlapsWith, firstFreeSlot, itemDuration, plannerTimelineStartMinute, snap, DAY_START } from './reschedule.js';
+
+test('Planner timeline opens at the current hour today and 8 AM on other days', () => {
+  assert.equal(plannerTimelineStartMinute('2026-09-29', '2026-09-29', 11 * 60 + 15), 11 * 60);
+  assert.equal(plannerTimelineStartMinute('2026-09-30', '2026-09-29', 11 * 60 + 15), 8 * 60);
+});
 
 test('durations: task uses duration_min (30 default), event uses its end', () => {
   assert.equal(itemDuration({ duration_min: 45 }, 'task'), 45);
@@ -68,6 +73,31 @@ test('day blocks split timed from all-day and skip the item itself', () => {
     3);
   assert.deepEqual(timed.map((b) => [b.title, b.start, b.end]), [['Timed', 540, 600], ['Sync', 870, 900]]);
   assert.deepEqual(allDay.map((b) => b.title).sort(), ['Anytime', 'Trip']);
+});
+
+test('timeline blocks use adjacent lanes for direct and transitive overlaps', () => {
+  const laidOut = layoutTimelineBlocks([
+    { id: 'a', start: 540, end: 600 },
+    { id: 'b', start: 570, end: 630 },
+    { id: 'c', start: 620, end: 660 },
+    { id: 'd', start: 720, end: 750 },
+  ]);
+  assert.deepEqual(laidOut.map(({ id, lane, laneCount }) => [id, lane, laneCount]), [
+    ['a', 0, 2],
+    ['b', 1, 2],
+    ['c', 0, 2],
+    ['d', 0, 1],
+  ]);
+});
+
+test('timeline layout is chronological and does not mutate source blocks', () => {
+  const source = [
+    { id: 'later', start: 600, end: 660 },
+    { id: 'early', start: 480, end: 510 },
+  ];
+  const laidOut = layoutTimelineBlocks(source);
+  assert.deepEqual(laidOut.map((b) => b.id), ['early', 'later']);
+  assert.equal('lane' in source[0], false);
 });
 
 test('overlap + first free slot respect existing blocks', () => {

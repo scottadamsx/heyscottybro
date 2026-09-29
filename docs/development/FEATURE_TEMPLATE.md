@@ -48,6 +48,12 @@ Describe the data flow and user interaction in plain language.
 Do not implement until Scott approves this section.
 ```
 
+## Ordered task checklist
+
+- [ ] Step 1
+- [ ] Step 2
+- [ ] Complete the post-task checklist
+
 ## Implementation record
 
 - Files changed:

@@ -1,13 +1,12 @@
 # Active work
 
-**Last updated:** 2026-09-28
+**Last updated:** 2026-09-29
 
-## Hourly day calendar beside day modal
+## No implementation currently authorized
 
-- **Feature document:** [`../features/hourly-day-calendar-panel.md`](../features/hourly-day-calendar-panel.md)
-- **Status:** Discovery
-- **Current gate:** Inspect existing UI and code, then write pseudocode for Scott's approval.
-- **Application code changed:** No
-- **Next permitted action:** Read-only inspection and documentation updates.
+- The hourly day-calendar feature is complete and approved for commit.
+- Scott requested a detailed Today-page schedule and a cleaner day-modal redesign on 2026-09-29.
+- **Current gate:** Write the new feature contract and pseudocode, then receive Scott's approval before application-code changes.
+- **Next permitted action:** Documentation and read-only inspection only.
 
 Only work listed here is active. Adding or changing scope requires Scott's approval.

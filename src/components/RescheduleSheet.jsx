@@ -6,10 +6,11 @@ import {
   toMinutes, fromMinutes, snap, DAY_START, DAY_END, SNAP,
 } from "../utils/reschedule";
 import { useToast } from "../contexts/ToastContext";
+import DayTimeline from "./DayTimeline";
 import "./reschedule.css";
 
 const SPAN = 14;
-const PX_PER_MIN = 1;                 // 60px per hour
+const PX_PER_MIN = 1;                 // DayTimeline uses the same 60px per hour scale.
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
 const asDate = (ds) => new Date(ds + "T00:00:00");
 const dow = (ds) => asDate(ds).toLocaleDateString(undefined, { weekday: "short" });
@@ -153,9 +154,6 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
     }
   };
 
-  const hours = [];
-  for (let m = DAY_START; m <= DAY_END; m += 60) hours.push(m);
-
   return (
     <div className="uik-modal-backdrop" onClick={onClose}>
       <div className="uik-modal rs" role="dialog" aria-modal="true" aria-labelledby="rs-title" tabIndex={-1} ref={dialogRef} onClick={(e) => e.stopPropagation()}>
@@ -243,52 +241,32 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
                 <label className="checkbox-inline"><input type="checkbox" checked={noTime} onChange={(e) => setNoTime(e.target.checked)} /> Any time that day</label>
               </div>
 
-              {blocks.allDay.length > 0 && (
-                <div className="tl-allday" aria-label="All day and anytime">
-                  {blocks.allDay.map((b) => <span key={b.id} className={`tl-pill kind-${b.kind}`}>{b.title}</span>)}
-                </div>
-              )}
-
-              <div className={`tl${noTime ? " is-off" : ""}`} ref={railRef} onClick={onRailClick}>
-                <div className="tl-inner" ref={innerRef} style={{ height: `${(DAY_END - DAY_START) * PX_PER_MIN}px` }}>
-                  {hours.map((m) => (
-                    <div key={m} className="tl-hour" style={{ top: `${(m - DAY_START) * PX_PER_MIN}px` }}>
-                      <span className="tl-hour-label">{hm(m).replace(":00", "")}</span>
-                    </div>
-                  ))}
-                  {target === today && nowMinutes() > DAY_START && nowMinutes() < DAY_END && (
-                    <div className="tl-now" style={{ top: `${(nowMinutes() - DAY_START) * PX_PER_MIN}px` }} aria-hidden="true" />
-                  )}
-                  {blocks.timed.map((b) => (
-                    <div key={b.id} className={`tl-block kind-${b.kind}${clashes.includes(b) ? " is-clash" : ""}`}
-                      style={{ top: `${(Math.max(b.start, DAY_START) - DAY_START) * PX_PER_MIN}px`, height: `${Math.max((b.end - Math.max(b.start, DAY_START)) * PX_PER_MIN, 18)}px` }}>
-                      <span className="tl-block-title">{b.title}</span>
-                      <span className="tl-block-time">{hm(b.start)}–{hm(b.end)}</span>
-                    </div>
-                  ))}
-                  {!noTime && start != null && (
-                    <div
-                      className={`tl-candidate${clashes.length ? " is-clash" : ""}`}
-                      style={{ top: `${(start - DAY_START) * PX_PER_MIN}px`, height: `${duration * PX_PER_MIN}px` }}
-                      role="slider"
-                      tabIndex={0}
-                      aria-label={`${title} time slot`}
-                      aria-valuemin={DAY_START}
-                      aria-valuemax={DAY_END - duration}
-                      aria-valuenow={start}
-                      aria-valuetext={`${hm(start)} to ${hm(start + duration)}`}
-                      onPointerDown={onBlockDown}
-                      onPointerMove={onBlockMove}
-                      onPointerUp={onBlockUp}
-                      onPointerCancel={onBlockUp}
-                      onKeyDown={onBlockKey}
-                    >
-                      <span className="tl-block-title">{title}</span>
-                      <span className="tl-block-time">{hm(start)}–{hm(start + duration)} · {durLabel(duration)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <DayTimeline
+                date={target}
+                today={today}
+                blocks={blocks}
+                startMinute={DAY_START}
+                endMinute={DAY_END}
+                disabled={noTime}
+                readOnly={false}
+                clashes={clashes}
+                railRef={railRef}
+                innerRef={innerRef}
+                onRailClick={onRailClick}
+                candidate={start == null ? null : {
+                  title,
+                  start,
+                  duration,
+                  subtitle: `${hm(start)}–${hm(start + duration)} · ${durLabel(duration)}`,
+                  ariaLabel: `${title} time slot`,
+                  hasClash: clashes.length > 0,
+                  onPointerDown: onBlockDown,
+                  onPointerMove: onBlockMove,
+                  onPointerUp: onBlockUp,
+                  onPointerCancel: onBlockUp,
+                  onKeyDown: onBlockKey,
+                }}
+              />
               <div className="rs-time-foot">
                 {noTime
                   ? <span>Scheduled for the day, no set time.</span>

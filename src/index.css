@@ -1028,7 +1028,7 @@ input, textarea, select { font-family: inherit; }
    Title left, day nav + close right; sections are clean hover rows. */
 .day-modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 1040px;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
@@ -1047,7 +1047,16 @@ input, textarea, select { font-family: inherit; }
 .day-modal-titles { order: -1; flex: 1; min-width: 0; text-align: left; }
 .day-modal-dow { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
 .day-modal-date { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); overflow-wrap: anywhere; }
-.day-modal-body { padding: var(--space-md) var(--space-lg) var(--space-lg); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-lg); flex: 1; min-height: 0; }
+.day-modal-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 0.85fr); flex: 1; min-height: 0; }
+.day-modal-body { padding: var(--space-md) var(--space-lg) var(--space-lg); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; min-height: 0; }
+.day-modal-schedule { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: var(--space-md) var(--space-lg) var(--space-lg); border-left: 1px solid var(--border-subtle); }
+.day-modal-schedule .day-timeline { flex: 1; }
+.day-modal-schedule .tl { flex: 1; height: auto; min-height: 0; }
+.day-schedule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.day-schedule-head h3 { margin: 0; font-family: var(--font-body); font-size: var(--text-base); font-weight: 600; }
+.day-schedule-head p { margin: 2px 0 0; font-size: var(--text-xs); color: var(--text-secondary); }
+.day-schedule-error { margin: 0; }
+.admin-shell .day-modal .day-view-switch { display: none; }
 
 /* Phone: the day view is a full-screen sheet, not a floating card. Head and
    the add-bar are pinned; only the body scrolls. Safe-area insets keep the
@@ -1064,6 +1073,11 @@ input, textarea, select { font-family: inherit; }
     border: none;
     overflow: hidden;
   }
+  .admin-shell .day-modal .day-view-switch { display: flex; flex-shrink: 0; margin: var(--space-sm) var(--space-md) 0; }
+  .day-view-switch button { flex: 1 1 0; }
+  .day-modal-content { display: flex; flex: 1; min-height: 0; }
+  .day-modal-content.show-details .day-modal-schedule,
+  .day-modal-content.show-schedule .day-modal-details { display: none; }
   .day-modal-head {
     flex-shrink: 0;
     padding: calc(var(--space-sm) + env(safe-area-inset-top)) var(--space-md) var(--space-sm);
@@ -1076,6 +1090,12 @@ input, textarea, select { font-family: inherit; }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+  }
+  .day-modal-schedule {
+    flex: 1; width: 100%; min-height: 0;
+    padding: var(--space-md);
+    border-left: none;
+    overflow: hidden;
   }
   .day-add {
     flex-shrink: 0;
