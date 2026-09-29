@@ -71,6 +71,7 @@
    — the shell's modal radius would otherwise win. */
 @media (max-width: 768px) {
   .admin-shell .day-overlay .day-modal { border: none; border-radius: 0; }
+  .admin-shell .day-modal-details > .day-section { padding: var(--space-sm); }
 }
 
 /* Under the grid: two lists, half and half */

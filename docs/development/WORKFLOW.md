@@ -9,7 +9,7 @@ Scott remains in control at the decision points. Agents perform discovery, imple
 3. **Define the contract** — record scope, non-goals, acceptance criteria, mobile behavior, accessibility, and edge cases.
 4. **Write pseudocode** — describe control flow and data flow in plain language before application code changes.
 5. **List the steps** — add an ordered checklist for any task with more than one action.
-6. **Approval gate** — Scott approves the plan and pseudocode.
+6. **Approval gate** — wait for Scott to say exactly **“go”** or **“I approve”** for the presented plan and pseudocode. For a presented commit only, **“go commit”** is also valid. No other wording authorizes edits.
 7. **Implement narrowly** — change only the approved scope; keep code and docs together. Record each completed action before starting the next.
 8. **Verify continuously** — run focused tests, then lint, full tests, and build. Visually inspect desktop and mobile UI work.
 9. **Document reality** — update the feature document with final behavior, decisions, changed files, and evidence.
@@ -21,6 +21,13 @@ Scott remains in control at the decision points. Agents perform discovery, imple
 Stop and ask Scott when work requires a new product decision, expands scope, changes stored data, adds a dependency, alters a public interface, or risks data loss.
 
 Failed validation is work to resolve, not a result to hide. Record unexpected bugs when discovered.
+
+## Durable records
+
+- Chat is coordination only, never the source of truth.
+- Immediately place every relevant instruction, correction, decision, approval state, requirement, and implementation fact in the appropriate repository document.
+- Do not report an instruction as handled merely because it was acknowledged in chat.
+- Finish each required record before continuing to the next substantive action.
 
 ## Definition of done
 

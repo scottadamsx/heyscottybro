@@ -29,6 +29,8 @@ When sources disagree, use this order and report the conflict:
 
 Never silently choose between conflicting requirements.
 
+Chat is not a durable source of truth. Immediately record every relevant instruction, decision, approval state, requirement, correction, and implementation fact in the appropriate workspace file before relying on it or moving to the next action. “Acknowledged in chat” is never an acceptable substitute for a repository record.
+
 ## Communication
 
 - Keep user-facing responses short enough to fit on one screen by default.
@@ -39,6 +41,7 @@ Never silently choose between conflicting requirements.
 ## Human control
 
 - Scott owns product and architecture decisions. Do not expand scope without approval.
+- Only Scott's exact phrases **“go”** or **“I approve”** authorize a planned change. For a presented commit only, **“go commit”** is also valid. Similar wording, past approval, implied consent, misspellings, and acknowledgements do not authorize edits.
 - Inspect and plan before editing application code.
 - Show Scott the feature plan and pseudocode before implementation begins.
 - Never commit, push, deploy, change dependencies, run a database migration, write production data, or delete data without explicit approval.

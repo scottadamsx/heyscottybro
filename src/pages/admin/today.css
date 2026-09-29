@@ -3,14 +3,103 @@
 
 /* Page root is .today-page, not .today: .today also marks today's date in the calendar and
    date picker, and this page's layout (48px gaps, size container) used to leak onto them. */
-.today-page { display: flex; flex-direction: column; gap: var(--space-2xl); container: today / inline-size; }
+.today-page { display: flex; flex-direction: column; gap: var(--space-lg); container: today / inline-size; }
 .today-head { align-items: flex-end; }
 .today-date { margin: var(--space-2xs) 0 0; font-size: var(--text-base); color: var(--text-secondary); }
 
-.today-row { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: start; }
+.today-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "schedule upnext"
+    "summary habits"
+    "spending spaces";
+  gap: var(--space-lg);
+  align-items: stretch;
+}
+.today-summary-panel {
+  grid-area: summary;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  min-width: 0;
+  padding: var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  height: 430px;
+  box-sizing: border-box;
+}
+.today-section.today-dashboard-upnext { grid-area: upnext; height: 430px; overflow-y: auto; }
+.today-dashboard-spending { grid-area: spending; }
+.today-dashboard-spaces { grid-area: spaces; }
+.today-dashboard-habits { grid-area: habits; min-width: 0; height: 430px; }
+.today-dashboard-habits > .db-card { height: 100%; overflow-y: auto; }
+
+/* A readable hourly view belongs near the top of Today. It intentionally uses
+   more vertical detail than Planner's compact context rail. */
+.admin-shell .today-schedule-panel {
+  grid-area: schedule;
+  display: flex; flex-direction: column; gap: var(--space-md);
+  padding: var(--space-lg); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); background: var(--bg-card);
+  height: 430px;
+  box-sizing: border-box;
+}
+.today-schedule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); }
+.today-schedule-head p { margin: var(--space-2xs) 0 0; color: var(--text-secondary); font-size: var(--text-sm); }
+.today-schedule-panel .day-timeline { gap: var(--space-sm); }
+.today-schedule-panel .tl { height: 300px; }
+.today-schedule-panel .tl-block-title { white-space: normal; text-overflow: clip; line-height: 1.2; }
+.today-schedule-error { margin: 0; }
+
+/* A glanceable top brief: three destinations, one visible line apiece. */
+.today-brief-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+.today-brief-title { margin: 0; font-size: var(--text-base); white-space: nowrap; }
+.today-brief-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-sm); min-width: 0; }
+.today-brief-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+}
+.today-brief-label { display: inline-flex; align-items: center; gap: var(--space-2xs); color: var(--text-primary); font-size: var(--text-xs); font-weight: 700; white-space: nowrap; }
+.today-brief-label i { color: var(--text-muted); }
+.today-brief-line {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.today-brief-line { cursor: pointer; }
+.today-brief-line.tone-bad { color: var(--red); font-weight: 600; }
+.today-brief-line.tone-warn { color: var(--orange); }
+.today-brief-line.tone-good { color: var(--green); }
 
 /* Key numbers (reference "Views · Followers · Reposts") */
-.today-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xl); align-self: center; }
+.today-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xl); align-self: stretch; }
 /* Frodo's take (reference "Upgrade your crowd") */
 .admin-shell .take { position: relative; overflow: hidden; display: flex; align-items: center; min-height: 184px; padding: var(--space-lg) var(--space-xl); }
 .take-body { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xs); max-width: calc(100% - 184px); }
@@ -39,7 +128,17 @@
 .admin-shell .take-go:disabled { cursor: progress; }
 
 /* Sections on the canvas (no card chrome, like the reference) */
-.today-section { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
+.today-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: 0;
+  height: 100%;
+  padding: var(--space-lg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
 .upnext .section-head { min-height: var(--control-h); }
 
 .admin-shell .activity-empty { min-height: 208px; border: 1px dashed var(--border-primary); border-radius: var(--radius-lg); }
@@ -69,6 +168,14 @@
 .un-when.is-today { color: var(--text-primary); }
 /* This week (reference "Channels") */
 .admin-shell .spaces { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 4fr); gap: var(--space-xl); align-items: center; padding-top: var(--space-2xl); }
+.admin-shell .today-dashboard-spaces {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  height: 100%;
+  padding: var(--space-2xl) var(--space-lg) var(--space-lg);
+}
+.today-dashboard-spaces .spaces-intro p { max-width: none; }
+.today-dashboard-spaces .spaces-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: var(--space-2xl); }
 .spaces-intro p { margin: var(--space-xs) 0 0; max-width: 24ch; color: var(--text-secondary); }
 .spaces-intro strong { color: var(--text-primary); }
 .spaces-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-md); }
@@ -117,17 +224,36 @@
 /* ── Responsive — by the page's own width (container), not the window, so the
    docked chat panel or a collapsed sidebar can never squeeze a layout. ── */
 @container today (max-width: 1080px) {
-  .today-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); }
+  .today-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "schedule"
+      "upnext"
+      "summary"
+      "habits"
+      "spending"
+      "spaces";
+    gap: var(--space-lg);
+  }
+  .today-summary-panel,
+  .today-section.today-dashboard-upnext,
+  .today-dashboard-habits,
+  .admin-shell .today-schedule-panel { height: auto; }
+  .today-dashboard-upnext,
+  .today-dashboard-habits > .db-card { overflow-y: visible; }
 }
 @container today (max-width: 960px) {
   .admin-shell .spaces { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xl); }
   .spaces-intro p { max-width: none; }
 }
 @container today (max-width: 720px) {
-  .spaces-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-2xl); }
+  .spaces-cards, .today-dashboard-spaces .spaces-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--space-2xl); }
   .admin-shell .space-cta { grid-column: span 2; flex-direction: row; align-items: center; }
 }
 @container today (max-width: 600px) {
+  .today-brief-strip { grid-template-columns: minmax(0, 1fr); }
+  .today-brief-cards { display: flex; overflow-x: auto; scrollbar-width: thin; }
+  .today-brief-card { flex: 0 0 min(260px, 80vw); }
   .today-kpis { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
   .kpi-value { font-size: var(--text-xl); line-height: 2rem; }
   .admin-shell .take { flex-direction: column; align-items: flex-start; gap: var(--space-md); min-height: 0; padding: var(--space-lg); }
@@ -136,5 +262,7 @@
   .admin-shell .take-go { position: static; transform: none; width: auto; height: var(--control-h); padding: 0 var(--space-lg); }
   .admin-shell .take-go:hover { transform: none; }
   .admin-shell .spaces { padding: var(--space-2xl) var(--space-md) var(--space-lg); }
+  .admin-shell .today-schedule-panel { padding: var(--space-md); }
+  .today-schedule-panel .tl { height: 390px; }
 }
-@media (max-width: 640px) { .today-page { gap: var(--space-xl); } }
+@media (max-width: 640px) { .today-page { gap: var(--space-md); } }

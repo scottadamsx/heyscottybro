@@ -567,13 +567,15 @@ export default function CalendarPage() {
         <div className="event-overlay day-overlay" onClick={(e) => { if (e.target.classList.contains("event-overlay")) setSelectedDate(""); }}>
           <div className="day-modal" role="dialog" aria-modal="true" aria-label={longDate} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <div className="day-modal-head">
-              <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
               <div className="day-modal-titles">
                 <div className="day-modal-dow">{longDate.split(",")[0]}</div>
                 <div className="day-modal-date" data-dow={longDate.split(",")[0]}>{longDate.split(", ").slice(1).join(", ") || longDate}</div>
               </div>
-              <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
-              <button type="button" className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+              <div className="day-modal-controls" aria-label="Day navigation">
+                <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(-1)} aria-label="Previous day"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
+                <button type="button" className="btn-secondary-sm cal-nav-btn" onClick={() => goToDay(1)} aria-label="Next day"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
+                <button type="button" className="icon-x" onClick={() => setSelectedDate("")} aria-label="Close"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
+              </div>
             </div>
 
             <div className="segmented day-view-switch" aria-label="Day view">

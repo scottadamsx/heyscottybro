@@ -15,6 +15,8 @@ Documentation is part of the product. Code and its documentation must change tog
 - [`development/DOCS_STYLE.md`](development/DOCS_STYLE.md) — documentation quality standard
 - [`development/WORKLOG.md`](development/WORKLOG.md) — append-only record of completed work
 - [`development/BUGS.md`](development/BUGS.md) — bugs, causes, fixes, and regression coverage
+- [`backlog/product-backlog.md`](backlog/product-backlog.md) — canonical queue of unscoped feature requests
+- [`backlog/bug-report-2026-09-29.md`](backlog/bug-report-2026-09-29.md) — complete mapping for the imported bug and feature report
 - [`../CHANGELOG.md`](../CHANGELOG.md) — user-visible changes
 - [`../ledger.jsonl`](../ledger.jsonl) — architectural decisions
 - [`features/`](features/) — feature specifications, pseudocode, status, and validation

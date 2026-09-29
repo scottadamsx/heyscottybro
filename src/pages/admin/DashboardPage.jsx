@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
-import { expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
+import { expandEvents, expandReminders, remindersForDay, undatedReminders, formatDisplayDate, formatMoney, getWeekRange, toDateStr, formatTime12 } from "../../utils/plannerUtils";
 import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import { loadCourses } from "../../api/coursesApi";
@@ -12,7 +12,8 @@ import { buildBrief } from "../../lib/brief";
 import { ExportKit } from "../../components/ui";
 import LineChart from "../../components/ui/LineChart";
 import RescheduleSheet from "../../components/RescheduleSheet";
-import { canReschedule, hasEnded, missedToday, overdueReminders } from "../../utils/reschedule";
+import DayTimeline from "../../components/DayTimeline";
+import { canReschedule, dayBlocks, hasEnded, missedToday, overdueReminders, plannerTimelineStartMinute } from "../../utils/reschedule";
 import { useToast } from "../../contexts/ToastContext";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
@@ -78,6 +79,8 @@ export default function DashboardPage() {
   const [showWeek, setShowWeek] = useState(false);
   const [range, setRange] = useState(7);
   const [scheduling, setScheduling] = useState(null); // { item, kind } in the Fit-it-in dialog
+  const [scheduleError, setScheduleError] = useState("");
+  const [scheduleRetrying, setScheduleRetrying] = useState(false);
   // Ticks every minute so things whose time has passed drop out of Up next on their own.
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
@@ -95,14 +98,26 @@ export default function DashboardPage() {
       addToast(`Saved, but couldn't refresh the list: ${err?.message || err}`, "error");
     }
   };
+  const retrySchedule = async () => {
+    setScheduleRetrying(true);
+    try {
+      const [reminders, events] = await Promise.all([loadReminders(), loadEvents()]);
+      setData((d) => ({ ...d, reminders, events }));
+      setScheduleError("");
+    } catch (err) {
+      setScheduleError(err?.message || "Reminders or events could not be loaded.");
+    } finally {
+      setScheduleRetrying(false);
+    }
+  };
   const openTask = (id) => navigate(`/admin/tasks/${id}`);
 
   useEffect(() => {
     Promise.all([
-      loadReminders().catch(() => []),
+      loadReminders().catch((err) => { setScheduleError(err?.message || "Reminders could not be loaded."); return []; }),
       loadJournal().catch(() => []),
       loadBudgetConfig().catch(() => ({ categories: [], recurringBills: [], incomeSources: [] })),
-      loadEvents().catch(() => []),
+      loadEvents().catch((err) => { setScheduleError(err?.message || "Events could not be loaded."); return []; }),
       loadProjects().catch(() => []),
       loadInitiatives().catch(() => []),
       loadTransactions().catch(() => []),
@@ -149,6 +164,9 @@ export default function DashboardPage() {
   // ── Tasks + events ──
   const activeReminders = data.reminders.filter((r) => !r.completed);
   const todayItems = remindersForDay(activeReminders, todayStr);
+  const todayEvents = expandEvents(data.events, todayStr, todayStr);
+  const todaySchedule = dayBlocks(todayStr, todayItems, todayEvents);
+  const todayScheduleStart = plannerTimelineStartMinute(todayStr, todayStr, nowMin);
   // Overdue = earlier days, plus anything today whose time slot has already passed.
   const overdue = [...overdueReminders(activeReminders, todayStr), ...missedToday(todayItems, todayStr, nowMin)];
   const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30)).sort((a, b) => a.date.localeCompare(b.date));
@@ -185,6 +203,9 @@ export default function DashboardPage() {
     courses: school.courses, courseStats, deadlines: schoolDeadlines,
     agentActions, openBugs: pulse.openBugs, unreadInbox: pulse.unreadInbox,
   });
+  const briefHighlights = ["priorities", "agenda", "money"]
+    .map((key) => brief.sections.find((section) => section.key === key))
+    .filter(Boolean);
   const briefExporter = { title: `Morning Brief — ${brief.date}`, filename: "morning-brief", toMarkdown: () => brief.toMarkdown(aiText) };
 
   const remaining = currentWeek?.remaining ?? null;
@@ -205,82 +226,64 @@ export default function DashboardPage() {
         </div>
       </Item>
 
-      {/* ── Row 1: key numbers · Frodo's take ── */}
-      <div className="today-row">
-        <Item className="today-kpis" aria-label="Key numbers">
-          <Link to="/admin/reminders" className="kpi">
-            <span className="kpi-head">
-              <span className="kpi-label">Due today</span>
-              {overdue.length > 0 && <span className="kpi-flag tone-bad" title={`${overdue.length} overdue`}><i className="fa-solid fa-exclamation" aria-hidden="true" /><span className="visually-hidden">{overdue.length} overdue</span></span>}
-            </span>
-            <span className="kpi-value">{todayItems.length}</span>
-            <span className="kpi-sub">{overdue.length ? `${overdue.length} overdue` : `${anytimeItems.length} anytime`}</span>
-          </Link>
-          <Link to="/admin/finance" className="kpi">
-            <span className="kpi-head"><span className="kpi-label">Free to spend</span></span>
-            <span className={`kpi-value${remaining !== null && remaining < 0 ? " is-neg" : ""}`}>{remaining === null ? "—" : `${remaining < 0 ? "−" : ""}${formatMoney(remaining)}`}</span>
-            <span className="kpi-sub">{currentWeek ? `of ${formatMoney(currentWeek.allowance)} this week` : "Add income to see it"}</span>
-          </Link>
-          <Link to="/admin/finance?tab=transactions" className="kpi">
-            <span className="kpi-head">
-              <span className="kpi-label">Spent · 7 days</span>
-              {spendDelta !== null && spendDelta !== 0 && (
-                <span className={`kpi-flag ${spendDelta > 0 ? "tone-bad" : "tone-good"}`}>
-                  <i className={`fa-solid ${spendDelta > 0 ? "fa-arrow-up" : "fa-arrow-down"}`} aria-hidden="true" />
-                  <span className="visually-hidden">{spendDelta > 0 ? "Up" : "Down"} {Math.abs(spendDelta)}% on the previous 7 days</span>
-                </span>
-              )}
-            </span>
-            <span className="kpi-value">{formatMoney(last7 / 100)}</span>
-            <span className="kpi-sub">{spendDelta === null ? "No spending the week before" : `${Math.abs(spendDelta)}% ${spendDelta > 0 ? "more" : "less"} than last week`}</span>
-          </Link>
-        </Item>
+      <Item className="today-brief-strip" aria-labelledby="today-brief-title">
+        <h2 className="today-brief-title" id="today-brief-title">Morning brief</h2>
+        <div className="today-brief-cards">
+          {briefHighlights.map((section) => {
+            const highlight = section.items[0];
+            const text = highlight?.text || section.empty;
+            const lineClass = `today-brief-line tone-${highlight?.tone || "default"}`;
+            return (
+              <div className="today-brief-card" key={section.key}>
+                <span className="today-brief-label"><i className={`fa-solid ${section.icon}`} aria-hidden="true" /> {section.title}</span>
+                {highlight?.to
+                  ? <button type="button" className={lineClass} onClick={() => navigate(highlight.to)} title={text}>{text}</button>
+                  : <span className={lineClass} title={text}>{text}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </Item>
 
-        <Item className="take panel-peach" aria-live="polite">
-          <div className="take-body">
-            <span className="take-avatar" aria-hidden="true"><i className="fa-solid fa-wand-magic-sparkles" /></span>
-            <h2 className="take-title"><span className="take-accent">Frodo&apos;s</span> take</h2>
-            {aiError ? <p className="take-text is-error" role="alert">{aiError}</p>
-              : aiText ? <p className="take-text is-answer">{aiText}</p>
-              : <p className="take-text">Two lines on today, read from everything below.</p>}
+      {/* ── Primary dashboard: schedule · next, summary · habits, spending · week ── */}
+      <div className="today-dashboard-grid">
+      <Item className="today-schedule-panel" aria-labelledby="today-schedule-title">
+        <div className="today-schedule-head">
+          <div>
+            <h2 className="section-title" id="today-schedule-title">Today&apos;s schedule</h2>
+            <p>
+              {todaySchedule.timed.length > 0
+                ? `${todaySchedule.timed.length} timed ${todaySchedule.timed.length === 1 ? "commitment" : "commitments"}`
+                : "No timed commitments"}
+              {todaySchedule.allDay.length > 0 ? ` · ${todaySchedule.allDay.length} all day or anytime` : ""}
+            </p>
           </div>
-          <div className="take-art" aria-hidden="true"><i /><i /><i /><i /></div>
-          <button type="button" className="take-go" onClick={fetchBriefing} disabled={aiLoading} aria-busy={aiLoading || undefined} aria-label={aiText ? "Refresh Frodo's take" : "Get Frodo's take on today"}>
-            {aiLoading ? <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> : aiText ? "Again" : "Ask"}
-          </button>
-        </Item>
-      </div>
-
-      {/* ── Row 2: spending activity · up next ── */}
-      <div className="today-row">
-        <Item className="today-section activity">
-          <div className="section-head">
-            <h2 className="section-title">Spending</h2>
-            <span className="section-meta">{formatMoney(rangeTotal)} in {range} days · excludes bills</span>
-            <div className="segmented" role="radiogroup" aria-label="Range">
-              {[7, 30].map((n) => (
-                <button key={n} type="button" role="radio" aria-checked={range === n} className={`segmented-opt${range === n ? " active" : ""}`} onClick={() => setRange(n)}>{n} days</button>
-              ))}
-            </div>
+          <Link to={`/admin/planner?date=${todayStr}`} className="btn btn-sm btn-secondary-sm">
+            Full planner <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+          </Link>
+        </div>
+        {scheduleError ? (
+          <div className="load-error today-schedule-error" role="alert">
+            <p className="load-error-msg">Schedule unavailable. {scheduleError}</p>
+            <button type="button" className="btn-secondary-sm" onClick={retrySchedule} disabled={scheduleRetrying} aria-busy={scheduleRetrying || undefined}>
+              {scheduleRetrying ? "Retrying…" : "Retry"}
+            </button>
           </div>
-          {rangeTotal > 0 ? (
-            <LineChart
-              data={series}
-              height={176}
-              ariaLabel={`Spending by day, last ${range} days, ${formatMoney(rangeTotal)} total`}
-              format={(v, axis) => (axis ? compactMoney(v) : formatMoney(v))}
-            />
-          ) : (
-            <div className="empty-state activity-empty">
-              <i className="fa-solid fa-chart-line empty-state-icon" aria-hidden="true" />
-              <div className="empty-state-title">No spending in the last {range} days</div>
-              <div className="empty-state-desc">Log a purchase in Money and it shows up here.</div>
-              <Link to="/admin/finance" className="btn btn-sm empty-state-action">Open Money</Link>
-            </div>
-          )}
-        </Item>
+        ) : (
+          <DayTimeline
+            date={todayStr}
+            today={todayStr}
+            blocks={todaySchedule}
+            startMinute={0}
+            endMinute={24 * 60}
+            emptyLabel="Your day is open. Nothing has a time yet."
+            autoScrollMinute={todayScheduleStart}
+            pxPerMinute={0.55}
+          />
+        )}
+      </Item>
 
-        <Item className="today-section upnext">
+        <Item className="today-section upnext today-dashboard-upnext">
           <div className="section-head">
             <h2 className="section-title">Up next</h2>
           </div>
@@ -333,10 +336,85 @@ export default function DashboardPage() {
           )}
           <Link to="/admin/reminders" className="link-more">View all <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>
         </Item>
+
+      <div className="today-summary-panel">
+        <Item className="today-kpis" aria-label="Key numbers">
+          <Link to="/admin/reminders" className="kpi">
+            <span className="kpi-head">
+              <span className="kpi-label">Due today</span>
+              {overdue.length > 0 && <span className="kpi-flag tone-bad" title={`${overdue.length} overdue`}><i className="fa-solid fa-exclamation" aria-hidden="true" /><span className="visually-hidden">{overdue.length} overdue</span></span>}
+            </span>
+            <span className="kpi-value">{todayItems.length}</span>
+            <span className="kpi-sub">{overdue.length ? `${overdue.length} overdue` : `${anytimeItems.length} anytime`}</span>
+          </Link>
+          <Link to="/admin/finance" className="kpi">
+            <span className="kpi-head"><span className="kpi-label">Free to spend</span></span>
+            <span className={`kpi-value${remaining !== null && remaining < 0 ? " is-neg" : ""}`}>{remaining === null ? "—" : `${remaining < 0 ? "−" : ""}${formatMoney(remaining)}`}</span>
+            <span className="kpi-sub">{currentWeek ? `of ${formatMoney(currentWeek.allowance)} this week` : "Add income to see it"}</span>
+          </Link>
+          <Link to="/admin/finance?tab=transactions" className="kpi">
+            <span className="kpi-head">
+              <span className="kpi-label">Spent · 7 days</span>
+              {spendDelta !== null && spendDelta !== 0 && (
+                <span className={`kpi-flag ${spendDelta > 0 ? "tone-bad" : "tone-good"}`}>
+                  <i className={`fa-solid ${spendDelta > 0 ? "fa-arrow-up" : "fa-arrow-down"}`} aria-hidden="true" />
+                  <span className="visually-hidden">{spendDelta > 0 ? "Up" : "Down"} {Math.abs(spendDelta)}% on the previous 7 days</span>
+                </span>
+              )}
+            </span>
+            <span className="kpi-value">{formatMoney(last7 / 100)}</span>
+            <span className="kpi-sub">{spendDelta === null ? "No spending the week before" : `${Math.abs(spendDelta)}% ${spendDelta > 0 ? "more" : "less"} than last week`}</span>
+          </Link>
+        </Item>
+
+        <Item className="take panel-peach" aria-live="polite">
+          <div className="take-body">
+            <span className="take-avatar" aria-hidden="true"><i className="fa-solid fa-wand-magic-sparkles" /></span>
+            <h2 className="take-title"><span className="take-accent">Frodo&apos;s</span> take</h2>
+            {aiError ? <p className="take-text is-error" role="alert">{aiError}</p>
+              : aiText ? <p className="take-text is-answer">{aiText}</p>
+              : <p className="take-text">Two lines on today, read from everything below.</p>}
+          </div>
+          <div className="take-art" aria-hidden="true"><i /><i /><i /><i /></div>
+          <button type="button" className="take-go" onClick={fetchBriefing} disabled={aiLoading} aria-busy={aiLoading || undefined} aria-label={aiText ? "Refresh Frodo's take" : "Get Frodo's take on today"}>
+            {aiLoading ? <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> : aiText ? "Again" : "Ask"}
+          </button>
+        </Item>
       </div>
 
-      {/* ── Row 3: spaces this week (reference "Channels") ── */}
-      <Item className="spaces panel-mint">
+      <div className="today-dashboard-habits">
+        <AccountabilitySummary title="Habits" />
+      </div>
+
+      <Item className="today-section activity today-dashboard-spending">
+        <div className="section-head">
+          <h2 className="section-title">Spending</h2>
+          <span className="section-meta">{formatMoney(rangeTotal)} in {range} days · excludes bills</span>
+          <div className="segmented" role="radiogroup" aria-label="Range">
+            {[7, 30].map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={range === n} className={`segmented-opt${range === n ? " active" : ""}`} onClick={() => setRange(n)}>{n} days</button>
+            ))}
+          </div>
+        </div>
+        {rangeTotal > 0 ? (
+          <LineChart
+            data={series}
+            height={176}
+            ariaLabel={`Spending by day, last ${range} days, ${formatMoney(rangeTotal)} total`}
+            format={(v, axis) => (axis ? compactMoney(v) : formatMoney(v))}
+          />
+        ) : (
+          <div className="empty-state activity-empty">
+            <i className="fa-solid fa-chart-line empty-state-icon" aria-hidden="true" />
+            <div className="empty-state-title">No spending in the last {range} days</div>
+            <div className="empty-state-desc">Log a purchase in Money and it shows up here.</div>
+            <Link to="/admin/finance" className="btn btn-sm empty-state-action">Open Money</Link>
+          </div>
+        )}
+      </Item>
+
+      {/* ── This week ── */}
+      <Item className="spaces panel-mint today-dashboard-spaces">
         <div className="spaces-intro">
           <h2 className="section-title">This week</h2>
           <p>Your spaces at a glance for the week of <strong>{shortDate(wr.startStr)}</strong>.</p>
@@ -373,29 +451,9 @@ export default function DashboardPage() {
         </div>
       </Item>
 
-      {/* ── Row 4: the brief, in full ── */}
-      <Item className="db-card">
-        <div className="db-card-header">
-          <h3 className="db-card-title">Morning brief</h3>
-        </div>
-        <div className="brief-grid">
-          {brief.sections.map((sec) => (
-            <div key={sec.key} className="brief-section">
-              <div className="brief-section-title"><i className={`fa-solid ${sec.icon}`} aria-hidden="true" /> {sec.title}</div>
-              {sec.items.length === 0
-                ? <p className="brief-empty">{sec.empty}</p>
-                : sec.items.slice(0, 6).map((it, i) => (
-                  it.to
-                    ? <button key={i} type="button" className={`brief-item tone-${it.tone || "default"}`} onClick={() => navigate(it.to)}>{it.text}</button>
-                    : <div key={i} className={`brief-item tone-${it.tone || "default"}`}>{it.text}</div>
-                ))}
-              {sec.items.length > 6 && <p className="brief-empty">+{sec.items.length - 6} more</p>}
-            </div>
-          ))}
-        </div>
-      </Item>
+      </div>
 
-      {/* ── Row 5: details ── */}
+      {/* ── Details ── */}
       <div className="db-grid">
         <Item className="db-card col-6">
           <div className="db-card-header">
@@ -450,7 +508,6 @@ export default function DashboardPage() {
           </Item>
         )}
 
-        <AccountabilitySummary />
         <StorageUsage />
         <ConnectionStatus />
       </div>

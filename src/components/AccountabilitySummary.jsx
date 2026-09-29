@@ -8,7 +8,7 @@ import { SkeletonList } from "./Skeleton";
 
 function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
 
-export default function AccountabilitySummary() {
+export default function AccountabilitySummary({ title = "Accountability" }) {
   const navigate = useNavigate();
   const { addToast } = useToast();
   // Source of truth is Supabase (accountability_state) — the SAME store the
@@ -68,7 +68,7 @@ export default function AccountabilitySummary() {
   return (
     <div className="db-card col-6">
       <div className="db-card-header">
-        <h3 className="db-card-title">Accountability</h3>
+        <h3 className="db-card-title">{title}</h3>
         <Link to="/admin/life?tab=habits" className="link-more">All habits <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>
       </div>
 
