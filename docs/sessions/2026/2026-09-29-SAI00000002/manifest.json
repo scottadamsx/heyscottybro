@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "identity": {
+    "sai_id": "SAI00000002",
+    "thread_id": "01a0ed47-5171-74d2-9227-ef3782f9356f",
+    "title": "Bonsai Chat SAI00000002",
+    "bootstrap_mode": "project_manager_injection",
+    "workspace": "<repo>",
+    "timezone": "America/St_Johns",
+    "started_at": "2026-09-29T13:07:49Z",
+    "archive_cutoff": "2026-09-29T13:36:08.548Z"
+  },
+  "transcript": {
+    "source": "Codex user-visible messages for the bound thread",
+    "visible_user_messages": 3,
+    "visible_assistant_messages": 30,
+    "excluded": "environment-supplied AGENTS.md wrapper, hidden reasoning, commands, tool output, and inter-thread messages",
+    "attachments": []
+  },
+  "repository": {
+    "branch": "main",
+    "base_commit": "d24492fec74eeef94399f8a746344f754b57e84e",
+    "intended_push_target": "origin/main",
+    "archive_path": "docs/sessions/2026/2026-09-29-SAI00000002",
+    "current_changes_committed": false,
+    "production_target": "scottadamsxs-projects/heyscottybro / main / https://heyscottybro.vercel.app",
+    "last_successful_production_commit": "b1cb1b69c1b87ff1691914f90fe4712299f2cee5"
+  },
+  "objective": "Diagnose the live Vercel deployment mismatch, deploy the committed Today and Frodo work only after Scott's exact approval, and verify production.",
+  "approval_state": {
+    "read_only_diagnosis": "authorized by Scott's request to delegate the fix",
+    "application_edits": "Scott approved the recorded local repair contract with exact go at 2026-09-29T13:19:21.345Z",
+    "commit": "Scott approved the presented release plan with exact go at 2026-09-29T13:36:03.792Z; target main",
+    "push": "Scott approved push to origin/main with exact go at 2026-09-29T13:36:03.792Z",
+    "deployment": "Scott approved the resulting Vercel Production deployment and verification at https://heyscottybro.vercel.app with exact go at 2026-09-29T13:36:03.792Z",
+    "migration": "not authorized",
+    "production_data_write": "not authorized"
+  },
+  "known_evidence": [
+    "Today work is committed at c2b8700 and is an ancestor of current main.",
+    "Frodo reliability work is committed at 0760393 and is an ancestor of current main.",
+    "No later application changes reverted either work unit.",
+    "The prior agent performed no manual deployment, but Vercel automatically attempted and failed later Production builds.",
+    "The most recent successful Production deployment is b1cb1b6 from 2026-09-18.",
+    "The first failed commit 76f4473 raised deployable API functions from 12 to 13."
+  ],
+  "files": {
+    "created": [
+      "docs/sessions/2026/2026-09-29-SAI00000002/SESSION_SUMMARY.md",
+      "docs/sessions/2026/2026-09-29-SAI00000002/TRANSCRIPT.md",
+      "docs/sessions/2026/2026-09-29-SAI00000002/manifest.json",
+      "api/_kiwi-tasks.js",
+      "docs/features/vercel-function-limit-repair.md",
+      "scripts/vercel-functions.test.js"
+    ],
+    "modified": [
+      "docs/sessions/registry.jsonl",
+      "docs/sessions/GLOSSARY.md",
+      "api/fetch.js",
+      "docs/development/ACTIVE_WORK.md",
+      "docs/development/BUGS.md",
+      "docs/development/WORKLOG.md",
+      "docs/kiwi-shared-tasks.md",
+      "docs/rebuild/current-system.md",
+      "package.json",
+      "scripts/session-registry.test.js",
+      "src/api/kiwiTasks.test.js",
+      "vercel.json"
+    ],
+    "moved": [
+      "api/kiwi-tasks.js -> api/_kiwi-tasks.js"
+    ]
+  },
+  "validation": [
+    {"check":"Kiwi, route, rewrite, and function-count focused suite","result":"passed","evidence":"10/10"},
+    {"check":"session-registry tests","result":"passed","evidence":"7/7; next SAI00000003"},
+    {"check":"npm test","result":"passed","evidence":"264/264"},
+    {"check":"npm run lint","result":"passed","evidence":"zero warnings"},
+    {"check":"npm run build","result":"passed","evidence":"3,148 modules; existing mixed-import and large-chunk advisories"},
+    {"check":"npm run session-registry:check","result":"passed","evidence":"two IDs; next SAI00000003"},
+    {"check":"git diff --check and JSON parsing","result":"passed"},
+    {"check":"Vercel Production build and Today/Frodo live verification","result":"unverified","evidence":"release not approved or performed"}
+  ],
+  "unresolved_work": [
+    "Commit and push the reviewed repair to origin/main and confirm the resulting Vercel Production deployment under Scott's recorded release approval.",
+    "Verify the deployed Git commit, production alias, Today, and Frodo after release.",
+    "Reconcile post-cutoff messages and update CHANGELOG.md after a successful user-visible release."
+  ],
+  "risks": [
+    "BUG-055 and BUG-056 remain deferred production-composition test gaps and must not be represented as resolved by deployment alone.",
+    "A local Vite build does not prove that Vercel will accept the repaired hosted-function set; Production verification remains required."
+  ],
+  "redactions": {
+    "count": 0
+  }
+}

@@ -58,10 +58,10 @@ function bound(id, threadId) {
   });
 }
 
-test("the checked-in registry and glossary are valid and reserve 02 next", () => {
+test("the checked-in registry and glossary are valid and reserve 03 next", () => {
   const result = validateSessionRegistry(actualRegistry, actualGlossary);
-  assert.equal(result.sessions.length, 1);
-  assert.equal(result.nextId, "SAI00000002");
+  assert.equal(result.sessions.length, 2);
+  assert.equal(result.nextId, "SAI00000003");
 });
 
 test("duplicate reservations are rejected", () => {

@@ -11,6 +11,7 @@ This glossary is the human-readable index for coded development sessions. The ap
 | SAI ID | Exact chat title | Status | Project | Purpose | Codex thread | Archive |
 | --- | --- | --- | --- | --- | --- | --- |
 | `SAI00000001` | `Bonsai Chat SAI00000001` | Active | heyScottyBro | Workspace governance; Planner and Today improvements; Frodo reliability; session identity system | `01a0ea22-5d76-7502-a006-a16c39e7c228` | [Summary](2026/2026-09-28-01a0ea22-identify-project-purpose/SESSION_SUMMARY.md) |
+| `SAI00000002` | `Bonsai Chat SAI00000002` | Active | heyScottyBro | Release the validated 12-function repair to Vercel Production and verify Today/Frodo | `01a0ed47-5171-74d2-9227-ef3782f9356f` | [Summary](2026/2026-09-29-SAI00000002/SESSION_SUMMARY.md) |
 
 ## Status glossary
 

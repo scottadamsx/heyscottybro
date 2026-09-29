@@ -748,3 +748,29 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** Deferred by Scott on 2026-09-29. This entry records validation debt only; it does not establish a known production behavior defect.
 - **Regression coverage:** None yet. Existing coordinator tests must not be described as direct production-composition coverage.
 - **Related work:** `docs/features/frodo-mobile-chat-reliability.md`.
+
+### BUG-057 — Vercel function limit blocks every production deployment after Kiwi tasks
+
+- **Status:** Resolved locally — production release pending
+- **Discovered:** 2026-09-29
+- **Area:** Vercel deployment and Kiwi shared-tasks routing
+- **Observed:** The live alias remains on successful commit `b1cb1b6`. Vercel Production deployments for `76f4473`, Frodo `0760393`, and current `d24492f` failed and were not promoted.
+- **Expected:** Pushing approved work to `main` produces a successful Vercel Production deployment without removing Kiwi shared tasks.
+- **Impact:** The committed Today dashboard and Frodo reliability work are absent from production even though they are present on local and remote `main`.
+- **Cause:** Commit `76f4473` added `api/kiwi-tasks.js`, increasing non-underscore deployable `api/*.js` entries from the Vercel Hobby limit of 12 to 13. Local Vite builds do not enforce this hosted-function limit.
+- **Fix:** `/api/kiwi-tasks` now rewrites to the existing `/api/fetch` entry with an explicit internal marker. The Kiwi implementation lives in underscore-prefixed `api/_kiwi-tasks.js`, and unmarked fetch requests retain the existing behavior.
+- **Regression coverage:** The combined Kiwi, route-selection, exact-rewrite, and function-count suite passes 10/10; all 264 repository tests, full zero-warning ESLint, the production build, registry validation, and `git diff --check` pass.
+- **Related work:** `docs/features/vercel-function-limit-repair.md`.
+
+### BUG-058 — Session-registry regression hard-codes the seed-session count
+
+- **Status:** Resolved
+- **Discovered:** 2026-09-29
+- **Area:** Development session registry validation test
+- **Observed:** `npm run session-registry:check` accepts the current two-session registry and selects `SAI00000003`, but the full test suite fails because `scripts/session-registry.test.js` still expects exactly one ID and `SAI00000002` next.
+- **Expected:** The checked-in registry regression verifies the current valid projection without becoming false as the Project Manager appends correctly ordered sessions.
+- **Impact:** The full repository suite reports 263/264 even though the registry validator and every Vercel-repair regression pass.
+- **Cause:** The seed-session test encoded the then-current count and next ID as permanent invariants before `SAI00000002` was validly reserved and activated.
+- **Fix:** Updated the checked-in registry fixture expectation to two registered sessions and `SAI00000003` next. All append-only registry events and the separate collision, gap, binding, title, and glossary cases remain unchanged.
+- **Regression coverage:** The focused registry suite passes 7/7, registry validation selects `SAI00000003`, and all 264 repository tests pass.
+- **Related work:** `docs/features/bonsai-development-session-identities.md`.

@@ -1,3 +1,4 @@
+/** Internal Kiwi shared-tasks handler, routed through api/fetch.js on Vercel. */
 import { createHash } from 'node:crypto';
 import { remindersForDay, undatedReminders } from '../src/utils/plannerUtils.js';
 

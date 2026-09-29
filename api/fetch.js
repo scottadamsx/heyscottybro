@@ -3,6 +3,13 @@
  * (avoids browser CORS) and returns readable text. Auth-gated like /api/chat.
  */
 import { parseBody, verifySupabaseUser } from "./_utils.js";
+import { createHandler as createKiwiTasksHandler } from "./_kiwi-tasks.js";
+
+export const KIWI_TASKS_ROUTE = "kiwi-tasks";
+
+export function isKiwiTasksRequest(req) {
+  return req.query?.__hsp_route === KIWI_TASKS_ROUTE;
+}
 
 function htmlToText(html) {
   return html
@@ -16,7 +23,7 @@ function htmlToText(html) {
     .replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
 }
 
-export default async function handler(req, res) {
+async function fetchPageHandler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   if (!(await verifySupabaseUser(req))) return res.status(401).json({ error: "Not authenticated" });
 
@@ -56,3 +63,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
+export function createHandler({ kiwiTasksHandler = createKiwiTasksHandler() } = {}) {
+  return async function handler(req, res) {
+    if (isKiwiTasksRequest(req)) return kiwiTasksHandler(req, res);
+    return fetchPageHandler(req, res);
+  };
+}
+
+export default createHandler();

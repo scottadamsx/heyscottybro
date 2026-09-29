@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHandler, todayInStJohns, taskInput } from '../../api/kiwi-tasks.js';
+import { createHandler, todayInStJohns, taskInput } from '../../api/_kiwi-tasks.js';
+import { createHandler as createFetchHandler } from '../../api/fetch.js';
 const env = { SUPABASE_URL: 'https://example.supabase.co', SUPABASE_ANON_KEY: 'sb_publishable_test' };
 const requestId = '12345678-1234-4123-8123-123456789012';
 const rows = [];
@@ -78,4 +79,23 @@ test('canonical Today also returns undated tasks under Anytime', async () => {
   await fn({ method: 'GET', headers: { authorization: 'Bearer a' } }, res);
   assert.equal(res.data.tasks.length, 0);
   assert.equal(res.data.anytime[0].name, 'Buy shampoo');
+});
+
+test('fetch entry dispatches only explicitly marked requests to Kiwi', async () => {
+  let routed = 0;
+  const fetchHandler = createFetchHandler({ kiwiTasksHandler: async (req, res) => {
+    routed += 1;
+    return res.status(207).json({ config: req.query.config });
+  } });
+  const response = () => ({ setHeader() {}, status(n) { this.code = n; return this; }, json(data) { this.data = data; return this; } });
+
+  const marked = response();
+  await fetchHandler({ method: 'GET', query: { __hsp_route: 'kiwi-tasks', config: '1' }, headers: {} }, marked);
+  assert.equal(marked.code, 207);
+  assert.equal(marked.data.config, '1');
+
+  const unmarked = response();
+  await fetchHandler({ method: 'GET', query: { config: '1' }, headers: {} }, unmarked);
+  assert.equal(unmarked.code, 405);
+  assert.equal(routed, 1);
 });

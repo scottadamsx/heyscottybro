@@ -4,6 +4,8 @@ Kiwi now connects to the existing Hey Scotty Bro account and uses canonical `rem
 
 The endpoint verifies the user's access token with Supabase, performs every database call using that token plus the public project key, and scopes reads and writes to the verified user ID. Today uses America/St_Johns and existing recurrence expansion, with undated tasks separately labeled Anytime. Reads cap candidate rows at 500 and return a visible error above that cap, rather than silently omitting tasks; each output section is capped at 100 with a truncation indicator.
 
+The public path remains `/api/kiwi-tasks`. On Vercel it is rewritten to the existing `/api/fetch` serverless entry and dispatched to the internal Kiwi handler. This keeps the Hobby deployment within its 12-function limit without changing Kiwi's request or response contract.
+
 Creation supports one-time tasks only. A UUID request ID and authenticated user ID derive the canonical reminder ID. Repeated delivery returns the existing record; changed input with the same ID is rejected. Kiwi coalesces concurrent identical commands and retains uncertain write IDs in memory for retry. Retry the identical command while connected after an uncertain result. Disconnecting, quitting, or session expiry clears that memory: check Hey Scotty Bro before re-adding an uncertain task afterward. Cancellation cannot undo a write already accepted by the server.
 
 ## Setup and verification

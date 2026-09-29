@@ -40,8 +40,8 @@ Nothing was written. Anything marked *inferred* comes from code with no SQL behi
 | Live tables/views in the Supabase project | 60, of which 27 belong to **Calendula** (same project, `calendula_*`) |
 | Largest data sets | `agent_actions` 766 · `brain_links` 1,585 · `brain_nodes` 533 · `reminders` 134 · `hiker_members` 116 · `events` 68 · `bugs` 55 |
 | Storage buckets | `documents` (50 MB limit), `receipts`, `nutrition`, `bug-screenshots` (all private) |
-| Serverless endpoints | 11 committed, plus 1 untracked (`api/kiwi-tasks.js`) |
-| Tests | 10 test files, plain `node` / `node --test`, logic only (no UI tests) |
+| Serverless endpoints | 12 deployable entries; `/api/kiwi-tasks` shares the `/api/fetch` function through a rewrite |
+| Tests | 264 registered tests, plain `node` / `node --test` |
 | Decision ledger | `ledger.jsonl`, DR-000 … DR-016 (the rebuild continues at **DR-017**) |
 
 ---
@@ -454,14 +454,14 @@ The Library tools, plus:
 | Endpoint | Auth | What it does |
 |---|---|---|
 | `/api/chat`, `/api/briefing` | Supabase JWT | Anthropic proxy with model allowlist and token cap |
-| `/api/fetch` | JWT | Server-side URL fetch; returns up to 12,000 characters of text. Partial SSRF guard. |
+| `/api/fetch` | JWT | Server-side URL fetch; returns up to 12,000 characters of text. Partial SSRF guard. Also hosts the internally routed Kiwi handler. |
 | `/api/anthropic-usage` | JWT | Admin usage and cost API (`ANTHROPIC_ADMIN_KEY`) |
 | `/api/doc-share` | **Share token only** | Service role; returns a 1-hour signed URL |
 | `/api/send-share-email`, `/api/send-to-me` | JWT | Resend email; send-to-me only mails the caller's own address |
 | `/api/overseer-run` | `CRON_SECRET`, **open if that secret is unset** | Daily summary note in the Brain, plus the morning-brief email |
 | `/api/inbox-sync` / `inbox-send` / `inbox-read` | Cron secret or JWT | Gmail (`gmail.modify` + `gmail.send`, one global refresh token) ↔ `messages` |
 | `/api/brain-vault` | JWT | Production stub (501). The vault sync is dev-only. |
-| `/api/kiwi-tasks` *(untracked)* | JWT; `?config=1` is public | Kiwi desktop app reads today's tasks and adds one-off tasks. Runs under RLS with the user's own token; idempotent ids. |
+| `/api/kiwi-tasks` | JWT; `?config=1` is public | Kiwi desktop app reads today's tasks and adds one-off tasks. Rewrites to `/api/fetch` so it does not consume a thirteenth Vercel function; runs under RLS with the user's own token and uses idempotent ids. |
 
 - **Hosting (`vercel.json`):** SPA rewrites; security headers; crons `overseer-run` at 11:00 UTC and `inbox-sync` at 12:00 UTC.
 - **Dev (`vite.config.js`):** stand-ins for `/api/*`. The dev Anthropic proxy has **no auth, allowlist or token cap**. The dev fetch has no SSRF guard. The dev endpoint `/api/aule-control` starts and stops the agent server.
@@ -562,7 +562,7 @@ The Library tools, plus:
 - **Before retiring the Vault:** export `snippets` (secrets) and `documents` (files).
 - **Before moving people data to Orbit:** export `hiker_members`.
 - **Legacy redirects** are due for removal around 2026-10-03.
-- **Kiwi integration** (`api/kiwi-tasks.js`) is uncommitted work from another session. It is a second external client of `reminders`, next to Calendula.
+- **Kiwi integration** (`api/_kiwi-tasks.js`, publicly routed as `/api/kiwi-tasks`) is a second external client of `reminders`, next to Calendula.
 
 ---
 

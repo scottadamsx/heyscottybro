@@ -67,6 +67,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/kiwi-tasks",
+      "destination": "/api/fetch?__hsp_route=kiwi-tasks"
+    },
+    {
       "source": "/api/orbit/:path*",
       "destination": "/api/orbit?__orbit=:path*"
     },

@@ -23,6 +23,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Production deployment now stays within Vercel's serverless-function limit while preserving the public Kiwi shared-tasks endpoint, allowing the committed Today and Frodo updates to reach the live app.
 - Chat screenshots can survive reload through private signed previews, still reach Frodo when staging fails, reject undecodable HEIC honestly, move into canonical bug evidence when claimed, and clean up only after the durable session is cleared.
 - Frodo's task claims require a successful current-turn reminders query; Life › Habits knowledge now comes from one shared tested contract.
 - Bug logging now checks canonical open reports before creating, fails closed when lookup fails, merges duplicate evidence safely, and rolls back partial copies/rows on failure.
