@@ -7,6 +7,7 @@ import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 import { useHiddenPages } from "../../utils/settings";
+import usePageUsageTracker from "../../hooks/usePageUsageTracker";
 
 // Frodo's panel (and the whole agent stack behind it) loads alongside the page instead of
 // holding up the first paint of every admin page.
@@ -24,6 +25,7 @@ export const NAV_ITEMS = [
   { to: "/admin/life",      icon: "fa-heart-pulse",     label: "Life" },
   { to: "/admin/health",    icon: "fa-dumbbell",        label: "Health" },
   { to: "/admin/people",    icon: "fa-user-group",      label: "People" },
+  { to: "/admin/analytics", icon: "fa-chart-line",      label: "Analytics" },
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
 ];
@@ -46,6 +48,7 @@ export default function AdminLayout() {
   const outlet = useOutlet();
   const hiddenPages = useHiddenPages();
   const navItems = NAV_ITEMS.filter((item) => !hiddenPages.includes(item.to));
+  usePageUsageTracker();
 
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);   // phone/tablet sidebar

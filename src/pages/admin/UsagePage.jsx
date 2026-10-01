@@ -5,6 +5,7 @@ import { getAgent } from "../../agents/registry";
 import { StatTile } from "../../components/ui";
 import "./mission.css";
 import { PageSkeleton } from "../../components/Skeleton";
+import { ANALYTICS_RANGES, inAnalyticsRange, localDateKey } from "../../utils/analytics";
 
 const dollars = (cents) => "$" + (Number(cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function tokens(n) {
@@ -30,31 +31,33 @@ function agentMeta(id) {
   return a ? { label: a.name, color: a.color, icon: a.icon } : { label: id, color: "var(--text-muted)", icon: "fa-robot" };
 }
 
-function digestActivity(actions) {
+function digestActivity(actions, range = "30d") {
+  const ranged = actions.filter((action) => inAnalyticsRange(action.created_at, range));
   const byTier = {}, byTool = {};
   let errors = 0;
   const dayMap = {};
-  // last 30 day skeleton
-  for (let i = 29; i >= 0; i--) {
+  const configuredDays = ANALYTICS_RANGES.find((item) => item.key === range)?.days;
+  const days = configuredDays || Math.min(90, Math.max(1, Math.ceil((Date.now() - Math.min(...ranged.map((a) => new Date(a.created_at).getTime()).filter(Number.isFinite), Date.now())) / 86400000) + 1));
+  for (let i = days - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    dayMap[d.toISOString().slice(0, 10)] = 0;
+    dayMap[localDateKey(d)] = 0;
   }
-  actions.forEach((a) => {
+  ranged.forEach((a) => {
     byTier[a.agent_id || "frodo"] = (byTier[a.agent_id || "frodo"] || 0) + 1;
     byTool[a.tool || "?"] = (byTool[a.tool || "?"] || 0) + 1;
     if (a.status === "error" || a.error) errors++;
-    const day = (a.created_at || "").slice(0, 10);
+    const day = localDateKey(a.created_at);
     if (day in dayMap) dayMap[day]++;
   });
   const daily = Object.entries(dayMap).map(([date, n]) => ({ date, n }));
   return {
-    total: actions.length,
+    total: ranged.length,
     errors,
     byTier: Object.entries(byTier).sort((a, b) => b[1] - a[1]),
     byTool: Object.entries(byTool).sort((a, b) => b[1] - a[1]).slice(0, 8),
     daily,
     maxDay: Math.max(1, ...daily.map((d) => d.n)),
-    recent: actions.slice(0, 10),
+    recent: ranged.slice(0, 10),
   };
 }
 
@@ -75,7 +78,7 @@ function digestCost(data) {
   return { totalCents, tokTotal, byModelCents: Object.entries(byModelCents).sort((a, b) => b[1] - a[1]) };
 }
 
-export default function UsagePage() {
+export default function UsagePage({ embedded = false, range = "30d" }) {
   const [actions, setActions] = useState([]);
   const [cost, setCost] = useState(null);
   const [status, setStatus] = useState("loading");
@@ -90,12 +93,13 @@ export default function UsagePage() {
   }, []);
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const a = useMemo(() => digestActivity(actions), [actions]);
+  const a = useMemo(() => digestActivity(actions, range), [actions, range]);
+  const rangeLabel = ANALYTICS_RANGES.find((item) => item.key === range)?.label || "30 days";
 
   return (
     <div className="module-page usage-page">
       <div className="module-header">
-        <h1>Claude usage</h1>
+        {embedded ? <h2>AI usage</h2> : <h1>Claude usage</h1>}
         <button type="button" className="btn btn-sm btn-secondary-sm" onClick={fetchAll} disabled={status === "loading"} aria-busy={status === "loading" || undefined}>
           <i className={`fa-solid ${status === "loading" ? "fa-spinner fa-spin" : "fa-rotate-right"}`} aria-hidden="true" /> Refresh
         </button>
@@ -115,9 +119,9 @@ export default function UsagePage() {
           <section className="db-card">
             <div className="db-card-header">
               <h3 className="db-card-title">Activity</h3>
-              <span className="usage-card-meta">Last 30 days</span>
+              <span className="usage-card-meta">{rangeLabel}</span>
             </div>
-            <div className="usage-bars" role="img" aria-label={`Agent actions per day over the last 30 days, ${a.total} in total`}>
+            <div className="usage-bars" role="img" aria-label={`Agent actions per day over ${rangeLabel.toLowerCase()}, ${a.total} in total`}>
               {a.daily.map((day, i) => (
                 <div key={i} className="usage-bar-col" title={`${day.date}: ${day.n}`}>
                   <div className={`usage-bar${day.n ? "" : " is-zero"}`} style={{ height: `${Math.max(2, (day.n / a.maxDay) * 100)}%` }} />

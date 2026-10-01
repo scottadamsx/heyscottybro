@@ -17,7 +17,7 @@ const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined
 export function buildBrief({
   reminders = [], events = [], budget = null, upcomingBills = [],
   courses = [], courseStats = {}, deadlines = [],
-  agentActions = [], openBugs = null, unreadInbox = null,
+  agentActions = [], unreadInbox = null,
 }) {
   const todayStr = toDateStr(new Date());
   const active = reminders.filter((r) => !r.completed);
@@ -78,8 +78,7 @@ export function buildBrief({
   const dayAgo = Date.now() - 86400000;
   const recentActions = agentActions.filter((a) => new Date(a.created_at).getTime() > dayAgo);
   const staff = [];
-  if (recentActions.length) staff.push({ text: `${recentActions.length} agent action${recentActions.length === 1 ? "" : "s"} in the last 24h`, to: "/admin/mission" });
-  if (openBugs != null && openBugs > 0) staff.push({ text: `${openBugs} open bug${openBugs === 1 ? "" : "s"} / feature request${openBugs === 1 ? "" : "s"}`, to: "/admin/mission?tab=build" });
+  if (recentActions.length) staff.push({ text: `${recentActions.length} agent action${recentActions.length === 1 ? "" : "s"} in the last 24h`, to: "/admin/analytics?section=ai" });
   if (unreadInbox != null && unreadInbox > 0) staff.push({ text: `${unreadInbox} unread message${unreadInbox === 1 ? "" : "s"} in the AI Inbox`, to: "/admin/mission?tab=inbox", tone: "warn" });
 
   const sections = [

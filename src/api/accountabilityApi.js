@@ -23,6 +23,7 @@ import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
 import { cachedRead } from "./_cache";
 import { loadWorkLog, createWorkLog, deleteWorkLog } from "./workLogApi";
+import { tryRecordActivityEvent } from "./activityApi";
 
 export const ACCOUNTABILITY_SCHEMA = 2;
 const TABLE = "accountability_state";
@@ -246,11 +247,21 @@ async function unmirrorHabitFromWorkLog(tracker, date) {
  * unlogHabitDone to toggle off instead).
  */
 export async function logHabitDone(tracker, date) {
+  const logId = crypto.randomUUID();
   const next = await updateAccountability((d) => {
     // Doing it after all beats "missed it": the same-day miss goes.
     d.misses = d.misses.filter((m) => !(m.trackerId === tracker.id && m.date === date));
     if (tracker.mode === "check" && d.logs.some((l) => l.trackerId === tracker.id && l.date === date)) return;
-    d.logs.push({ id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() });
+    d.logs.push({ id: logId, trackerId: tracker.id, date, at: Date.now() });
+  });
+  if (next.logs.some((log) => log.id === logId)) void tryRecordActivityEvent({
+    idempotencyKey: `habit:log:${logId}`,
+    eventType: "habit.logged",
+    entityType: "habit",
+    entityId: tracker.id,
+    entityLabel: tracker.name || "Habit",
+    occurredAt: `${date}T12:00:00`,
+    metadata: { precision: "date_only" },
   });
   await mirrorHabitToWorkLog(tracker, date);
   return next;
@@ -271,13 +282,24 @@ export async function unlogHabitDone(tracker, date) {
  * log first) so a day can never read as both done and missed.
  */
 export async function logHabitMissed(tracker, date) {
-  return updateAccountability((d) => {
+  const missId = crypto.randomUUID();
+  const next = await updateAccountability((d) => {
     if (d.logs.some((l) => l.trackerId === tracker.id && l.date === date)) {
       throw new Error(`${tracker.name} is already logged for that day — remove the log before marking it missed.`);
     }
     if (d.misses.some((m) => m.trackerId === tracker.id && m.date === date)) return;
-    d.misses.push({ id: crypto.randomUUID(), trackerId: tracker.id, date, at: Date.now() });
+    d.misses.push({ id: missId, trackerId: tracker.id, date, at: Date.now() });
   });
+  if (next.misses.some((miss) => miss.id === missId)) void tryRecordActivityEvent({
+    idempotencyKey: `habit:miss:${missId}`,
+    eventType: "habit.missed",
+    entityType: "habit",
+    entityId: tracker.id,
+    entityLabel: tracker.name || "Habit",
+    occurredAt: `${date}T12:00:00`,
+    metadata: { precision: "date_only" },
+  });
+  return next;
 }
 
 /** Undo "Missed it" for one habit/day. */

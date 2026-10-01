@@ -764,13 +764,39 @@ Every discovered software defect belongs here, including defects found while bui
 
 ### BUG-058 — Session-registry regression hard-codes the seed-session count
 
-- **Status:** Resolved
+- **Status:** Reopened — deferred to Project Manager-owned session work
 - **Discovered:** 2026-09-29
 - **Area:** Development session registry validation test
-- **Observed:** `npm run session-registry:check` accepts the current two-session registry and selects `SAI00000003`, but the full test suite fails because `scripts/session-registry.test.js` still expects exactly one ID and `SAI00000002` next.
+- **Observed:** The earlier one-to-two-session correction passed when made, but the same regression recurred after the Project Manager validly added `SAI00000003`: `npm run session-registry:check` accepts three sessions and selects `SAI00000004`, while the registered suite still expects two sessions.
 - **Expected:** The checked-in registry regression verifies the current valid projection without becoming false as the Project Manager appends correctly ordered sessions.
-- **Impact:** The full repository suite reports 263/264 even though the registry validator and every Vercel-repair regression pass.
-- **Cause:** The seed-session test encoded the then-current count and next ID as permanent invariants before `SAI00000002` was validly reserved and activated.
-- **Fix:** Updated the checked-in registry fixture expectation to two registered sessions and `SAI00000003` next. All append-only registry events and the separate collision, gap, binding, title, and glossary cases remain unchanged.
-- **Regression coverage:** The focused registry suite passes 7/7, registry validation selects `SAI00000003`, and all 264 repository tests pass.
+- **Impact:** The current registered suite reports 279/280 even though the authoritative registry validator, feature regressions, lint, and build pass.
+- **Cause:** The checked-in projection test still encodes the then-current session count and next ID as permanent invariants, so every valid Project Manager reservation makes it stale again.
+- **Fix:** The prior one-time expectation update is insufficient. A durable fix must assert projection consistency from the append-only records without hard-coding a count that changes during normal Project Manager operation. That separate governance change is not authorized by the current product feature and remains deferred.
+- **Regression coverage:** The authoritative registry check passes with three IDs and `SAI00000004` next; the six invariant-focused registry cases still pass. The one stale projection case fails as recorded and was not silently edited.
 - **Related work:** `docs/features/bonsai-development-session-identities.md`.
+
+### BUG-059 — Saved Frodo image previews had no expiry recovery
+
+- **Status:** Resolved locally; not released
+- **Discovered:** 2026-10-01
+- **Area:** Frodo saved attachment rendering
+- **Observed:** A user reports unusable chat photos. Current saved attachments hydrate to one-hour signed URLs, but the rendered image has no failure handler, URL refresh, or explicit unavailable state once that URL expires or fails.
+- **Expected:** Owner-scoped saved images remain viewable through bounded signed-URL renewal, or the attachment shows an honest accessible failure with retry instead of a broken image.
+- **Impact:** A valid private attachment can become unusable while its chat remains open, preventing the user and Frodo from relying on the visible evidence.
+- **Cause:** The metadata and signing layers exist, but the assembled `ChatBot` rendering boundary treats the first hydrated signed URL as permanent for that mounted session. The exact reported failure instance has not been reproduced with a fresh private upload.
+- **Fix:** Active chat attachment operations now use a neutral storage module. Saved previews perform one bounded owner-checked re-sign after image failure, preserve metadata, and show an accessible retryable fallback when refresh still fails.
+- **Regression coverage:** Attachment tests cover metadata-only serialization, saved hydration, individual failure, successful refresh, invalid/unavailable path failure, cleanup, and owner/path boundaries. An assembled `ChatBot` source-boundary regression covers local and saved preview rendering; broader direct-composition debt remains `BUG-055`.
+- **Related work:** `docs/features/frodo-people-analytics-activity.md`; `docs/features/frodo-mobile-chat-reliability.md`.
+
+### BUG-060 — AI event matching could append unintended People attendees
+
+- **Status:** Resolved locally in Orbit commit `c5a1b8a` and synchronized; not released
+- **Discovered:** 2026-10-01
+- **Area:** People / Orbit AI event logging
+- **Observed:** A stored Workout event contains one attendee the user says belongs to a different gym visit. Manual event creation/edit state, event IDs, storage rows, and retrieval are isolated in the inspected paths, while the AI tool deliberately appends supplied people to a similar same-day event unless it is told the occasion differs.
+- **Expected:** Similar date, kind, or title never causes an attendee to be added to an existing event without an explicit merge intention.
+- **Impact:** Relationship history and downstream People analytics can attribute an interaction to the wrong person.
+- **Cause:** Exact historical provenance is unavailable because the event row has no immutable source/before-after audit. Current code establishes a plausible unsafe merge path but does not prove which writer created this particular bad attendee.
+- **Fix:** Orbit's `log_event` now keeps similar occasions separate by default and reuses an event only when `merge_occasion` is explicit and `different_occasion` is false. The manual Edit/confirmed Delete flow remains unchanged. Scott approved the presented source commit with exact **“go commit,”** Orbit commit `c5a1b8a` satisfies the `DR-017` source-before-sync boundary, and the read-only copy now identifies that commit.
+- **Regression coverage:** Orbit verifies separate-by-default, explicit merge, duplicate explicit merge, and `different_occasion`; the full sibling suite passes 136/136. The synchronized tool is byte-identical to commit `c5a1b8a`, and the main repository's 51-test affected set passes. Existing integrity/storage tests and rendered inspection cover the preserved manual flow; no production event was edited or deleted.
+- **Related work:** `docs/features/frodo-people-analytics-activity.md`; `DR-017`.

@@ -18,6 +18,7 @@ const PeoplePage      = lazy(() => import("./PeoplePage.jsx"));
 const HealthPage      = lazy(() => import("./HealthPage.jsx"));
 const WorkoutSessionPage = lazy(() => import("./WorkoutSessionPage.jsx"));
 const MissionPage     = lazy(() => import("./MissionPage.jsx"));
+const AnalyticsPage   = lazy(() => import("./AnalyticsPage.jsx"));
 const BudgetPage      = lazy(() => import("./BudgetPage.jsx"));
 const VaultPage       = lazy(() => import("./VaultPage.jsx"));
 const SettingsPage    = lazy(() => import("./SettingsPage.jsx"));
@@ -48,6 +49,7 @@ export const ADMIN_PAGES = [
   { path: "people/*",     title: "People",          icon: "fa-user-group",      element: <PeoplePage /> },
   { path: "arcade",       title: "Arcade",          icon: "fa-gamepad",         element: <ArcadePage /> },
   { path: "mission",      title: "Mission Control", icon: "fa-satellite-dish",  element: <MissionPage /> },
+  { path: "analytics",    title: "Analytics",       icon: "fa-chart-line",      element: <AnalyticsPage /> },
   { path: "vault",        title: "Vault",           icon: "fa-vault",           element: <VaultPage /> },
   { path: "settings",     title: "Settings",        icon: "fa-gear",            element: <SettingsPage /> },
   { path: "read/*",       title: "Brain",           icon: "fa-brain",           element: <BrainReaderPage /> },

@@ -27,7 +27,6 @@ import {
 } from "./plannerApi";
 import { loadMembers, deleteMember } from "./hikerApi";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "./snippetsApi";
-import { loadBugs, createBug, updateBug, deleteBug } from "./bugsApi";
 import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode, deleteNode as deleteBrainNode } from "./brainApi";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
 import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./workLogApi";
@@ -267,23 +266,6 @@ const COLLECTIONS = {
       ? { ...row, value: "[secret — withheld; re-query with reveal: true if Scott asked for it]" }
       : row),
     load: getSnippets, create: createSnippet, update: updateSnippet, remove: deleteSnippet,
-  },
-  bugs: {
-    table: "bugs",
-    description: "Bug & feature-request tracker (Tools › Bugs). type 'bug' logs an app issue, type 'feature' logs a feature request. Track status open → resolved. Use export_bugs to download a zip report. Screenshots are added by Scott in the UI.",
-    searchFields: ["title", "description", "page"],
-    defaultFields: ["id", "title", "type", "page", "priority", "status", "created_at"],
-    fields: {
-      title: { type: "string", required: true },
-      type: { type: "enum", values: ["bug", "feature"] },
-      description: { type: "string", long: true },
-      steps: { type: "string", long: true },
-      page: { type: "string" },
-      priority: { type: "enum", values: ["low", "medium", "high", "critical"] },
-      status: { type: "enum", values: ["open", "in_progress", "resolved", "closed"], updateOnly: true },
-      notes: { type: "string", long: true, updateOnly: true },
-    },
-    load: loadBugs, create: createBug, update: updateBug, remove: deleteBug,
   },
   work_log: {
     table: "work_log",

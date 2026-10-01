@@ -1,6 +1,15 @@
 # Active work
 
-**Last updated:** 2026-09-29
+**Last updated:** 2026-10-01
+
+## Frodo previews, People integrity, analytics, and activity history
+
+- **Feature document:** `docs/features/frodo-people-analytics-activity.md`
+- **Requested scope:** Diagnose and plan Frodo image previews, People event isolation/edit/delete, obsolete-page removal, truthful cross-domain analytics, reusable Activity History, and honest page-usage telemetry.
+- **Approval:** Scott approved the recorded contract and pseudocode with exact **“go”** on 2026-10-01. The listed application implementation and additive migration files are authorized. Dependencies, production migration application, production-data changes, commit, push, deployment, deletion, and live AI/API calls remain unauthorized.
+- **Current state:** `SAI00000003` is active. Orbit commit `c5a1b8a` is clean and synchronized; the copied tool matches source. Final local gates pass: 48/48 feature tests, 51/51 synchronized focused tests, 136/136 Orbit tests, lint, build, registry, whitespace, and authenticated desktop/390-pixel checks. The registered suite remains 279/280 only because of reopened `BUG-058`. Scott approved the presented 45-file main commit with exact **“go commit.”**
+- **Next permitted work:** Create and verify only the approved main commit `Add private analytics and retire obsolete admin surfaces`. Stop before any push, production migration/write/delete, or deployment without its separate exact approval.
+- **Data restrictions:** Use real stored-record capabilities only, never fabricate historical telemetry, never expose private journal/chat contents in analytics metadata, and never use the dead `bugs` collection.
 
 ## Vercel function-limit repair
 

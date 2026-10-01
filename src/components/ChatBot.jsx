@@ -3,13 +3,14 @@ import { renderMarkdown } from "../utils/markdown";
 import MarkdownBody from "./MarkdownBody";
 import useAIAgent, { MAX_INPUT_CHARS } from "../hooks/useAIAgent";
 import { TIERS } from "../api/aiTiers";
-import { stageScreenshot } from "../api/bugsApi";
+import { signChatAttachment, stageChatAttachment } from "../api/chatAttachmentStorage";
 import { readDataUrl, normaliseImage } from "../utils/image";
 import {
   canBeginAttachmentSafeClear,
   canSendOriginalImage,
   chatAttachmentDraftAfterClear,
   hasPendingAttachmentWork,
+  refreshSavedAttachmentPreview,
   undecodableImageMessage,
   visionAttachmentsFromShots,
 } from "../utils/chatAttachments";
@@ -30,6 +31,43 @@ import { registerFrodoHistoryController } from "../utils/globalChatHistory";
 
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function SavedAttachmentPreview({ initialPreview, index }) {
+  const [preview, setPreview] = useState(initialPreview);
+  const refreshingRef = useRef(false);
+
+  useEffect(() => { setPreview(initialPreview); }, [initialPreview]);
+
+  const refresh = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setPreview((current) => ({ ...current, status: "refreshing" }));
+    const next = await refreshSavedAttachmentPreview(preview, (path) => signChatAttachment(path, 3600));
+    refreshingRef.current = false;
+    setPreview(next);
+  }, [preview]);
+
+  const onImageError = () => {
+    if ((preview.refreshCount || 0) === 0) refresh();
+    else setPreview((current) => ({ ...current, src: "", status: "unavailable", error: current.error || "The saved image preview expired." }));
+  };
+
+  return (
+    <div className="chat-shot">
+      {preview.status === "ready" && preview.src ? (
+        <img src={preview.src} alt={`attached screenshot ${index + 1}`} onError={onImageError} />
+      ) : preview.status === "refreshing" ? (
+        <span className="chat-shot-spin" role="status" aria-label={`Refreshing attached screenshot ${index + 1}`}><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /></span>
+      ) : (
+        <button type="button" className="chat-shot-error" onClick={refresh} aria-label={`Retry attached screenshot ${index + 1}`}>
+          <i className="fa-solid fa-image" aria-hidden="true" />
+          <span>Preview unavailable</span>
+          <span>Retry</span>
+        </button>
+      )}
+    </div>
+  );
+}
 
 function useMediaQuery(query) {
   const read = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(query).matches;
@@ -201,11 +239,10 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
     autoGrow();
   };
 
-  // Stage dropped/pasted images to storage so Frodo's log_bug can claim them.
+  // Stage dropped/pasted images so private previews survive a reload.
   // A failed upload no longer discards the image: Frodo can still SEE it (the
-  // bytes are already in the browser), he just can't permanently attach it to a
-  // bug report. Silently dropping the shot is what made him say "I can't see
-  // any image" after Scott had clearly attached one.
+  // bytes are already in the browser). Silently dropping the shot is what made
+  // him say "I can't see any image" after Scott had clearly attached one.
   const addFiles = async (fileList) => {
     if (clearing || clearInFlightRef.current) return false;
     const files = [...fileList].filter((f) => f.type.startsWith("image/") || /\.(hei[cf])$/i.test(f.name || ""));
@@ -265,7 +302,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           : shot)));
 
         try {
-          const metadata = await stageScreenshot(file, {
+          const metadata = await stageChatAttachment(file, {
             name: original.name || file.name,
             size: original.size,
           });
@@ -277,7 +314,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           setShots((prev) => prev.map((shot) => (shot.id === id
             ? { ...shot, uploading: false, failed: true }
             : shot)));
-          addToast(`${err.message || "Screenshot upload failed."} Frodo can still see it, but it won't attach to a bug report.`, "error");
+          addToast(`${err.message || "Screenshot upload failed."} Frodo can still see it for this turn, but the preview won't survive a reload.`, "error");
         }
       } finally {
         attachmentWorkRef.current -= 1;
@@ -482,12 +519,12 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           <div ref={messagesRef} className="chat-messages" tabIndex={0} aria-label="Conversation with Frodo" {...chatLogA11y}>
             {displayMsgs.length === 0 && (
               <div className="chat-empty">
-                <p>Hi, I'm <strong>Frodo</strong> — your planner sidekick. I can read and change anything. Try:</p>
+                <p>Hi, I'm <strong>Frodo</strong> — your planner sidekick. I can help across your personal HQ. Try:</p>
                 <ul>
                   <li>"List my projects as a table"</li>
-                  <li>Drag a <strong>screenshot</strong> in and say "log this bug"</li>
+                  <li>Attach a <strong>photo</strong> and ask me to inspect it</li>
                   <li>"Fetch example.com and summarise it"</li>
-                  <li>"Export my bugs"</li>
+                  <li>"What should I focus on today?"</li>
                 </ul>
               </div>
             )}
@@ -504,15 +541,15 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
                   </div>
                 );
               }
-              // Live session: thumbnails of what was attached. After a reload
-              // only the `shots` count survives, so the "N screenshot(s)"
-              // text carries the meaning instead.
+              const previews = m.imagePreviews || (m.images || []).map((src, j) => ({
+                ...(m.attachments?.[j] || {}), src, status: "ready", refreshCount: 0,
+              }));
               return (
                 <div key={i} className="chat-msg user">
-                  {m.images?.length > 0 && (
+                  {previews.length > 0 && (
                     <div className="chat-shots">
-                      {m.images.map((src, j) => (
-                        <div key={j} className="chat-shot"><img src={src} alt={`attached screenshot ${j + 1}`} /></div>
+                      {previews.map((preview, j) => (
+                        <SavedAttachmentPreview key={preview.path || j} initialPreview={preview} index={j} />
                       ))}
                     </div>
                   )}
@@ -543,7 +580,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           {shots.length > 0 && (
             <div className="chat-shots">
               {shots.map((s) => (
-                <div key={s.id} className={`chat-shot${s.failed ? " failed" : ""}`} title={s.error || (s.failed ? "Upload failed — Frodo can still see this, but it won't attach to a bug report." : undefined)}>
+                    <div key={s.id} className={`chat-shot${s.failed ? " failed" : ""}`} title={s.error || (s.failed ? "Upload failed — Frodo can still see this now, but the image won't be available after reload." : undefined)}>
                   {s.dataUrl
                     ? <img src={s.dataUrl} alt="screenshot" />
                     : <span className="chat-shot-error"><i className="fa-solid fa-file-image" /> JPEG or PNG needed</span>}

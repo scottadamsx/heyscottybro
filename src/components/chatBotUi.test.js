@@ -14,6 +14,7 @@ import {
 
 const indexCss = readFileSync(new URL("../index.css", import.meta.url), "utf8");
 const systemCss = readFileSync(new URL("../styles/system.css", import.meta.url), "utf8");
+const chatBotSource = readFileSync(new URL("./ChatBot.jsx", import.meta.url), "utf8");
 
 test("the Frodo modal breakpoint includes 900px but preserves desktop at 901px", () => {
   assert.equal(CHAT_MODAL_MEDIA, "(max-width: 900px)");
@@ -98,4 +99,12 @@ test("bottom scrolling supports containers without scrollTo", () => {
   const scroller = { scrollHeight: 720, scrollTop: 0 };
   scrollChatToBottom(scroller);
   assert.equal(scroller.scrollTop, 720);
+});
+
+test("assembled Frodo rendering covers local and saved attachment previews", () => {
+  assert.match(chatBotSource, /<img src=\{s\.dataUrl\} alt="screenshot"/, "pre-send attachments must render from local normalized bytes");
+  assert.match(chatBotSource, /<SavedAttachmentPreview key=\{preview\.path \|\| j\}/, "hydrated messages must use the saved-preview boundary");
+  assert.match(chatBotSource, /onError=\{onImageError\}/, "saved image-element failures must enter recovery");
+  assert.match(chatBotSource, /refreshSavedAttachmentPreview\(preview, \(path\) => signChatAttachment\(path, 3600\)\)/, "recovery must re-sign the owner-checked stored path");
+  assert.match(chatBotSource, /aria-label=\{`Retry attached screenshot/, "persistent failure must expose an accessible retry");
 });

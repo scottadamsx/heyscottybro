@@ -23,13 +23,6 @@ import { supabase, getAuthHeaders } from "../utils/supabase";
 import { lazyImport } from "../lib/lazyImport";
 import { uid } from "./_base";
 import { captureEstablishedOwnerId, runOwnerBoundOperation } from "../utils/authIdentityBoundary";
-import {
-  bugReportRollbackError,
-  createKeyedMutex,
-  findCanonicalOpenReport,
-  mergeBugDescription,
-  mergeUniqueScreenshotPaths,
-} from "../utils/bugDedup";
 
 // ── Brain write policy ───────────────────────────────────────────────────────
 // The Brain is single-writer by design: Bilbo (the Archivist) is its keeper and
@@ -56,15 +49,6 @@ function brainWriteDenial(name, input, caller) {
   return null;
 }
 
-// ── Duplicate-report detection (log_bug) ─────────────────────────────────────
-// Frodo files reports from conversation, where the same problem often comes up
-// twice within a few messages ("log that" … then a follow-up). Rather than
-// trusting him to re-read his own history, log_bug checks for an open report
-// that already covers the ground and updates it. Deliberately cheap and
-// conservative: word-overlap on the title, plus a page match — near-misses
-// create a new report, which is the safer failure.
-const PRIORITY_RANK = { low: 0, medium: 1, high: 2, critical: 3 };
-const withBugReportLock = createKeyedMutex();
 
 async function logAction({ agentId, tool, input, result, ownerId }) {
   try {
@@ -186,30 +170,6 @@ export const TOOLS = [
     },
   },
   { name: "clear_all_hikers", description: "Delete ALL hikers. Only after explicit confirmation.", input_schema: { type: "object", properties: { confirmed: { type: "boolean" } }, required: ["confirmed"] } },
-  { name: "export_bugs", description: "Package every bug and feature request into a downloadable .zip — a Markdown report (report.md) plus all attached screenshots. Call this when Scott asks to export, download, or send his bugs/feature requests. The download starts in his browser automatically.", input_schema: { type: "object", properties: {} } },
-  {
-    name: "log_bug",
-    description:
-      "Create a bug report or feature request AND attach any screenshots Scott just dropped into the chat. ALWAYS use this (not create_item) when Scott shares a screenshot or describes something broken / something he wants added.\n\n" +
-      "A report is only useful if a developer can fix it WITHOUT coming back to ask questions, so EVERY entry must capture all five facets: the exact page, the specific element, the action Scott took, what he expected, and what actually happened. Never log something vague like \"button doesn't work\" — write it the way you'd want it written for you: \"clicking the 'Save' button on Settings doesn't persist the selected colour theme to localStorage.\"\n\n" +
-      "Read any attached screenshot to fill these in accurately — name what you can see. If Scott didn't say one of the facets, infer the most likely value from the screenshot and the conversation rather than leaving it vague. For a feature request, reframe the last two: 'expected' = the behaviour Scott wants, 'actual' = how it works today.\n\n" +
-      "DUPLICATES: before logging, check whether you already filed this earlier in the conversation. The tool also checks for an open report covering the same ground and updates that one instead of creating a second — when the result says updated_existing, tell Scott you updated the existing report rather than claiming you filed a new one.",
-    input_schema: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Short, specific one-line summary — name the element and the problem, not just the area (e.g. \"Settings colour-theme toggle doesn't persist\", not \"Settings bug\")." },
-        type: { type: "string", enum: ["bug", "feature"], description: "'bug' for a defect, 'feature' for a request. Default 'bug'." },
-        page: { type: "string", description: "The exact page or area where this happens, e.g. 'Settings', 'Budget › Dashboard', 'Frodo chat'." },
-        element: { type: "string", description: "The specific UI element involved, named precisely — e.g. \"the 'Save' button\", \"the colour-theme dropdown\", \"the transactions table header\"." },
-        action: { type: "string", description: "The exact action Scott took, e.g. 'clicked Save', 'typed a date and pressed Enter', 'dragged a screenshot into the chat'." },
-        expected: { type: "string", description: "What SHOULD have happened. For a feature request, the behaviour Scott wants." },
-        actual: { type: "string", description: "What ACTUALLY happened — the broken result or any error text. For a feature request, how it works today." },
-        steps: { type: "string", description: "Full numbered steps to reproduce, when there's more to it than the single action above (optional)." },
-        priority: { type: "string", enum: ["low", "medium", "high", "critical"] },
-      },
-      required: ["title", "page", "element", "action", "expected", "actual"],
-    },
-  },
   { name: "web_fetch", description: "Fetch a web page or API URL and return its title + readable text (truncated). Use when Scott shares a link, asks you to read/check a page, or look something current up by URL.", input_schema: { type: "object", properties: { url: { type: "string", description: "Full http(s) URL" } }, required: ["url"] } },
   { name: "link_brain_nodes", description: "Connect two existing Brain notes in the knowledge graph (directed link source → target). Use real slugs from a brain query — don't invent them. Idempotent.", input_schema: { type: "object", properties: { source_slug: { type: "string" }, target_slug: { type: "string" } }, required: ["source_slug", "target_slug"] } },
   { name: "list_context", description: "Read all saved context facts about Scott. Call this before saving to avoid duplicates.", input_schema: { type: "object", properties: {} } },
@@ -341,106 +301,6 @@ async function runTool(name, input, toolContext) {
       return { success: true, logged: { weight_lb: Number(input.weight_lb), date } };
     }
     case "clear_all_hikers": if (!input.confirmed) return { error: "confirmed must be true" }; await clearAllMembers(); return { success: true };
-    case "export_bugs": { const { exportBugsZip } = await lazyImport(() => import("./bugsApi"), "the bug exporter"); const r = await exportBugsZip(); return { success: true, ...r }; }
-    case "log_bug": {
-      const {
-        claimStagedScreenshots,
-        createBug,
-        deleteBug,
-        loadBugs,
-        removeScreenshotPaths,
-        updateBug,
-      } = await lazyImport(() => import("./bugsApi"), "the bug tracker");
-      const { setPendingScreenshots, takePendingScreenshots } = await lazyImport(
-        () => import("./pendingScreenshots"),
-        "the screenshot staging area",
-      );
-      // Stitch the five required facets into one fix-ready description. Plain
-      // labelled lines render cleanly both in the Bugs page (pre-wrap text) and
-      // in the exported Markdown report.
-      const isFeature = input.type === "feature";
-      const description = [
-        ["Element", input.element],
-        ["Action", input.action],
-        [isFeature ? "Wanted" : "Expected", input.expected],
-        [isFeature ? "Today" : "Actual", input.actual],
-        ["Notes", input.description],
-      ].filter(([, v]) => v && String(v).trim())
-       .map(([k, v]) => `${k}: ${String(v).trim()}`)
-       .join("\n");
-      const type = input.type || "bug";
-      return withBugReportLock(`log_bug:${type}`, async () => {
-
-      // Do not create a row when canonical lookup is unavailable: that could
-      // silently duplicate a report and consume its pending evidence.
-      const existing = await findCanonicalOpenReport({
-        loadReports: loadBugs,
-        type,
-        incoming: { title: input.title, page: input.page, description },
-      });
-
-      if (existing) {
-        const shots = takePendingScreenshots(toolContext);
-        let claimed = [];
-        try {
-          claimed = await claimStagedScreenshots(existing.id, shots);
-          const patch = {};
-          const merged = mergeBugDescription(existing.description, description);
-          if (merged !== existing.description) patch.description = merged;
-          if (input.steps && !existing.steps) patch.steps = input.steps;
-          if (input.priority && PRIORITY_RANK[input.priority] > PRIORITY_RANK[existing.priority || "medium"]) {
-            patch.priority = input.priority;
-          }
-          if (claimed.length) {
-            patch.screenshots = mergeUniqueScreenshotPaths(existing.screenshots, claimed);
-          }
-          const updated = Object.keys(patch).length ? await updateBug(existing.id, patch) : existing;
-          return {
-            success: true, duplicate_of: existing.id, updated_existing: true,
-            id: updated.id, title: updated.title, type,
-            screenshots: (updated.screenshots || []).length,
-            note: `An open ${type === "feature" ? "feature request" : "bug"} already covered this ("${existing.title}"), so it was updated instead of filing a second one. Tell Scott that's what you did.`,
-          };
-        } catch (error) {
-          setPendingScreenshots(toolContext, shots);
-          const cleanupErrors = [];
-          if (claimed.length) {
-            try { await removeScreenshotPaths(claimed); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
-          }
-          throw bugReportRollbackError(error, { reportId: existing.id, cleanupErrors });
-        }
-      }
-
-      const bug = await createBug({
-        title: input.title, type,
-        description, steps: input.steps,
-        page: input.page, priority: input.priority || "medium",
-      });
-      const shots = takePendingScreenshots(toolContext);
-      let claimed = [];
-      try {
-        claimed = await claimStagedScreenshots(bug.id, shots);
-        const saved = claimed.length
-          ? await updateBug(bug.id, { screenshots: mergeUniqueScreenshotPaths(claimed) })
-          : bug;
-        return {
-          success: true,
-          id: saved.id,
-          title: saved.title,
-          type: saved.type || type,
-          screenshots: claimed.length,
-        };
-      } catch (error) {
-        setPendingScreenshots(toolContext, shots);
-        const cleanupErrors = [];
-        if (claimed.length) {
-          try { await removeScreenshotPaths(claimed); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
-        }
-        try { await deleteBug(bug.id); } catch (cleanupError) { cleanupErrors.push(cleanupError); }
-        throw bugReportRollbackError(error, { reportId: bug.id, cleanupErrors });
-      }
-      });
-    }
     case "web_fetch": {
       const headers = await getAuthHeaders(toolContext?.ownerId);
       const res = await fetch("/api/fetch", { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ url: input.url }) });

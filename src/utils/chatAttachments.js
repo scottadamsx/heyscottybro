@@ -154,6 +154,7 @@ export function serializeDisplayMessages(rows = []) {
     const next = { ...message };
     const liveImageCount = Array.isArray(next.images) ? next.images.length : 0;
     delete next.images;
+    delete next.imagePreviews;
     next.attachments = persistedAttachmentMetadata(next.attachments || [], { preserveUnknown: true });
     if (!next.attachments.length) delete next.attachments;
     if (liveImageCount > 0 && !next.shots) next.shots = liveImageCount;
@@ -167,6 +168,7 @@ export async function hydrateDisplayAttachments(rows = [], signPath) {
     const rawAttachments = message.attachments || [];
     const attachments = [];
     const images = [];
+    const imagePreviews = [];
     for (const attachment of rawAttachments) {
       if (attachment?.version != null && attachment.version !== CHAT_ATTACHMENT_VERSION) {
         errors.push({
@@ -180,15 +182,31 @@ export async function hydrateDisplayAttachments(rows = [], signPath) {
       if (!supported.length) continue;
       attachments.push(supported[0]);
       try {
-        images.push(await signPath(supported[0].path));
+        const src = await signPath(supported[0].path);
+        images.push(src);
+        imagePreviews.push({ ...supported[0], src, status: "ready", refreshCount: 0 });
       } catch (error) {
         errors.push({ path: supported[0].path, error });
+        imagePreviews.push({ ...supported[0], src: "", status: "unavailable", refreshCount: 0, error: error?.message || String(error) });
       }
     }
     if (!attachments.length) return message;
-    return { ...message, attachments, ...(images.length ? { images } : {}) };
+    return { ...message, attachments, imagePreviews, ...(images.length ? { images } : {}) };
   }));
   return { display, errors };
+}
+
+export async function refreshSavedAttachmentPreview(preview, signPath) {
+  if (!preview?.path || !isChatStagingPath(preview.path)) {
+    return { ...preview, status: "unavailable", error: "This saved image path is invalid." };
+  }
+  const refreshCount = (Number(preview.refreshCount) || 0) + 1;
+  try {
+    const src = await signPath(preview.path);
+    return { ...preview, src, status: "ready", refreshCount, error: "" };
+  } catch (error) {
+    return { ...preview, src: "", status: "unavailable", refreshCount, error: error?.message || "The saved image preview is unavailable." };
+  }
 }
 
 export function chatStagingPathsFromDisplay(rows = []) {

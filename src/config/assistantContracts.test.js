@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   HABITS_COLLECTION_CONTRACT,
   LIFE_TABS,
@@ -10,6 +11,11 @@ import {
   productMapPromptBlock,
   taskFactGroundingPromptBlock,
 } from "./assistantContracts.js";
+
+const aiLibrarySource = readFileSync(new URL("../api/aiLibrary.js", import.meta.url), "utf8");
+const aiToolsSource = readFileSync(new URL("../api/aiTools.js", import.meta.url), "utf8");
+const missionSource = readFileSync(new URL("../pages/admin/MissionPage.jsx", import.meta.url), "utf8");
+const commandPaletteSource = readFileSync(new URL("../components/CommandPalette.jsx", import.meta.url), "utf8");
 
 test("Life exposes Habits from the shared product-map contract", () => {
   const life = PRODUCT_SPACES.find((space) => space.label === "Life");
@@ -66,4 +72,19 @@ test("generic memory recall cannot volunteer physical or account-access secrets"
   assert.match(prompt, /only when he asks for that exact secret/i);
   assert.match(prompt, /ordinary preferences, non-sensitive project context, app navigation facts/i);
   assert.match(prompt, /never repeat sensitive data while explaining a refusal/i);
+});
+
+test("the retired Bug Tracker has no live product, assistant, or command surface", () => {
+  assert.doesNotMatch(aiLibrarySource, /\bbugs\s*:/);
+  assert.doesNotMatch(aiToolsSource, /name:\s*["'](?:log_bug|export_bugs)["']/);
+  assert.doesNotMatch(missionSource, /BugsPage|tab=build|["']build["']/);
+  assert.doesNotMatch(commandPaletteSource, /Build \(Bugs\)|tab=build/);
+  assert.match(commandPaletteSource, /\/admin\/analytics\?section=ai/);
+});
+
+test("Mission Control retains Brain, Inbox, and Research without the Agents page", () => {
+  assert.doesNotMatch(missionSource, /CommandCenterPage|key:\s*["']agents["']|tab === ["']agents["']/);
+  assert.match(missionSource, /const DEFAULT_TAB = ["']brain["']/);
+  for (const tab of ["brain", "inbox", "research"]) assert.match(missionSource, new RegExp(`key: \\"${tab}\\"`));
+  assert.doesNotMatch(commandPaletteSource, /label:\s*["']Agents["']/);
 });

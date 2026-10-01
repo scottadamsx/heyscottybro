@@ -16,6 +16,7 @@ import {
   hydrateDisplayAttachments,
   isHeicFile,
   publishAgentAttachment,
+  refreshSavedAttachmentPreview,
   serializeDisplayMessages,
   stagingPathsEvictedByDisplayLimit,
   undecodableImageMessage,
@@ -205,8 +206,68 @@ test("saved metadata rehydrates signed previews and reports individual failures"
   });
 
   assert.deepEqual(result.display[0].images, ["signed:owner-1/_staging/1-one.png"]);
+  assert.deepEqual(result.display[0].imagePreviews, [
+    {
+      version: 1,
+      path: "owner-1/_staging/1-one.png",
+      media_type: "image/png",
+      name: "one.png",
+      size: null,
+      src: "signed:owner-1/_staging/1-one.png",
+      status: "ready",
+      refreshCount: 0,
+    },
+    {
+      version: 1,
+      path: "owner-1/_staging/2-two.png",
+      media_type: "image/png",
+      name: "two.png",
+      size: null,
+      src: "",
+      status: "unavailable",
+      refreshCount: 0,
+      error: "sign denied",
+    },
+  ]);
   assert.equal(result.errors.length, 1);
   assert.equal(result.errors[0].path, "owner-1/_staging/2-two.png");
+});
+
+test("a failed saved preview can refresh its signed URL without changing persisted metadata", async () => {
+  const preview = {
+    version: 1,
+    path: "owner-1/_staging/1-one.png",
+    media_type: "image/png",
+    name: "one.png",
+    status: "unavailable",
+    refreshCount: 0,
+  };
+  const refreshed = await refreshSavedAttachmentPreview(preview, async (path) => `fresh:${path}`);
+
+  assert.equal(refreshed.src, "fresh:owner-1/_staging/1-one.png");
+  assert.equal(refreshed.status, "ready");
+  assert.equal(refreshed.refreshCount, 1);
+  assert.deepEqual(serializeDisplayMessages([{ attachments: [preview], imagePreviews: [refreshed] }]), [{
+    attachments: [{
+      version: 1,
+      path: "owner-1/_staging/1-one.png",
+      media_type: "image/png",
+      name: "one.png",
+      size: null,
+    }],
+  }]);
+});
+
+test("saved preview refresh fails closed for an invalid or unavailable path", async () => {
+  let signed = false;
+  const invalid = await refreshSavedAttachmentPreview({ path: "another-owner/file.png" }, async () => { signed = true; });
+  assert.equal(signed, false);
+  assert.equal(invalid.status, "unavailable");
+
+  const denied = await refreshSavedAttachmentPreview({ path: "owner-1/_staging/1-one.png" }, async () => { throw new Error("denied"); });
+  assert.equal(denied.status, "unavailable");
+  assert.equal(denied.refreshCount, 1);
+  assert.match(denied.error, /denied/);
 });
 
 test("unknown attachment metadata versions fail explicitly instead of being guessed", async () => {

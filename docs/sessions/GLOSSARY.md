@@ -2,7 +2,7 @@
 
 **Status:** Governing current view  
 **Owner:** Project Manager  
-**Last updated:** 2026-09-29
+**Last updated:** 2026-09-30
 
 This glossary is the human-readable index for coded development sessions. The append-only [`registry.jsonl`](registry.jsonl) is the lifecycle record. The Project Manager alone assigns IDs and updates both records.
 
@@ -12,6 +12,7 @@ This glossary is the human-readable index for coded development sessions. The ap
 | --- | --- | --- | --- | --- | --- | --- |
 | `SAI00000001` | `Bonsai Chat SAI00000001` | Active | heyScottyBro | Workspace governance; Planner and Today improvements; Frodo reliability; session identity system | `01a0ea22-5d76-7502-a006-a16c39e7c228` | [Summary](2026/2026-09-28-01a0ea22-identify-project-purpose/SESSION_SUMMARY.md) |
 | `SAI00000002` | `Bonsai Chat SAI00000002` | Closed | heyScottyBro | Restored Vercel Production deployment and verified released Today/Frodo; post-release docs await commit approval | `01a0ed47-5171-74d2-9227-ef3782f9356f` | [Summary](2026/2026-09-29-SAI00000002/SESSION_SUMMARY.md) |
+| `SAI00000003` | `Bonsai Chat SAI00000003` | Active | heyScottyBro | Plan and deliver chat-image repair, People event integrity and management, analytics, activity history, and page-usage tracking under Scott's approval gates | `01a0f546-e97d-78b1-8c16-7f259b906a25` | [Summary](2026/2026-09-30-SAI00000003/SESSION_SUMMARY.md) |
 
 ## Status glossary
 

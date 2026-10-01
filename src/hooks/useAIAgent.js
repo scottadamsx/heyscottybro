@@ -11,7 +11,11 @@ import { TIERS, buildSystemPrompt, escalationToolFor } from "../api/aiTiers";
 import { getAuthHeaders } from "../utils/supabase";
 import { uid } from "../api/_base";
 import { loadAgentSessions, saveAgentSession } from "../api/agentSessionsApi";
-import { clearStagedScreenshots, removeStagedScreenshots, screenshotUrl } from "../api/bugsApi";
+import {
+  clearStagedChatAttachments,
+  removeStagedChatAttachments,
+  signChatAttachment,
+} from "../api/chatAttachmentStorage";
 import {
   chatStagingPathsFromDisplay,
   hydrateDisplayAttachments,
@@ -35,6 +39,7 @@ import {
 } from "../utils/chatSessionPolicy";
 import { createPendingScreenshotContext, withCheckpointProgress } from "../api/pendingScreenshots";
 import { captureEstablishedOwnerId } from "../utils/authIdentityBoundary";
+import { tryRecordActivityEvent } from "../api/activityApi";
 
 const AGENT_ID = "frodo";
 
@@ -132,7 +137,7 @@ export default function useAIAgent() {
         if (mine) {
           const hydratedDisplay = await hydrateDisplayAttachments(
             mine.display || [],
-            (path) => screenshotUrl(path, 3600, ownerId),
+            (path) => signChatAttachment(path, 3600, ownerId),
           );
           restored = { displayMsgs: hydratedDisplay.display, apiHistory: mine.convo || [] };
           if (hydratedDisplay.errors.length && attempt === loadAttempt.current) {
@@ -194,7 +199,7 @@ export default function useAIAgent() {
         save: (agentId, session) => saveAgentSession(agentId, session, ownerId),
         agentId: AGENT_ID,
         ...snapshot,
-        removeEvicted: (paths) => removeStagedScreenshots(paths, ownerId),
+        removeEvicted: (paths) => removeStagedChatAttachments(paths, ownerId),
         evictedPaths: evictedStagingPaths,
       });
       setSaveError("");
@@ -260,6 +265,7 @@ export default function useAIAgent() {
     setInputState("");
     loadingRef.current = true;
     setLoading(true);
+    const turnActivityId = crypto.randomUUID();
 
     const shown = text || (attachments.length ? `${attachments.length} screenshot${attachments.length === 1 ? "" : "s"}` : "");
     // Thumbnails ride on the display row for this session so the photo is
@@ -279,7 +285,7 @@ export default function useAIAgent() {
     const userContent = attachments.length
       ? [
           ...attachments.map((a) => ({ type: "image", source: { type: "base64", media_type: a.media_type, data: a.data } })),
-          { type: "text", text: text || "Here's a screenshot — look at it and tell me what you see, then log it if it's a bug or a feature request." },
+          { type: "text", text: text || "Here's an image — inspect it and tell me what you see." },
         ]
       : text;
 
@@ -330,6 +336,15 @@ export default function useAIAgent() {
         phase: "Accepted Frodo turn",
         required: true,
       });
+      void tryRecordActivityEvent({
+        idempotencyKey: `chat:turn:${turnActivityId}`,
+        eventType: "chat.turn.sent",
+        entityType: "chat_turn",
+        entityId: turnActivityId,
+        entityLabel: "Frodo chat turn",
+        source: "frodo",
+        metadata: { attachment_count: attachments.length, precision: "exact" },
+      }, turnOwnerId);
       const authHeaders = await getAuthHeaders(turnOwnerId);
 
       for (;;) {
@@ -479,7 +494,7 @@ export default function useAIAgent() {
           // presence tells future loads not to import an older local backup.
           clearSession: () => saveAgentSession(AGENT_ID, { display: [], convo: [] }, clearOwnerId),
           clearLegacy: () => suppressAndRemoveOwnerBoundLegacyChat(localStorage, clearOwnerId),
-          clearStaging: () => clearStagedScreenshots(paths, clearOwnerId),
+          clearStaging: () => clearStagedChatAttachments(paths, clearOwnerId),
         });
       } catch (err) {
         console.error("[useAIAgent] clear failed:", err);

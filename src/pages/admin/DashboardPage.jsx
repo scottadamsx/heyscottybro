@@ -6,7 +6,6 @@ import { describeAction, actionTime } from "../../utils/agentActions";
 import { apiToPage, uiShape, computeBudgetSnapshot, getUpcomingBills } from "../../components/budget/budgetSummary";
 import { loadCourses } from "../../api/coursesApi";
 import { loadGrades, gradeStats } from "../../api/gradesApi";
-import { loadBugs } from "../../api/bugsApi";
 import { loadMessages } from "../../api/messagesApi";
 import { buildBrief } from "../../lib/brief";
 import { ExportKit } from "../../components/ui";
@@ -72,7 +71,7 @@ export default function DashboardPage() {
   const [allActions, setAllActions] = useState(false);
   const ACTIONS_SHOWN = 6;
   const [school, setSchool] = useState({ courses: [], grades: [] });
-  const [pulse, setPulse] = useState({ openBugs: null, unreadInbox: null });
+  const [pulse, setPulse] = useState({ unreadInbox: null });
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
@@ -124,14 +123,12 @@ export default function DashboardPage() {
       loadAgentActions(50).catch(() => []),
       loadCourses().catch(() => []),
       loadGrades().catch(() => []),
-      loadBugs().catch(() => []),
       loadMessages().catch(() => []),
-    ]).then(([reminders, journal, config, events, projects, initiatives, transactions, actions, courses, grades, bugs, messages]) => {
+    ]).then(([reminders, journal, config, events, projects, initiatives, transactions, actions, courses, grades, messages]) => {
       setData({ reminders, journal, config, events, projects, initiatives, transactions });
       setAgentActions(actions);
       setSchool({ courses, grades });
       setPulse({
-        openBugs: bugs.filter((b) => ["open", "in_progress"].includes(b.status)).length,
         unreadInbox: messages.filter((m) => !m.read && m.status !== "archived").length,
       });
       setLoading(false);
@@ -201,7 +198,7 @@ export default function DashboardPage() {
   const brief = buildBrief({
     reminders: data.reminders, events: data.events, budget, upcomingBills,
     courses: school.courses, courseStats, deadlines: schoolDeadlines,
-    agentActions, openBugs: pulse.openBugs, unreadInbox: pulse.unreadInbox,
+    agentActions, unreadInbox: pulse.unreadInbox,
   });
   const briefHighlights = ["priorities", "agenda", "money"]
     .map((key) => brief.sections.find((section) => section.key === key))

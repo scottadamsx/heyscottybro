@@ -107,7 +107,7 @@ const RAW_TOOLS = [
   {
     name: 'log_event',
     description:
-      "Log a time Scotty saw, called or texted people. A date after today is saved as a plan. Everyone listed must already be on the roster (add them first). If the occasion is already in the recent events list, use its date, kind and title: the new people are added to that event instead of creating another.",
+      "Log a time Scotty saw, called or texted people. A date after today is saved as a plan. Everyone listed must already be on the roster (add them first). Never add people to an existing event by inference. Set merge_occasion true only when Scotty explicitly says they belong to the same saved occasion.",
     input_schema: {
       type: 'object',
       properties: {
@@ -119,6 +119,7 @@ const RAW_TOOLS = [
         updates: { type: 'object', additionalProperties: { type: 'string' }, description: "Name → what that person is up to, if Scotty said." },
         notes: str('Anything else about the event.'),
         repeat_until: str('For a stretch ("every day for 3 weeks", "daily calls this past week"): the last day, YYYY-MM-DD. One event is logged for each day from date to repeat_until. Ask Scotty how often if it is unclear.'),
+        merge_occasion: { type: 'boolean', description: 'Set true only when Scotty explicitly confirmed these people belong to an existing event with the same date, kind and title.' },
         different_occasion: { type: 'boolean', description: 'Set true only when Scotty confirmed this is a separate occasion from one already logged that day with the same people.' },
       },
       required: ['date', 'kind', 'people'],
@@ -368,7 +369,7 @@ const run = {
   },
 }
 
-function logOne({ date, title, kind, place, people: names, updates, notes, different_occasion }) {
+function logOne({ date, title, kind, place, people: names, updates, notes, merge_occasion, different_occasion }) {
   {
     if (!isYMD(date)) return err('date must be a real YYYY-MM-DD')
     if (!KIND_IDS.includes(kind)) return err(`kind must be one of ${KIND_IDS.join(', ')}`)
@@ -389,11 +390,12 @@ function logOne({ date, title, kind, place, people: names, updates, notes, diffe
     }
     const status = date > today() ? 'planned' : 'done'
     const ids_ = [...new Set(ids)]
-    // The same occasion already logged that day (same kind, same or overlapping title): add the new people to it.
+    // Similarity is a candidate, never permission to mutate an existing event.
+    // Attendees are added only when Scott explicitly confirmed one occasion.
     const occasion = Object.entries(store.get('events')).find(
       ([, e]) => e.date === date && e.kind === kind && e.kind !== 'Note' && sameTitle(e.title, clean(title) || kind),
     )
-    if (occasion && !different_occasion) {
+    if (occasion && merge_occasion && !different_occasion) {
       const [eid, e] = occasion
       const added = ids_.filter((pid) => !e.people.includes(pid))
       const mergedUpdates = { ...(e.updates || {}), ...ups }
