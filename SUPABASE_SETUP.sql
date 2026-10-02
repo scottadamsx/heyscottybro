@@ -36,8 +36,10 @@ CREATE TABLE IF NOT EXISTS journal (
   title      TEXT NOT NULL,
   entry      TEXT NOT NULL,
   date       DATE NOT NULL,
+  ai_provenance JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE journal ADD COLUMN IF NOT EXISTS ai_provenance JSONB;
 ALTER TABLE journal ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "owner only" ON journal;
 CREATE POLICY "owner only" ON journal USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

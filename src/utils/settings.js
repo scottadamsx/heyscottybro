@@ -10,6 +10,8 @@ const PREFIX = "setting:";
 // Setting keys live here so they can't drift between callers.
 export const THEME = "theme";
 export const HIDDEN_PAGES = "hiddenPages";
+export const JOURNAL_CLEANUP = "journalCleanup";
+const JOURNAL_CLEANUP_SCHEMA = 1;
 
 const listeners = new Set();
 
@@ -59,6 +61,40 @@ export function useSetting(key, fallback = false) {
     () => getSetting(key, fallback),
     () => fallback
   );
+}
+
+export function getJournalCleanupEnabled() {
+  const key = PREFIX + JOURNAL_CLEANUP;
+  let raw;
+  try { raw = localStorage.getItem(key); }
+  catch { return false; }
+  if (raw === null) return false;
+  try {
+    const record = JSON.parse(raw);
+    if (record?.schema !== JOURNAL_CLEANUP_SCHEMA || typeof record.enabled !== "boolean") {
+      throw new Error(`unsupported journal cleanup setting schema ${record?.schema}`);
+    }
+    return record.enabled;
+  } catch (error) {
+    console.error("[settings] journal cleanup setting is unreadable", error);
+    try { localStorage.setItem(`${key}:unreadable`, raw); localStorage.removeItem(key); } catch { /* keep original */ }
+    return false;
+  }
+}
+
+export function setJournalCleanupEnabled(enabled) {
+  try {
+    localStorage.setItem(PREFIX + JOURNAL_CLEANUP, JSON.stringify({ schema: JOURNAL_CLEANUP_SCHEMA, enabled: Boolean(enabled) }));
+  } catch (error) {
+    console.error("[settings] couldn't save journal cleanup setting", error);
+    return false;
+  }
+  listeners.forEach((fn) => fn());
+  return true;
+}
+
+export function useJournalCleanupEnabled() {
+  return useSyncExternalStore(subscribe, getJournalCleanupEnabled, () => false);
 }
 
 /** Hidden pages: a set of nav `to` paths removed from the rail, the mobile

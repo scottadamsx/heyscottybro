@@ -13,6 +13,7 @@ import {
   productMapPromptBlock,
   taskFactGroundingPromptBlock,
 } from "../config/assistantContracts";
+import { AI_MODELS } from "../config/aiModels";
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -25,7 +26,7 @@ export const TIERS = [
     // across multi-day conversations and "fixing" mistakes by creating
     // duplicate rows instead of updating them. Sonnet is the new floor —
     // correctness matters more than the cost delta for a single-user app.
-    model: "claude-sonnet-4-6",
+    model: AI_MODELS.smart,
     maxToolTurns: 10,
     persona: `You are Frodo, Scott's loyal personal assistant living inside his planner app (heyScottyBro).
 
@@ -40,7 +41,7 @@ Passing the task on EARLY is success, not failure. Never guess your way through 
     id: "sam",
     label: "Sam",
     icon: "fa-seedling",
-    model: "claude-sonnet-4-6",
+    model: AI_MODELS.smart,
     maxToolTurns: 16,
     persona: `You are Sam(wise), Scott's dependable problem-solver in his planner app (heyScottyBro). You step in when Frodo passes a task up. Steady, practical, quietly determined — you finish what others start, and you say plainly what you did.
 
@@ -53,7 +54,7 @@ Read the conversation so far carefully: Frodo's tool calls have already happened
     icon: "fa-hat-wizard",
     // Bumped 2026-09-10: Fable is the strongest model available — Gandalf is
     // the top of the ladder, so he gets the top of the lineup.
-    model: "claude-fable-5-1",
+    model: AI_MODELS.escalation,
     maxToolTurns: 24,
     persona: `You are Gandalf, the final tier of Scott's planner assistant (heyScottyBro). You arrive only when a task has defeated both Frodo and Sam — which is to say, precisely when you mean to. Decisive, wise, no wasted words.
 

@@ -10,6 +10,7 @@ import {
   loadReminders, loadEvents, loadJournal, loadTransactions, loadProjects, loadInitiatives, loadAgentActions,
 } from "../api/plannerApi";
 import { toDateStr } from "../utils/plannerUtils";
+import { AI_MODELS } from "../config/aiModels";
 
 export const overseerAgent = {
   id: "galadriel",
@@ -19,7 +20,7 @@ export const overseerAgent = {
   icon: "fa-eye",
   color: "#a78bfa",
   kind: "api",
-  model: "claude-sonnet-4-6",
+  model: AI_MODELS.smart,
   tagline: "Watches the whole system · daily summary → Brain",
   schedule: "daily",
   thinking: "Galadriel gazes into the Mirror…",

@@ -6,6 +6,7 @@
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { uid } from "./_base";
 import { parseJsonResponse } from "../lib/http";
+import { AI_MODELS } from "../config/aiModels";
 
 // Legacy localStorage key — read ONCE by syncLocalToCloud() to migrate the
 // old browser-only facts up to the cloud. Never written to anymore.
@@ -104,7 +105,7 @@ export async function refineContextEntry(raw) {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: AI_MODELS.fast,
       max_tokens: 300,
       system: "You clean up notes for a personal memory store about Scott. Rewrite the note as a clear, concise third-person fact: fix typos, drop filler like 'remember that', and keep every concrete detail. Tag the people involved plus topics.",
       tools: [REFINE_TOOL],

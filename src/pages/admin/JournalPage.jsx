@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
 import DatePicker from "../../components/DatePicker";
-import { FormModal, Field, ShowMore } from "../../components/ui";
+import { FormModal, Field, Modal, ShowMore } from "../../components/ui";
 import { usePaged } from "../../hooks/usePaged";
 import { formatDisplayDate, toDateStr } from "../../utils/plannerUtils";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -12,11 +12,29 @@ import { journalToMarkdown, journalExportFilename } from "../../utils/journalExp
 import { downloadMarkdown } from "../../lib/exporter";
 import UpdatedMeta from "../../components/UpdatedMeta";
 import { SkeletonRegion, SkeletonRows } from "../../components/Skeleton";
+import {
+  autoPauseIdleTimer,
+  cleanupResponseIsCurrent,
+  createWritingTimer,
+  elapsedWritingMs,
+  formatWritingDuration,
+  journalProvenanceForSave,
+  journalTextDiff,
+  journalWritingCounts,
+  pauseWritingTimer,
+  resumeWritingTimer,
+  writingTimerInput,
+  writingTimerMetadata,
+} from "../../utils/journalWriting";
+import { JOURNAL_CLEANUP_LIMIT, loadJournalCleanupStatus, requestJournalCleanup } from "../../api/journalCleanup";
+import { useJournalCleanupEnabled } from "../../utils/settings";
 
 const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
 const shortDay = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 const savedTime = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const draftFailedMsg = "Couldn't auto-save this draft — browser storage is full or blocked. Save it before closing.";
+const timerNow = () => performance.now();
+const draftMetadata = (timer, cleanup, now = timerNow()) => ({ timer: writingTimerMetadata(timer, now), cleanup });
 
 export default function JournalPage() {
   const [params, setParams] = useSearchParams();
@@ -29,19 +47,46 @@ export default function JournalPage() {
   // clicking another entry, switching Life tabs or reloading never loses what's been typed.
   const [restoredDraft, setRestoredDraft] = useState(() => loadDraft(JOURNAL_NEW_DRAFT));
   const [compose, setCompose] = useState(() => restoredDraft?.fields ?? {});
+  const [composeTimer, setComposeTimer] = useState(() => createWritingTimer(restoredDraft?.metadata?.timer));
+  const [composeCleanup, setComposeCleanup] = useState(() => restoredDraft?.metadata?.cleanup ?? null);
   const [draftFailed, setDraftFailed] = useState(false);
   const title = compose.title || "";
   const entry = compose.entry || "";
   const hasDraft = Boolean(title.trim() || entry.trim());
-  const updateCompose = (patch) => {
+  const composeRef = useRef(compose);
+  const composeCleanupRef = useRef(composeCleanup);
+  useEffect(() => { composeRef.current = compose; }, [compose]);
+  useEffect(() => { composeCleanupRef.current = composeCleanup; }, [composeCleanup]);
+  const updateCompose = (patch, { bodyInput = false } = {}) => {
     const next = { ...compose, ...patch };
+    const nextTimer = bodyInput ? writingTimerInput(composeTimer, timerNow()) : composeTimer;
+    const nextCleanup = bodyInput ? null : composeCleanup;
     setCompose(next);
-    setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next));
+    if (bodyInput) { setComposeTimer(nextTimer); setComposeCleanup(null); }
+    setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next, draftMetadata(nextTimer, nextCleanup)));
   };
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const [editTimer, setEditTimer] = useState(() => createWritingTimer());
+  const [editCleanup, setEditCleanup] = useState(null);
+  const editFormRef = useRef(editForm);
+  const editCleanupRef = useRef(editCleanup);
+  useEffect(() => { editFormRef.current = editForm; }, [editForm]);
+  useEffect(() => { editCleanupRef.current = editCleanup; }, [editCleanup]);
+  const [clock, setClock] = useState(() => timerNow());
+  const [cleanupAvailable, setCleanupAvailable] = useState(false);
+  const cleanupEnabled = useJournalCleanupEnabled();
+  const [cleanupBusy, setCleanupBusy] = useState(null);
+  const [cleanupNotice, setCleanupNotice] = useState(null);
+  const [cleanupReview, setCleanupReview] = useState(null);
+  const composeOpenRef = useRef(composeOpen);
+  const editingRef = useRef(editing);
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => { composeOpenRef.current = composeOpen; }, [composeOpen]);
+  useEffect(() => { editingRef.current = editing; }, [editing]);
+  useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(null); // a failed load is NOT "no entries yet"
 
@@ -55,6 +100,11 @@ export default function JournalPage() {
     setReady(true);
   };
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let active = true;
+    loadJournalCleanupStatus().then((status) => { if (active) setCleanupAvailable(status.available); });
+    return () => { active = false; };
+  }, []);
 
   const selectedEntry = entries.find((e) => String(e.id) === String(selectedId));
 
@@ -79,25 +129,116 @@ export default function JournalPage() {
   // Edits are cached per entry too; closing the edit modal (or leaving the entry)
   // keeps the draft and the Edit button becomes "Resume edits". Only Discard or a
   // successful save clears it.
-  const startEdit = (e) => { setEditForm(loadDraft(journalEditDraft(e.id))?.fields ?? entryFields(e)); setEditing(true); };
-  const updateEdit = (patch) => {
-    const next = { ...editForm, ...patch };
-    setEditForm(next);
-    setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next));
+  const startEdit = (e) => {
+    const draft = loadDraft(journalEditDraft(e.id));
+    setEditForm(draft?.fields ?? entryFields(e));
+    setEditTimer(createWritingTimer(draft?.metadata?.timer));
+    setEditCleanup(draft?.metadata?.cleanup ?? null);
+    setCleanupNotice(null);
+    setEditing(true);
   };
+  const updateEdit = (patch, { bodyInput = false } = {}) => {
+    const next = { ...editForm, ...patch };
+    const nextTimer = bodyInput ? writingTimerInput(editTimer, timerNow()) : editTimer;
+    const nextCleanup = bodyInput ? null : editCleanup;
+    setEditForm(next);
+    if (bodyInput) { setEditTimer(nextTimer); setEditCleanup(null); }
+    setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next, draftMetadata(nextTimer, nextCleanup)));
+  };
+  const persistComposeTimer = (timer) => {
+    setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, composeRef.current, draftMetadata(timer, composeCleanupRef.current)));
+  };
+  const persistEditTimer = (timer) => {
+    if (selectedEntry && editFormRef.current) {
+      setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), editFormRef.current, draftMetadata(timer, editCleanupRef.current)));
+    }
+  };
+  const pauseComposeTimer = (reason = "automatic") => {
+    const now = timerNow();
+    setComposeTimer((current) => {
+      const next = pauseWritingTimer(current, now, reason);
+      persistComposeTimer(next);
+      return next;
+    });
+  };
+  const pauseEditTimer = (reason = "automatic") => {
+    const now = timerNow();
+    setEditTimer((current) => {
+      const next = pauseWritingTimer(current, now, reason);
+      persistEditTimer(next);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (composeTimer.status !== "running" && editTimer.status !== "running") return undefined;
+    const interval = setInterval(() => {
+      const now = timerNow();
+      setClock(now);
+      if (composeOpen) {
+        setComposeTimer((current) => {
+          const next = autoPauseIdleTimer(current, now);
+          if (next !== current) persistComposeTimer(next);
+          return next;
+        });
+      }
+      if (editing) {
+        setEditTimer((current) => {
+          const next = autoPauseIdleTimer(current, now);
+          if (next !== current) persistEditTimer(next);
+          return next;
+        });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [composeTimer.status, editTimer.status, composeOpen, editing, selectedEntry?.id]);
+
+  useEffect(() => {
+    if (composeTimer.status !== "running" && editTimer.status !== "running") return undefined;
+    const interval = setInterval(() => {
+      if (composeOpen && composeTimer.status === "running") persistComposeTimer(composeTimer);
+      if (editing && editTimer.status === "running") persistEditTimer(editTimer);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [composeTimer, editTimer, composeOpen, editing, selectedEntry?.id]);
+
+  useEffect(() => {
+    const pauseVisibleEditors = () => {
+      if (composeOpen) pauseComposeTimer();
+      if (editing) pauseEditTimer();
+    };
+    const onVisibility = () => { if (document.hidden) pauseVisibleEditors(); };
+    window.addEventListener("blur", pauseVisibleEditors);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", pauseVisibleEditors);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [composeOpen, editing, selectedEntry?.id]);
   const isEditDirty = () => {
     const orig = entryFields(selectedEntry);
     return ["title", "entry", "date"].some((k) => editForm[k] !== orig[k]);
   };
-  const closeEdit = () => { setEditing(false); setEditForm(null); };
+  const closeEdit = () => {
+    setEditing(false);
+    setEditForm(null);
+    setEditTimer(createWritingTimer());
+    setEditCleanup(null);
+  };
   const dismissEdit = () => {
     // Edits that match the saved entry leave nothing to resume.
     if (selectedEntry && editForm && !isEditDirty()) clearDraft(journalEditDraft(selectedEntry.id));
+    else if (selectedEntry && editForm) {
+      const paused = pauseWritingTimer(editTimer, timerNow(), "automatic");
+      saveDraft(journalEditDraft(selectedEntry.id), editForm, draftMetadata(paused, editCleanup));
+    }
     closeEdit();
   };
   const discardEdit = async () => {
     if (isEditDirty() && !await confirm("Discard your unsaved changes to this entry?", { title: "Discard changes", confirmLabel: "Discard" })) return;
     clearDraft(journalEditDraft(selectedEntry.id));
+    setEditTimer(createWritingTimer());
+    setEditCleanup(null);
     closeEdit();
   };
   const discardDraft = async () => {
@@ -106,13 +247,25 @@ export default function JournalPage() {
     setCompose({});
     setDraftFailed(false);
     setRestoredDraft(null);
+    setComposeTimer(createWritingTimer());
+    setComposeCleanup(null);
   };
   const saveEdit = async () => {
     if (!selectedEntry || !editForm.entry.trim()) return false;
     const fields = { title: editForm.title.trim() || formatDisplayDate(editForm.date), entry: editForm.entry.trim(), date: editForm.date };
     const prev = selectedEntry;
+    const provenance = journalProvenanceForSave(editCleanup, fields.entry);
+    if (provenance) fields.aiProvenance = provenance;
+    else if (fields.entry !== String(prev.entry || "").trim()) fields.aiProvenance = null;
     // Optimistic: show the edit immediately; on failure roll back and keep the modal open with the error.
-    setEntries((list) => list.map((x) => x.id === prev.id ? { ...x, ...fields, updated_at: new Date().toISOString() } : x));
+    setEntries((list) => list.map((x) => x.id === prev.id ? {
+      ...x,
+      title: fields.title,
+      entry: fields.entry,
+      date: fields.date,
+      ai_provenance: fields.aiProvenance === undefined ? x.ai_provenance : fields.aiProvenance,
+      updated_at: new Date().toISOString(),
+    } : x));
     try {
       await updateJournalEntry(prev.id, fields);
     } catch (err) {
@@ -129,7 +282,12 @@ export default function JournalPage() {
   const submit = async () => {
     if (!entry.trim()) return false;
     try {
-      await newJournalEntry({ title: title.trim() || todayLong, entry: entry.trim(), date: toDateStr(new Date()) });
+      await newJournalEntry({
+        title: title.trim() || todayLong,
+        entry: entry.trim(),
+        date: toDateStr(new Date()),
+        aiProvenance: journalProvenanceForSave(composeCleanup, entry),
+      });
     } catch (err) {
       throw new Error(`Couldn't save entry: ${err?.message || "unknown error"}`, { cause: err });
     }
@@ -138,6 +296,8 @@ export default function JournalPage() {
     setCompose({});
     setDraftFailed(false);
     setRestoredDraft(null);
+    setComposeTimer(createWritingTimer());
+    setComposeCleanup(null);
     await load();
   };
 
@@ -155,11 +315,107 @@ export default function JournalPage() {
   };
   // Closing the compose modal keeps the draft; the header button and the banner offer "Resume".
   const closeCompose = () => {
+    pauseComposeTimer();
     setParams((current) => {
       const next = new URLSearchParams(current);
       next.delete("new");
       return next;
     });
+  };
+
+  const setTimerAction = async (mode, action) => {
+    const current = mode === "compose" ? composeTimer : editTimer;
+    const now = timerNow();
+    let next = current;
+    if (action === "pause") next = pauseWritingTimer(current, now, "manual");
+    if (action === "resume") next = resumeWritingTimer(current, now);
+    if (action === "reset") {
+      if (elapsedWritingMs(current, now) > 0 && !await confirm("Reset this draft's writing timer?", { title: "Reset writing timer", confirmLabel: "Reset" })) return;
+      next = createWritingTimer();
+    }
+    if (mode === "compose") {
+      setComposeTimer(next);
+      persistComposeTimer(next);
+    } else {
+      setEditTimer(next);
+      persistEditTimer(next);
+    }
+    setClock(now);
+  };
+
+  const runCleanup = async (mode, body) => {
+    if (!body.trim() || journalWritingCounts(body).characters > JOURNAL_CLEANUP_LIMIT || !navigator.onLine) return;
+    const approved = await confirm(
+      "Send this entry text to Anthropic for grammar and spelling cleanup? The text is not saved to your journal unless you accept the suggestion and then save the entry.",
+      { title: "Clean up writing", confirmLabel: "Send to Anthropic" },
+    );
+    if (!approved) return;
+    const snapshot = body;
+    const entryId = selectedIdRef.current;
+    setCleanupBusy(mode);
+    setCleanupNotice({ mode, type: "status", text: "Checking your writing…" });
+    try {
+      const result = await requestJournalCleanup(snapshot);
+      const currentBody = mode === "compose" ? composeRef.current.entry || "" : editFormRef.current?.entry || "";
+      const isCurrent = cleanupResponseIsCurrent({
+        submittedBody: snapshot,
+        currentBody,
+        requestedEntryId: mode === "compose" ? null : entryId,
+        currentEntryId: mode === "compose" ? null : selectedIdRef.current,
+        open: mode === "compose" ? composeOpenRef.current : editingRef.current,
+      });
+      if (!isCurrent) {
+        setCleanupNotice({ mode, type: "error", text: "The entry changed while cleanup was running. Nothing was replaced; request cleanup again." });
+      } else if (result.cleanedText === snapshot) {
+        setCleanupNotice({ mode, type: "status", text: "No grammar or spelling changes were suggested." });
+      } else {
+        setCleanupReview({ mode, original: snapshot, suggestion: result.cleanedText, provenance: result.provenance });
+        setCleanupNotice(null);
+      }
+    } catch (error) {
+      setCleanupNotice({ mode, type: "error", text: error?.message || "Journal cleanup failed. Try again." });
+    } finally {
+      setCleanupBusy(null);
+    }
+  };
+
+  const acceptCleanup = () => {
+    if (!cleanupReview) return;
+    const pending = {
+      original: cleanupReview.original,
+      suggestion: cleanupReview.suggestion,
+      provenance: cleanupReview.provenance,
+    };
+    if (cleanupReview.mode === "compose") {
+      const next = { ...composeRef.current, entry: pending.suggestion };
+      setCompose(next);
+      setComposeCleanup(pending);
+      setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next, draftMetadata(composeTimer, pending)));
+    } else if (selectedEntry && editFormRef.current) {
+      const next = { ...editFormRef.current, entry: pending.suggestion };
+      setEditForm(next);
+      setEditCleanup(pending);
+      setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next, draftMetadata(editTimer, pending)));
+    }
+    setCleanupNotice({ mode: cleanupReview.mode, type: "status", text: "Suggestion applied to this draft. Save the entry to keep it." });
+    setCleanupReview(null);
+  };
+
+  const undoCleanup = (mode) => {
+    const pending = mode === "compose" ? composeCleanup : editCleanup;
+    if (!pending) return;
+    if (mode === "compose") {
+      const next = { ...composeRef.current, entry: pending.original };
+      setCompose(next);
+      setComposeCleanup(null);
+      setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next, draftMetadata(composeTimer, null)));
+    } else if (selectedEntry && editFormRef.current) {
+      const next = { ...editFormRef.current, entry: pending.original };
+      setEditForm(next);
+      setEditCleanup(null);
+      setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next, draftMetadata(editTimer, null)));
+    }
+    setCleanupNotice({ mode, type: "status", text: "Cleanup undone." });
   };
 
   const exportAll = () => {
@@ -225,6 +481,13 @@ export default function JournalPage() {
                 </div>
                 <h2 className="journal-sheet-title">{selectedEntry.title}</h2>
                 <UpdatedMeta at={selectedEntry.updated_at} createdAt={selectedEntry.created_at} className="journal-sheet-updated" />
+                {selectedEntry.ai_provenance?.feature === "journal_cleanup" && (
+                  <p className="journal-ai-provenance">
+                    <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
+                    <strong>Cleaned with AI</strong>
+                    <span> · {selectedEntry.ai_provenance.model} · {selectedEntry.ai_provenance.prompt} v{selectedEntry.ai_provenance.promptVersion} · {savedTime(selectedEntry.ai_provenance.generatedAt)}</span>
+                  </p>
+                )}
                 <p className="journal-sheet-body">{selectedEntry.entry}</p>
               </article>
             )}
@@ -236,7 +499,12 @@ export default function JournalPage() {
           <aside className="journal-index" aria-label="Journal entries">
             <div className="journal-index-head">
               <h2 className="db-card-title">Entries</h2>
-              {ready && <span className="db-count">{sortedEntries.length}<span className="visually-hidden"> {sortedEntries.length === 1 ? "entry" : "entries"}</span></span>}
+              {ready && (
+                <span className="db-count">
+                  {entryPage.visible.length < sortedEntries.length ? `${entryPage.visible.length} of ${sortedEntries.length}` : sortedEntries.length}
+                  <span className="visually-hidden"> {sortedEntries.length === 1 ? "entry" : "entries"}</span>
+                </span>
+              )}
             </div>
             {!ready ? (
               <SkeletonRegion label="Loading journal entries" inline><SkeletonRows rows={6} actions={false} /></SkeletonRegion>
@@ -260,7 +528,7 @@ export default function JournalPage() {
                           next.set("id", String(e.id));
                           next.delete("new");
                           setParams(next);
-                          closeEdit(); // any in-progress edit stays cached as a draft
+                          dismissEdit(); // any in-progress edit stays cached as a draft
                         }}
                       >
                         <span className="journal-list-top">
@@ -299,13 +567,25 @@ export default function JournalPage() {
             <textarea
               className="journal-body-field"
               value={entry}
-              onChange={(e) => updateCompose({ entry: e.target.value })}
+              onChange={(e) => updateCompose({ entry: e.target.value }, { bodyInput: true })}
               rows={12}
               placeholder="Write your thoughts..."
               required
               data-autofocus
             />
           </Field>
+          <WritingTools
+            body={entry}
+            timer={composeTimer}
+            clock={clock}
+            onTimer={(action) => setTimerAction("compose", action)}
+            cleanupVisible={cleanupAvailable && cleanupEnabled}
+            cleanupBusy={cleanupBusy === "compose"}
+            onCleanup={() => runCleanup("compose", entry)}
+            pendingCleanup={composeCleanup}
+            onUndo={() => undoCleanup("compose")}
+            notice={cleanupNotice?.mode === "compose" ? cleanupNotice : null}
+          />
           {draftFailed ? (
             <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>
           ) : hasDraft ? (
@@ -340,12 +620,105 @@ export default function JournalPage() {
             </div>
           </div>
           <Field label="Entry">
-            <textarea className="journal-body-field" value={editForm.entry} onChange={(e) => updateEdit({ entry: e.target.value })} rows={12} required data-autofocus />
+            <textarea className="journal-body-field" value={editForm.entry} onChange={(e) => updateEdit({ entry: e.target.value }, { bodyInput: true })} rows={12} required data-autofocus />
           </Field>
+          <WritingTools
+            body={editForm.entry}
+            timer={editTimer}
+            clock={clock}
+            onTimer={(action) => setTimerAction("edit", action)}
+            cleanupVisible={cleanupAvailable && cleanupEnabled}
+            cleanupBusy={cleanupBusy === "edit"}
+            onCleanup={() => runCleanup("edit", editForm.entry)}
+            pendingCleanup={editCleanup}
+            onUndo={() => undoCleanup("edit")}
+            notice={cleanupNotice?.mode === "edit" ? cleanupNotice : null}
+          />
           {draftFailed && <p className="draft-status is-error" role="alert">{draftFailedMsg}</p>}
         </FormModal>
       )}
+      {cleanupReview && (
+        <CleanupReview
+          review={cleanupReview}
+          onCancel={() => setCleanupReview(null)}
+          onAccept={acceptCleanup}
+        />
+      )}
       {dialog}
     </div>
+  );
+}
+
+function WritingTools({ body, timer, clock, onTimer, cleanupVisible, cleanupBusy, onCleanup, pendingCleanup, onUndo, notice }) {
+  const counts = journalWritingCounts(body);
+  const elapsed = elapsedWritingMs(timer, clock);
+  const offline = typeof navigator !== "undefined" && !navigator.onLine;
+  const cleanupDisabled = !body.trim() || counts.characters > JOURNAL_CLEANUP_LIMIT || offline || cleanupBusy;
+  return (
+    <div className="journal-writing-tools" aria-label="Writing tools">
+      <div className="journal-writing-stats">
+        <span>{counts.characters} {counts.characters === 1 ? "character" : "characters"}</span>
+        <span aria-hidden="true">·</span>
+        <span>{counts.words} {counts.words === 1 ? "word" : "words"}</span>
+        <span aria-hidden="true">·</span>
+        <span className="journal-timer" aria-label={`Writing time ${formatWritingDuration(elapsed)}`}>{formatWritingDuration(elapsed)}</span>
+      </div>
+      <div className="journal-writing-actions">
+        {timer.status === "running" ? (
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => onTimer("pause")}>Pause</button>
+        ) : timer.status === "paused" ? (
+          <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => onTimer("resume")}>Resume</button>
+        ) : null}
+        {elapsed > 0 && <button type="button" className="btn btn-sm btn-ghost" onClick={() => onTimer("reset")}>Reset</button>}
+        {cleanupVisible && (
+          <button
+            type="button"
+            className="btn btn-sm btn-secondary-sm"
+            onClick={onCleanup}
+            disabled={cleanupDisabled}
+            aria-busy={cleanupBusy || undefined}
+            title={counts.characters > JOURNAL_CLEANUP_LIMIT ? `Cleanup supports up to ${JOURNAL_CLEANUP_LIMIT.toLocaleString()} characters` : undefined}
+          >
+            <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" /> {cleanupBusy ? "Cleaning…" : "Clean up writing"}
+          </button>
+        )}
+        {pendingCleanup && <button type="button" className="btn btn-sm btn-ghost" onClick={onUndo}>Undo cleanup</button>}
+      </div>
+      {notice && <p className={`journal-cleanup-notice${notice.type === "error" ? " is-error" : ""}`} role={notice.type === "error" ? "alert" : "status"}>{notice.text}</p>}
+    </div>
+  );
+}
+
+function CleanupReview({ review, onCancel, onAccept }) {
+  const diff = journalTextDiff(review.original, review.suggestion);
+  return (
+    <Modal
+      title="Review cleanup"
+      width={920}
+      className="journal-cleanup-modal"
+      onClose={onCancel}
+      footer={(
+        <>
+          <button type="button" className="btn btn-secondary" onClick={onCancel} data-autofocus>Cancel</button>
+          <button type="button" className="btn btn-primary" onClick={onAccept}>Use suggestion</button>
+        </>
+      )}
+    >
+      <p className="journal-cleanup-intro">Nothing is saved yet. Compare the original with the suggested grammar and spelling changes.</p>
+      <div className="journal-cleanup-columns">
+        <section><h4>Original</h4><pre>{review.original}</pre></section>
+        <section><h4>Suggestion</h4><pre>{review.suggestion}</pre></section>
+      </div>
+      <section className="journal-cleanup-diff" aria-label="Changes">
+        <h4>Changes</h4>
+        <p>
+          {diff.map((part, index) => part.type === "removed" ? (
+            <del key={index}><span className="visually-hidden">Removed: </span>{part.text}</del>
+          ) : part.type === "added" ? (
+            <ins key={index}><span className="visually-hidden">Added: </span>{part.text}</ins>
+          ) : <span key={index}>{part.text}</span>)}
+        </p>
+      </section>
+    </Modal>
   );
 }

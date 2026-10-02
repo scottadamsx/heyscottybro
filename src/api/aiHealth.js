@@ -4,9 +4,10 @@
 import { getAuthHeaders } from "../utils/supabase";
 import { parseJsonResponse } from "../lib/http";
 import { cleanExercises } from "./healthApi";
+import { AI_MODELS } from "../config/aiModels";
 
-const FAST = "claude-haiku-4-5-20251001";
-const SMART = "claude-sonnet-4-6";
+const FAST = AI_MODELS.fast;
+const SMART = AI_MODELS.smart;
 
 async function callChat(body) {
   const res = await fetch("/api/chat", {

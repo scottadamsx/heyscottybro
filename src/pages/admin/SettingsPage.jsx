@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { THEMES, useTheme, setTheme } from "../../utils/theme";
-import { useHiddenPages, toggleHiddenPage } from "../../utils/settings";
+import {
+  setJournalCleanupEnabled,
+  toggleHiddenPage,
+  useHiddenPages,
+  useJournalCleanupEnabled,
+} from "../../utils/settings";
+import { loadJournalCleanupStatus } from "../../api/journalCleanup";
 import { NAV_ITEMS } from "./AdminLayout";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -43,6 +49,14 @@ export default function SettingsPage() {
   const { addToast } = useToast();
   const { prepareAllThreadClear, clearAllThreads } = useAgentRuntime();
   const [clearingChat, setClearingChat] = useState(false);
+  const journalCleanupEnabled = useJournalCleanupEnabled();
+  const [journalCleanupAvailable, setJournalCleanupAvailable] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    loadJournalCleanupStatus().then((status) => { if (active) setJournalCleanupAvailable(status.available); });
+    return () => { active = false; };
+  }, []);
 
   const clearAllChatHistory = async () => {
     if (!await confirm(GLOBAL_CHAT_CLEAR_CONFIRMATION, { title: "Clear this account's chat history", confirmLabel: "Clear" })) return;
@@ -106,6 +120,26 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {journalCleanupAvailable && (
+        <div className="db-card">
+          <div className="settings-row">
+            <div className="settings-row-body">
+              <div className="settings-row-title">
+                <i className="fa-solid fa-wand-magic-sparkles" /> Journal AI cleanup
+              </div>
+              <div className="settings-row-meta">
+                Allow the journal to send entry text to Anthropic only after you confirm each request. Off by default and saved on this device.
+              </div>
+            </div>
+            <Toggle
+              checked={journalCleanupEnabled}
+              onChange={setJournalCleanupEnabled}
+              label="Allow Journal AI cleanup"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="db-card">
         <div className="settings-row">

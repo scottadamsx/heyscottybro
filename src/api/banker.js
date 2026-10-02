@@ -11,13 +11,14 @@
 import { runAgent } from "../agents/runAgent";
 import { catalogPromptBlock, loadTxCategories } from "./aiLibrary";
 import { toDateStr } from "../utils/plannerUtils";
+import { AI_MODELS } from "../config/aiModels";
 
 export const BANKER = {
   id: "banker",
   name: "Griphook",
   emoji: "",
   icon: "fa-sack-dollar",
-  model: "claude-sonnet-4-6",
+  model: AI_MODELS.smart,
   tagline: "Your Gringotts banker",
 };
 

@@ -6,22 +6,29 @@ import net from "node:net";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  // Dev-only stand-in for the Vercel serverless proxy (api/_utils.js):
-  // forwards /api/chat straight to Anthropic with the key
-  // from .env, so the chat features work under `vite dev`.
-  const anthropicProxy = {
-    target: "https://api.anthropic.com",
-    changeOrigin: true,
-    rewrite: () => "/v1/messages",
-    configure: (proxy) => {
-      proxy.on("proxyReq", (proxyReq) => {
-        const key = env.ANTHROPIC_API_KEY || env.VITE_ANTHROPIC_API_KEY;
-        if (key) proxyReq.setHeader("x-api-key", key);
-        proxyReq.setHeader("anthropic-version", "2023-06-01");
-        proxyReq.setHeader("anthropic-dangerous-direct-browser-access", "true");
-        proxyReq.removeHeader("origin");
-        proxyReq.removeHeader("referer");
-        proxyReq.removeHeader("authorization"); // Supabase session token is for our own /api, not Anthropic
+  // Dev-only stand-in for the Vercel /api/chat function. Running the same
+  // handler keeps auth, availability, feature dispatch, model allowlisting,
+  // and secrets identical in local development and production.
+  const devChatPlugin = {
+    name: "dev-api-chat",
+    configureServer(server) {
+      server.middlewares.use("/api/chat", (req, res) => {
+        for (const key of ["ANTHROPIC_API_KEY", "JOURNAL_CLEANUP_ENABLED", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY"]) {
+          if (!process.env[key] && env[key]) process.env[key] = env[key];
+        }
+        let body = "";
+        req.on("data", (chunk) => { body += chunk; });
+        req.on("end", () => {
+          const shim = {
+            statusCode: 200,
+            status(code) { this.statusCode = code; return this; },
+            json(value) { res.statusCode = this.statusCode; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(value)); },
+            end() { res.statusCode = this.statusCode; res.end(); },
+          };
+          import("./api/chat.js")
+            .then((module) => module.default({ ...req, body, method: req.method, headers: req.headers }, shim))
+            .catch(() => { res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Local chat handler failed" })); });
+        });
       });
     },
   };
@@ -261,7 +268,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [react(), devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devOrbitPlugin, devAuleControlPlugin],
+    plugins: [react(), devChatPlugin, devFetchPlugin, devUsagePlugin, devBrainPlugin, devOverseerPlugin, devInboxSyncPlugin, devInboxSendPlugin, devInboxReadPlugin, devOrbitPlugin, devAuleControlPlugin],
     // One React, always. The Brain's 3D graph is lazy-loaded, so Vite's dev
     // pre-bundler used to discover it late and bundle it against a second
     // React copy — "Cannot read properties of null (reading 'useRef')" on
@@ -285,11 +292,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes("lucide-react")) return "vendor-icons";
           },
         },
-      },
-    },
-    server: {
-      proxy: {
-        "/api/chat": anthropicProxy,
       },
     },
   };

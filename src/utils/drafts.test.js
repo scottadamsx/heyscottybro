@@ -11,9 +11,10 @@ globalThis.localStorage = {
 beforeEach(() => mem.clear());
 
 test('a saved draft round-trips', () => {
-  assert.equal(saveDraft(JOURNAL_NEW_DRAFT, { title: 'Mon', entry: 'long thoughts' }), true);
+  assert.equal(saveDraft(JOURNAL_NEW_DRAFT, { title: 'Mon', entry: 'long thoughts' }, { timer: { elapsedMs: 1200, pauseReason: 'manual' } }), true);
   const d = loadDraft(JOURNAL_NEW_DRAFT);
   assert.deepEqual(d.fields, { title: 'Mon', entry: 'long thoughts' });
+  assert.deepEqual(d.metadata, { timer: { elapsedMs: 1200, pauseReason: 'manual' } });
   assert.ok(!Number.isNaN(Date.parse(d.savedAt)));
 });
 
@@ -41,6 +42,20 @@ test('an unreadable draft is moved aside, never silently dropped', () => {
     assert.equal(loadDraft(JOURNAL_NEW_DRAFT), null);
     assert.match(mem.get('draft:journal:new:unreadable'), /future/);
   } finally { console.error = orig; }
+});
+
+test('schema 1 drafts remain readable with empty metadata', () => {
+  mem.set('draft:journal:new', JSON.stringify({ schema: 1, savedAt: '2026-01-01T00:00:00.000Z', fields: { entry: 'legacy' } }));
+  assert.deepEqual(loadDraft(JOURNAL_NEW_DRAFT), {
+    fields: { entry: 'legacy' },
+    metadata: {},
+    savedAt: '2026-01-01T00:00:00.000Z',
+  });
+});
+
+test('timer metadata keeps an otherwise blank draft', () => {
+  saveDraft(JOURNAL_NEW_DRAFT, { title: '', entry: '' }, { timer: { elapsedMs: 5000, pauseReason: 'automatic' } });
+  assert.equal(loadDraft(JOURNAL_NEW_DRAFT).metadata.timer.elapsedMs, 5000);
 });
 
 test('a storage failure reports false instead of pretending', () => {

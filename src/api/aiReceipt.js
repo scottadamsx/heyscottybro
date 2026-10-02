@@ -5,8 +5,9 @@
 // JSON. Vision is done with a base64 image block.
 import { getAuthHeaders } from "../utils/supabase";
 import { parseJsonResponse } from "../lib/http";
+import { AI_MODELS } from "../config/aiModels";
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = AI_MODELS.fast;
 
 async function callClaude(body) {
   const res = await fetch("/api/chat", {

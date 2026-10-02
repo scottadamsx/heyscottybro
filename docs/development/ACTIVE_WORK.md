@@ -2,13 +2,22 @@
 
 **Last updated:** 2026-10-01
 
+## Journal writing tools
+
+- **Feature document:** `docs/features/journal-writing-tools.md`
+- **Requested scope:** Inspect and plan live character and word counts, privacy-safe grammar and spelling cleanup, and a writing timer within the current journal create/edit experience.
+- **Approval:** Scott approved the original contract with exact **“go”** on 2026-10-01, chose the compliant expanded cleanup scope with **“cleanup everything,”** and then approved the revised ten-unit contract with exact **“go.”** Local application edits and creation of the additive migration source are authorized.
+- **Current state:** `SAI00000004` is active and bound. The revised ten-unit implementation is complete and uncommitted: create/edit share Unicode counts and an active-writing timer; cleanup is authenticated, server-gated, default-off, confirmed, validated, compared, undoable, and provenance-aware; `BUG-062` is resolved locally. Thirty-one focused tests, lint, build, deterministic evals, the AI validator, function ceiling, registry check, JSON/JSONL checks, privacy review, whitespace check, and desktop/390×844 local-data inspection pass. The full suite reports 305/306 because the already-recorded unrelated `BUG-058` projection test still hard-codes two sessions while the authoritative four-session validator passes. All inherited changes remain preserved.
+- **Next permitted work:** Scott said **“push,”** but `main` and `origin/main` are still identical because the completed workspace is uncommitted. The presented combined release is: commit the journal implementation plus preserved closeout records, push `main`, and verify the resulting CI/automatic Vercel Production deployment while leaving the provenance migration unapplied and cleanup disabled. Await Scott's exact **“go”** for that combined consequence. Live AI/eval calls, provider-account changes, production data, migration application, and enabling journal cleanup remain separate gates; apply the provenance migration before enabling cleanup.
+- **Data restrictions:** Journal text is sensitive. Do not place it in telemetry, logs, fixtures, prompts, screenshots, or session archives, and do not make a live cleanup request during discovery.
+
 ## Frodo previews, People integrity, analytics, and activity history
 
 - **Feature document:** `docs/features/frodo-people-analytics-activity.md`
 - **Requested scope:** Diagnose and plan Frodo image previews, People event isolation/edit/delete, obsolete-page removal, truthful cross-domain analytics, reusable Activity History, and honest page-usage telemetry.
-- **Approval:** Scott approved the recorded contract and pseudocode with exact **“go”** on 2026-10-01. The listed application implementation and additive migration files are authorized. Dependencies, production migration application, production-data changes, commit, push, deployment, deletion, and live AI/API calls remain unauthorized.
-- **Current state:** `SAI00000003` is active. Orbit commit `c5a1b8a` is clean and synchronized; the copied tool matches source. Final local gates pass: 48/48 feature tests, 51/51 synchronized focused tests, 136/136 Orbit tests, lint, build, registry, whitespace, and authenticated desktop/390-pixel checks. The registered suite remains 279/280 only because of reopened `BUG-058`. Scott approved the presented 45-file main commit with exact **“go commit.”**
-- **Next permitted work:** Create and verify only the approved main commit `Add private analytics and retire obsolete admin surfaces`. Stop before any push, production migration/write/delete, or deployment without its separate exact approval.
+- **Approval:** Scott approved the recorded contract and pseudocode with exact **“go”** on 2026-10-01, separately approved the Orbit and main commits with exact **“go commit,”** and after consequence review approved both pushes plus automatic Vercel Production deployment with exact **“go.”** Production migration application, production-data changes/deletion, dependency changes, and live AI/API calls remain unauthorized.
+- **Current state:** `SAI00000003` is closed. Orbit `c5a1b8a` and heyScottyBro `7afd2d5` are published. Vercel Production deployment `6785320311` succeeded for `7afd2d5`; the public production shell and deployed Analytics/Mission chunks are verified. GitHub Actions failed only at reopened `BUG-058`. Fresh-session authenticated smoke testing is blocked by newly logged `BUG-061`, the displayed but disabled Google provider. The additive migration remains unapplied.
+- **Next permitted work:** Finish post-release/session records and present the documentation-only closeout diff for a separate commit decision. Do not fix `BUG-058` or `BUG-061`, apply the database migration, or write/delete production data without separately approved work.
 - **Data restrictions:** Use real stored-record capabilities only, never fabricate historical telemetry, never expose private journal/chat contents in analytics metadata, and never use the dead `bugs` collection.
 
 ## Vercel function-limit repair

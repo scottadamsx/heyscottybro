@@ -11,6 +11,7 @@ import { TIERS, buildSystemPrompt } from "../api/aiTiers";
 import { BANKER, buildBankerPrompt } from "../api/banker";
 import { ARCHIVIST, buildArchivistPrompt } from "../api/archivist";
 import { overseerAgent } from "./overseer";
+import { AI_MODELS } from "../config/aiModels";
 
 // Toolbelt helper: keep only the named tools from the shared TOOLS registry.
 const only = (...names) => (TOOLS) => TOOLS.filter((t) => names.includes(t.name));
@@ -49,7 +50,7 @@ export const AGENTS = [
   overseerAgent,
   {
     id: "elrond", name: "Elrond", title: "Research Agent", icon: "fa-book-open",
-    color: "#22d3ee", kind: "api", model: "claude-sonnet-4-6", maxToolTurns: 16,
+    color: "#22d3ee", kind: "api", model: AI_MODELS.smart, maxToolTurns: 16,
     tagline: "Researches the web → files into the Brain",
     thinking: "Elrond consults the archives…",
     tools: only("library_catalog", "query", "web_fetch", "create_item", "update_item", "link_brain_nodes", "save_context", "list_context"),
@@ -65,7 +66,7 @@ export const AGENTS = [
   },
   {
     id: "luthien", name: "Lúthien", title: "Marketing Agent", icon: "fa-bullhorn",
-    color: "#ec4899", kind: "api", model: "claude-sonnet-4-6", maxToolTurns: 14,
+    color: "#ec4899", kind: "api", model: AI_MODELS.smart, maxToolTurns: 14,
     tagline: "Copy, campaigns & positioning for your products",
     thinking: "Lúthien weaves the words…",
     tools: only("library_catalog", "query", "web_fetch", "create_item", "link_brain_nodes", "save_context", "list_context", "consult_archivist"),

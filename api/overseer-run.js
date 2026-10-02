@@ -11,6 +11,7 @@
  *   or ?secret=<CRON_SECRET>
  */
 import { sbConfigured, sbSelect, sbUpsert } from "./_supabase.js";
+import { AI_MODELS } from "../src/config/aiModels.js";
 
 const fmtMoney = (n) => `$${Math.abs(Number(n || 0)).toFixed(2)}`;
 
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1200, messages: [{ role: "user", content: prompt }] }),
+      body: JSON.stringify({ model: AI_MODELS.smart, max_tokens: 1200, messages: [{ role: "user", content: prompt }] }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data?.error?.message || `Anthropic ${r.status}`);

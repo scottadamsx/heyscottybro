@@ -10,6 +10,7 @@
  *      the user applies. Money especially: propose, never silently mutate.
  */
 import { getAuthHeaders } from "../utils/supabase";
+import { AI_MODELS } from "../config/aiModels";
 
 const MAX_TEXT = 24000; // ~6k tokens of document text is plenty for a statement/announcement
 
@@ -59,7 +60,7 @@ export async function extract({ system, prompt, tool, content, maxTokens = 3000 
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: AI_MODELS.smart,
       max_tokens: maxTokens,
       system,
       tools: [tool],

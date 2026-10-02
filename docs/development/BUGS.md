@@ -777,7 +777,7 @@ Every discovered software defect belongs here, including defects found while bui
 
 ### BUG-059 — Saved Frodo image previews had no expiry recovery
 
-- **Status:** Resolved locally; not released
+- **Status:** Resolved and released in `7afd2d5`
 - **Discovered:** 2026-10-01
 - **Area:** Frodo saved attachment rendering
 - **Observed:** A user reports unusable chat photos. Current saved attachments hydrate to one-hour signed URLs, but the rendered image has no failure handler, URL refresh, or explicit unavailable state once that URL expires or fails.
@@ -790,7 +790,7 @@ Every discovered software defect belongs here, including defects found while bui
 
 ### BUG-060 — AI event matching could append unintended People attendees
 
-- **Status:** Resolved locally in Orbit commit `c5a1b8a` and synchronized; not released
+- **Status:** Resolved and released in Orbit `c5a1b8a` / heyScottyBro `7afd2d5`
 - **Discovered:** 2026-10-01
 - **Area:** People / Orbit AI event logging
 - **Observed:** A stored Workout event contains one attendee the user says belongs to a different gym visit. Manual event creation/edit state, event IDs, storage rows, and retrieval are isolated in the inspected paths, while the AI tool deliberately appends supplied people to a similar same-day event unless it is told the occasion differs.
@@ -800,3 +800,29 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** Orbit's `log_event` now keeps similar occasions separate by default and reuses an event only when `merge_occasion` is explicit and `different_occasion` is false. The manual Edit/confirmed Delete flow remains unchanged. Scott approved the presented source commit with exact **“go commit,”** Orbit commit `c5a1b8a` satisfies the `DR-017` source-before-sync boundary, and the read-only copy now identifies that commit.
 - **Regression coverage:** Orbit verifies separate-by-default, explicit merge, duplicate explicit merge, and `different_occasion`; the full sibling suite passes 136/136. The synchronized tool is byte-identical to commit `c5a1b8a`, and the main repository's 51-test affected set passes. Existing integrity/storage tests and rendered inspection cover the preserved manual flow; no production event was edited or deleted.
 - **Related work:** `docs/features/frodo-people-analytics-activity.md`; `DR-017`.
+
+### BUG-061 — Production sign-in advertises a disabled Google provider
+
+- **Status:** Investigating; deferred outside the released feature
+- **Discovered:** 2026-10-01
+- **Area:** Production authentication
+- **Observed:** The production sign-in page offers **Continue with Google**, but selecting it returns Supabase `validation_failed` with `Unsupported provider: provider is not enabled`.
+- **Expected:** Every displayed sign-in method is enabled and completes authentication, or the unavailable method is not offered.
+- **Impact:** A signed-out user who chooses the prominent Google option cannot enter the private workspace. It also blocked the authenticated post-deployment smoke test from a fresh browser session.
+- **Cause:** The production client exposes the Google OAuth action while the connected Supabase project reports that provider as disabled. No credential or configuration change was attempted.
+- **Fix:** Not implemented. Authentication configuration and any UI fallback require separate inspection, contract, and approval.
+- **Regression coverage:** Production browser inspection reproduced the provider error. The public homepage and `/admin/analytics` shell both return HTTP 200, but authenticated production behavior remains unverified from this fresh session.
+- **Related work:** `docs/features/frodo-people-analytics-activity.md` post-release validation.
+
+### BUG-062 — Paginated journal index reports a complete count
+
+- **Status:** Resolved locally — uncommitted
+- **Discovered:** 2026-10-01
+- **Area:** Life › Journal entry index
+- **Observed:** `JournalPage` renders at most 60 entries initially through `usePaged`, but its accessible count always announces the total loaded entry count. When more than 60 entries exist, hidden rows are therefore reported as though they are all visible.
+- **Expected:** The settled index reports `N` when all loaded entries are visible and `N of M` while pagination hides entries, derived from the same visible and total collections that render the list, per DR-025.
+- **Impact:** Scott and screen-reader users cannot tell that the visible journal index is partial without separately finding the Show more control.
+- **Cause:** The count uses `sortedEntries.length` rather than the paged view's visible and total lengths.
+- **Fix:** `JournalPage` now derives the label from the paged view's visible length and total length, showing `N of M` until all loaded rows are rendered and `N` when complete.
+- **Regression coverage:** `src/pages/admin/JournalPage.test.js` verifies the source boundary uses visible and total pagination state; the rendered empty state and local implementation were also inspected at desktop and 390×844.
+- **Related work:** `docs/features/journal-writing-tools.md`.

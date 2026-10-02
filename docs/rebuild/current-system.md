@@ -161,7 +161,7 @@ The full live column list is in [live-schema.md](live-schema.md).
 - **`work_log`:** `date`, `task`, `notes`, `project_id`, `minutes`. Habit completions are mirrored here as `notes = "habit:<trackerId>"`.
 
 ### Journal and memory
-- **`journal`:** `title`, `entry`, `date`, `mood`, `tags text[]`.
+- **`journal`:** `title`, `entry`, `date`, `mood`, `tags text[]`, plus nullable `ai_provenance jsonb` after the additive journal migration is applied.
   - **Bug:** `mood` and `tags` are never saved. The API accepts them from agents and then drops them.
 - **`context_entries`:** `text`, `tags` jsonb, `by` (`manual|frodo|scott`, plus a legacy `maria` value), `why`, `ts` (epoch ms).
   - These are plain facts. The planned "learning" model (DR-006: belief update + decay) was **never built**.
@@ -347,7 +347,9 @@ One row per user. Column `state` jsonb, schema **2** (`src/api/accountabilityApi
 ### Life
 - **Journal**
   - List and compose views.
-  - **Drafts are saved on every keystroke** (localStorage; versioned; unreadable drafts are set aside, not lost).
+  - Create and edit share Unicode-aware live body counts and a local active-writing timer with pause, reset, idle/background pause, and reload continuity.
+  - **Drafts are saved on every keystroke** (localStorage schema 2; schema 1 remains readable; unreadable drafts are set aside, not lost).
+  - Optional grammar/spelling cleanup is absent unless the authenticated server feature is ready and the device connector is enabled. It sends only the confirmed body to Anthropic, validates/restores emoji placeholders, compares before acceptance, and still requires the normal Save action. Exact-match accepted text can carry model/prompt/time provenance after the migration is applied.
   - Edit, delete, and **Export all as Markdown**.
 - **Habits**
   - Trackers use check or count mode, with an optional schedule: daily, or every N days/weeks from a start date.
@@ -457,6 +459,7 @@ The Library tools, plus:
 | `/api/fetch` | JWT | Server-side URL fetch; returns up to 12,000 characters of text. Partial SSRF guard. Also hosts the internally routed Kiwi handler. |
 | `/api/anthropic-usage` | JWT | Admin usage and cost API (`ANTHROPIC_ADMIN_KEY`) |
 | `/api/doc-share` | **Share token only** | Service role; returns a 1-hour signed URL |
+| `/api/chat` | JWT | Generic bounded Anthropic proxy plus authenticated journal-cleanup availability and the server-owned, validated `journal_cleanup` operation |
 | `/api/send-share-email`, `/api/send-to-me` | JWT | Resend email; send-to-me only mails the caller's own address |
 | `/api/overseer-run` | `CRON_SECRET`, **open if that secret is unset** | Daily summary note in the Brain, plus the morning-brief email |
 | `/api/inbox-sync` / `inbox-send` / `inbox-read` | Cron secret or JWT | Gmail (`gmail.modify` + `gmail.send`, one global refresh token) ↔ `messages` |
@@ -464,10 +467,10 @@ The Library tools, plus:
 | `/api/kiwi-tasks` | JWT; `?config=1` is public | Kiwi desktop app reads today's tasks and adds one-off tasks. Rewrites to `/api/fetch` so it does not consume a thirteenth Vercel function; runs under RLS with the user's own token and uses idempotent ids. |
 
 - **Hosting (`vercel.json`):** SPA rewrites; security headers; crons `overseer-run` at 11:00 UTC and `inbox-sync` at 12:00 UTC.
-- **Dev (`vite.config.js`):** stand-ins for `/api/*`. The dev Anthropic proxy has **no auth, allowlist or token cap**. The dev fetch has no SSRF guard. The dev endpoint `/api/aule-control` starts and stops the agent server.
+- **Dev (`vite.config.js`):** stand-ins for `/api/*`. `/api/chat` uses the same authenticated route handler and journal-cleanup boundary as production. The dev fetch has no SSRF guard. The dev endpoint `/api/aule-control` starts and stops the agent server.
 - **Env var names** (values never recorded):
   - Supabase: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`
-  - Anthropic and OpenAI: `ANTHROPIC_API_KEY`, `ANTHROPIC_ADMIN_KEY`, `OPENAI_API_KEY`
+  - Anthropic and OpenAI: `ANTHROPIC_API_KEY`, `ANTHROPIC_ADMIN_KEY`, `OPENAI_API_KEY`; journal cleanup additionally requires server-side `JOURNAL_CLEANUP_ENABLED=1`
   - Gmail: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, `GMAIL_QUERY`
   - Crons and email: `CRON_SECRET`, `OVERSEER_USER_ID`, `INBOX_USER_ID`, `RESEND_API_KEY`, `FROM_EMAIL`, `BRIEF_EMAIL`
   - Aulë: `AULE_TOKEN`, `AULE_PORT`, `AULE_WORKSPACE`, `AULE_PERMISSION_MODE`, `AULE_MODEL`, `AULE_CLAUDE_PATH`, `VITE_AULE_URL`, `VITE_AULE_TOKEN`
@@ -477,7 +480,7 @@ The Library tools, plus:
 
 ### Browser storage
 **localStorage:**
-- `setting:theme`, `setting:hiddenPages`
+- `setting:theme`, `setting:hiddenPages`, `setting:journalCleanup`
 - `setting:hideSmokeTracker`: orphaned
 - `draft:journal:*`
 - `accountability`: habit mirror, used only to seed a new account

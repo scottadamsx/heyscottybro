@@ -2,6 +2,7 @@
  * Shared helpers for the Vercel serverless functions. Files prefixed with "_"
  * in /api are not exposed as routes.
  */
+import { ALLOWED_AI_MODELS } from "../src/config/aiModels.js";
 
 /** Parse a JSON body that may arrive as a string or an object. */
 export function parseBody(req) {
@@ -106,7 +107,7 @@ export async function getSupabaseUser(req) {
 // the archivist and Griphook the banker run as their own specialist tiers
 // (opus and sonnet respectively). Haiku is kept allowed for anything that
 // still explicitly opts into it.
-const ALLOWED_MODELS = new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-8", "claude-fable-5-1"]);
+const ALLOWED_MODELS = new Set(ALLOWED_AI_MODELS);
 const MAX_TOKENS_CAP = 4096;
 
 /**

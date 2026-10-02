@@ -16,6 +16,7 @@
  */
 import { runAgent } from "../agents/runAgent";
 import { catalogPromptBlock } from "./aiLibrary";
+import { AI_MODELS } from "../config/aiModels";
 import { toDateStr } from "../utils/plannerUtils";
 
 export const ARCHIVIST = {
@@ -23,7 +24,7 @@ export const ARCHIVIST = {
   name: "Bilbo",
   emoji: "",
   icon: "fa-book-bookmark",
-  model: "claude-opus-4-8",
+  model: AI_MODELS.deep,
   tagline: "Finds anything across your data + Brain",
 };
 

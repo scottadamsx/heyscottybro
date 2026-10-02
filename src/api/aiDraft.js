@@ -4,8 +4,9 @@
 import { getAuthHeaders } from "../utils/supabase";
 import { loadContext } from "./contextApi";
 import { parseJsonResponse } from "../lib/http";
+import { AI_MODELS } from "../config/aiModels";
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = AI_MODELS.fast;
 
 const DRAFT_TOOL = {
   name: "write_draft",
