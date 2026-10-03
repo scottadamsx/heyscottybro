@@ -14,6 +14,9 @@ const small = (s, max = 500) => typeof s === 'string' && s.length <= max
 const object = (v) => v && typeof v === 'object' && !Array.isArray(v)
 const kinds = new Set(KINDS.map((k) => k.id))
 const topics = new Set(TOPICS.map((t) => t.id))
+const needsAttribution = (f) => !normText(f.evidence).includes(normText(f.mention))
+const hasPersonPronoun = (s) => /\b(he|him|his|hes|she|her|hers|shes|they|them|their|theirs|theyre)\b/.test(normText(s))
+const isPronounName = (s) => /^(i|me|my|we|us|our|he|him|his|hes|she|her|hers|shes|they|them|their|theirs|theyre)$/.test(normText(s))
 
 const EXTRACT_FORMAT = {
   type: 'json_schema',
@@ -40,6 +43,7 @@ const RECONCILE_FORMAT = {
   schema: { type: 'object', additionalProperties: false, required: ['decisions'], properties: {
     decisions: { type: 'array', items: { type: 'object', additionalProperties: false,
       required: ['index', 'outcome'], properties: { index: { type: 'integer' }, outcome: { type: 'string', enum: ['add', 'already_known', 'uncertain', 'context'] },
+        attribution: { type: 'string', enum: ['clear', 'ambiguous'] },
         known: { type: 'object', additionalProperties: false, required: ['field'], properties: {
           field: { type: 'string', enum: ['how', 'group', 'birthday', 'fact'] }, factIndex: { type: 'integer' },
         } },
@@ -72,6 +76,7 @@ function extractValid(value, source) {
     if (!object(e) || !small(e.datePhrase, 100) || !kinds.has(e.kind) || !small(e.place, 160) ||
         !Array.isArray(e.people) || e.people.length > 20) return 'event.shape_or_enum'
     if (e.people.some((n) => !text(n, 100) || !normText(source).includes(normText(n)))) return 'event.people.source_evidence'
+    if (e.people.some(isPronounName)) return 'event.people.use_source_name_not_pronoun'
     if (e.datePhrase && !normText(source).includes(normText(e.datePhrase))) return 'event.datePhrase.source_evidence'
     if (e.place && !normText(source).includes(normText(e.place))) return 'event.place.source_evidence'
   }
@@ -81,7 +86,8 @@ function extractValid(value, source) {
         !topics.has(f.topic) || !text(f.evidence, 500) || !['profile', 'context'].includes(f.scope)) return `${path}.shape_or_enum`
     if (!normText(source).includes(normText(f.evidence))) return `${path}.evidence.not_verbatim`
     if (!normText(f.evidence).includes(normText(f.v))) return `${path}.value.not_in_evidence`
-    if (!normText(f.evidence).includes(normText(f.mention))) return `${path}.mention.not_in_evidence`
+    if (isPronounName(f.mention)) return `${path}.mention.use_source_name_not_pronoun`
+    if (needsAttribution(f) && (!hasPersonPronoun(f.evidence) || !normText(source).includes(normText(f.mention)))) return `${path}.mention.not_in_evidence`
     if (/\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.evidence)) &&
         !/\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.v))) return `${path}.negation.not_preserved`
   }
@@ -94,6 +100,7 @@ function reconcileValid(value, context) {
   for (const d of value.decisions) {
     if (!object(d) || !Number.isInteger(d.index) || d.index < 0 || d.index >= context.length || seen.has(d.index) ||
         !['add', 'already_known', 'uncertain', 'context'].includes(d.outcome)) return 'decisions.index_or_outcome'
+    if (needsAttribution(context[d.index].fact) && !['clear', 'ambiguous'].includes(d.attribution)) return 'decisions.attribution.required'
     if (d.known) {
       if (!object(d.known) || !['how', 'group', 'birthday', 'fact'].includes(d.known.field)) return 'decisions.known.field'
       const candidate = context[d.index]
@@ -273,7 +280,7 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
         birthday: String(people[choices.get(f.mention).id].birthday || '').slice(0, 10),
       } : {},
     }))
-    const reconciled = await pass(ask, 'reconcile', { facts: context }, (value) => reconcileValid(value, context))
+    const reconciled = await pass(ask, 'reconcile', { entry: entry.text, answers: entry.answers, facts: context }, (value) => reconcileValid(value, context))
     const decisionByIndex = new Map(reconciled.decisions.map((d) => [d.index, d]))
     const outcomes = []
     extracted.facts.forEach((f, index) => {
@@ -282,12 +289,19 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
       const decision = decisionByIndex.get(index)
       let outcome = checkOutcome(f, prior, context[index].basics, decision)
       const qid = journalQuestionId('fact', `${f.mention} ${f.k} ${f.v}`)
-      const answer = entry.answers[qid]
+      const attribution = needsAttribution(f) && decision.attribution !== 'clear'
+      // Only unresolved attribution needs confirmation; clear contextual pronouns are normal input.
+      const answerId = attribution ? journalQuestionId('attribution', `${f.mention} ${f.k} ${f.v} ${f.evidence}`) : qid
+      const answer = entry.answers[answerId]
+      const proposedOutcome = outcome
+      if (attribution && outcome !== 'context') outcome = 'uncertain'
       if (outcome === 'uncertain') {
-        if (answer === 'add') outcome = 'add'
+        if (answer === 'add') outcome = proposedOutcome === 'already_known' ? 'already_known' : 'add'
         else if (answer === 'skip') outcome = 'context'
-        else questions.push(question(qid, `Should Orbit remember "${f.k}: ${f.v}" for ${f.mention}?`, 'fact', [
-          { value: 'add', label: 'Add as a new fact' }, { value: 'skip', label: 'Keep only in this entry' },
+        else questions.push(question(answerId, attribution
+          ? `Does "${f.evidence}" refer to ${f.mention}?`
+          : `Should Orbit remember "${f.k}: ${f.v}" for ${f.mention}?`, 'fact', [
+          { value: 'add', label: attribution ? 'Yes, remember for this person' : 'Add as a new fact' }, { value: 'skip', label: 'Keep only in this entry' },
         ]))
       }
       outcomes.push({ index, outcome, evidence: f.evidence, mention: f.mention, ...(outcome === 'already_known' && decision.known ? { known: decision.known } : {}) })

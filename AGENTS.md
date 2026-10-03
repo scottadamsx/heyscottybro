@@ -97,6 +97,14 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 - Word/character counts and other statistics are optional, not required decoration. Do not add a history list merely to satisfy the repeated-list count rule; when history is explicitly opened, its accurate count may appear there.
 - Preserve necessary error, saving, clarification and confirmation states. Minimal controls must not hide failures or remove access to saved work.
 
+## Context-Aware AI and Clarification
+
+- Preserve the conversational workflow: use the full entry and relevant context to resolve clear references, including pronouns. Do not require the user to repeat a person's name in every sentence.
+- Never turn a validation failure into blanket confirmation prompts. Diagnose and fix the extraction/validation contract; do not transfer routine interpretation back to the user.
+- Ask a targeted clarification only when there are genuinely competing interpretations or missing essential information. A pronoun alone is not ambiguity. Preserve evidence and safeguards against invented facts and wrong-person attribution.
+- Regression-test both sides: an entry naming Carter followed by clearly related "he"/"him" facts must not require identity confirmation; genuinely ambiguous references involving multiple people must not be silently assigned. Test intended versus completed activities and current facts versus aspirations separately.
+- Before adding a confirmation step, explain what unresolved ambiguity it addresses. If context already answers it, do not add the step.
+
 ## Existing project instructions
 
 - Read and follow `CLAUDE.md` for the project's implementation, design, data-safety, and validation rules.
