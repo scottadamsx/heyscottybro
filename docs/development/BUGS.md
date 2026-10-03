@@ -764,15 +764,15 @@ Every discovered software defect belongs here, including defects found while bui
 
 ### BUG-058 — Session-registry regression hard-codes the seed-session count
 
-- **Status:** Reopened — deferred to Project Manager-owned session work
+- **Status:** Resolved locally after the Orbit release CI failure; follow-up verification pending
 - **Discovered:** 2026-09-29
 - **Area:** Development session registry validation test
 - **Observed:** The earlier one-to-two-session correction passed when made, but the same regression recurred after the Project Manager validly added `SAI00000003`: `npm run session-registry:check` accepts three sessions and selects `SAI00000004`, while the registered suite still expects two sessions.
 - **Expected:** The checked-in registry regression verifies the current valid projection without becoming false as the Project Manager appends correctly ordered sessions.
 - **Impact:** The current registered suite reports 279/280 even though the authoritative registry validator, feature regressions, lint, and build pass.
 - **Cause:** The checked-in projection test still encodes the then-current session count and next ID as permanent invariants, so every valid Project Manager reservation makes it stale again.
-- **Fix:** The prior one-time expectation update is insufficient. A durable fix must assert projection consistency from the append-only records without hard-coding a count that changes during normal Project Manager operation. That separate governance change is not authorized by the current product feature and remains deferred.
-- **Regression coverage:** The authoritative registry check passes with three IDs and `SAI00000004` next; the six invariant-focused registry cases still pass. The one stale projection case fails as recorded and was not silently edited.
+- **Fix:** Following Scott's explicit repair request, the checked-in regression derives the expected IDs and next ID from reservation records. Parameterized fixtures cover zero, one, three and eight sessions, including closed and abandoned identities. The production validator and all invalid-registry checks remain unchanged.
+- **Regression coverage:** All11 registry cases pass, including the four growth/lifecycle fixtures. The full host command passes with310/310 in its final node suite; lint, build and the authoritative six-session registry check also pass. Remote CI verification follows the repair push.
 - **Related work:** `docs/features/bonsai-development-session-identities.md`.
 
 ### BUG-059 — Saved Frodo image previews had no expiry recovery

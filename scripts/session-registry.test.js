@@ -58,11 +58,32 @@ function bound(id, threadId) {
   });
 }
 
-test("the checked-in registry and glossary are valid and reserve 03 next", () => {
+test("the checked-in registry and glossary agree with all reserved IDs", () => {
+  const reservations = actualRegistry.split(/\r?\n/).filter((line) => line.trim())
+    .map((line) => JSON.parse(line)).filter((record) => record.event === "reserved");
+  const ids = reservations.map((record) => record.sai_id);
+  const highest = Math.max(0, ...ids.map((id) => Number(id.slice(3))));
   const result = validateSessionRegistry(actualRegistry, actualGlossary);
-  assert.equal(result.sessions.length, 2);
-  assert.equal(result.nextId, "SAI00000003");
+  assert.deepEqual(result.sessions.map((session) => session.id), ids);
+  assert.equal(result.nextId, `SAI${String(highest + 1).padStart(8, "0")}`);
 });
+
+for (const count of [0, 1, 3, 8]) {
+  test(`next ID advances beyond ${count} reservations, including closed and abandoned sessions`, () => {
+    const events = [];
+    const rows = [];
+    for (let index = 1; index <= count; index += 1) {
+      const id = `SAI${String(index).padStart(8, "0")}`;
+      const threadId = `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+      const lifecycle = index % 2 ? "closed" : "abandoned";
+      events.push(event("reserved", id), bound(id, threadId), event("activated", id), event(lifecycle, id));
+      rows.push({ id, threadId, status: lifecycle === "closed" ? "Closed" : "Abandoned" });
+    }
+    const result = validateSessionRegistry(registry(...events), glossary(...rows));
+    assert.equal(result.sessions.length, count);
+    assert.equal(result.nextId, `SAI${String(count + 1).padStart(8, "0")}`);
+  });
+}
 
 test("duplicate reservations are rejected", () => {
   const text = registry(event("reserved", "SAI00000001"), event("reserved", "SAI00000001"));

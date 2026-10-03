@@ -1,5 +1,11 @@
 # Active work
 
+## Release CI repair
+
+- Scott requested repair after the push error. GitHub run37086391814 confirms BUG-058 is the sole failed test (six sessions versus hard-coded two).
+- Scope: replace the stale test expectation with reservation-based assertions, cover registry growth and consumed closed/abandoned IDs, run all host gates, and publish the follow-up repair. No application behavior, database, dependency or provider changes.
+- Completed: reproduced the exact remote failure, repaired regression and added four fixtures; full tests pass (final suite310/310), lint/build/registry pass. Next: commit/push and inspect replacement CI result.
+
 ## Orbit conversational journal
 
 - **Feature document:** `docs/features/orbit-journal.md`
