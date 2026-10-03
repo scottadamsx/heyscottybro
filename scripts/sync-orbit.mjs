@@ -15,6 +15,7 @@ if (dirty && !process.argv.includes("--allow-dirty")) {
   process.exit(1);
 }
 const commit = execSync("git rev-parse --short HEAD", { cwd: SRC }).toString().trim();
+const revision = dirty ? `${commit} plus uncommitted local changes` : commit;
 
 // Server files the hosted API needs (not the CLI tools, seeds or the local entry point).
 const SERVER = ["app.js", "cloudStore.js", "hosted.js", "importer.js", "repo.js", "store.js", "ai"];
@@ -34,10 +35,19 @@ function copy(from, to) {
 fs.rmSync(DEST, { recursive: true, force: true });
 for (const name of SERVER) copy(path.join(SRC, "server", name), path.join(DEST, "server", name));
 copy(path.join(SRC, "src"), path.join(DEST, "src"));
+// The hosted copy uses the host's central model policy; standalone Orbit stays independent.
+const modelConfig = path.join(DEST, "server/ai/config.js");
+const standaloneConfig = fs.readFileSync(modelConfig, "utf8");
+const defaultModel = /^export const MODEL = process\.env\.ANTHROPIC_MODEL \|\| '[^']+'$/m;
+if (!defaultModel.test(standaloneConfig)) throw new Error("Orbit model configuration changed; review the host integration before syncing.");
+fs.writeFileSync(modelConfig, standaloneConfig.replace("import Anthropic from '@anthropic-ai/sdk'", "import Anthropic from '@anthropic-ai/sdk'\nimport { AI_MODELS } from '../../../src/config/aiModels.js'").replace(
+  defaultModel,
+  "export const MODEL = process.env.ANTHROPIC_MODEL || AI_MODELS.orbitDefault",
+));
 fs.writeFileSync(
   path.join(DEST, "VENDORED.md"),
-  `# Orbit (copied, do not edit)\n\nCopied from \`${path.basename(SRC)}\` at commit \`${commit}\` by \`node scripts/sync-orbit.mjs\`.\n` +
+  `# Orbit (copied, do not edit)\n\nCopied from \`${path.basename(SRC)}\` at \`${revision}\` by \`node scripts/sync-orbit.mjs\`.\n` +
     `Change Orbit in its own repo, commit, and re-run the script. Used by the People space\n` +
     `(src/pages/admin/PeoplePage.jsx) and the /api/orbit function (api/orbit.js).\n`,
 );
-console.log(`orbit/ now matches ${path.basename(SRC)}@${commit}`);
+console.log(`orbit/ now matches ${path.basename(SRC)}@${revision}`);

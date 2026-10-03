@@ -17,21 +17,26 @@ export function createScope(state, defaults) {
   const data = {
     people: { ...state.people },
     events: { ...state.events },
+    journal: { ...(state.journal || {}) },
     settings: { ...defaults, ...(state.settings || {}) },
   }
   const scope = {
     ops: [],
     logs: [],
+    journalAvailable: state.journalAvailable === true,
+    guarded: null,
     get: (name) => data[name],
-    putItem(name, id, doc) {
+    putItem(name, id, doc, { checkDuplicate = false } = {}) {
+      const expected = data[name][id] ?? null
       data[name] = { ...data[name], [id]: doc }
-      scope.ops.push({ t: name, op: 'put', id, doc })
+      scope.ops.push({ t: name, op: 'put', id, doc, expected, ...(checkDuplicate ? { guardUnique: true } : {}) })
     },
     removeItem(name, id) {
       if (!(id in data[name])) return false
+      const expected = data[name][id]
       const { [id]: _, ...rest } = data[name]
       data[name] = rest
-      scope.ops.push({ t: name, op: 'del', id })
+      scope.ops.push({ t: name, op: 'del', id, expected })
       return true
     },
     putSettings(doc) {
@@ -87,11 +92,13 @@ export function cloudMiddleware(getClient, defaults) {
 async function finish(scope, client, body, res, send) {
   if (scope.ops.length) {
     try {
-      await client.apply(scope.ops)
+      if (scope.guarded) await client.applyGuarded(scope.guarded)
+      else await client.apply(scope.ops)
     } catch (e) {
-      console.error('[cloud] save failed', e)
-      res.status(500)
-      return send({ ok: false, code: 'save_failed', message: `Not saved: ${e.message}` })
+      const conflict = e.code === 'JOURNAL_CONFLICT' || e.code === 'P0001' && /journal conflict/i.test(e.message)
+      console.error('[cloud] save failed', e.code || 'error')
+      res.status(conflict ? 409 : 500)
+      return send({ ok: false, code: conflict ? 'conflict' : 'save_failed', message: conflict ? 'Orbit changed while this entry was processing. Retry.' : scope.guarded ? 'Journal save failed. Try again.' : `Not saved: ${e.message}` })
     }
   }
   if (scope.logs.length) {
@@ -116,7 +123,7 @@ async function rest(url, { method = 'GET', headers, body }) {
   }
   const text = await res.text()
   const out = text ? JSON.parse(text) : null
-  if (!res.ok) throw new Error(out?.message || `Supabase returned ${res.status}`)
+  if (!res.ok) throw Object.assign(new Error(out?.message || `Supabase returned ${res.status}`), { code: out?.code, status: res.status })
   return out
 }
 
@@ -139,14 +146,22 @@ function makeClient({ url, apiKey, bearer, userId, applyPath, applyBody }) {
   return {
     userId,
     async load() {
-      const [people, events, settings] = await Promise.all([
+      const [people, events, settings, journalResult] = await Promise.all([
         all('orbit_people'),
         all('orbit_events'),
         rest(`${url}/rest/v1/orbit_settings?select=doc&user_id=eq.${uid}`, { headers }),
+        all('orbit_journal').then((journal) => ({ journal, available: true })).catch((e) => {
+          if (e.code === '42P01' || e.code === 'PGRST205') return { journal: {}, available: false }
+          throw e
+        }),
       ])
-      return { people, events, settings: settings[0]?.doc || null }
+      return { people, events, settings: settings[0]?.doc || null, journal: journalResult.journal, journalAvailable: journalResult.available }
     },
     apply: (ops) => rest(`${url}/rest/v1/rpc/${applyPath}`, { method: 'POST', headers, body: applyBody(ops) }),
+    applyGuarded: (transaction) => rest(`${url}/rest/v1/rpc/${applyPath === 'orbit_apply' ? 'orbit_journal_apply' : 'orbit_journal_apply_ops'}`, {
+      method: 'POST', headers,
+      body: applyPath === 'orbit_apply' ? { tx: transaction } : { p_user: userId, tx: transaction },
+    }),
     /** Audit rows go to heyScottyBro's agent_actions, like every other agent's. */
     log: (entries) =>
       rest(`${url}/rest/v1/agent_actions`, {

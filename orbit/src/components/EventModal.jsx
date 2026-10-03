@@ -8,11 +8,12 @@ import Button from './ui/Button.jsx'
 import Badge from './ui/Badge.jsx'
 import PersonChip, { firstName } from './ui/PersonChip.jsx'
 import Empty from './ui/Empty.jsx'
+import { sourceJournalId } from '../lib/journalClient.js'
 
 const STATUS_TONE = { done: 'success', planned: 'warn', skipped: 'neutral' }
 
 export default function EventModal({ id }) {
-  const { events, people, saveEvent, deleteEvent } = useOrbit()
+  const { events, people, saveEvent, deleteEvent, health } = useOrbit()
   const { back, open, notify } = useUI()
   const { done, asOf } = useDerived()
   const e = events[id]
@@ -43,6 +44,7 @@ export default function EventModal({ id }) {
     })
 
   const updates = Object.entries(e.updates || {}).filter(([pid]) => people[pid])
+  const journalId = sourceJournalId(e)
 
   return (
     <Modal
@@ -71,6 +73,7 @@ export default function EventModal({ id }) {
           {formatDate(e.date)} · {e.kind}
           {e.place && ` · ${e.place}`} · <Badge tone={STATUS_TONE[e.status || 'done']}>{e.status || 'done'}</Badge>
         </p>
+        {journalId && health?.journal?.available && <Button size="sm" variant="ghost" onClick={() => open('journal', { entryId: journalId })}>View journal entry</Button>}
         <section>
           <h3 className="section-title">Who was there</h3>
           <div className="chips">

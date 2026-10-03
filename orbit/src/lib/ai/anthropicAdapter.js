@@ -29,4 +29,5 @@ export const anthropicAdapter = {
   sayHi: (personId) => post('sayhi', { personId }).then((r) => r.message),
   /** messages: [{ role, content }] ending with the user's turn. Returns { reply, lines, wrote }. */
   interview: (messages, signal, session) => post('interview', { messages, session }, signal),
+  journal: (id, revision) => post(`journal/${encodeURIComponent(id)}`, { revision }),
 }

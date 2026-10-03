@@ -7,6 +7,7 @@ import { nextBirthday } from '../../lib/derive/birthdays.js'
 import Button, { IconButton } from '../ui/Button.jsx'
 import PersonChip from '../ui/PersonChip.jsx'
 import { X } from '../ui/icons.js'
+import { sourceJournalId } from '../../lib/journalClient.js'
 
 function birthdayText(b, asOf) {
   if (!b) return 'Not saved'
@@ -27,7 +28,7 @@ function knownSince(p, id, events) {
 }
 
 export default function InfoTab({ id }) {
-  const { people, events, savePerson, peek } = useOrbit()
+  const { people, events, savePerson, peek, health } = useOrbit()
   const { open, notify } = useUI()
   const { asOf } = useDerived()
   const p = people[id]
@@ -128,6 +129,7 @@ export default function InfoTab({ id }) {
                       {f.v && <span> {f.v}</span>}
                       {f.ref && people[f.ref] && <span className="muted"> (linked)</span>}
                     </button>
+                    {sourceJournalId(f) && health?.journal?.available && <button type="button" className="link journal-fact-source" onClick={() => open('journal', { entryId: sourceJournalId(f) })}>Journal source</button>}
                     <IconButton label={`Remove ${f.k}`} onClick={() => removeFact(f.index)} className="icon-sm">
                       <X size={14} />
                     </IconButton>

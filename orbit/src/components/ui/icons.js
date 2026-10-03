@@ -1,5 +1,6 @@
 // The one icon set (Lucide). No emoji anywhere in the interface.
 import {
+  ArrowLeft,
   Briefcase,
   CalendarDays,
   Check,
@@ -21,6 +22,7 @@ import {
   Play,
   Plug,
   Search,
+  Send,
   Settings,
   Sparkles,
   StickyNote,
@@ -31,7 +33,7 @@ import {
   X,
 } from 'lucide-react'
 
-export { Check, CircleHelp, Gift, Moon, Pause, Play, Plug, Search, Settings, Sparkles, Sun, X }
+export { ArrowLeft, Check, CircleHelp, Gift, Moon, Pause, Play, Plug, Search, Send, Settings, Sparkles, Sun, X }
 
 export const KIND_ICON = {
   Hangout: Coffee,

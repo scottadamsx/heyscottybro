@@ -7,4 +7,5 @@ export const nullAdapter = {
   questions: off,
   sayHi: off,
   interview: off,
+  journal: off,
 }

@@ -6,8 +6,9 @@ import { aiRouter } from './ai/routes.js'
 import { aiStatus } from './ai/config.js'
 import { applyImport, planImport } from './importer.js'
 import { cloudMiddleware } from './cloudStore.js'
+import { processJournal, putJournal, undoJournal } from './ai/journal.js'
 
-const STATUS = { invalid: 400, bad_id: 400, duplicate: 409, not_found: 404, no_data: 422, ai_off: 503, ai_failed: 502 }
+const STATUS = { invalid: 400, bad_id: 400, duplicate: 409, conflict: 409, not_found: 404, no_data: 422, ai_off: 503, unavailable: 503, ai_failed: 502, save_failed: 500 }
 
 export const send = (res, out) => res.status(out.ok ? 200 : STATUS[out.code] || 400).json(out)
 const allowDuplicate = (req) => req.query.allowDuplicate === '1'
@@ -17,7 +18,7 @@ const allowDuplicate = (req) => req.query.allowDuplicate === '1'
  * localOnly: refuse anything that isn't from this machine (the local server).
  * cloud: { getClient(req) } to run every request against Supabase instead of data/ (cloudStore.js).
  */
-export function createApp({ base = '/api', localOnly = true, cloud = null } = {}) {
+export function createApp({ base = '/api', localOnly = true, cloud = null, journalAsk = undefined } = {}) {
   const app = express()
   app.disable('x-powered-by')
   app.use(express.json({ limit: '5mb' }))
@@ -44,6 +45,7 @@ export function createApp({ base = '/api', localOnly = true, cloud = null } = {}
     res.json({
       ok: true,
       ai: aiStatus(store.get('settings')),
+      journal: { available: repo.journalAvailable() },
       seeded: store.bootInfo.seeded,
       empty: store.bootInfo.empty,
       storage: cloud ? 'supabase' : 'file',
@@ -62,6 +64,7 @@ export function createApp({ base = '/api', localOnly = true, cloud = null } = {}
       exportedAt: new Date().toISOString(),
       people: store.get('people'),
       events: store.get('events'),
+      journal: repo.listJournal(),
       settings: store.get('settings'),
     })
   })
@@ -76,6 +79,14 @@ export function createApp({ base = '/api', localOnly = true, cloud = null } = {}
   api.put('/events/:id', (req, res) => send(res, repo.saveEvent(req.params.id, req.body, { allowDuplicate: allowDuplicate(req) })))
   api.delete('/events/:id', (req, res) => send(res, repo.deleteEvent(req.params.id)))
   api.post('/events/merge', (req, res) => send(res, repo.mergeEvents(req.body?.keep, req.body?.drop)))
+
+  api.get('/journal', (_req, res) => {
+    const entries = repo.listJournal()
+    return entries ? res.json({ ok: true, entries, available: true }) : send(res, { ok: false, code: 'unavailable', message: 'Journal storage is not installed here yet.' })
+  })
+  api.put('/journal/:id', async (req, res) => send(res, await putJournal(req.params.id, req.body)))
+  api.post('/ai/journal/:id', async (req, res) => send(res, await processJournal(req.params.id, req.body?.revision, { ask: journalAsk })))
+  api.post('/journal/:id/undo', async (req, res) => send(res, await undoJournal(req.params.id, req.body?.revision)))
 
   api.get('/settings', (_req, res) => res.json(store.get('settings')))
   api.put('/settings', (req, res) => send(res, repo.saveSettings(req.body)))

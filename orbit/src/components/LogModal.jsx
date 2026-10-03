@@ -11,13 +11,14 @@ import Button from './ui/Button.jsx'
 import { DateField, SelectField, TextArea, TextField } from './ui/Field.jsx'
 import PeoplePicker from './ui/PeoplePicker.jsx'
 import { firstName } from './ui/PersonChip.jsx'
+import JournalDrawer from './JournalDrawer.jsx'
 
 /**
  * Log a hangout, plan one, or edit an event.
  * props: eventId (edit) · people · date · kind · title · status · plan (default to a week out)
  */
-export default function LogModal({ eventId, onClose, ...prefill }) {
-  const { people, events, saveEvent } = useOrbit()
+export default function LogModal({ eventId, onClose, mode, ...prefill }) {
+  const { people, events, saveEvent, health, ai } = useOrbit()
   const { notify, openEvent } = useUI()
   const existing = eventId ? events[eventId] : null
   const now = today()
@@ -35,6 +36,8 @@ export default function LogModal({ eventId, onClose, ...prefill }) {
   const [errors, setErrors] = useState({})
   const [dup, setDup] = useState(null)
   const [busy, setBusy] = useState(false)
+  const journalAvailable = health?.journal?.available === true
+  const [entryMode, setEntryMode] = useState(() => mode || (journalAvailable && ai.available && !eventId && !prefill.plan ? 'journal' : 'manual'))
   const set = (k) => (v) => {
     setForm((f) => ({ ...f, [k]: v }))
     setDup(null)
@@ -96,6 +99,10 @@ export default function LogModal({ eventId, onClose, ...prefill }) {
   const label = existing ? 'Save' : future ? 'Plan it' : 'Log it'
   const dupEvent = dup && events[dup]
 
+  if (entryMode === 'journal' && journalAvailable && !eventId && !prefill.plan) {
+    return <JournalDrawer onClose={onClose} onManual={() => setEntryMode('manual')} />
+  }
+
   return (
     <Modal
       title={existing ? 'Edit event' : future ? 'Plan a hangout' : 'Log a hangout'}
@@ -109,6 +116,12 @@ export default function LogModal({ eventId, onClose, ...prefill }) {
         </>
       }
     >
+      {journalAvailable && !eventId && !prefill.plan && (
+        <div className="journal-mode-switch segmented" role="group" aria-label="Entry method">
+          <button type="button" className="seg" aria-pressed={false} onClick={() => setEntryMode('journal')} disabled={busy}>Orbit</button>
+          <button type="button" className="seg" aria-pressed={true}>Manual</button>
+        </div>
+      )}
       <form
         className="stack"
         onSubmit={(e) => {

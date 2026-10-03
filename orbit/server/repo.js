@@ -4,11 +4,77 @@ import * as store from './store.js'
 import { validateEvent, validatePerson, validateSettings } from '../src/lib/validate.js'
 import { findDuplicateEvent, findDuplicatePerson, normText } from '../src/lib/dedupe.js'
 import { today } from '../src/lib/dates.js'
+import { validJournalEntry } from '../src/lib/journal.js'
+import { currentScope } from './cloudStore.js'
 
 export const ID = /^[\w-]{1,64}$/
 
 /** Result shape at the boundary: { ok: true, ... } or { ok: false, code, message, ... }. */
 const fail = (code, message, extra = {}) => ({ ok: false, code, message, ...extra })
+
+export function journalAvailable() {
+  const scope = currentScope()
+  return scope ? scope.journalAvailable : Boolean(store.get('journal'))
+}
+
+export function listJournal() {
+  return journalAvailable() ? store.get('journal') : null
+}
+
+/** Checks and changes are one guarded unit. The cloud middleware commits before replying. */
+export async function commitJournal(checks, changes, unique = []) {
+  if (!journalAvailable()) return fail('unavailable', 'Journal storage is not installed here yet.')
+  if (!Array.isArray(checks) || !Array.isArray(changes) || !changes.some((o) => o.t === 'journal')) {
+    return fail('invalid', 'Invalid journal transaction.')
+  }
+  const staged = {
+    people: { ...store.get('people') },
+    events: { ...store.get('events') },
+    journal: { ...store.get('journal') },
+  }
+  for (const op of changes) {
+    if (!['people', 'events', 'journal'].includes(op.t) || !ID.test(op.id) || !['put', 'del'].includes(op.op)) {
+      return fail('invalid', 'Invalid journal change.')
+    }
+    if (op.op === 'del') delete staged[op.t][op.id]
+    else staged[op.t][op.id] = op.doc
+  }
+  for (const op of changes.filter((o) => o.op === 'put')) {
+    if (op.t === 'journal' && !validJournalEntry(op.doc)) return fail('invalid', 'Invalid journal entry.')
+    if (op.t === 'people') {
+      const result = validatePerson(op.doc)
+      if (!result.ok || result.value.facts.some((f) => f.ref && (f.ref === op.id || !staged.people[f.ref]))) {
+        return fail('invalid', 'Invalid person update.')
+      }
+      op.doc = result.value
+    }
+    if (op.t === 'events') {
+      const result = validateEvent(op.doc, today())
+      if (!result.ok || result.value.people.some((id) => !staged.people[id])) return fail('invalid', 'Invalid event update.')
+      op.doc = result.value
+    }
+  }
+  const scope = currentScope()
+  if (scope) {
+    for (const check of checks) {
+      if (check.exists === true) {
+        if (!scope.get(check.t)?.[check.id]) return fail('conflict', 'A referenced person changed. Retry.')
+        continue
+      }
+      if (JSON.stringify(scope.get(check.t)?.[check.id] ?? null) !== JSON.stringify(check.doc ?? null)) {
+        return fail('conflict', 'Orbit changed while this entry was processing. Retry.')
+      }
+    }
+    scope.guarded = { checks, ops: changes, unique }
+    scope.ops.push(...changes)
+    return { ok: true }
+  }
+  try {
+    return await store.commitJournal(checks, changes, unique)
+  } catch {
+    return fail('save_failed', 'Journal save failed. Restart Orbit if the problem persists.')
+  }
+}
 
 export function savePerson(id, doc, { allowDuplicate = false } = {}) {
   if (!ID.test(id)) return fail('bad_id', 'bad id')
@@ -25,7 +91,7 @@ export function savePerson(id, doc, { allowDuplicate = false } = {}) {
       return fail('duplicate', `${store.get('people')[dup.id].name} is already in Orbit`, { existingId: dup.id })
     }
   }
-  store.putItem('people', id, v.value)
+  store.putItem('people', id, v.value, { checkDuplicate: !allowDuplicate && renamed })
   return { ok: true, id, value: v.value }
 }
 
@@ -74,7 +140,7 @@ export function saveEvent(id, doc, { allowDuplicate = false } = {}) {
     const dup = findDuplicateEvent(store.get('events'), v.value, id)
     if (dup?.match === 'exact') return fail('duplicate', 'That event is already logged', { existingId: dup.id })
   }
-  store.putItem('events', id, v.value)
+  store.putItem('events', id, v.value, { checkDuplicate: !allowDuplicate && changed })
   return { ok: true, id, value: v.value }
 }
 

@@ -6,6 +6,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- People / Orbit now has a locally implemented conversational journal with person/date clarification, source-backed memory updates, saved receipts, pending-entry history, and conflict-aware undo. Hosted release awaits its separate database migration and live-provider validation.
 - Journal create and edit now include Unicode-aware live character/word counts and a resumable active-writing timer with pause, reset, idle pause, and draft recovery.
 - Journal AI cleanup is available only through an authenticated, server-enabled, default-off Anthropic connector; it uses explicit confirmation, a before/after comparison, accept/undo controls, and truthful saved provenance.
 - Analytics is now a top-level private workspace with Overview, Activity History, AI Usage, truthful stored-record ranges, safe filters, and honest partial-source notices.
@@ -29,6 +30,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Orbit keeps original journal input separate from event Notes; successful undo closes the log window with a brief confirmation. History is available through Entries rather than cluttering the composer.
 - Paginated Journal lists now report the visible count as `N of M` until every loaded entry is shown.
 - Saved Frodo images now renew expired private preview links once and provide an accessible retry fallback instead of remaining broken.
 - Similar People events stay separate by default; attendee lists merge only after explicit same-occasion intent.

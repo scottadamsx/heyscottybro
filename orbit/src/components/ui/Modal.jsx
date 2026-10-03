@@ -8,7 +8,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * Dialog shell. variant "modal" is centred (a bottom sheet under 620px); "drawer" slides in from
  * the right. Focus moves in on open, Tab stays inside, Esc closes, focus returns on close.
  */
-export default function Modal({ title, eyebrow, onClose, children, footer, variant = 'modal', size = 'md', labelledBy }) {
+export default function Modal({ title, eyebrow, onClose, children, footer, variant = 'modal', size = 'md', labelledBy, disableClose = false }) {
   const ref = useRef(null)
   const id = useId()
   const closeRef = useRef(onClose)
@@ -61,7 +61,7 @@ export default function Modal({ title, eyebrow, onClose, children, footer, varia
             {eyebrow && <div className="eyebrow">{eyebrow}</div>}
             {title && <h2 id={id}>{title}</h2>}
           </div>
-          <IconButton label="Close" onClick={onClose}>
+          <IconButton label="Close" onClick={onClose} disabled={disableClose}>
             <X size={16} />
           </IconButton>
         </header>

@@ -826,3 +826,25 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** `JournalPage` now derives the label from the paged view's visible length and total length, showing `N of M` until all loaded rows are rendered and `N` when complete.
 - **Regression coverage:** `src/pages/admin/JournalPage.test.js` verifies the source boundary uses visible and total pagination state; the rendered empty state and local implementation were also inspected at desktop and 390×844.
 - **Related work:** `docs/features/journal-writing-tools.md`.
+
+### BUG-063 - Orbit synchronization drops the host model policy
+
+- **Status:** Resolved locally; uncommitted
+- **Discovered:** 2026-10-02
+- **Area:** Orbit vendoring and host AI configuration
+- **Observed:** Synchronizing canonical Orbit replaced the hosted AI_MODELS import with the standalone default literal.
+- **Expected:** Repeated synchronization preserves the host's central model policy without hand-editing the generated copy.
+- **Cause:** The sync script copied standalone configuration without a host integration step.
+- **Fix:** The sync script validates the expected standalone model declaration and generates the central-policy import and default for the hosted copy. It also labels dirty-source copies truthfully.
+- **Regression coverage:** Repeated sync, generated-config inspection, zero-warning lint and host build pass. Both defaults remain the existing model; no model migration or live call occurred.
+- **Related work:** `docs/features/orbit-journal.md`.
+
+### BUG-064 - Original journal text incorrectly copied into event Notes
+
+- **Status:** Resolved locally; uncommitted
+- **Discovered:** 2026-10-02, during Scott's screenshot-led verification
+- **Cause:** The event builder assigned immutable source text directly to Notes, retaining vague relative dates even after date clarification. A prior test incorrectly required this behavior.
+- **Fix:** Keep the original text only in the source entry and leave event Notes empty when no separate generated note exists. No note-generation capability is claimed by this fix.
+- **Regression coverage:** Exact last-week/date-clarification case verifies the resolved date, blank Notes, preserved source and undo. Updated the existing integration assertion to require source/Notes separation.
+- **Data correction:** Repaired only the identified synthetic preview event and its undo snapshot with guarded writes. No production data was touched.
+- **Related work:** `docs/features/orbit-journal.md`.

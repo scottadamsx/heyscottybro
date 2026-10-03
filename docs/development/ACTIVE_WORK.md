@@ -1,5 +1,12 @@
 # Active work
 
+## Orbit conversational journal
+
+- **Feature document:** `docs/features/orbit-journal.md`
+- **Approval:** Scott's 2026-10-02 instruction to oversee agents and "lets get this cooking" authorizes local implementation of the discussed journal and memory-reconciliation plan.
+- **Current state:** Two supervised Sol agents implemented the backend and UI in canonical Orbit. Supervisor review, 181 Orbit tests, 6 offline checks, desktop/mobile browser checks, host lint/build and local synchronization pass. Host full suite retains pre-existing BUG-058 (305/306); no assertions were weakened. Migration source is unapplied; real provider behavior and live database semantics remain unverified. See the feature record for release limits and evidence.
+- **Next permitted work:** Scott authorized "commitvchanges and push": commit canonical Orbit, synchronize from that commit, commit the host and push both main branches. The existing host deployment may run automatically. Migration application and live-provider calls remain outside authorization. Preserve other active records.
+
 **Last updated:** 2026-10-01
 
 ## Journal writing tools

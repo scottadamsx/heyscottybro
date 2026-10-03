@@ -35,6 +35,7 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 ## Communication
 
 - Keep user-facing responses short enough to fit on one screen by default.
+- During user-led UI testing, supply the exact text to enter and one next action at a time. Scott sends screenshots of the result; inspect those before giving the next test step. Do not make him invent test prompts.
 - Lead with the outcome and only include the details needed for the current decision.
 - Do not send long explanations unless Scott asks for more detail or says he does not understand something.
 - If safety or data integrity requires additional detail, give the short warning first and expand only as much as necessary.
@@ -82,6 +83,19 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 - Follow `docs/development/PSEUDOCODE_STANDARD.md`, `docs/development/QUALITY_GATES.md`, and `docs/development/DOCS_STYLE.md`.
 - Follow `docs/development/POST_TASK_CHECKLIST.md` after every work unit.
 - Any card created or materially changed with repeated list rows must show an accurate small item count: `N` when complete, `N of M` when partial or filtered, and `0` when loaded empty. Counts come from the rendered data and remain accessible; never invent one for an unresolved loading or error state.
+
+## End-to-End Test Coverage
+
+- Scott expects end-to-end testing to cover the complete scenario matrix, not just the happy path. Enumerate normal, alternate, ambiguous, boundary, error, retry/recovery, persistence, concurrency and undo paths before declaring a feature verified.
+- For Orbit, include known/unknown/ambiguous people, confirmed creation/cancellation, missing/relative/exact dates, known/new/conflicting facts, duplicate events, provider/storage failures, reload and undo after later edits.
+- Track each scenario as passed, failed or untested with evidence. Distinguish scripted-provider UI tests from real-provider and real-database verification. Never call a partial run complete or claim exhaustive coverage of arbitrary possible inputs.
+
+## Chatbot Window Simplicity
+
+- Keep chatbot prompt windows and modals minimal: prioritize the prompt and Send, with Close and an optional Manual entry action. Add other controls only for a necessary current action.
+- Keep history behind an Entries button rather than displaying it beside or above the composer by default. Selecting an entry may show its contextual actions.
+- Word/character counts and other statistics are optional, not required decoration. Do not add a history list merely to satisfy the repeated-list count rule; when history is explicitly opened, its accurate count may appear there.
+- Preserve necessary error, saving, clarification and confirmation states. Minimal controls must not hide failures or remove access to saved work.
 
 ## Existing project instructions
 

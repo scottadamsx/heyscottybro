@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { storage } from '../lib/storage/adapter.js'
 import { today } from '../lib/dates.js'
 import { pickAi } from '../lib/ai/adapter.js'
+import { answerJournalEntry, createJournalEntry, mergeJournalEntries } from '../lib/journalClient.js'
 
 const OrbitContext = createContext(null)
 
@@ -20,6 +21,9 @@ export function OrbitProvider({ children }) {
   const [saveError, setSaveError] = useState(null)
   const [asOf, setAsOf] = useState(null) // null = today (time travel off)
   const [health, setHealth] = useState(null)
+  const [journals, setJournals] = useState({})
+  const [journalState, setJournalState] = useState('idle')
+  const [journalError, setJournalError] = useState('')
   const peopleRef = useRef(people)
   const eventsRef = useRef(events)
   const settingsRef = useRef(settings)
@@ -54,6 +58,82 @@ export function OrbitProvider({ children }) {
     reload()
     return storage.subscribeStatus(setSync)
   }, [reload])
+
+  const reloadJournals = useCallback(async () => {
+    setJournalState('loading')
+    try {
+      const out = await storage.listJournals()
+      setJournals((current) => mergeJournalEntries(out.entries, current))
+      setJournalError('')
+      setJournalState('ready')
+      return out.entries
+    } catch (err) {
+      setJournalError(err.message)
+      setJournalState('error')
+      throw err
+    }
+  }, [])
+
+  useEffect(() => {
+    if (health?.journal?.available) reloadJournals().catch(() => {})
+    else if (health) setJournalState('unavailable')
+  }, [health?.journal?.available, reloadJournals])
+
+  const upsertJournal = useCallback((entry) => {
+    setJournals((current) => ({ ...current, [entry.id]: entry }))
+  }, [])
+
+  const sendJournal = useCallback(async (text, id, context, onPersist) => {
+    try {
+      const entry = await createJournalEntry(text, { storage, ai: pickAi(health?.ai), id, context, onEntry: (saved) => {
+        upsertJournal(saved)
+        onPersist?.(saved)
+      } })
+      if (entry.status === 'saved') await reload()
+      return entry
+    } catch (err) {
+      await reloadJournals().catch(() => {})
+      throw err
+    }
+  }, [health?.ai, upsertJournal, reload, reloadJournals])
+
+  const answerJournal = useCallback(async (entry, answers, onPersist) => {
+    try {
+      const result = await answerJournalEntry(entry, answers, { storage, ai: pickAi(health?.ai), onEntry: (saved) => {
+        upsertJournal(saved)
+        onPersist?.(saved)
+      } })
+      if (result.status === 'saved') await reload()
+      return result
+    } catch (err) {
+      await reloadJournals().catch(() => {})
+      throw err
+    }
+  }, [health?.ai, upsertJournal, reload, reloadJournals])
+
+  const retryJournal = useCallback(async (entry) => {
+    try {
+      const result = await pickAi(health?.ai).journal(entry.id, entry.revision)
+      upsertJournal(result.entry)
+      if (result.entry.status === 'saved') await reload()
+      return result.entry
+    } catch (err) {
+      await reloadJournals().catch(() => {})
+      throw err
+    }
+  }, [health?.ai, upsertJournal, reload, reloadJournals])
+
+  const undoJournal = useCallback(async (entry) => {
+    try {
+      const result = await storage.undoJournal(entry.id, entry.revision)
+      upsertJournal(result.entry)
+      await reload()
+      return result.entry
+    } catch (err) {
+      await reloadJournals().catch(() => {})
+      throw err
+    }
+  }, [upsertJournal, reload, reloadJournals])
 
   // The UI updates first, then the write. A rejected write puts the old value back and reports why,
   // so nothing looks saved when it isn't. Duplicate rejections are rethrown for the modal to handle.
@@ -180,11 +260,19 @@ export function OrbitProvider({ children }) {
       health,
       refreshHealth,
       ai: pickAi(health?.ai),
+      journals,
+      journalState,
+      journalError,
+      reloadJournals,
+      sendJournal,
+      answerJournal,
+      retryJournal,
+      undoJournal,
       /** Latest state, for callbacks that run later (Undo). */
       peek: () => ({ people: peopleRef.current, events: eventsRef.current, settings: settingsRef.current }),
       storage,
     }),
-    [people, events, settings, loadState, sync, saveError, asOf, health, reload, refreshHealth, savePerson, deletePerson, saveEvent, deleteEvent, saveSettings, setAiEnabled, merge],
+    [people, events, settings, loadState, sync, saveError, asOf, health, journals, journalState, journalError, reloadJournals, sendJournal, answerJournal, retryJournal, undoJournal, reload, refreshHealth, savePerson, deletePerson, saveEvent, deleteEvent, saveSettings, setAiEnabled, merge],
   )
 
   return <OrbitContext.Provider value={value}>{children}</OrbitContext.Provider>

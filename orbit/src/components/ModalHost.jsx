@@ -1,5 +1,6 @@
 import { useUI } from '../state/UIContext.jsx'
 import LogModal from './LogModal.jsx'
+import JournalDrawer from './JournalDrawer.jsx'
 import AllEventsModal from './AllEventsModal.jsx'
 import BudgetModal from './BudgetModal.jsx'
 import InterviewDrawer from './InterviewDrawer.jsx'
@@ -15,6 +16,7 @@ import ImportModal from './ImportModal.jsx'
 
 const REGISTRY = {
   log: LogModal,
+  journal: JournalDrawer,
   allEvents: AllEventsModal,
   budgets: BudgetModal,
   interview: InterviewDrawer,

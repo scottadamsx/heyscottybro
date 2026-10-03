@@ -71,6 +71,10 @@ export const fileAdapter = {
   saveEvent: (id, doc, opts) => write('PUT', item('events', id, opts), doc, { collection: 'events', id, op: 'save' }),
   deleteEvent: (id) => write('DELETE', item('events', id), undefined, { collection: 'events', id, op: 'delete' }),
 
+  listJournals: () => request('GET', '/journal'),
+  saveJournal: (id, doc) => write('PUT', item('journal', id), doc, { collection: 'journal', id, op: 'save' }),
+  undoJournal: (id, revision) => write('POST', `${item('journal', id)}/undo`, { revision }, { collection: 'journal', id, op: 'undo' }),
+
   /** Fold one record into another; both lists change, so listeners reload everything. */
   mergePeople: (keep, drop) => write('POST', '/people/merge', { keep, drop }, { collection: 'all', op: 'merge' }),
   mergeEvents: (keep, drop) => write('POST', '/events/merge', { keep, drop }, { collection: 'events', op: 'merge' }),

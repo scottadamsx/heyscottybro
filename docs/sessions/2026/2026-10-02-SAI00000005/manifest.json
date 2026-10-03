@@ -1,0 +1,651 @@
+{
+  "schema_version": 1,
+  "sai_id": "SAI00000005",
+  "thread_id": "01a0feda-456a-7a03-9075-570358ea4d77",
+  "title": "Bonsai Chat SAI00000005",
+  "bootstrap_mode": "project_manager_injection",
+  "workspace": "<repo> and ../orbit",
+  "timezone": "America/St_Johns",
+  "started_on": "2026-10-02",
+  "cutoff": "2026-10-02T23:38:32Z",
+  "branch": "main",
+  "base_commit": "5b57081938f43ed0cfbb01a336fbc88755052daa",
+  "orbit_base_commit": "c5a1b8ab065bd4a64d71399e9001a11f8293c83b",
+  "archive_path": "docs/sessions/2026/2026-10-02-SAI00000005",
+  "intended_push_target": "origin/main",
+  "role": "backend",
+  "model": "gpt-6-sol high",
+  "approvals": [
+    {
+      "message": "are you able to over see agents and report back to me. lets get this cooking",
+      "scope": "Supervised local implementation; no release or live provider/database operations"
+    }
+  ],
+  "files": [
+    {
+      "path": "../orbit/README.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/00-brief.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/01-architecture.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/02-data.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/03-contracts.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/04-behavior.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/05-presentation.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/06-quality.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/07-build-order.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/docs/devrules/CLAUDE.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/ledger.jsonl",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/server/app.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/cloud.test.js",
+      "state": "modified, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/server/cloudStore.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/repo.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/server.test.js",
+      "state": "modified, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/server/store.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/EventModal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/LogModal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/ModalHost.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/Sidebar.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/person/InfoTab.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/ui/Modal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/ui/icons.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/globals.css",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/lib/ai/anthropicAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/lib/ai/nullAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/lib/storage/fileAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/state/OrbitContext.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/docs/migrations/2026-10-02-orbit-journal.sql",
+      "state": "created, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "../orbit/evals/journal-cases.json",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/evals/journal-offline.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/evals/journal-vite.config.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/server/ai/journal.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/ai/prompts/journal-extract.md",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/ai/prompts/journal-reconcile.md",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/server/journal-review.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/server/journal.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/src/components/JournalDrawer.jsx",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/components/JournalDrawer.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/src/lib/journal.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/lib/journal.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "../orbit/src/lib/journalClient.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "../orbit/src/lib/journalClient.test.js",
+      "state": "created, uncommitted",
+      "purpose": "Verification"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/development/ACTIVE_WORK.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/development/BUGS.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/development/WORKLOG.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/sessions/GLOSSARY.md",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/sessions/registry.jsonl",
+      "state": "modified, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "orbit/VENDORED.md",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/app.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/cloudStore.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/repo.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/store.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/EventModal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/LogModal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/ModalHost.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/Sidebar.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/person/InfoTab.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/ui/Modal.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/ui/icons.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/globals.css",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/lib/ai/anthropicAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/lib/ai/nullAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/lib/storage/fileAdapter.js",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/state/OrbitContext.jsx",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "scripts/sync-orbit.mjs",
+      "state": "modified, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "docs/features/orbit-journal.md",
+      "state": "created, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/sessions/2026/2026-10-02-SAI00000005/SESSION_SUMMARY.md",
+      "state": "created, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "docs/sessions/2026/2026-10-02-SAI00000006/SESSION_SUMMARY.md",
+      "state": "created, uncommitted",
+      "purpose": "Contract and handoff"
+    },
+    {
+      "path": "orbit/server/ai/journal.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/ai/prompts/journal-extract.md",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/server/ai/prompts/journal-reconcile.md",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/components/JournalDrawer.jsx",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/lib/journal.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "orbit/src/lib/journalClient.js",
+      "state": "created, uncommitted",
+      "purpose": "Journal implementation/integration"
+    },
+    {
+      "path": "supabase/migrations/2026-10-02-orbit-journal.sql",
+      "state": "created, uncommitted",
+      "purpose": "Unapplied migration"
+    },
+    {
+      "path": "docs/sessions/2026/2026-10-02-SAI00000005/TRANSCRIPT.md",
+      "state": "created, uncommitted",
+      "purpose": "Sanitized session handoff"
+    },
+    {
+      "path": "docs/sessions/2026/2026-10-02-SAI00000005/manifest.json",
+      "state": "created, uncommitted",
+      "purpose": "Sanitized session handoff"
+    },
+    {
+      "path": "AGENTS.md",
+      "state": "modified for approved release",
+      "purpose": "User testing and minimal-chatbot design rules"
+    },
+    {
+      "path": "../orbit/CLAUDE.md",
+      "state": "modified for approved release",
+      "purpose": "User testing and minimal-chatbot design rules"
+    }
+  ],
+  "materially_consulted": [
+    {
+      "path": "AGENTS.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "CLAUDE.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/README.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/ONBOARDING.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/WORKFLOW.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/PSEUDOCODE_STANDARD.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/QUALITY_GATES.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/POST_TASK_CHECKLIST.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/development/DOCS_STYLE.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/sessions/README.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/sessions/PROJECT_MANAGER_INJECTION.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "docs/rebuild/current-system.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "api/orbit.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "vercel.json",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "src/pages/admin/PeoplePage.jsx",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "src/config/aiModels.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../orbit/CLAUDE.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../orbit/src/lib/dedupe.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../orbit/src/lib/validate.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../orbit/server/ai/config.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../orbit/server/hosted.js",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../DEVRULES & FORGE/devrules/SPEC.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../DEVRULES & FORGE/devrules/housestyle.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../DEVRULES & FORGE/devrules/housestyle-ui.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    },
+    {
+      "path": "../DEVRULES & FORGE/devrules/housestyle-ai.md",
+      "state": "consulted; unchanged unless in changed inventory",
+      "purpose": "Rules, architecture, integration or validation context"
+    }
+  ],
+  "validation": [
+    {
+      "check": "Orbit npm test",
+      "result": "pass",
+      "detail": "181/181 independent supervisor run"
+    },
+    {
+      "check": "Offline journal eval",
+      "result": "pass",
+      "detail": "6/6 synthetic checks"
+    },
+    {
+      "check": "Orbit build/UI/AI/ledger",
+      "result": "pass",
+      "detail": "Existing DRAFT/32 unconfirmed ledger defaults retained"
+    },
+    {
+      "check": "Host npm test",
+      "result": "fail",
+      "detail": "Known BUG-058 only; final node suite305/306; earlier suites pass"
+    },
+    {
+      "check": "Host lint/build and five route/function checks",
+      "result": "pass"
+    },
+    {
+      "check": "Synthetic browser desktop/mobile/embedded",
+      "result": "pass",
+      "detail": "Save, clarification, reload, undo/conflict, AI-off/manual, layout and keyboard"
+    },
+    {
+      "check": "Live Anthropic/Postgres/RLS/RPC",
+      "result": "unverified",
+      "detail": "Not called/applied"
+    }
+  ],
+  "bugs": {
+    "fixed": [
+      "BUG-063",
+      "Pre-release journal integrity review findings"
+    ],
+    "deferred": [
+      "BUG-058",
+      "BUG-061"
+    ]
+  },
+  "attachments": [],
+  "redactions": {
+    "secrets": 0,
+    "attachments_copied": 0,
+    "policy": "All subagent traffic excluded; no transcript body copied"
+  },
+  "unresolved_work": [
+    "Real-provider evaluation",
+    "Isolated database migration/RLS/RPC verification",
+    "Explicit release approval",
+    "Authenticated hosted smoke"
+  ],
+  "risks": [
+    "Synthetic results do not establish live model/SQL behavior",
+    "No journal import/restore flow",
+    "General chatbot recall deferred"
+  ],
+  "handoff": [
+    "Review both diffs and feature record",
+    "Preserve sync model-policy integration",
+    "No release operations without approval"
+  ],
+  "productivity": {
+    "elapsed_time": "Not reliably measured",
+    "archived_visible_message_count": 0,
+    "combined_changed_files": 78,
+    "rework": "Supervisor integrity review, one test-cleanup race, sync model-policy correction, browser selector correction",
+    "supervisor_scores": "Not self-assigned"
+  },
+  "release_followup": {
+    "approval": "good job. commitvchanges and push",
+    "scope": "Commit and push both main branches; existing host automatic deployment permitted. No database migration or real provider calls.",
+    "orbit_commit": "307d71c",
+    "host_commit": "Recorded by containing Git commit",
+    "verification": "183 Orbit tests/build pass; final host gates recorded in feature handoff",
+    "changes": "Minimal controls, Entries toggle, original text separated from Notes, undo closes on success; source preservation and undo regressions",
+    "limitations": [
+      "BUG-058 remains",
+      "Duplicate receipt sentence remains",
+      "Real provider/database and full scenario matrix unverified"
+    ]
+  }
+}
