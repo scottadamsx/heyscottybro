@@ -41,7 +41,7 @@ begin
     if o->>'guardUnique' = 'true' and o->>'t' = 'events' and exists (
       select 1 from orbit_events e where e.user_id = p_user and e.id <> o->>'id'
         and e.doc->>'date' = o->'doc'->>'date' and e.doc->>'kind' = o->'doc'->>'kind'
-        and e.doc->'people' @> o->'doc'->'people' and o->'doc'->'people' @> e.doc->'people'
+        and (e.doc->'people') @> (o->'doc'->'people') and (o->'doc'->'people') @> (e.doc->'people')
     ) then raise exception 'journal conflict: duplicate event'; end if;
     if o->>'t' = 'people' and o->>'op' = 'put' then
       insert into orbit_people (user_id, id, doc) values (p_user, o->>'id', o->'doc')
@@ -107,7 +107,7 @@ begin
       if exists (
         select 1 from orbit_events e where e.user_id = p_user and e.id <> u->>'id'
           and e.doc->>'date' = u->'doc'->>'date' and e.doc->>'kind' = u->'doc'->>'kind'
-          and e.doc->'people' @> u->'doc'->'people' and u->'doc'->'people' @> e.doc->'people'
+          and (e.doc->'people') @> (u->'doc'->'people') and (u->'doc'->'people') @> (e.doc->'people')
       ) then raise exception 'journal conflict: duplicate event'; end if;
     else raise exception 'journal conflict: bad uniqueness check';
     end if;

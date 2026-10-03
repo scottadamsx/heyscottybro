@@ -23,14 +23,14 @@ const EXTRACT_FORMAT = {
       event: { anyOf: [
         { type: 'null' },
         { type: 'object', additionalProperties: false, required: ['datePhrase', 'kind', 'people', 'place'], properties: {
-          datePhrase: { type: 'string' }, kind: { type: 'string' },
+          datePhrase: { type: 'string' }, kind: { type: 'string', enum: [...kinds] },
           people: { type: 'array', items: { type: 'string' } }, place: { type: 'string' },
         } },
       ] },
       facts: { type: 'array', items: { type: 'object', additionalProperties: false,
         required: ['mention', 'k', 'v', 'topic', 'evidence', 'scope'], properties: {
           mention: { type: 'string' }, k: { type: 'string' }, v: { type: 'string' },
-          topic: { type: 'string' }, evidence: { type: 'string' }, scope: { type: 'string' },
+          topic: { type: 'string', enum: [...topics] }, evidence: { type: 'string' }, scope: { type: 'string', enum: ['profile', 'context'] },
         } } },
     },
   },
@@ -39,9 +39,9 @@ const RECONCILE_FORMAT = {
   type: 'json_schema',
   schema: { type: 'object', additionalProperties: false, required: ['decisions'], properties: {
     decisions: { type: 'array', items: { type: 'object', additionalProperties: false,
-      required: ['index', 'outcome'], properties: { index: { type: 'integer' }, outcome: { type: 'string' },
+      required: ['index', 'outcome'], properties: { index: { type: 'integer' }, outcome: { type: 'string', enum: ['add', 'already_known', 'uncertain', 'context'] },
         known: { type: 'object', additionalProperties: false, required: ['field'], properties: {
-          field: { type: 'string' }, factIndex: { type: 'integer' },
+          field: { type: 'string', enum: ['how', 'group', 'birthday', 'fact'] }, factIndex: { type: 'integer' },
         } },
       } } },
   } },
@@ -65,46 +65,60 @@ function parse(value) {
 }
 
 function extractValid(value, source) {
-  if (!object(value) || !Array.isArray(value.facts) || value.facts.length > 24) return false
+  if (!object(value)) return 'response.object'
+  if (!Array.isArray(value.facts) || value.facts.length > 24) return 'facts.array_limit'
   if (value.event !== null) {
     const e = value.event
     if (!object(e) || !small(e.datePhrase, 100) || !kinds.has(e.kind) || !small(e.place, 160) ||
-        !Array.isArray(e.people) || e.people.length > 20 || e.people.some((n) => !text(n, 100) || !normText(source).includes(normText(n)))) return false
-    if (e.datePhrase && !normText(source).includes(normText(e.datePhrase))) return false
-    if (e.place && !normText(source).includes(normText(e.place))) return false
+        !Array.isArray(e.people) || e.people.length > 20) return 'event.shape_or_enum'
+    if (e.people.some((n) => !text(n, 100) || !normText(source).includes(normText(n)))) return 'event.people.source_evidence'
+    if (e.datePhrase && !normText(source).includes(normText(e.datePhrase))) return 'event.datePhrase.source_evidence'
+    if (e.place && !normText(source).includes(normText(e.place))) return 'event.place.source_evidence'
   }
-  return value.facts.every((f) => object(f) && text(f.mention, 100) && text(f.k, 80) && text(f.v, 300) &&
-    topics.has(f.topic) && text(f.evidence, 500) && ['profile', 'context'].includes(f.scope) &&
-    normText(source).includes(normText(f.evidence)) && normText(f.evidence).includes(normText(f.v)) &&
-    normText(f.evidence).includes(normText(f.mention)) &&
-    (!/\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.evidence)) ||
-      /\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.v))))
+  for (const [index, f] of value.facts.entries()) {
+    const path = `facts[${index}]`
+    if (!object(f) || !text(f.mention, 100) || !text(f.k, 80) || !text(f.v, 300) ||
+        !topics.has(f.topic) || !text(f.evidence, 500) || !['profile', 'context'].includes(f.scope)) return `${path}.shape_or_enum`
+    if (!normText(source).includes(normText(f.evidence))) return `${path}.evidence.not_verbatim`
+    if (!normText(f.evidence).includes(normText(f.v))) return `${path}.value.not_in_evidence`
+    if (!normText(f.evidence).includes(normText(f.mention))) return `${path}.mention.not_in_evidence`
+    if (/\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.evidence)) &&
+        !/\b(not|never|no longer|isnt|doesnt|didnt)\b/.test(normText(f.v))) return `${path}.negation.not_preserved`
+  }
+  return null
 }
 
 function reconcileValid(value, context) {
-  if (!object(value) || !Array.isArray(value.decisions) || value.decisions.length !== context.length) return false
+  if (!object(value) || !Array.isArray(value.decisions) || value.decisions.length !== context.length) return 'decisions.count'
   const seen = new Set()
   for (const d of value.decisions) {
     if (!object(d) || !Number.isInteger(d.index) || d.index < 0 || d.index >= context.length || seen.has(d.index) ||
-        !['add', 'already_known', 'uncertain', 'context'].includes(d.outcome)) return false
+        !['add', 'already_known', 'uncertain', 'context'].includes(d.outcome)) return 'decisions.index_or_outcome'
     if (d.known) {
-      if (!object(d.known) || !['how', 'group', 'birthday', 'fact'].includes(d.known.field)) return false
+      if (!object(d.known) || !['how', 'group', 'birthday', 'fact'].includes(d.known.field)) return 'decisions.known.field'
       const candidate = context[d.index]
-      if (d.known.field === 'fact' && (!Number.isInteger(d.known.factIndex) || !candidate.existing[d.known.factIndex])) return false
-      if (d.known.field !== 'fact' && !candidate.basics[d.known.field]) return false
+      if (d.known.field === 'fact' && (!Number.isInteger(d.known.factIndex) || !candidate.existing[d.known.factIndex])) return 'decisions.known.factIndex'
+      if (d.known.field !== 'fact' && !candidate.basics[d.known.field]) return 'decisions.known.missing_value'
     }
     seen.add(d.index)
   }
-  return true
+  return null
 }
 
 async function pass(ask, passName, data, validate) {
   const prompt = loadPrompt(`journal-${passName}`)
+  const diagnosticId = newId('diagnostic')
+  let rule
   for (let attempt = 0; attempt < 2; attempt++) {
-    const output = parse(await ask({ pass: passName, prompt, data: { ...data, retry: attempt ? 'Previous output failed validation. Follow the schema and source evidence.' : undefined } }))
-    if (validate(output)) return output
+    const output = parse(await ask({ pass: passName, prompt, data: { ...data,
+      retry: attempt ? `Previous output failed validation at ${rule}. Correct that field using the supplied source and schema.` : undefined } }))
+    rule = validate(output)
+    if (!rule) return output
+    console.warn('[journal] validation failed', { diagnosticId, pass: passName, rule, attempt: attempt + 1 })
   }
-  throw new Error('The model response did not pass validation. Retry this entry.')
+  throw Object.assign(new Error('The model response did not pass validation. Retry this entry.'), {
+    validation: { diagnosticId, pass: passName, rule },
+  })
 }
 
 function question(id, textValue, kind, options) {
@@ -230,6 +244,7 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
   try {
     const extracted = await pass(ask, 'extract', {
       entry: entry.text, answers: entry.answers, referenceDate: entry.referenceDate, timeZone: entry.timeZone,
+      allowedKinds: [...kinds], allowedTopics: [...topics],
     }, (value) => extractValid(value, source))
     const mentions = [...new Set([...(extracted.event?.people || []), ...extracted.facts.map((f) => f.mention)])]
     const choices = new Map()
@@ -395,6 +410,7 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
     if (occasionRead) reads.push(occasionRead)
     return saveEntry(entry, nextEntry(entry, { status: 'saved', questions: [], error: undefined, provenance, outcomes, receipt, mutations }), changes, unique, reads)
   } catch (error) {
+    if (error.validation) provenance.validation = error.validation
     return saveEntry(entry, nextEntry(entry, { status: 'error', questions: [], error: error.message.startsWith('The model') ? error.message : 'Processing failed. Retry this entry.', provenance }))
   }
 }

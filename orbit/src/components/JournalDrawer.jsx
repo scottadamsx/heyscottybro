@@ -216,6 +216,11 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
                   <summary>Processing details</summary>
                   <dl className="facts-dl">
                     <dt>Model</dt><dd>{selected.provenance.model}</dd>
+                    {selected.provenance.validation && <>
+                      <dt>Diagnostic ID</dt><dd>{selected.provenance.validation.diagnosticId}</dd>
+                      <dt>Failed stage</dt><dd>{selected.provenance.validation.pass}</dd>
+                      <dt>Validation rule</dt><dd>{selected.provenance.validation.rule}</dd>
+                    </>}
                     <dt>Prompts</dt><dd>{Array.isArray(selected.provenance.prompts) ? selected.provenance.prompts.join(', ') : selected.provenance.prompts}</dd>
                     <dt>Processed</dt><dd>{selected.provenance.at && !Number.isNaN(Date.parse(selected.provenance.at)) ? new Date(selected.provenance.at).toLocaleString() : selected.provenance.at}</dd>
                   </dl>

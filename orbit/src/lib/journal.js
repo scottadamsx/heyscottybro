@@ -61,7 +61,7 @@ export function matchJournalPerson(people, mention) {
 
 export function resolveJournalDate(phrase, referenceDate) {
   const value = normText(phrase)
-  if (value === 'today') return referenceDate
+  if (value === 'today' || value === 'tonight') return referenceDate
   if (value === 'yesterday') {
     const d = new Date(`${referenceDate}T12:00:00Z`)
     d.setUTCDate(d.getUTCDate() - 1)
