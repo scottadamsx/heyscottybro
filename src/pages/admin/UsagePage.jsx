@@ -22,7 +22,7 @@ const TIER = { /* theme-fixed: user colour (per-agent palette) */
   frodo:   { label: "Frodo",    color: "#22c55e", icon: "fa-ring" },
   sam:     { label: "Sam",      color: "#84cc16", icon: "fa-seedling" },
   gandalf: { label: "Gandalf",  color: "#a78bfa", icon: "fa-hat-wizard" },
-  banker:  { label: "Griphook", color: "#f59e0b", icon: "fa-sack-dollar" },
+  banker:  { label: "Banker", color: "#f59e0b", icon: "fa-sack-dollar" },
 };
 // Agents not in the legacy TIER map fall back to the registry (real name,
 // colour, icon) instead of showing a raw id.
@@ -202,7 +202,7 @@ export default function UsagePage({ embedded = false, range = "30d" }) {
               <i className="fa-solid fa-circle-info" aria-hidden="true" />
               <p>
                 Dollar cost &amp; token totals need an Anthropic <strong>Organization + admin key</strong> (not available on individual accounts, and separate from Max).
-                Until then, this shows your app&apos;s AI <strong>activity</strong> — every Frodo/Griphook action. Add <code>ANTHROPIC_ADMIN_KEY</code> later and the cost section appears here automatically.
+                Until then, this shows your app&apos;s AI <strong>activity</strong> — every Frodo/Banker action. Add <code>ANTHROPIC_ADMIN_KEY</code> later and the cost section appears here automatically.
               </p>
             </div>
           )}

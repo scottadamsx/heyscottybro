@@ -1,6 +1,6 @@
 let frodoHistoryController = null;
 
-export const GLOBAL_CHAT_CLEAR_CONFIRMATION = "Clear this account's Frodo, Command Center, and Griphook chats plus Frodo's staged screenshots? Quarantined older backups without account ownership stay untouched for explicit recovery. Aulë's local terminal session and your saved data are untouched.";
+export const GLOBAL_CHAT_CLEAR_CONFIRMATION = "Clear this account's Frodo, Command Center, and Banker chats plus Frodo's staged screenshots? Quarantined older backups without account ownership stay untouched for explicit recovery. Aulë's local terminal session and your saved data are untouched.";
 export const GLOBAL_CHAT_CLEAR_SUCCESS = "This account's app chat history was cleared. Quarantined unowned backups, if any, were left untouched.";
 
 export function registerFrodoHistoryController(controller) {
@@ -57,7 +57,7 @@ export async function clearAllAIChatHistory({
   const operations = [
     ["Frodo", () => clearMountedFrodoHistory(frodoPreparation)],
     ["Command Center", () => clearCommandCenter(commandCenterPreparation)],
-    ["Griphook", () => clearBanker(bankerPreparation)],
+    ["Banker", () => clearBanker(bankerPreparation)],
   ];
   // Convert every callback into a promise before invoking it. This keeps a
   // synchronous storage failure inside the all-settled boundary and ensures

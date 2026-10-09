@@ -90,14 +90,14 @@ test("global Clear settles every surface when one clear throws synchronously", a
       "cc:clear:end",
     ]);
     assert.equal(result.failures.length, 1);
-    assert.equal(result.failures[0].label, "Griphook");
+    assert.equal(result.failures[0].label, "Banker");
     assert.match(result.failures[0].error.message, /storage blocked/i);
   } finally {
     unregister();
   }
 });
 
-test("a busy Griphook cancels Frodo preflight before any deletion", async () => {
+test("a busy Banker cancels Frodo preflight before any deletion", async () => {
   const events = [];
   const unregister = registerFrodoHistoryController({
     prepare() { events.push("frodo:ready"); return "frodo-plan"; },
@@ -106,7 +106,7 @@ test("a busy Griphook cancels Frodo preflight before any deletion", async () => 
   });
   try {
     await assert.rejects(clearAllAIChatHistory({
-      prepareBankerClear() { events.push("banker:busy"); throw new Error("Griphook is still working"); },
+      prepareBankerClear() { events.push("banker:busy"); throw new Error("Banker is still working"); },
       cancelBankerClear() { events.push("banker:cancel"); },
       prepareCommandCenterClear() { events.push("cc:ready"); },
       clearCommandCenter() { events.push("cc:clear"); },

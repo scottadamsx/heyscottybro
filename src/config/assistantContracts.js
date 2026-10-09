@@ -18,7 +18,7 @@ export const PRODUCT_SPACES = Object.freeze([
   Object.freeze({ label: "Life", route: "/admin/life", tabs: LIFE_TABS }),
   Object.freeze({ label: "Health", route: "/admin/health", description: "tabs Overview, Workouts, Food, Body; live workouts at /admin/health/workout/:id" }),
   Object.freeze({ label: "People", route: "/admin/people", description: "Orbit, Scott's personal CRM: everyone he knows, how he knows them, hangouts, birthdays, follow-ups, gift ideas; Interview me adds and updates people" }),
-  Object.freeze({ label: "Mission Control", route: "/admin/mission", description: "Brain knowledge graph, AI inbox, and research" }),
+  Object.freeze({ label: "Mission Control", route: "/admin/mission", description: "Brain knowledge graph and AI inbox" }),
   Object.freeze({ label: "Vault", route: "/admin/vault", description: "snippets, documents, databases/hikers" }),
   Object.freeze({ label: "Settings", route: "/admin/settings", description: "account and app preferences" }),
 ]);

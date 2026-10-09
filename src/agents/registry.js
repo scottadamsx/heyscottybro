@@ -89,7 +89,7 @@ export const AGENTS = [
     id: "banker", name: BANKER.name, title: "Finance Agent", emoji: BANKER.emoji, icon: BANKER.icon,
     color: "#fbbf24", kind: "api", model: BANKER.model, maxToolTurns: 16,
     tagline: BANKER.tagline,
-    thinking: "Griphook is counting the gold…",
+    thinking: "Banker is counting the gold…",
     tools: (TOOLS) => TOOLS.filter((t) => t.name !== "consult_banker"),
     buildPrompt: buildBankerPrompt,
   },

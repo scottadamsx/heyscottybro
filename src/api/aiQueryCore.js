@@ -155,7 +155,7 @@ export async function searchAcrossCollections({ query, collections, limit = 20, 
     try {
       const result = await queryCollection({ collection, search: term, limit: eachLimit });
       if (result?.error) return { collection, error: result.error };
-      return { collection, items: result?.items || [] };
+      return { collection, items: result?.items || [], total: result?.total, next_offset: result?.next_offset, warning: result?.warning, note: result?.note };
     } catch (error) {
       return { collection, error: error?.message || String(error) };
     }
@@ -171,6 +171,17 @@ export async function searchAcrossCollections({ query, collections, limit = 20, 
   const capped = Math.min(Math.max(1, Number(limit) || 20), maxLimit);
   return {
     query: term,
+    coverage: settled.map(({ collection, items = [], error, total, next_offset, warning, note }) => ({
+      collection,
+      status: error ? "failed" : items.length ? "matches" : "zero_matches",
+      returned: items.length,
+      ...(total !== undefined ? { total } : {}),
+      ...(next_offset !== undefined ? { next_offset } : {}),
+      ...(warning ? { warning } : {}),
+      ...(note ? { note } : {}),
+      ...(error ? { error } : {}),
+    })),
+    total_scope: "retrieved candidates, not all matching records; ranking is within these candidates",
     total: items.length,
     returned: Math.min(items.length, capped),
     ...(items.length > capped ? { note: `Showing the best ${capped} matches.` } : {}),

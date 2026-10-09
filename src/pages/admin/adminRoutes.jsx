@@ -59,7 +59,7 @@ export const ADMIN_PAGES = [
 /** Legacy paths that redirect (kept out of the window table). */
 export const ADMIN_REDIRECTS = [
   ["dashboard", "/admin/today"], ["tools", "/admin/mission"], ["command", "/admin/mission"],
-  ["brain", "/admin/mission?tab=brain"], ["research", "/admin/mission?tab=research"], ["grocery", "/admin/finance?tab=receipts"],
+  ["brain", "/admin/mission?tab=brain"], ["research", "/admin/mission"], ["grocery", "/admin/finance?tab=receipts"],
   ["dates", "/admin/planner"], ["calendar", "/admin/planner"], ["journal", "/admin/life?tab=journal"], ["projects", "/admin/planner?tab=projects"],
   ["nutrition", "/admin/health?tab=food"], ["recipes", "/admin/health?tab=food"], ["fitness", "/admin/health?tab=workouts"], ["accountability", "/admin/life?tab=habits"],
   ["hikers", "/admin/vault?tab=databases"], ["snippets", "/admin/vault"], ["context", "/admin/mission?tab=brain"], ["documents", "/admin/vault?tab=documents"],

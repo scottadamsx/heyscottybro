@@ -1,6 +1,6 @@
 /**
  * Generalized agent runner — the heart of every API agent in the Command
- * Center. It's the same tool loop Griphook the banker has always used
+ * Center. It's the same tool loop Banker the banker has always used
  * (src/api/banker.js), lifted out and parameterized by an agent config so each
  * agent brings its OWN wrapper (system prompt), connector (model) and toolbelt:
  *

@@ -100,6 +100,8 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   const [hasUnread, setHasUnread] = useState(false);
   const [attachmentWorkCount, setAttachmentWorkCount] = useState(0);
   const [chatLogLive, setChatLogLive] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [speakingMessage, setSpeakingMessage] = useState(null);
   const {
     displayMsgs,
     input,
@@ -123,6 +125,8 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   const messagesRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const voiceFinalIndexRef = useRef(0);
   const closeRef = useRef(null);
   const returnFocusRef = useRef(null);
   const wasLoadingRef = useRef(loading);
@@ -361,6 +365,9 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
     // Unsupported images remain visible until Scott removes them or clears the
     // conversation, preserving the actionable HEIC/JPEG guidance.
     setShots((prev) => prev.filter((shot) => shot.rejected));
+    stopVoiceInput();
+    window.speechSynthesis?.cancel();
+    setSpeakingMessage(null);
     sendMessage(attachments);
   };
 
@@ -451,6 +458,68 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); }
   };
 
+  const stopVoiceInput = useCallback(() => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setVoiceListening(false);
+  }, []);
+
+  const toggleVoiceInput = () => {
+    if (recognitionRef.current) { stopVoiceInput(); return; }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      addToast("Voice input isn't available in this browser. You can still use its keyboard dictation.", "error");
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = document.documentElement.lang || "en-CA";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.onresult = (event) => {
+        const transcript = [...event.results].slice(Math.max(event.resultIndex, voiceFinalIndexRef.current))
+          .filter((result) => result.isFinal)
+          .map((result) => result[0]?.transcript || "").join(" ").trim();
+        voiceFinalIndexRef.current = event.results.length;
+        if (transcript) setInput((current) => `${current}${current && !/\s$/.test(current) ? " " : ""}${transcript}`.slice(0, MAX_INPUT_CHARS));
+      };
+      recognition.onerror = (event) => {
+        setVoiceListening(false);
+        recognitionRef.current = null;
+        if (event.error !== "aborted" && event.error !== "no-speech") addToast(`Voice input failed: ${event.error || "microphone unavailable"}.`, "error");
+      };
+      recognition.onend = () => { setVoiceListening(false); recognitionRef.current = null; };
+      recognitionRef.current = recognition;
+      voiceFinalIndexRef.current = 0;
+      recognition.start();
+      setVoiceListening(true);
+    } catch (error) {
+      recognitionRef.current = null;
+      setVoiceListening(false);
+      addToast(`Couldn't start voice input: ${error?.message || error}`, "error");
+    }
+  };
+
+  const toggleSpeak = (index, text) => {
+    if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
+      addToast("Read aloud isn't available in this browser.", "error");
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (speakingMessage === index) { setSpeakingMessage(null); return; }
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.onend = () => setSpeakingMessage(null);
+    utterance.onerror = () => setSpeakingMessage(null);
+    setSpeakingMessage(index);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => () => {
+    recognitionRef.current?.abort();
+    window.speechSynthesis?.cancel();
+  }, []);
+  useEffect(() => { if (!open) stopVoiceInput(); }, [open, stopVoiceInput]);
+
   const onPanelKeyDown = (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -538,6 +607,9 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
                   <div key={i} className="chat-msg assistant chat-md">
                     {tier.id !== "frodo" && <span className={`chat-author ${tier.id}`}><i className={`fa-solid ${tier.icon}`} /> {tier.label}</span>}
                     <MarkdownBody html={renderMarkdown(m.text)} />
+                    <button type="button" className="chat-read-aloud" onClick={() => toggleSpeak(i, m.text)} aria-label={speakingMessage === i ? "Stop reading aloud" : "Read answer aloud"} title={speakingMessage === i ? "Stop reading" : "Read aloud"}>
+                      <i className={`fa-solid ${speakingMessage === i ? "fa-stop" : "fa-volume-high"}`} aria-hidden="true" />
+                    </button>
                   </div>
                 );
               }
@@ -611,6 +683,9 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
             />
             <button type="button" className="chat-attach" onClick={() => fileInputRef.current?.click()} disabled={clearing || loading || hydrating || !historyReady} aria-label="Attach screenshot" title="Attach screenshot">
               <i className="fa-solid fa-paperclip" />
+            </button>
+            <button type="button" className={`chat-attach chat-voice${voiceListening ? " active" : ""}`} onClick={toggleVoiceInput} disabled={clearing || loading || hydrating || !historyReady} aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice input" : "Start voice input"} title={voiceListening ? "Stop listening" : "Dictate; your browser's speech service may process audio"}>
+              <i className={`fa-solid ${voiceListening ? "fa-stop" : "fa-microphone"}`} aria-hidden="true" />
             </button>
             <button type="button" className="chat-send" onClick={doSend} disabled={!canSend} aria-label="Send">
               <i className="fa-solid fa-paper-plane" />

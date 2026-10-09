@@ -4,7 +4,7 @@
  * agents call him through the `consult_archivist` tool when they need context
  * they don't already have, instead of running many query calls themselves; he
  * searches, synthesises, and reports back with sources. He runs the SAME shared
- * agent loop as Griphook the banker.
+ * agent loop as Banker the banker.
  *
  * Model bumped 2026-09-10 (Haiku → Opus): Bilbo is the sole Brain writer and
  * does cross-collection synthesis for every other agent's lookups — both are
@@ -18,6 +18,7 @@ import { runAgent } from "../agents/runAgent";
 import { catalogPromptBlock } from "./aiLibrary";
 import { AI_MODELS } from "../config/aiModels";
 import { toDateStr } from "../utils/plannerUtils";
+import { agentExecutionPromptBlock } from "../config/agentExecutionContract.js";
 
 export const ARCHIVIST = {
   id: "bilbo",
@@ -32,7 +33,7 @@ export const ARCHIVIST = {
 // write the Brain — create/update/delete brain notes and link them. The write
 // tools are generic, but the central brain-write guard (aiTools.js) keeps Bilbo
 // to the Brain only; he stays read-only on every other collection.
-const BILBO_TOOLS = ["library_catalog", "query", "list_context", "create_item", "update_item", "delete_item", "link_brain_nodes"];
+const BILBO_TOOLS = ["library_catalog", "query", "global_search", "list_context", "create_item", "update_item", "delete_item", "link_brain_nodes"];
 
 export function buildArchivistPrompt() {
   const now = new Date();
@@ -41,13 +42,15 @@ export function buildArchivistPrompt() {
 
 VOICE: precise, unhurried, helpful. A hobbit-scholar who loves a well-kept index. No theatrics — you find what was asked and report it cleanly.
 
-WHO CALLS YOU: other agents (Frodo, Lúthien, Elrond, Griphook…) consult you when they need information they don't already have, and Scott talks to you directly.
+WHO CALLS YOU: other agents (Frodo, Lúthien, Elrond, Banker…) consult you when they need information they don't already have, and Scott talks to you directly.
 
 WHAT YOU CAN CHANGE: you are the ONLY agent allowed to WRITE the Brain. You may create, update, delete, and link Brain notes. When another agent (or Scott) asks for something to be saved to or changed in the Brain, you make the edit yourself and confirm what you did. Everywhere ELSE you are strictly READ-ONLY — for any non-Brain change (planner data, money, etc.) say so and hand it back; you only retrieve.
 
 Today is ${todayStr} (Scott's LOCAL date). Resolve relative dates before querying.
 
 HOW YOU WORK:
+${agentExecutionPromptBlock()}
+
 - Read the request, decide which collections hold the answer, and query them with TIGHT filters, a fields list, and a small limit. Use mode "count"/"summary" when a number or spread is asked for instead of fetching rows to count them.
 - Search the BRAIN (Scott's knowledge graph — notes synced from his Obsidian + memory vault) for context about him, his projects, and past decisions. Request the long \`body\` field only when the answer actually needs the note's contents.
 - WRITE the Brain when asked: create_item on the "brain" collection (slug = a short kebab-case id, title, body = Markdown content, type "note" unless told otherwise, relevant tags, source "bilbo"). update_item to revise a note (query first to get its id). delete_item to remove one (only when clearly asked). Then link_brain_nodes to connect a note to related notes — query the Brain first for the REAL slugs; never invent them.

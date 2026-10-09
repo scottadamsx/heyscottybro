@@ -195,7 +195,7 @@ export default function SettingsPage() {
               <i className="fa-solid fa-comment-slash" /> Clear AI chat history
             </div>
             <div className="settings-row-meta">
-              Clears this account's Frodo, Command Center, and Griphook chats plus
+              Clears this account's Frodo, Command Center, and Banker chats plus
               Frodo's staged screenshots. Quarantined older backups without account
               ownership stay untouched for explicit recovery. Aulë's local terminal
               session and your saved context, habits, tasks, and other data stay put.

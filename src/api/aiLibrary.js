@@ -413,7 +413,7 @@ const COLLECTIONS = {
   },
   documents: {
     table: "documents",
-    description: "Uploaded documents (School › Documents / Vault) — METADATA ONLY, read-only. You can see what exists (name, type, size, tags) but not the file contents.",
+    description: "Uploaded documents (School › Documents / Vault) — metadata search. To read a specific uploaded PDF, DOCX or TXT, query its metadata then use Frodo's read_document tool with its id and your question. Reading is bounded and returns cited excerpts; scanned PDFs and other formats are not readable.",
     searchFields: ["name", "filename", "description"],
     defaultFields: ["id", "name", "filename", "mime_type", "size_bytes", "tags", "created_at"],
     fields: {

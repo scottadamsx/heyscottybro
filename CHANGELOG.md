@@ -22,6 +22,11 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Changed
 
+- Griphook is now named Banker across chat, assistant prompts, settings, and activity labels. Existing IDs and saved conversations are unchanged.
+- Removed the unused Research page and command entry; saved research records remain intact and legacy links fall back to Mission Control.
+- Shared assistant instructions now distinguish incomplete retrieval from empty results and require evidence-backed completion reports; global search includes per-collection coverage and warnings.
+- Frodo can read relevant excerpts from an uploaded PDF, DOCX or TXT document and cite their page, paragraph or line. Reading is limited to the authenticated owner's upload and returns explicit errors for unsupported/scanned files or extraction limits.
+
 - Workout progression now uses up to six completed sessions, gradual rep improvement, two top-range confirmations before a one-step increase, optional RPE as a brake, personal training-gap confidence, and a one-step recovery response after two poor sessions.
 - Mission Control now opens on Brain and retains Brain, Inbox, and Research; the unused Agents page and duplicate Usage tab are gone.
 - The retired Bug Tracker surface, dashboard pulse, assistant tools, suggestions, and Library entry are removed without changing its old rows or private storage bucket.

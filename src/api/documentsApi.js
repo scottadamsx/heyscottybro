@@ -143,3 +143,11 @@ export async function getDocument(id) {
   if (error) throw error;
   return data;
 }
+
+/** Download an owner's private document after resolving its path from an owner-scoped row. */
+export async function downloadDocument(storagePath) {
+  if (typeof storagePath !== "string" || !storagePath.trim()) throw new Error("Document storage path is missing.");
+  const { data, error } = await supabase.storage.from(BUCKET).download(storagePath);
+  if (error) throw error;
+  return data;
+}

@@ -141,14 +141,14 @@ test("a healthy module cannot rearm a different broken module", async () => {
     assert.equal(state, "pending");
     assert.equal(browser.reloads(), 1);
 
-    await lazyImport(async () => ({ ready: true }), "Griphook");
+    await lazyImport(async () => ({ ready: true }), "Banker");
     assert.equal(browser.values.get(chunkReloadFlag("Bilbo")), "1");
 
     await assert.rejects(
       lazyImport(async () => { throw chunkError(); }, "Bilbo"),
       /old version.*Bilbo/i,
     );
-    assert.equal(browser.reloads(), 1, "Bilbo remains guarded after Griphook succeeds");
+    assert.equal(browser.reloads(), 1, "Bilbo remains guarded after Banker succeeds");
   } finally { browser.restore(); }
 });
 
@@ -166,7 +166,7 @@ test("the compatibility clear removes the legacy base and all keyed guards", () 
   try {
     browser.values.set(CHUNK_RELOAD_FLAG, "1");
     browser.values.set(chunkReloadFlag("Bilbo"), "1");
-    browser.values.set(chunkReloadFlag("Griphook"), "1");
+    browser.values.set(chunkReloadFlag("Banker"), "1");
     browser.values.set("unrelated", "keep");
     clearChunkReloadFlag();
     assert.deepEqual([...browser.values], [["unrelated", "keep"]]);

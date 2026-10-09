@@ -27,7 +27,7 @@ export function describeAction(a) {
     case "complete_reminder": return "Completed a reminder";
     case "set_balance": return `Set balance to $${args.balance}`;
     case "set_category_budget": return args.amount > 0 ? `Set ${args.category} budget to $${args.amount}/mo` : `Removed ${args.category} budget`;
-    case "consult_banker": return `Consulted Griphook${quote(args.request)}`;
+    case "consult_banker": return `Consulted Banker${quote(args.request)}`;
     case "log_food": return `Logged food${quote(args.name)}`;
     case "log_weight": return "Logged a weigh-in";
     case "web_fetch": return `Read a web page${args.url ? `: ${args.url}` : ""}`;

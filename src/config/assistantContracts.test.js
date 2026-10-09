@@ -82,9 +82,11 @@ test("the retired Bug Tracker has no live product, assistant, or command surface
   assert.match(commandPaletteSource, /\/admin\/analytics\?section=ai/);
 });
 
-test("Mission Control retains Brain, Inbox, and Research without the Agents page", () => {
+test("Mission Control retains Brain and Inbox without Research or the Agents page", () => {
   assert.doesNotMatch(missionSource, /CommandCenterPage|key:\s*["']agents["']|tab === ["']agents["']/);
   assert.match(missionSource, /const DEFAULT_TAB = ["']brain["']/);
-  for (const tab of ["brain", "inbox", "research"]) assert.match(missionSource, new RegExp(`key: \\"${tab}\\"`));
+  for (const tab of ["brain", "inbox"]) assert.match(missionSource, new RegExp(`key: \\"${tab}\\"`));
+  assert.doesNotMatch(missionSource, /ResearchPage|key:\s*["']research["']/);
+  assert.doesNotMatch(commandPaletteSource, /label:\s*["']Research["']/);
   assert.doesNotMatch(commandPaletteSource, /label:\s*["']Agents["']/);
 });

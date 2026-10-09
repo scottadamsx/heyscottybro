@@ -1,5 +1,13 @@
 # Active work
 
+## Frodo assistant expansion
+
+- Feature: `docs/features/frodo-assistant-expansion.md`.
+- Scott authorized building the expanded assistant on 2026-10-09.
+- Scott requested voice and résumé-grounded file answers, then clarified app uploads and phone files selected in the app. Added owner-scoped PDF/DOCX/TXT extraction, bounded excerpts, source instructions, and explicit browser dictation/read-aloud controls. Browser dictation may send audio to its speech service. Lint/build/whitespace pass; tests and rendered/mobile verification were not run in this pass.
+- Latest steering: Griphook renamed to Banker locally; Research page and navigation removed without deleting stored records. Lint, full tests and build pass. Frodo / Orbit / Banker-only consolidation is requested but not yet implemented; internal helpers and historical session clearing require compatibility review. No release or rendered UI verification yet.
+- Shared execution/evidence rules and search coverage are being implemented locally. Web search, general file extraction, voice, durable memory upgrades and browser actions remain incomplete; their infrastructure is being assessed. No production activation is implied by local work.
+
 ## Admin lazy-chunk recovery
 
 - **Feature document:** `docs/features/admin-lazy-chunk-recovery.md`

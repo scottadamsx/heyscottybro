@@ -31,7 +31,6 @@ const COMMANDS = [
   { label: "Mission Control", to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Brain",           to: "/admin/mission?tab=brain",        icon: "fa-brain",            section: "Mission" },
   { label: "AI Inbox",        to: "/admin/mission?tab=inbox",        icon: "fa-inbox",            section: "Mission" },
-  { label: "Research",        to: "/admin/mission?tab=research",     icon: "fa-magnifying-glass-chart", section: "Mission" },
   { label: "Vault",           to: "/admin/vault",                    icon: "fa-vault",            section: "Vault" },
   { label: "Secrets",         to: "/admin/vault",                    icon: "fa-key",              section: "Vault" },
   { label: "Documents",       to: "/admin/vault?tab=documents",      icon: "fa-file-lines",       section: "Vault" },

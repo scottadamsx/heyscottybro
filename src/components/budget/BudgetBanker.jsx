@@ -91,7 +91,7 @@ export default function BudgetBanker({ onChanged }) {
     setDisplay(nextDisplay);
     setLoading(true);
     try {
-      const acceptedHistory = closePendingTurnForPersistence(runHistory, "turn interrupted before Griphook replied");
+      const acceptedHistory = closePendingTurnForPersistence(runHistory, "turn interrupted before Banker replied");
       if (!persistSnapshot(nextDisplay, acceptedHistory)) {
         throw new Error("The accepted message could not be saved, so no ledger work was started.");
       }
@@ -104,9 +104,9 @@ export default function BudgetBanker({ onChanged }) {
         onStatus: setStatus,
         onCommit: async (checkpointHistory) => {
           committed = checkpointHistory;
-          const safeHistory = closePendingTurnForPersistence(checkpointHistory, "turn interrupted during Griphook tool work");
+          const safeHistory = closePendingTurnForPersistence(checkpointHistory, "turn interrupted during Banker tool work");
           if (!persistSnapshot(nextDisplay, safeHistory)) {
-            throw new Error("Griphook's tool checkpoint could not be saved.");
+            throw new Error("Banker's tool checkpoint could not be saved.");
           }
         },
       });
@@ -133,7 +133,7 @@ export default function BudgetBanker({ onChanged }) {
   const { confirm, dialog } = useConfirm();
   const clear = async () => {
     if (loading) return;
-    if (!await confirm("Clear the whole conversation with Griphook? It can't be brought back.", { title: "Clear conversation", confirmLabel: "Clear" })) return;
+    if (!await confirm("Clear the whole conversation with Banker? It can't be brought back.", { title: "Clear conversation", confirmLabel: "Clear" })) return;
     let preparation;
     try {
       preparation = prepareOwnerBoundBankerClear(ownerId);
@@ -141,12 +141,12 @@ export default function BudgetBanker({ onChanged }) {
       setDisplay([]); setHistory([]);
       setStorageWarning(unownedBankerSessionWarning(sessionStorage));
     } catch (error) {
-      setStorageWarning(`Griphook's conversation couldn't be cleared: ${error.message || error}`);
+      setStorageWarning(`Banker's conversation couldn't be cleared: ${error.message || error}`);
     }
   };
 
   // Bubbles reuse the app chat's own classes (.chat-msg / .chat-md / .chat-send)
-  // so Griphook reads exactly like Frodo's panel; only the frame is local.
+  // so Banker reads exactly like Frodo's panel; only the frame is local.
   return (
     <div className="db-card banker">
       {dialog}

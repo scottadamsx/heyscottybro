@@ -69,6 +69,7 @@ export default function DocumentUploader({ onUploaded, onClose }) {
       {fileError && <p className="doc-upload-error" role="alert">{fileError}</p>}
       {file && (
         <>
+          <p className="form-hint">Frodo can read text from PDF, DOCX, and TXT uploads. Scanned PDFs and other file types can still be stored, but Frodo cannot extract their text.</p>
           <Field label="Display name">
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </Field>

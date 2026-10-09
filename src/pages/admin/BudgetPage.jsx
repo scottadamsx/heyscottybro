@@ -146,7 +146,7 @@ export default function BudgetPage() {
   }, [addToast, applyServerConfig]);
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Re-pull config + transactions from the server. Used after Griphook (the
+  // Re-pull config + transactions from the server. Used after Banker (the
   // banker agent) makes ledger changes, so the page reflects them immediately.
   const reload = useCallback(async () => {
     try {

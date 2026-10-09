@@ -2056,6 +2056,9 @@ input, textarea, select { font-family: inherit; }
 .chat-attach { flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: color var(--dur-fast), border-color var(--dur-fast), opacity var(--dur-fast); }
 .chat-attach:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-attach:not(:disabled):hover { color: var(--text-primary); border-color: var(--border-strong); }
+.chat-voice.active { color: var(--text-inverse); background: var(--accent); border-color: var(--accent); }
+.chat-read-aloud { display: block; margin: var(--space-xs) 0 0 auto; width: 32px; height: 32px; border: 1px solid var(--border-primary); border-radius: var(--radius-full); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; }
+.chat-read-aloud:hover { color: var(--text-primary); border-color: var(--border-strong); }
 
 @media (max-width: 900px) {
   .chat-panel,

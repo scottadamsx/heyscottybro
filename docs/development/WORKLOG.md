@@ -338,3 +338,21 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Scott approved the documented `BUG-068` repair with exact “go.” Moved all admin route imports onto `lazyWithReload`, preserving route paths, page skeletons, and existing error boundaries.
 - Tightened the shared reload guard so a reload occurs only after session storage confirms the guard was persisted; browsers that block storage now show the real error rather than risking a refresh loop.
 - Added three focused regressions for the reported module-script error, one-reload/rearm behavior, ordinary-error non-reload behavior, and the admin source boundary. Focused tests, zero-warning lint, the complete 325-test suite, 3,156-module build, and whitespace check pass. No database, service-worker strategy, dependency, production-data, commit, push, or deployment change occurred.
+
+### Assistant rules, Banker name and Research removal
+
+- Added shared execution/evidence instructions and collection-level global-search coverage, with a partial/failed/empty coverage regression. These are local improvements, not verified real-provider outcomes or full assistant parity.
+- At Scott's direction, renamed Griphook to Banker throughout host runtime prompts, labels, errors and tests, preserving IDs, stored chats and owner protections.
+- Removed the Research page source, unused stylesheet, tab and command entry. Old links land in Mission Control; saved research records and API remain intact. Deleted source is recoverable through Git.
+- Lint, every npm test group, production build and whitespace checks pass. Rendered desktop/mobile checks remain untested. No newly discovered defect, database change, live model request, commit or release. Three-agent consolidation remains open; see the active feature record.
+
+### Voice and file-processing discovery
+
+- Recorded Scott's request for voice and source-grounded résumé answers. Inspected document storage/API, Library metadata contract and Frodo attachment controls; current file contents are unavailable to the assistant and chat attachments are image-only.
+- Documented the proposed owner-bound read/extract/cite flow, truthful earliest-listed employment wording, failure cases and validation matrix. Voice mode and file location remain scope decisions. No application code, provider setup, file ingestion or live user data changed in this discovery pass; automated tests were not rerun for documentation-only edits.
+
+### Uploaded document reading implementation
+
+- Added Frodo-only document reading for existing private uploads. Owner-scoped metadata lookup precedes authenticated storage download; bounded PDF/DOCX/TXT text excerpts include page/paragraph/line labels. Prompt guidance requires citations and careful wording for résumé employment chronology. Added upload format guidance.
+- Scott clarified app uploads and user-selected phone files. The system file picker is user initiated through the Documents uploader; there is no ambient access to the device. Added explicit one-shot browser dictation and per-reply read-aloud buttons. Dictation errors/unsupported browsers are surfaced, possible browser speech-service audio processing is disclosed, and capture stops on close/send.
+- No live/private documents read. Lint/build/whitespace pass; tests and rendered checks were not run per instruction. No migration, dependency addition, commit, push or deploy.

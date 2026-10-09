@@ -24,7 +24,7 @@ function memoryStorage(initial = {}) {
   };
 }
 
-test("Griphook restores only the established owner's versioned conversation", () => {
+test("Banker restores only the established owner's versioned conversation", () => {
   const storage = memoryStorage();
   const session = {
     display: [{ role: "user", text: "owner A gold" }],
@@ -45,7 +45,7 @@ test("Griphook restores only the established owner's versioned conversation", ()
   });
 });
 
-test("an unowned legacy Griphook backup is quarantined without exposing its content", () => {
+test("an unowned legacy Banker backup is quarantined without exposing its content", () => {
   const storage = memoryStorage({
     [UNOWNED_BANKER_SESSION_KEY]: JSON.stringify({ display: [{ text: "private A balance" }] }),
   });
@@ -59,7 +59,7 @@ test("an unowned legacy Griphook backup is quarantined without exposing its cont
   assert.equal(storage.values.has(UNOWNED_BANKER_SESSION_KEY), true, "unattributable evidence remains untouched");
 });
 
-test("malformed, mismatched, and future Griphook sessions fail closed and remain untouched", () => {
+test("malformed, mismatched, and future Banker sessions fail closed and remain untouched", () => {
   const key = ownerBoundBankerSessionKey("owner-a");
   const invalid = [
     "not json",
@@ -78,7 +78,7 @@ test("malformed, mismatched, and future Griphook sessions fail closed and remain
   }
 });
 
-test("nested malformed Griphook messages stay locked and byte-for-byte untouched", () => {
+test("nested malformed Banker messages stay locked and byte-for-byte untouched", () => {
   const key = ownerBoundBankerSessionKey("owner-a");
   const invalid = [
     { display: [{ role: "future", text: "private" }], history: [] },
@@ -104,7 +104,7 @@ test("nested malformed Griphook messages stay locked and byte-for-byte untouched
   }
 });
 
-test("expiry and Clear remove only the established owner's Griphook key", () => {
+test("expiry and Clear remove only the established owner's Banker key", () => {
   const aKey = ownerBoundBankerSessionKey("owner-a");
   const bKey = ownerBoundBankerSessionKey("owner-b");
   const envelope = (ownerId) => JSON.stringify({
@@ -124,7 +124,7 @@ test("expiry and Clear remove only the established owner's Griphook key", () => 
   assert.equal(storage.values.has(bKey), false);
 });
 
-test("Griphook turns and Clear remain exclusive after the Money page unmounts", () => {
+test("Banker turns and Clear remain exclusive after the Money page unmounts", () => {
   const ownerId = "owner-exclusive";
   const storage = memoryStorage({ [ownerBoundBankerSessionKey(ownerId)]: "saved" });
   const finishTurn = beginOwnerBoundBankerTurn(ownerId);
@@ -143,7 +143,7 @@ test("Griphook turns and Clear remain exclusive after the Money page unmounts", 
   laterTurn();
 });
 
-test("a cancelled global preflight releases Griphook for later work", () => {
+test("a cancelled global preflight releases Banker for later work", () => {
   const ownerId = "owner-cancelled-clear";
   const preparation = prepareOwnerBoundBankerClear(ownerId);
   cancelOwnerBoundBankerClear(preparation);
@@ -180,7 +180,7 @@ test("a remounted Money view observes later checkpoints from the older turn", ()
   assert.equal(observed.length, 2, "an unmounted view receives no later owner updates");
 });
 
-test("Griphook Clear publishes the empty owner snapshot", () => {
+test("Banker Clear publishes the empty owner snapshot", () => {
   const ownerId = "owner-clear-publish";
   const storage = memoryStorage();
   writeOwnerBoundBankerSession(storage, ownerId, {
@@ -198,7 +198,7 @@ test("Griphook Clear publishes the empty owner snapshot", () => {
   unsubscribe();
 });
 
-test("a successful retry restores Griphook after a transient storage failure", () => {
+test("a successful retry restores Banker after a transient storage failure", () => {
   const ownerId = "owner-retry";
   const storage = memoryStorage();
   const originalSet = storage.setItem;
@@ -217,7 +217,7 @@ test("a successful retry restores Griphook after a transient storage failure", (
   assert.deepEqual(failed, {
     saved: false,
     writable: false,
-    warning: "Griphook's conversation isn't saving: temporary quota error",
+    warning: "Banker's conversation isn't saving: temporary quota error",
   });
 
   const recovered = persistOwnerBoundBankerSnapshot(storage, ownerId, snapshot, 2);

@@ -142,7 +142,7 @@ endpoint must replace one or be folded into an existing handler.
   ship inline-style blocks.
 - **Agents** — one loop core (`agents/loop.js`); the Brain is single-writer
   (Bilbo) and the policy lives in `aiTools.brainWriteDenial`. Frodo and Command
-  Center conversations persist in owner-bound `agent_sessions`; Griphook uses
+  Center conversations persist in owner-bound `agent_sessions`; Banker uses
   a versioned, owner-keyed one-hour `sessionStorage` envelope. History must
   hydrate successfully before send, clear, or automatic save is enabled;
   malformed, future, unowned, or wrong-owner payloads fail closed. An

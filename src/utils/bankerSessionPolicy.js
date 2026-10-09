@@ -23,7 +23,7 @@ function publishOwnerBoundBankerSession(ownerId) {
 
 export function ownerBoundBankerSessionKey(ownerId) {
   if (typeof ownerId !== "string" || !ownerId) {
-    throw new Error("An authenticated owner is required for Griphook's conversation.");
+    throw new Error("An authenticated owner is required for Banker's conversation.");
   }
   return `${UNOWNED_BANKER_SESSION_KEY}:owner:${encodeURIComponent(ownerId)}`;
 }
@@ -34,7 +34,7 @@ export function unownedBankerSessionWarning(storage) {
   } catch {
     return "";
   }
-  return "An older Griphook chat backup without account ownership is quarantined in this browser. It was not opened or imported.";
+  return "An older Banker chat backup without account ownership is quarantined in this browser. It was not opened or imported.";
 }
 
 /**
@@ -52,7 +52,7 @@ export function readOwnerBoundBankerSession(
   try {
     raw = storage?.getItem(key);
   } catch (error) {
-    return emptySession(`Griphook's saved conversation couldn't be read: ${error.message || error}`, false);
+    return emptySession(`Banker's saved conversation couldn't be read: ${error.message || error}`, false);
   }
   if (!raw) return emptySession(unownedBankerSessionWarning(storage));
 
@@ -60,7 +60,7 @@ export function readOwnerBoundBankerSession(
   try {
     saved = JSON.parse(raw);
   } catch {
-    return emptySession("Griphook's saved conversation has an unsupported format and was left untouched. Use Settings > Clear all to explicitly reset it.", false);
+    return emptySession("Banker's saved conversation has an unsupported format and was left untouched. Use Settings > Clear all to explicitly reset it.", false);
   }
 
   if (!isRecord(saved)
@@ -69,7 +69,7 @@ export function readOwnerBoundBankerSession(
     || !Number.isFinite(saved.savedAt)
     || !isValidDisplayHistory(saved.display, ["user", "banker"])
     || !isValidModelHistory(saved.history)) {
-    return emptySession("Griphook's saved conversation has an unsupported format and was left untouched. Use Settings > Clear all to explicitly reset it.", false);
+    return emptySession("Banker's saved conversation has an unsupported format and was left untouched. Use Settings > Clear all to explicitly reset it.", false);
   }
 
   if (now - saved.savedAt > ttlMs) {
@@ -77,7 +77,7 @@ export function readOwnerBoundBankerSession(
       storage?.removeItem(key);
       return emptySession(unownedBankerSessionWarning(storage));
     } catch (error) {
-      return emptySession(`Griphook's expired conversation couldn't be removed: ${error.message || error}`, false);
+      return emptySession(`Banker's expired conversation couldn't be removed: ${error.message || error}`, false);
     }
   }
 
@@ -118,14 +118,14 @@ export function persistOwnerBoundBankerSnapshot(storage, ownerId, snapshot, now 
     return {
       saved: false,
       writable: false,
-      warning: `Griphook's conversation isn't saving: ${error.message || error}`,
+      warning: `Banker's conversation isn't saving: ${error.message || error}`,
     };
   }
 }
 
 export function subscribeOwnerBoundBankerSession(ownerId, listener) {
   ownerBoundBankerSessionKey(ownerId);
-  if (typeof listener !== "function") throw new Error("A Griphook session listener is required.");
+  if (typeof listener !== "function") throw new Error("A Banker session listener is required.");
   const listeners = sessionListenersByOwner.get(ownerId) || new Set();
   listeners.add(listener);
   sessionListenersByOwner.set(ownerId, listeners);
@@ -138,10 +138,10 @@ export function subscribeOwnerBoundBankerSession(ownerId, listener) {
 export function beginOwnerBoundBankerTurn(ownerId) {
   ownerBoundBankerSessionKey(ownerId);
   if (clearingOwners.has(ownerId)) {
-    throw new Error("Griphook's conversation is being cleared — wait for Clear to finish.");
+    throw new Error("Banker's conversation is being cleared — wait for Clear to finish.");
   }
   if (activeTurnsByOwner.has(ownerId)) {
-    throw new Error("Griphook is already working in another Money view — wait for him to finish.");
+    throw new Error("Banker is already working in another Money view — wait for him to finish.");
   }
   activeTurnsByOwner.set(ownerId, 1);
   let finished = false;
@@ -155,10 +155,10 @@ export function beginOwnerBoundBankerTurn(ownerId) {
 export function prepareOwnerBoundBankerClear(ownerId) {
   ownerBoundBankerSessionKey(ownerId);
   if (activeTurnsByOwner.get(ownerId)) {
-    throw new Error("Griphook is still working — wait for him to finish before clearing chat history.");
+    throw new Error("Banker is still working — wait for him to finish before clearing chat history.");
   }
   if (clearingOwners.has(ownerId)) {
-    throw new Error("Griphook's conversation is already being cleared.");
+    throw new Error("Banker's conversation is already being cleared.");
   }
   clearingOwners.add(ownerId);
   return Object.freeze({ ownerId });
@@ -170,7 +170,7 @@ export function cancelOwnerBoundBankerClear(preparation) {
 
 export function clearOwnerBoundBankerSession(storage, ownerId, preparation = null) {
   if (preparation && (preparation.ownerId !== ownerId || !clearingOwners.has(ownerId))) {
-    throw new Error("Griphook's Clear preparation is invalid or expired.");
+    throw new Error("Banker's Clear preparation is invalid or expired.");
   }
   try {
     storage?.removeItem(ownerBoundBankerSessionKey(ownerId));
