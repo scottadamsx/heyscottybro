@@ -192,9 +192,21 @@ export function expandEvents(events, startDate, endDate) {
     const spanEnd = e.end_date && e.end_date > e.date ? parseDate(e.end_date) : null;
     if (!spanEnd) { expandReminders([e], startDate, endDate).forEach(push); continue; }
     const total = Math.round((spanEnd - parseDate(e.date)) / 86400000) + 1;
-    const cur = parseDate(e.date);
-    for (let i = 1; i <= total; i++, cur.setDate(cur.getDate() + 1)) {
-      if (cur >= winStart && cur <= winEnd) push({ ...e, date: toDateStr(cur), span_day: i, span_total: total, first_day: e.date, last_day: e.end_date });
+    // A recurring multi-day event is a repeating *span*, not one permanent
+    // span from the series' original start. Include occurrence starts just far
+    // enough before the window for an overlapping span to appear.
+    const earliestStart = new Date(winStart);
+    earliestStart.setDate(earliestStart.getDate() - total + 1);
+    const starts = expandReminders([e], toDateStr(earliestStart), endDate);
+    for (const occurrence of starts) {
+      const occurrenceStart = parseDate(occurrence.date);
+      const occurrenceEnd = new Date(occurrenceStart);
+      occurrenceEnd.setDate(occurrenceEnd.getDate() + total - 1);
+      for (let i = 1, cur = new Date(occurrenceStart); i <= total; i++, cur.setDate(cur.getDate() + 1)) {
+        if (cur >= winStart && cur <= winEnd) {
+          push({ ...e, date: toDateStr(cur), span_day: i, span_total: total, first_day: toDateStr(occurrenceStart), last_day: toDateStr(occurrenceEnd) });
+        }
+      }
     }
   }
   return out;

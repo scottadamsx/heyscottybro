@@ -13,11 +13,7 @@ Complete this after every work unit and before starting another task or reportin
 - [ ] Update `CHANGELOG.md` for user-visible changes.
 - [ ] Update `ACTIVE_WORK.md` with current status, next gate, and next permitted action.
 - [ ] Update affected product, architecture, and usage documentation.
-- [ ] Update the current `docs/sessions/` transcript through a recorded cutoff, keeping only sanitized user-visible messages.
-- [ ] Append the correct session lifecycle event and refresh the SAI glossary; never rewrite prior registry events.
-- [ ] Review every created, modified, and materially consulted file; record its purpose and final state in the session manifest.
-- [ ] Update the session summary with outcomes, evidence, remaining risks, handoff, productivity facts, and future-process improvements.
-- [ ] Validate the manifest JSON and review transcript/attachments for secrets, hidden instructions, raw tool output, unsafe machine paths, and unapproved binaries.
+- [ ] If a session archive is intentionally updated, sanitize it and validate its manifest; never include secrets, hidden instructions, raw tool output, unsafe machine paths, or unapproved binaries.
 - [ ] Review the diff for secrets, accidental files, unrelated changes, and stale documentation.
 - [ ] Check the working tree and state clearly what remains uncommitted.
 - [ ] After an approved commit, verify the commit hash and repository state.

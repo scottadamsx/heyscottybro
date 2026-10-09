@@ -1,5 +1,29 @@
 # Active work
 
+## Frodo productivity foundation
+
+- **Feature document:** `docs/features/frodo-productivity-foundation.md`
+- **Requested scope:** Make Frodo’s data retrieval smarter and more productive: recurrence-aware planning, cross-collection search, and richer safe query filters.
+- **Approval:** Scott said “go” on 2026-10-09 after reviewing the roadmap.
+- **Current state:** Resolved locally and uncommitted. `query` now supports safe occurrence expansion and bounded rich filters; `global_search` performs source-labelled parallel retrieval without searching Vault secrets. A recurring multi-day event span now repeats correctly. Focused tests, lint, 322-test suite, build, and whitespace check pass; no database or production data changed.
+- **Next permitted work:** Commit/push/release require separate approval. Batch/RPC writes, structured memory, hybrid/vector Brain retrieval, and proactive-rule delivery remain distinct future contracts.
+
+## Admin home redirect
+
+- **Feature document:** `docs/features/admin-home-redirect.md`
+- **Requested scope:** Send an already-authenticated admin who opens the root URL to Today, while leaving the public home intact for signed-out visitors.
+- **Approval:** Scott said “go” on 2026-10-09.
+- **Current state:** Resolved locally and uncommitted. The root route dynamically checks an existing session and replaces it with Today only for an authenticated owner. The focused test, lint, 322-test suite, and build pass; no authentication state or stored data was changed.
+- **Next permitted work:** Commit/push/release require separate approval. After release, verify the redirect on a signed-in phone browser and the public-root fallback while signed out.
+
+## Frodo history recovery
+
+- **Feature document:** `docs/features/frodo-history-recovery.md`
+- **Requested scope:** Recover Frodo when a compatible legacy display-history message is rejected, without weakening validation for unknown or unsafe saved content.
+- **Approval:** Scott said “find the fix and fix it, go” on 2026-10-09.
+- **Current state:** Resolved locally and uncommitted. Frodo now accepts its own persisted tier-handoff `note` display rows; the focused 19-test suite, lint, complete 321-test suite, and build pass. No stored data was cleared or overwritten.
+- **Next permitted work:** Commit/push/release require separate approval. After release, reload the affected Frodo session at desktop and mobile widths to confirm recovery.
+
 ## Adaptive workout progression
 
 - **Feature document:** `docs/features/adaptive-workout-progression.md`
@@ -59,14 +83,14 @@
 - **Release target:** Vercel project `scottadamsxs-projects/heyscottybro`, branch `main`, production alias `https://heyscottybro.vercel.app`.
 - **Deferred findings:** `BUG-055` and `BUG-056` remain direct-composition validation debt and were not expanded into this repair.
 
-## Bonsai development session identities
+## Retired Bonsai development session identities
 
 - **Feature document:** `docs/features/bonsai-development-session-identities.md`
 - **Requested scope:** Give every coded development session a Project Manager-owned sequential SAI identity, exact Bonsai chat title, first-message bootstrap, append-only registry, and readable glossary. This does not apply to heyScottyBro/Frodo product conversations.
 - **Approval:** Scott approved the presented contract and pseudocode with exact **“go.”**
 - **Current session:** `SAI00000001`, bound to Codex thread `01a0ea22-5d76-7502-a006-a16c39e7c228`; the chat title has been changed to `Bonsai Chat SAI00000001`.
-- **Current state:** Complete and uncommitted. The title, registry, glossary, injection, governing-document integration, validator, decisions, and current archive reconciliation are complete. All 262 tests, zero-warning lint, production build, registry/JSONL/transcript-count, privacy/secret, 23-path manifest-inventory, whitespace, final-diff, and repository-state checks pass. Project Manager-owned SAI00000002 records are also intentionally uncommitted.
-- **Next permitted work:** Preserve the governance and current-session records while the separately listed Vercel repair proceeds through its approval gate. No commit, push, migration, deployment, dependency, or production write is approved.
+- **Current state:** Retired as a governing mechanism on 2026-10-09 at Scott's direction. Historical archives and SAI records remain available for retrieval only; they do not gate development work.
+- **Next permitted work:** None. Use the ordinary documentation-first workflow and durable project records instead.
 - **Deferred findings:** `BUG-055` and `BUG-056` remain logged without implementation. `SEC-001 — Software Security Requirements` remains queued and unstarted.
 - **Approved companion rule:** `docs/features/list-card-item-counts.md` records Scott's permanent requirement that settled row-list cards show an accurate small count. This work unit changes standards only; it does not authorize an uninspected application-wide retrofit.
 

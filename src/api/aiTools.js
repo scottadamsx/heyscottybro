@@ -10,7 +10,7 @@
  */
 import {
   COLLECTION_NAMES,
-  libraryCatalog, libraryQuery, libraryCreate, libraryUpdate, libraryDelete,
+  libraryCatalog, libraryQuery, libraryGlobalSearch, libraryCreate, libraryUpdate, libraryDelete,
 } from "./aiLibrary";
 import { loadContext, addContextEntry, deleteContextEntry, replaceContext } from "./contextApi";
 import { linkNodes as linkBrainNodes } from "./brainApi";
@@ -86,7 +86,7 @@ export const TOOLS = [
       properties: {
         collection: { type: "string", enum: COLLECTION_NAMES },
         fields: { type: "array", items: { type: "string" }, description: "Columns to return (id always included). Omit for a sensible compact default." },
-        where: { type: "object", description: "Exact-match filters, e.g. {\"project_id\": \"...\", \"completed\": false}" },
+        where: { type: "object", description: "Filters: exact values, or allow-listed operators such as {\"amount\":{\"gte\":100}}, {\"date\":{\"lt\":\"2026-10-10\"}}, {\"tags\":{\"contains\":\"school\"}}, {\"id\":{\"in\":[\"...\"]}}, plus one or:[{...},{...}] group." },
         search: { type: "string", description: "Case-insensitive substring search across the collection's text fields" },
         date_from: { type: "string", description: "YYYY-MM-DD inclusive lower bound on the collection's date" },
         date_to: { type: "string", description: "YYYY-MM-DD inclusive upper bound" },
@@ -95,8 +95,22 @@ export const TOOLS = [
         limit: { type: "number", description: "Max rows (default 25, cap 100)" },
         offset: { type: "number", description: "For paging — response includes next_offset when more rows exist" },
         mode: { type: "string", enum: ["rows", "count", "summary"], description: "count = just the number; summary = count + date range + 5 sample rows" },
+        expand_occurrences: { type: "boolean", description: "For reminders/events only. Requires date_from and date_to; returns generated view-only occurrences in that inclusive range with source metadata." },
       },
       required: ["collection"],
+    },
+  },
+  {
+    name: "global_search",
+    description: "Read-only parallel search across Scott's safe planner and Brain collections. Returns compact, ranked, source-labelled matches. Vault snippets and the agent audit trail are excluded so a broad search cannot expose secrets; use query on an explicitly appropriate collection when needed.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "What to find, e.g. a person, project, place, or topic." },
+        collections: { type: "array", items: { type: "string", enum: COLLECTION_NAMES }, description: "Optional safe collection subset to make the search cheaper." },
+        limit: { type: "number", description: "Maximum ranked matches; default 20, cap 100." },
+      },
+      required: ["query"],
     },
   },
   {
@@ -209,6 +223,7 @@ async function runTool(name, input, toolContext) {
   switch (name) {
     case "library_catalog": return await libraryCatalog(input || {});
     case "query": return await libraryQuery(input);
+    case "global_search": return await libraryGlobalSearch(input);
     case "create_item": return await libraryCreate(input);
     case "update_item": return await libraryUpdate(input);
     case "delete_item": return await libraryDelete(input);
@@ -335,7 +350,7 @@ export async function executeTool(name, input, agentId = "frodo", toolContext = 
     result = { error: err.message };
   }
   // Skip logging for read-only / high-frequency tools to avoid noise
-  const skipLog = ["library_catalog", "query", "list_context"].includes(name);
+  const skipLog = ["library_catalog", "query", "global_search", "list_context"].includes(name);
   if (!skipLog) logAction({ agentId, tool: name, input, result, ownerId });
   return result;
 }

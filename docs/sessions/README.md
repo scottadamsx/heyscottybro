@@ -1,13 +1,13 @@
 # Development session archives
 
-**Status:** Governing
-**Last reviewed:** 2026-09-29
+**Status:** Legacy archive guidance — not a development gate
+**Last reviewed:** 2026-10-09
 
-Every coded development session has one durable identity and archive folder. The archive makes a session auditable and easy to skim; it does not replace the feature documents, bug ledger, decision ledger, changelog, work log, or Git history. These rules do not apply to heyScottyBro/Frodo product conversations.
+Historical archives remain available for retrieval. They never replace the feature documents, bug ledger, decision ledger, changelog, work log, or Git history, and an absent archive, SAI identity, bootstrap, registry entry, or glossary entry must never block authorized work.
 
-## Identity and ownership
+## Historical identity records
 
-The Project Manager alone assigns human-facing session IDs. Read [`registry.jsonl`](registry.jsonl) as the append-only lifecycle history and [`GLOSSARY.md`](GLOSSARY.md) as its readable current projection.
+Existing SAI records remain historical evidence. Do not modify or rely on them as an approval or startup mechanism.
 
 - Format: `SAI########`, beginning with `SAI00000001`.
 - Allocation: reserve the highest-ever number plus one, with no gaps or reuse.
@@ -20,25 +20,19 @@ A reservation records its project, purpose, start date, and parent SAI ID or `nu
 
 The SAI ID is the canonical human identity. The Codex thread ID remains the immutable technical identity used for retrieval and auditing.
 
-## Project Manager bootstrap
-
-Before creating a development chat, the Project Manager validates the registry and reserves the next ID. The chat is created with the exact Bonsai title and a completed [`PROJECT_MANAGER_INJECTION.md`](PROJECT_MANAGER_INJECTION.md) bootstrap as its first visible prompt. When the thread ID becomes available, the Project Manager appends its binding, updates the glossary, and starts the archive.
-
-If a development chat lacks any of those records, stop before application-code edits and route it through the Project Manager. The seed session `SAI00000001` is the sole retrospective exception because it existed before this contract.
-
 ## Folder identity
 
-Use a readable SAI-based path for new sessions:
+Existing paths retain their historical names. New archives, if used, may use a readable date-and-purpose path:
 
 ```text
-docs/sessions/<start-year>/<start-date>-SAI########/
+docs/sessions/<start-year>/<start-date>-<purpose>/
   TRANSCRIPT.md
   SESSION_SUMMARY.md
   manifest.json
   attachments/        # only when explicitly approved
 ```
 
-Existing archive paths are stable and are not moved automatically. Record their actual path in the registry and glossary. Do not create a new folder when the same thread resumes; append an activation event, then update its existing folder and cutoff.
+Existing archive paths are stable and are not moved automatically. Do not create an archive solely to satisfy process; create or update one only when it materially helps handoff or retrieval.
 
 ## Transcript contract
 
@@ -89,9 +83,8 @@ Provide evidence for a supervisor's 0–4 assessment of outcome, correctness, hu
 1. Reconcile any messages after the previous cutoff.
 2. Review every file in the manifest against the final working tree.
 3. Refresh transcript, manifest, and summary.
-4. Append the correct lifecycle event and refresh the glossary; never rewrite registry history.
-5. Validate the registry, JSON, links, whitespace, secrets, privacy, attachments, and repository state.
-6. Complete the post-task checklist.
-7. Commit or push only with Scott's exact approval and only to the named target.
+4. Validate any archive that changed plus JSON, links, whitespace, secrets, privacy, attachments, and repository state.
+5. Complete the post-task checklist.
+6. Commit or push only with Scott's exact approval and only to the named target.
 
 If the final post-push response adds new durable information, the next session reconciles it. Never create an infinite commit chain solely to record the prior commit hash.

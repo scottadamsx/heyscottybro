@@ -56,6 +56,18 @@ test("load maps rows and exposes database failures", async () => {
   await assert.rejects(malformed.load(), /session store returned an unsupported response/);
 });
 
+test("Frodo reloads its persisted tier-handoff display note", async () => {
+  const note = { role: "note", text: "Frodo passed this to Gandalf — tool budget reached." };
+  const store = baseStore({
+    selectRows: async () => ({
+      data: [{ agent_id: "frodo", display: [note], convo: [] }],
+    }),
+  });
+
+  const sessions = await store.load();
+  assert.equal(sessions.frodo.display[0], note);
+});
+
 test("session read cache is isolated by the owner captured before lookup", async () => {
   let owner = "owner-a";
   const queries = [];

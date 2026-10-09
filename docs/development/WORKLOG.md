@@ -192,6 +192,10 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 
 ### Bonsai development session identities
 
+### Governance simplification — 2026-10-09
+
+- Scott retired the Project Manager/SAI identity gate. `DR-028` supersedes `DR-024`; historic SAI archives, registry, glossary, and bootstrap material remain read-only retrieval records, while the feature record, bug ledger, work log, decision ledger, changelog, validation evidence, and Git history remain the required durable project memory.
+
 - Recorded Scott's approved Project Manager-owned identity contract and pseudocode for coded development sessions only: sequential never-reused `SAI########` IDs, exact Bonsai titles, first-message bootstraps, a human glossary, and an append-only machine registry.
 - Assigned the seed identity `SAI00000001` to Codex thread `01a0ea22-5d76-7502-a006-a16c39e7c228` and changed this chat's title to `Bonsai Chat SAI00000001`. Its existing archive path remains stable; registry and archive reconciliation are next.
 - Created the append-only session registry, readable glossary, and completed Project Manager bootstrap template. The seed reservation, immutable thread binding, exact title, active state, retrospective-bootstrap exception, and never-reuse rule are now durable; governing-document integration is next.
@@ -302,3 +306,24 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Scott's screenshot-led tests drove the single Log a hangout entry point, Orbit title, collapsed history behind Entries, permanent minimal-control/testing rules, BUG-064 source-versus-Notes repair, and close-with-toast on successful undo. Mocked browser checks confirm failed undo stays open. User screenshots confirmed new-person creation, reload, reuse, duplicate-event handling and duplicate undo preserving the original event.
 - Scott authorized "commitvchanges and push". Created canonical Orbit commit `307d71c` and synchronized its clean source. Final Orbit tests pass183/183 and build passes; host lint/build pass while its known BUG-058 result remains305/306. Committing the host and pushing both main branches are authorized; migration application and real AI calls remain excluded. Git records final commit identities and remote push results; no migration is applied by this release.
 - Scott requested repair of the post-push error. GitHub CI run37086391814 for `b228a44` failed solely at BUG-058 (`6 !== 2`), matching local reproduction. Replaced the stale two-session test with reservation-derived identity/next-ID assertions and added zero/one/three/eight-session fixtures with closed/abandoned lifecycle coverage. The validator itself and negative tests remain unchanged. Full tests now pass, including310/310 in the final node suite; lint/build/registry checks pass. Publishing the follow-up repair and checking remote CI; no product data, schema, dependency or AI changes.
+
+## 2026-10-09
+
+### Governance and Frodo history recovery
+
+- Scott retired the Project Manager/SAI startup gate. `DR-028` records that legacy SAI archives remain retrieval material only; feature records, bug and decision ledgers, the work log, changelog, validation evidence, and Git history remain the durable agent-readable record.
+- Fixed `BUG-066`: Frodo wrote its own tier-handoff display rows with `role: "note"` but rejected them on the next durable-history load. The loader now accepts that one already-rendered role while preserving all other strict validation and no-write failure behavior.
+- Added the focused persistent-note regression. `node --test src/api/agentSessionsCore.test.js` passed 19/19; `npm run lint`, `npm test` (321/321), and `npm run build` (3,154 modules) passed. No database write, migration, commit, push, deployment, or production-data change occurred. Authenticated desktop/mobile reload verification remains post-release work.
+
+### Admin home redirect
+
+- Added a root-only, dynamically loaded Supabase session check. An established admin session replaces `/` with `/admin/today`; missing or failed session lookups leave the public home in place. Public, shared-document, and other non-root routes are unchanged.
+- Added the pure redirect-decision regression and registered it with the full suite. The focused test passed 1/1; lint, the full suite (322/322), and the 3,155-module production build passed; the Vite local root returned HTTP 200. The available browser providers could not open the local server, so authenticated desktop/mobile browser confirmation remains post-release work. No authentication/session state, production data, commit, push, migration, or deployment changed.
+
+### Frodo productivity foundation
+
+- Added an occurrence-aware Library read path for reminders and events. It reuses the established planner recurrence rules, returns source/occurrence metadata, writes no generated rows, and fixes recurring multi-day events so every recurrence receives its own span.
+- Added validated rich query conditions (`in`, range comparisons, `contains`, and one OR group) with one predicate implementation used by local/fallback reads; invalid fields/operators fail before reading data.
+- Added read-only `global_search`, which fans out to safe planner/Brain shelves concurrently, returns compact deterministic source-labelled rankings, reports an individual shelf failure without hiding other results, and deliberately excludes Vault snippets and audit records.
+- Updated Frodo’s prompt to prefer global search for broad discovery, explicitly query Vault only when warranted, and use occurrence expansion for date-specific planning questions. Delete confirmation remains unchanged.
+- Added six focused core/global-search regressions plus a recurring multi-day event regression. Focused tests, zero-warning lint, the complete 322-test suite, 3,156-module production build, and whitespace check pass. No database write, migration, live/private data query, commit, push, or deployment occurred.

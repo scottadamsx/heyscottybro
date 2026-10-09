@@ -1,6 +1,6 @@
 # Feature: Bonsai development session identities
 
-**Status:** Complete — uncommitted  
+**Status:** Retired as governing policy — retained as historical record
 **Owner:** Scott  
 **Started:** 2026-09-29  
 **Approval:** Scott said exact **“go”** after reviewing the contract and pseudocode.
@@ -9,7 +9,7 @@
 
 Development chats need durable identities and consistent startup context. A future agent or supervisor should be able to identify a session, find its records, and understand its authority without relying on chat history.
 
-## Desired outcome
+## Historical desired outcome
 
 Every coded development session is created and tracked by the Project Manager under a unique sequential `SAI########` identity. Its exact chat title is `Bonsai Chat SAI########`, its first visible message is a structured Project Manager injection, and its current status is available in both a human glossary and an append-only machine registry.
 

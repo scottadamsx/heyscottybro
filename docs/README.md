@@ -15,10 +15,7 @@ Documentation is part of the product. Code and its documentation must change tog
 - [`development/DOCS_STYLE.md`](development/DOCS_STYLE.md) — documentation quality standard
 - [`development/WORKLOG.md`](development/WORKLOG.md) — append-only record of completed work
 - [`development/BUGS.md`](development/BUGS.md) — bugs, causes, fixes, and regression coverage
-- [`sessions/README.md`](sessions/README.md) — governing SAI identity, archive, privacy, and closure policy
-- [`sessions/GLOSSARY.md`](sessions/GLOSSARY.md) — human-readable Bonsai development session index
-- [`sessions/registry.jsonl`](sessions/registry.jsonl) — append-only session identity and lifecycle history
-- [`sessions/PROJECT_MANAGER_INJECTION.md`](sessions/PROJECT_MANAGER_INJECTION.md) — required first-message development bootstrap
+- [`sessions/README.md`](sessions/README.md) — legacy archive privacy and retrieval guidance
 - [`backlog/product-backlog.md`](backlog/product-backlog.md) — canonical queue of unscoped feature requests
 - [`backlog/bug-report-2026-09-29.md`](backlog/bug-report-2026-09-29.md) — complete mapping for the imported bug and feature report
 - [`../CHANGELOG.md`](../CHANGELOG.md) — user-visible changes

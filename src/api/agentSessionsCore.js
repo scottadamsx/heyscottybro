@@ -180,7 +180,10 @@ export function createAgentSessionsStore({
       if (row.convo != null && !Array.isArray(row.convo)) {
         throw fail("load", row.agent_id, new Error("stored model history has an unsupported format; no data was changed"));
       }
-      if (Array.isArray(row.display) && !isValidDisplayHistory(row.display, ["user", "assistant", "error"])) {
+      // Frodo persists `note` rows while it hands a turn to a higher tier.
+      // They are rendered as status text, not model context, but must survive
+      // a reload alongside user, assistant, and error display messages.
+      if (Array.isArray(row.display) && !isValidDisplayHistory(row.display, ["user", "assistant", "error", "note"])) {
         throw fail("load", row.agent_id, new Error("stored display history contains an unsupported message; no data was changed"));
       }
       if (Array.isArray(row.convo) && !isValidModelHistory(row.convo)) {

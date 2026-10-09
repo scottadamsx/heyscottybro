@@ -149,6 +149,13 @@ test("expandEvents spreads a multi-day event across its span and numbers the day
   if (single.length !== 1 || single[0].span_day) throw new Error("single-day event should not be spanned");
 });
 
+test("expandEvents repeats a multi-day event as a new span for each recurrence", () => {
+  const ev = [{ id: "trip", title: "Trip", date: "2026-08-01", end_date: "2026-08-03", recurrence: "weekly" }];
+  const days = expandEvents(ev, "2026-08-08", "2026-08-10");
+  assert(days.length === 3, `expected recurring three-day span, got ${days.length}`);
+  assert(days[0].first_day === "2026-08-08" && days[2].last_day === "2026-08-10", "repeated span dates");
+});
+
 // ── Per-occurrence completion of recurring tasks ──
 
 test("completing one weekly occurrence keeps the future ones", () => {

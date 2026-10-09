@@ -40,6 +40,10 @@ import { loadReceipts } from "./groceryApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
 import { planReminderRows, normalizeTime } from "../utils/recurrence";
 import { toDateStr } from "../utils/plannerUtils";
+import {
+  expandLibraryOccurrences, filterLibraryRows, hasOnlyExactWhere,
+  occurrenceQueryError, searchAcrossCollections, validateLibraryWhere,
+} from "./aiQueryCore";
 import { HABITS_COLLECTION_CONTRACT } from "../config/assistantContracts";
 import { supabase } from "../utils/supabase";
 import { uid as authUid } from "./_base";
@@ -469,6 +473,11 @@ export const COLLECTION_NAMES = Object.keys(COLLECTIONS);
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
 const MAX_STR = 280;
+const OCCURRENCE_FIELDS = ["source_id", "source_date", "occurrence_date", "is_occurrence", "span_day", "span_total", "first_day", "last_day"];
+// Vault content is deliberately not included. Global discovery must never turn
+// a broad question into an accidental secret search/reveal path.
+const GLOBAL_SEARCH_COLLECTIONS = Object.freeze(COLLECTION_NAMES.filter((name) => !["snippets", "agent_actions"].includes(name)));
+const whereUsesField = (where, field) => Object.entries(where || {}).some(([key, value]) => key === field || (key === "or" && Array.isArray(value) && value.some((alternative) => whereUsesField(alternative, field))));
 
 const truncate = (v) => (typeof v === "string" && v.length > MAX_STR ? `${v.slice(0, MAX_STR)}…` : v);
 
@@ -657,10 +666,20 @@ async function queryTable(spec, { fields, where, search, date_from, date_to, lim
   };
 }
 
-export async function libraryQuery({ collection, fields, where, search, date_from, date_to, limit, offset = 0, order_by, direction, mode = "rows", reveal = false }) {
+export async function libraryQuery({ collection, fields, where, search, date_from, date_to, limit, offset = 0, order_by, direction, mode = "rows", reveal = false, expand_occurrences = false }) {
   const spec = getSpec(collection);
+  const whereError = validateLibraryWhere(spec, where);
+  if (whereError) return { error: whereError };
+  const occurrenceError = occurrenceQueryError(collection, expand_occurrences, date_from, date_to);
+  if (occurrenceError) return { error: occurrenceError };
+  if (expand_occurrences && whereUsesField(where, spec.dateField)) {
+    return { error: `When expand_occurrences is true, use date_from/date_to for occurrence dates instead of filtering the seed ${spec.dateField} field.` };
+  }
   let warning;
-  if (spec.table) {
+  // PostgREST can faithfully express the historic exact-match form. Rich
+  // predicates and generated occurrences deliberately use one shared local
+  // predicate so online and fallback answers cannot disagree.
+  if (spec.table && !expand_occurrences && hasOnlyExactWhere(where)) {
     try {
       return await queryTable({ ...spec, __name: collection }, { fields, where, search, date_from, date_to, limit, offset, order_by, direction, mode, reveal });
     } catch (err) {
@@ -670,6 +689,10 @@ export async function libraryQuery({ collection, fields, where, search, date_fro
       console.error(`[aiLibrary] server-side query on "${collection}" failed; answering from a full in-browser load:`, err);
       warning = `server-side query failed (${err?.message || err}); this answer comes from a full in-browser load of ${collection}${getConnectionStatus() === false ? " — Supabase is unreachable, so it may be THIS BROWSER's local copy only" : ""}.`;
     }
+  } else if (spec.table) {
+    warning = expand_occurrences
+      ? "occurrences were generated locally from authenticated source records; no generated occurrence was stored."
+      : "rich filters were evaluated after an authenticated collection load so every operator has identical fallback semantics.";
   }
 
   // Hikers can filter server-side on search — cheaper than loading the whole club.
@@ -677,24 +700,22 @@ export async function libraryQuery({ collection, fields, where, search, date_fro
   if (spec.redact) rows = rows.map((r) => spec.redact(r, { reveal }));
   const withWarning = (out) => (warning ? { ...out, warning } : out);
 
-  if (where && typeof where === "object") {
-    for (const [k, v] of Object.entries(where)) {
-      if (k !== "id" && !spec.fields[k] && !spec.defaultFields.includes(k)) {
-        return { error: `cannot filter on unknown field "${k}"` };
-      }
-      rows = rows.filter((r) => String(r[k]) === String(v) || r[k] === v);
-    }
-  }
+  rows = filterLibraryRows(rows, where);
   if (search && !spec.loadSearch) {
     const q = search.toLowerCase();
     rows = rows.filter((r) => spec.searchFields.some((f) => String(r[f] || "").toLowerCase().includes(q)));
   }
-  if (spec.dateField && (date_from || date_to)) {
+  if (!expand_occurrences && spec.dateField && (date_from || date_to)) {
     rows = rows.filter((r) => {
       const d = r[spec.dateField];
       if (!d) return false;
       return (!date_from || d >= date_from) && (!date_to || d <= date_to);
     });
+  }
+  if (expand_occurrences) {
+    // Date filtering must happen AFTER expansion: filtering the seed row first
+    // is the exact bug that hid a weekly event from its actual occurrence day.
+    rows = expandLibraryOccurrences(collection, rows, date_from, date_to);
   }
   if (order_by) {
     const dir = direction === "desc" ? -1 : 1;
@@ -715,8 +736,8 @@ export async function libraryQuery({ collection, fields, where, search, date_fro
 
   const lim = Math.min(Number(limit) || DEFAULT_LIMIT, spec.maxLimit || MAX_LIMIT);
   const wanted = Array.isArray(fields) && fields.length
-    ? fields.filter((f) => f === "id" || spec.fields[f] || spec.defaultFields.includes(f))
-    : spec.defaultFields;
+    ? fields.filter((f) => f === "id" || spec.fields[f] || spec.defaultFields.includes(f) || (expand_occurrences && OCCURRENCE_FIELDS.includes(f)))
+    : [...spec.defaultFields, ...(expand_occurrences ? OCCURRENCE_FIELDS : [])];
   const page = rows.slice(offset, offset + lim);
   return withWarning({
     collection,
@@ -725,6 +746,14 @@ export async function libraryQuery({ collection, fields, where, search, date_fro
     ...(rows.length > offset + lim ? { next_offset: offset + lim } : {}),
     items: page.map((r) => project(r, wanted)),
   });
+}
+
+/**
+ * Read-only workspace retrieval. The optional queryCollection seam lets the
+ * deterministic fan-out/ranking contract be tested without a browser session.
+ */
+export async function libraryGlobalSearch({ query, collections, limit = 20 } = {}, { queryCollection = libraryQuery } = {}) {
+  return searchAcrossCollections({ query, collections, limit, availableCollections: GLOBAL_SEARCH_COLLECTIONS, queryCollection, maxLimit: MAX_LIMIT });
 }
 
 /**

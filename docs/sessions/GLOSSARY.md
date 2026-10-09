@@ -1,10 +1,9 @@
 # Bonsai development session glossary
 
-**Status:** Governing current view  
-**Owner:** Project Manager  
-**Last updated:** 2026-10-02
+**Status:** Legacy historical index
+**Last updated:** 2026-10-09
 
-This glossary is the human-readable index for coded development sessions. The append-only [`registry.jsonl`](registry.jsonl) is the lifecycle record. The Project Manager alone assigns IDs and updates both records.
+This glossary is a human-readable index of historical session records. Neither it nor [`registry.jsonl`](registry.jsonl) controls whether work may begin.
 
 ## Sessions
 

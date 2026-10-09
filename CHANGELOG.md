@@ -6,6 +6,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Frodo can now search safe planner and Brain shelves in parallel with source-labelled results, use bounded rich data filters, and ask for the actual occurrences inside a reminder/event date range.
 - Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Release awaits its additive database migration.
 - Live workouts now show the six completed sessions behind each weight recommendation, including confidence and a plain-language reason.
 - People / Orbit now has a locally implemented conversational journal with person/date clarification, source-backed memory updates, saved receipts, pending-entry history, and conflict-aware undo. Hosted release awaits its separate database migration and live-provider validation.
@@ -33,6 +34,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Frodo no longer misses recurring planner occurrences in date-specific questions; recurring multi-day events now repeat their whole span correctly.
 - Explicit weights in AI workout requests now populate the editable starting-weight field instead of being stranded in an exercise note.
 - Orbit keeps original journal input separate from event Notes; successful undo closes the log window with a brief confirmation. History is available through Entries rather than cluttering the composer.
 - Paginated Journal lists now report the visible count as `N of M` until every loaded entry is shown.

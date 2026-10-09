@@ -1,10 +1,9 @@
-# Project Manager development-session injection
+# Retired Project Manager development-session injection
 
-**Status:** Governing template  
-**Owner:** Project Manager  
-**Last reviewed:** 2026-09-29
+**Status:** Retired historical template — not a development gate
+**Last reviewed:** 2026-10-09
 
-The Project Manager sends this as the first visible prompt in every newly created coded development session. Complete every field; remove instructional placeholders before sending. This template does not apply to heyScottyBro/Frodo product conversations.
+This template is retained only to interpret historical archive records. Do not use it as a startup requirement or to block authorized work.
 
 ## Creation sequence
 
@@ -69,8 +68,8 @@ First response
 Keep it within one screen. State what you understand, what startup material you read, the current Git state, the proposed plan/pseudocode gate, and any true blocker. Do not edit application code in that response.
 ```
 
-## Missing or malformed bootstrap
+## Historical note
 
-If a coded development chat lacks a valid SAI ID, exact title, registry reservation, or completed bootstrap, stop before application-code edits. The Project Manager must register and bootstrap it first. Do not invent an ID locally or repair the registry by rewriting prior lines.
+Older records may refer to missing or malformed SAI bootstraps. Those references describe the retired process only. Missing SAI material never blocks authorized work; preserve existing historical records rather than rewriting them.
 
 The one exception is the seed session `SAI00000001`: Scott named it after it had already started. Its registry binding is explicitly marked `retrospective_seed`; future sessions receive the injection at creation.

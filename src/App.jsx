@@ -2,7 +2,9 @@
 // hash of an already-open tab, instead of white-screening. Aliased to `lazy` so
 // every lazy(() => import(...)) below goes through it unchanged.
 import { lazyWithReload as lazy } from "./utils/lazyWithReload.js";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { adminHomeDestination } from "./utils/adminHomeRedirect.js";
 import { ToastProvider } from "./contexts/ToastContext";
 import PublicChrome, { PublicSkipLink } from "./components/public/PublicChrome.jsx";
 import { ADMIN_PAGES, ADMIN_REDIRECTS, Lazy } from "./pages/admin/adminRoutes.jsx";
@@ -33,13 +35,33 @@ const AdminNotFound = lazy(() => import("./pages/admin/AdminNotFound.jsx"));
 /** A public page with the site's nav and footer, loaded as one unit. */
 const withChrome = (page) => Lazy(<MotionScope><Navbar />{page}<Footer /></MotionScope>);
 
+/** Keep the public landing page light; load auth only after the root route mounts. */
+function HomeRoute() {
+  const [destination, setDestination] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    import("./utils/supabase.js")
+      .then(({ supabase }) => supabase.auth.getSession())
+      .then(({ data }) => {
+        if (active) setDestination(adminHomeDestination(data?.session));
+      })
+      // A session check must not turn a public landing-page outage into a blank screen.
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  if (destination) return <Navigate to={destination} replace />;
+  return Lazy(<HomePage />);
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <PublicSkipLink />
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={Lazy(<HomePage />)} />
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/never86" element={withChrome(<Never86Page />)} />
         <Route path="/sjhc" element={withChrome(<SJHCPage />)} />
         <Route path="/games" element={withChrome(<GamesPage />)} />

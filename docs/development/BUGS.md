@@ -861,3 +861,28 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** The forced `build_workout` tool now accepts `startWeightLb` only for a weight the user explicitly supplied. Its system contract prohibits invented weights and requires an explicit weight to be returned as structured data rather than note-only prose. A deterministic client check removes any returned starting weight whose exact pound value is absent from the user's prompt; the existing exercise cleaner and editor preserve accepted values.
 - **Regression coverage:** The original real-provider screenshots preserve the failure evidence. Pure coverage proves an explicit 60 lb value survives while an invented 135 lb value is removed, and the downstream first-time progression case proves structured starting weight reaches the recommendation. Lint and production build validate the changed tool schema. A new live-provider call remains intentionally unrun.
 - **Related work:** `docs/features/ai-workout-builder-validation.md`; `docs/features/adaptive-workout-progression.md`; `src/api/aiHealth.js`; `src/components/health/WorkoutModals.jsx`.
+
+### BUG-066 — Frodo rejects its own tier-handoff display message after reload
+
+- **Status:** Resolved locally; uncommitted and not released
+- **Discovered:** 2026-10-09
+- **Area:** Frodo durable chat hydration
+- **Observed:** Frodo displayed “Couldn't load chat history (frodo): stored display history contains an unsupported message; no data was changed” and Retry did not recover the saved conversation.
+- **Expected:** A status note that Frodo itself persists while handing a turn to a higher tier reloads as the same rendered note.
+- **Cause:** `useAIAgent` writes display rows with `role: "note"`, but `agentSessionsCore` allowed only `user`, `assistant`, and `error` display roles while loading.
+- **Fix:** Accept only the existing `note` display role in Frodo's durable display-history validator. Model-history validation, ownership checks, and the fail-closed handling of unknown messages remain unchanged.
+- **Regression coverage:** A focused session-store test loads a persisted Frodo tier-handoff note. The complete suite passes 321/321; zero-warning lint and the 3,154-module production build pass.
+- **Related work:** `docs/features/frodo-history-recovery.md`; `src/hooks/useAIAgent.js`; `src/api/agentSessionsCore.js`.
+
+### BUG-067 — Frodo queries recurring planner records as seed rows only
+
+- **Status:** Resolved locally; uncommitted and not released
+- **Discovered:** 2026-10-09
+- **Area:** Frodo Library planner retrieval
+- **Observed:** A date-filtered agent query sees only the stored start row of a recurring reminder/event, so a weekly occurrence can be absent from a request such as “what is on October 22?” A recurring multi-day event also previously rendered only the original span rather than a fresh span for each recurrence.
+- **Expected:** Date-scoped planner questions return the occurrences that actually fall inside the requested local range, while preserving the source record identity for follow-up edits.
+- **Impact:** Frodo can give an incomplete daily/weekly plan despite the UI correctly showing the same recurrence.
+- **Cause:** The Library filtered raw database rows before recurrence expansion; the existing UI expansion utility was not exposed to the agent. Its multi-day event branch also did not apply recurrence to event spans.
+- **Fix:** Added opt-in `expand_occurrences` reads for reminders/events using the existing recurrence utilities, with explicit source/occurrence metadata and no generated-row persistence. Fixed multi-day event expansion to repeat each span.
+- **Regression coverage:** `aiQueryCore` verifies view-only metadata and range validation; `plannerUtils` verifies recurring multi-day spans. Full lint, 322 tests, and build pass.
+- **Related work:** `docs/features/frodo-productivity-foundation.md`; `src/api/aiLibrary.js`; `src/utils/plannerUtils.js`.

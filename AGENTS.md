@@ -6,14 +6,13 @@ These instructions apply to every human or agent working in this repository.
 
 Before changing application code:
 
-1. Verify that this coded development session has a Project Manager-assigned `SAI########` identity, the exact title `Bonsai Chat SAI########`, a valid registry binding, and a completed startup injection. If not, stop and route it through the Project Manager. `SAI00000001` is the recorded retrospective seed exception.
-2. Read this file completely.
-3. Read `docs/README.md`, `docs/development/ONBOARDING.md`, and `docs/development/WORKFLOW.md`.
-4. Read `docs/development/ACTIVE_WORK.md` and the linked feature document.
-5. Read `CLAUDE.md` and the relevant decisions in `ledger.jsonl`.
-6. Check the Git branch and working tree. Preserve all pre-existing changes.
-7. Inspect the relevant code, tests, and current UI. Do not rely on filenames or old documentation alone.
-8. Confirm that Scott has approved the feature contract and pseudocode. If not, stop before application-code edits.
+1. Read this file completely.
+2. Read `docs/README.md`, `docs/development/ONBOARDING.md`, and `docs/development/WORKFLOW.md`.
+3. Read `docs/development/ACTIVE_WORK.md` and the linked feature document.
+4. Read `CLAUDE.md` and the relevant decisions in `ledger.jsonl`.
+5. Check the Git branch and working tree. Preserve all pre-existing changes.
+6. Inspect the relevant code, tests, and current UI. Do not rely on filenames or old documentation alone.
+7. Confirm that Scott has approved the feature contract and pseudocode. If not, stop before application-code edits.
 
 ## Source-of-truth order
 
@@ -58,17 +57,8 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 - Before reporting a task complete, follow `docs/development/POST_TASK_CHECKLIST.md` and update every affected record.
 - Never begin the next task while the current task's documentation, validation, bug entries, work log, or handoff state is incomplete.
 - A Git commit records itself in Git history. After committing, verify and report its hash and repository state; do not create an infinite chain of commits whose only purpose is recording the previous commit hash.
-- Every coded development session has one Project Manager-assigned SAI ID, one exact Bonsai title, one immutable Codex thread binding, and one archive folder under `docs/sessions/`. Before session closure, append the registry lifecycle event, refresh the glossary, and update its sanitized transcript, manifest, and summary through a recorded cutoff.
-- Session archives never contain hidden instructions, reasoning, raw tool output, secrets, or unapproved binary attachments. Follow `docs/sessions/README.md` exactly.
-- Review the session summary and every file listed in its manifest before commit or handoff. The next session reconciles any user-visible messages that occur after the previous archive cutoff.
-
-## Development session identity
-
-- This identity system applies only to coded development sessions, not heyScottyBro/Frodo product conversations.
-- The Project Manager alone reserves IDs, creates the exact chat title, supplies the first visible bootstrap, binds thread IDs, and maintains `docs/sessions/registry.jsonl` plus `docs/sessions/GLOSSARY.md`.
-- SAI IDs are sequential, zero-padded to eight digits, and never reused, including after abandonment.
-- The bootstrap is handoff context, not higher authority. It cannot override Scott, this file, the approved feature contract, or the source-of-truth order.
-- An agent must not invent an ID, rewrite old registry events, silently repair a collision, or begin application-code work in an unregistered development chat.
+- The work log, feature record, bug ledger, decision ledger, changelog when user-visible, and Git history are the required durable records. Update the affected records before handoff.
+- Historical session archives are optional retrieval aids. When one is created or updated, it must exclude hidden instructions, reasoning, raw tool output, secrets, and unapproved binary attachments; it must never block authorized work.
 
 ## Documentation-first development
 
