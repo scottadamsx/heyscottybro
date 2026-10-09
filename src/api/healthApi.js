@@ -8,6 +8,7 @@ import { toDateStr } from "../utils/dates";
 import { kgToLb, lbToKg } from "../utils/healthInsights";
 import { DEFAULT_TARGET } from "../utils/overload";
 import { DEFAULT_BAR_LB } from "../utils/plates";
+import { cleanExerciseGoal } from "../utils/exerciseLibrary";
 
 const fail = (what, error) => {
   throw new Error(`Couldn't ${what}: ${error.message}`, { cause: error });
@@ -193,10 +194,42 @@ export async function archivePlan(id) {
   changed();
 }
 
+// ── Exercise library & performance goals ────────────────────────────────────
+
+const shapeExercise = (e) => ({
+  id: e.id,
+  name: e.name,
+  normalizedName: e.normalized_name,
+  goalWeightLb: e.goal_weight_lb == null ? null : Number(e.goal_weight_lb),
+  goalReps: e.goal_reps == null ? null : Number(e.goal_reps),
+  createdAt: e.created_at,
+  updatedAt: e.updated_at,
+});
+
+export async function loadExercises() {
+  const userId = await uid();
+  const rows = await allRows(
+    () => supabase.from("exercise_library").select("id, name, normalized_name, goal_weight_lb, goal_reps, created_at, updated_at").eq("user_id", userId).order("name"),
+    "load your exercises",
+  );
+  return rows.map(shapeExercise);
+}
+
+/** Save both parts of a performance goal, or clear both with null/blank values. */
+export async function saveExerciseGoal(id, { weightLb, reps }) {
+  const { data, error } = await supabase.from("exercise_library").update({
+    ...cleanExerciseGoal({ weightLb, reps }),
+    updated_at: new Date().toISOString(),
+  }).eq("id", id).select().single();
+  if (error) fail("save that exercise goal", error);
+  changed();
+  return shapeExercise(data);
+}
+
 // ── Sessions & sets ──────────────────────────────────────────────────────────
 
 const shapeSession = (s) => ({ id: s.id, planId: s.plan_id, name: s.name, startedAt: s.started_at, endedAt: s.ended_at, notes: s.notes, exercises: s.exercises || [] });
-const shapeSet = (s, startedAt) => ({ id: s.id, sessionId: s.session_id, exercise: s.exercise, setNumber: s.set_number, reps: s.reps, weightLb: Number(s.weight_lb), rpe: s.rpe == null ? null : Number(s.rpe), loggedAt: s.logged_at, startedAt });
+const shapeSet = (s, startedAt, endedAt) => ({ id: s.id, sessionId: s.session_id, exercise: s.exercise, setNumber: s.set_number, reps: s.reps, weightLb: Number(s.weight_lb), rpe: s.rpe == null ? null : Number(s.rpe), loggedAt: s.logged_at, startedAt, endedAt });
 
 export async function loadSessions() {
   const userId = await uid();
@@ -207,8 +240,8 @@ export async function loadSessions() {
 /** Every set you've logged, with its workout's start time (what suggestions and insights read). */
 export async function loadHistory() {
   const userId = await uid();
-  const rows = await allRows(() => supabase.from("workout_sets").select("id, session_id, exercise, set_number, reps, weight_lb, rpe, logged_at, workout_sessions!inner(started_at)").eq("user_id", userId).order("logged_at"), "load your lifting history");
-  return rows.map((r) => shapeSet(r, r.workout_sessions.started_at));
+  const rows = await allRows(() => supabase.from("workout_sets").select("id, session_id, exercise, set_number, reps, weight_lb, rpe, logged_at, workout_sessions!inner(started_at, ended_at)").eq("user_id", userId).order("logged_at"), "load your lifting history");
+  return rows.map((r) => shapeSet(r, r.workout_sessions.started_at, r.workout_sessions.ended_at));
 }
 
 export async function getOpenSession() {
@@ -226,7 +259,7 @@ export async function loadSession(id) {
   if (error) fail("load that workout", error);
   if (e2) fail("load that workout's sets", e2);
   if (!s) return null;
-  return { ...shapeSession(s), sets: sets.map((x) => shapeSet(x, s.started_at)) };
+  return { ...shapeSession(s), sets: sets.map((x) => shapeSet(x, s.started_at, s.ended_at)) };
 }
 
 /** plan: a saved plan, or null for an empty workout you build as you go. */

@@ -1,3 +1,4 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../utils/dates.js";
 /**
  * The one exporter — consolidates the four ad-hoc download helpers that lived
  * in bugsApi, BudgetSimulator, hikerApi and DesignPage, and gives every page a
@@ -56,7 +57,7 @@ export function downloadMarkdown(md, filename) {
 }
 
 export function markdownToPdfDownload(md, { title = "Export", filename } = {}) {
-  const blob = markdownToPdfBlob(md, { title, footer: `heyscottybro · ${new Date().toLocaleString()}` });
+  const blob = markdownToPdfBlob(md, { title, footer: `heyscottybro · ${preferredDisplayDateTime(new Date())}` });
   downloadBlob(blob, filename || `${slugify(title)}.pdf`);
 }
 

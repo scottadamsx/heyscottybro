@@ -105,6 +105,10 @@ Chat is not a durable source of truth. Immediately record every relevant instruc
 - Regression-test both sides: an entry naming Carter followed by clearly related "he"/"him" facts must not require identity confirmation; genuinely ambiguous references involving multiple people must not be silently assigned. Test intended versus completed activities and current facts versus aspirations separately.
 - Before adding a confirmation step, explain what unresolved ambiguity it addresses. If context already answers it, do not add the step.
 
+## Display Dates
+- Settings exposes Date format, defaulting to `Thursday, Jan 15th`, with an optional full-month style. Persist the selection on this device using `setting:dateFormat`; the host and embedded Orbit share it. Do not alter stored dates when the display preference changes.
+- Across the entire software, display calendar dates as `Thursday, Jan 15th`: full weekday, abbreviated English month, ordinal day, no year. Keep the year in stored dates and machine-readable values. Use shared formatters in labels, receipts, tables, tooltips and human-readable reports; never introduce abbreviated numeric date labels. Birthday occurrence labels use the actual next occurrence for the weekday. Calendar navigation and native editing controls retain the information needed to choose a date accurately. Preserve original user text and machine-readable exports.
+
 ## Existing project instructions
 
 - Read and follow `CLAUDE.md` for the project's implementation, design, data-safety, and validation rules.

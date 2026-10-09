@@ -5,6 +5,7 @@ import { getAuthHeaders } from "../utils/supabase";
 import { parseJsonResponse } from "../lib/http";
 import { cleanExercises } from "./healthApi";
 import { AI_MODELS } from "../config/aiModels";
+import { keepExplicitStartWeights } from "../utils/exerciseLibrary";
 
 const FAST = AI_MODELS.fast;
 const SMART = AI_MODELS.smart;
@@ -133,6 +134,7 @@ const WORKOUT_TOOL = {
             repMin: { type: "integer", minimum: 1, maximum: 50 },
             repMax: { type: "integer", minimum: 1, maximum: 50 },
             restSec: { type: "integer", minimum: 0, maximum: 600 },
+            startWeightLb: { type: "number", exclusiveMinimum: 0, maximum: 2000, description: "Only when the user explicitly asks for a starting weight for this exercise" },
             note: { type: "string", description: "Short cue, optional" },
           },
           required: ["name", "sets", "repMin", "repMax", "restSec"],
@@ -160,14 +162,15 @@ export async function buildWorkout(prompt, { known = [], profile = {} } = {}) {
       "You are a strength coach writing one gym session. Choose exercises that fit the request and the equipment " +
       "mentioned, order compound lifts first, and keep total time realistic (about 2–3 minutes per set including rest). " +
       "Use rep ranges suited to the goal (strength 4–6, hypertrophy 8–12, endurance 12–20). " +
-      "Reuse the exact names from the user's history when it's the same movement. Don't prescribe weights — the app " +
-      "sets them from history. Always call build_workout.",
+      "Reuse the exact names from the user's history when it's the same movement. Do not invent weights: the app " +
+      "sets them from history. When the user explicitly gives a weight for an exercise, put it in startWeightLb as " +
+      "structured data; do not leave it only in a note. Always call build_workout.",
     text: `Request: ${ask}\nGoal: ${profile.goal || "not stated"}\nExercises I've done before:\n${knownText}`,
     tool: WORKOUT_TOOL,
     maxTokens: 2000,
   });
   const exercises = cleanExercises(
-    (out.exercises || []).map((e) => ({ ...e, repMax: Math.max(e.repMax, e.repMin) })),
+    keepExplicitStartWeights(out.exercises || [], ask).map((e) => ({ ...e, repMax: Math.max(e.repMax, e.repMin) })),
   );
   return { name: String(out.name || "Workout").slice(0, 120), notes: String(out.notes || ""), exercises };
 }

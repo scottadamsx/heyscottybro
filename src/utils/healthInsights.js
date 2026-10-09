@@ -41,6 +41,40 @@ export function exerciseProgress(history) {
   }).sort((a, b) => String(b.lastDate).localeCompare(String(a.lastDate)));
 }
 
+const exerciseKey = (name) => String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+const newestFirst = (a, b) => String(b.loggedAt || b.startedAt || "").localeCompare(String(a.loggedAt || a.startedAt || ""));
+
+/** Join durable library records to current set history and derive non-stale PRs. */
+export function exerciseLibraryStats(exercises = [], history = []) {
+  return exercises.map((exercise) => {
+    const sets = history.filter((set) => exerciseKey(set.exercise) === exerciseKey(exercise.name)).sort(newestFirst);
+    const weighted = sets.filter((set) => Number(set.weightLb) > 0 && Number(set.reps) > 0);
+    const heaviest = [...weighted].sort((a, b) => Number(b.weightLb) - Number(a.weightLb) || newestFirst(a, b))[0] || null;
+    const strongest = [...weighted].sort((a, b) => e1rm(Number(b.weightLb), Number(b.reps)) - e1rm(Number(a.weightLb), Number(a.reps)) || newestFirst(a, b))[0] || null;
+    const goal = exercise.goalWeightLb > 0 && exercise.goalReps > 0
+      ? { weightLb: Number(exercise.goalWeightLb), reps: Number(exercise.goalReps) }
+      : null;
+    const achievedSet = goal
+      ? weighted.find((set) => Number(set.weightLb) >= goal.weightLb && Number(set.reps) >= goal.reps) || null
+      : null;
+    const goalEstimate = goal ? e1rm(goal.weightLb, goal.reps) : 0;
+    const bestEstimate = strongest ? e1rm(Number(strongest.weightLb), Number(strongest.reps)) : 0;
+    return {
+      ...exercise,
+      sets,
+      sessions: new Set(sets.map((set) => set.sessionId)).size,
+      lastSet: sets[0] || null,
+      heaviest,
+      strongest,
+      bestEstimate,
+      goal,
+      achievedSet,
+      goalAchieved: Boolean(achievedSet),
+      estimatedProgress: goalEstimate > 0 ? Math.min(100, Math.round((bestEstimate / goalEstimate) * 100)) : null,
+    };
+  }).sort((a, b) => String(b.lastSet?.loggedAt || b.updatedAt || "").localeCompare(String(a.lastSet?.loggedAt || a.updatedAt || "")) || a.name.localeCompare(b.name));
+}
+
 /** Weekly training volume (lb × reps) and session count, for the last `weeks` weeks ending this week. */
 export function weeklyVolume(history, today, weeks = 6) {
   const out = [];

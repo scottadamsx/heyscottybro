@@ -93,10 +93,15 @@ Food, body weight and workouts live at `/admin/health` (`HealthPage.jsx`,
 `WorkoutSessionPage.jsx`, `src/components/health/*`, `api/healthApi.js`,
 `api/aiHealth.js`). The lifting rules are pure and tested — `utils/overload.js`
 (what to lift next) and `utils/healthInsights.js` (what the numbers say); the AI
-coach is given those computed results and nothing else. Set weights are pounds
+coach is given those computed results and nothing else. Adaptive progression uses
+up to six completed same-exercise sessions, requires two top-range confirmations
+before one loadable increase, treats optional RPE as a brake, and exposes its
+evidence and confidence. The owner-scoped exercise library stores identity and one
+weight-times-reps goal; workout sets remain the source of truth for derived PRs.
+Set weights are pounds
 (`weight_lb`), body weight is stored in kilograms (`weight_logs.weight_kg`) and
 shown in pounds. DR-015 moved these out to a separate app; DR-018 brought them
-back in.
+back in. See DR-027 for the exercise-library and progression refinement.
 
 ## Forms live in modals (DR-019)
 

@@ -6,6 +6,8 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Release awaits its additive database migration.
+- Live workouts now show the six completed sessions behind each weight recommendation, including confidence and a plain-language reason.
 - People / Orbit now has a locally implemented conversational journal with person/date clarification, source-backed memory updates, saved receipts, pending-entry history, and conflict-aware undo. Hosted release awaits its separate database migration and live-provider validation.
 - Journal create and edit now include Unicode-aware live character/word counts and a resumable active-writing timer with pause, reset, idle pause, and draft recovery.
 - Journal AI cleanup is available only through an authenticated, server-enabled, default-off Anthropic connector; it uses explicit confirmation, a before/after comparison, accept/undo controls, and truthful saved provenance.
@@ -19,6 +21,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Changed
 
+- Workout progression now uses up to six completed sessions, gradual rep improvement, two top-range confirmations before a one-step increase, optional RPE as a brake, personal training-gap confidence, and a one-step recovery response after two poor sessions.
 - Mission Control now opens on Brain and retains Brain, Inbox, and Research; the unused Agents page and duplicate Usage tab are gone.
 - The retired Bug Tracker surface, dashboard pulse, assistant tools, suggestions, and Library entry are removed without changing its old rows or private storage bucket.
 - Planner's day modal now uses a calmer card hierarchy, clearer date and schedule titles, grouped navigation, and larger mobile header controls.
@@ -30,6 +33,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Explicit weights in AI workout requests now populate the editable starting-weight field instead of being stranded in an exercise note.
 - Orbit keeps original journal input separate from event Notes; successful undo closes the log window with a brief confirmation. History is available through Entries rather than cluttering the composer.
 - Paginated Journal lists now report the visible count as `N of M` until every loaded entry is shown.
 - Saved Frodo images now renew expired private preview links once and provide an accessible retry fallback instead of remaining broken.

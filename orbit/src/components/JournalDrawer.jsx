@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useOrbit } from '../state/OrbitContext.jsx'
 import { useUI } from '../state/UIContext.jsx'
-import { formatDate } from '../lib/dates.js'
+import { formatDate, formatDateTime, formatReceiptDates } from '../lib/dates.js'
 import { journalAnswersReady, journalCounts, pendingJournalDraft } from '../lib/journalClient.js'
 import Modal from './ui/Modal.jsx'
 import Button from './ui/Button.jsx'
@@ -156,7 +156,7 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
                 <li key={entry.id}>
                   <button type="button" className="journal-entry-button" aria-current={selectedId === entry.id ? 'true' : undefined} onClick={() => choose(entry)} disabled={!!busy}>
                     <span className="journal-entry-date">{formatDate((entry.createdAt || entry.referenceDate).slice(0, 10))}</span>
-                    <span className="journal-entry-preview">{entry.receipt?.summary || entry.text}</span>
+                    <span className="journal-entry-preview">{entry.receipt ? formatReceiptDates(entry.receipt.summary) : entry.text}</span>
                     <Badge tone={STATUS[entry.status]?.[0] || 'neutral'}>{STATUS[entry.status]?.[1] || entry.status}</Badge>
                   </button>
                 </li>
@@ -190,8 +190,8 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
               {selected.status === 'saved' && selected.receipt && (
                 <div className="stack">
                   <h3 className="section-title">Saved to Orbit</h3>
-                  <p className="prose" role="status" aria-live="polite">{selected.receipt.summary}</p>
-                  {selected.receipt.lines?.length > 0 && <ul className="plain-list">{selected.receipt.lines.map((line, i) => <li key={i}>{line}</li>)}</ul>}
+                  <p className="prose" role="status" aria-live="polite">{formatReceiptDates(selected.receipt.summary)}</p>
+                  {selected.receipt.lines?.length > 0 && <ul className="plain-list">{selected.receipt.lines.map((line, i) => <li key={i}>{formatReceiptDates(line)}</li>)}</ul>}
                   <div className="row-actions">
                     {selected.receipt.eventId && <Button variant="secondary" onClick={() => { close(); openEvent(selected.receipt.eventId) }}>Open event</Button>}
                     <Button variant="danger" onClick={() => run(async () => {
@@ -222,7 +222,7 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
                       <dt>Validation rule</dt><dd>{selected.provenance.validation.rule}</dd>
                     </>}
                     <dt>Prompts</dt><dd>{Array.isArray(selected.provenance.prompts) ? selected.provenance.prompts.join(', ') : selected.provenance.prompts}</dd>
-                    <dt>Processed</dt><dd>{selected.provenance.at && !Number.isNaN(Date.parse(selected.provenance.at)) ? new Date(selected.provenance.at).toLocaleString() : selected.provenance.at}</dd>
+                    <dt>Processed</dt><dd>{formatDateTime(selected.provenance.at)}</dd>
                   </dl>
                 </details>
               )}

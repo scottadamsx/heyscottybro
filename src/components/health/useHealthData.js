@@ -15,17 +15,18 @@ export function useHealthData() {
       const profile = await api.loadProfile();
       const since = new Date();
       since.setDate(since.getDate() - 90);
-      const [weights, food, plans, sessions, history] = await Promise.all([
+      const [weights, food, plans, sessions, history, exercises] = await Promise.all([
         api.loadWeights(profile.id),
         api.loadFood(profile.id, { from: toDateStr(since) }),
         api.loadPlans(),
         api.loadSessions(),
         api.loadHistory(),
+        api.loadExercises(),
       ]);
       setState({
         status: "ready",
         error: null,
-        profile, weights, food, plans, sessions, history,
+        profile, weights, food, plans, sessions, history, exercises,
         openSession: sessions.find((s) => !s.endedAt) || null,
       });
     } catch (err) {

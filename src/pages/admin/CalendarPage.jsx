@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams , useNavigate } from "react-router-dom";
 import {
@@ -347,7 +348,7 @@ export default function CalendarPage() {
   };
 
   const longDate = selectedDate
-    ? new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
+    ? preferredDisplayDate(new Date(selectedDate + "T00:00:00"))
     : "";
 
   return (

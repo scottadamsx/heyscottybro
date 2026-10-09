@@ -1,13 +1,8 @@
 import { getIncomePayPeriod } from "./budgetCalc";
+import { formatDisplayDate } from './dates.js';
 
 function periodLabel(start, end) {
-  const s = new Date(start + "T12:00:00");
-  const e = new Date(end + "T12:00:00");
-  const sm = s.toLocaleDateString([], { month: "short" });
-  const em = e.toLocaleDateString([], { month: "short" });
-  return sm === em
-    ? `${sm} ${s.getDate()}–${e.getDate()}`
-    : `${sm} ${s.getDate()}–${em} ${e.getDate()}`;
+  return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
 }
 
 /** Returns the last `numPeriods` pay periods with income/spending/category breakdowns. */

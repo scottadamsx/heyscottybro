@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
@@ -314,7 +315,7 @@ export default function BugsPage() {
                 <span className="bug-meta">
                   {bug.page && <span><i className="fa-solid fa-location-dot" aria-hidden="true" />{bug.page}</span>}
                   {shots.length > 0 && <span><i className="fa-solid fa-image" aria-hidden="true" />{shots.length}<span className="visually-hidden"> screenshots</span></span>}
-                  <span>{new Date(bug.created_at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}</span>
+                  <span>{preferredDisplayDate(new Date(bug.created_at))}</span>
                 </span>
               </span>
               <i className={`fa-solid fa-chevron-${isOpen ? "up" : "down"} bug-caret`} aria-hidden="true" />
@@ -399,7 +400,7 @@ export default function BugsPage() {
 
                 {bug.resolved_at && (
                   <p className="bug-resolved">
-                    Resolved {new Date(bug.resolved_at).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                    Resolved {preferredDisplayDate(new Date(bug.resolved_at))}
                   </p>
                 )}
 

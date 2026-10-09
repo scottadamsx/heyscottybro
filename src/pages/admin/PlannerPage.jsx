@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useState } from "react";
 import { ExportKit, FormModal, Field } from "../../components/ui";
 import { loadReminders, loadEvents, loadProjects, loadEventTypes, newReminder } from "../../api/plannerApi";
@@ -94,7 +95,7 @@ export default function PlannerPage() {
                 const ds = toDateStr(d);
                 const day = items.filter((r) => r.date === ds);
                 const evs = events.filter((e) => e.date === ds);
-                L.push(`## ${d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}`);
+                L.push(`## ${preferredDisplayDate(d)}`);
                 if (!day.length && !evs.length) L.push("_free_");
                 evs.forEach((e) => L.push(`- ${e.title}`));
                 day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${formatTime12(r.time)}` : ""}`));

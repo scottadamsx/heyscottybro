@@ -9,6 +9,7 @@ const PREFIX = "setting:";
 
 // Setting keys live here so they can't drift between callers.
 export const THEME = "theme";
+export const DATE_FORMAT = "dateFormat";
 export const HIDDEN_PAGES = "hiddenPages";
 export const JOURNAL_CLEANUP = "journalCleanup";
 const JOURNAL_CLEANUP_SCHEMA = 1;

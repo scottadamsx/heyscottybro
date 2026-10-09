@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { getSignedUrl } from "../../api/documentsApi";
 import { FormModal, Field } from "../ui";
@@ -64,7 +65,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
           </div>
         )}
         <div className="doc-card-meta">
-          {formatBytes(doc.size_bytes)} · {new Date(doc.created_at).toLocaleDateString()}
+          {formatBytes(doc.size_bytes)} · {preferredDisplayDate(new Date(doc.created_at))}
         </div>
         <UpdatedMeta at={doc.updated_at} createdAt={doc.created_at} />
         {doc.description && <div className="doc-card-desc">{doc.description}</div>}

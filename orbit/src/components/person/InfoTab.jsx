@@ -12,7 +12,7 @@ import { sourceJournalId } from '../../lib/journalClient.js'
 function birthdayText(b, asOf) {
   if (!b) return 'Not saved'
   const n = nextBirthday(b, asOf)
-  const date = b.length === 5 ? formatDate(`2000-${b}`, { month: 'long', day: 'numeric' }) : formatDate(b, { month: 'long', day: 'numeric', year: 'numeric' })
+  const date = formatDate(n.date)
   const when = n.days === 0 ? 'today' : `in ${n.days} day${n.days === 1 ? '' : 's'}`
   return `${date} (${n.turning != null ? `turns ${n.turning} ` : ''}${when})`
 }

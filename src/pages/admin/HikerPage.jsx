@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadMembers, loadStats, importCSV, exportCSV, loadHikeHistory, loadHikeAttendees } from "../../api/hikerApi";
@@ -343,7 +344,7 @@ export default function HikerPage() {
                 <span className="db-list-item-content">
                   <span className="hiker-hike-name">{h.hike_name || h.filename}</span>
                   <span className="hiker-hike-meta">
-                    {h.hike_date ? new Date(h.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : h.imported_at}
+                    {h.hike_date ? preferredDisplayDate(new Date(h.hike_date + "T00:00:00")) : h.imported_at}
                     {" · "}{h.total} hiker{h.total !== 1 ? "s" : ""}
                     {h.first_timers > 0 && ` · ${h.first_timers} new`}
                   </span>
@@ -367,7 +368,7 @@ export default function HikerPage() {
             <div className="hiker-detail-bar">
               <div>
                 <div className="hiker-detail-date">
-                  {selectedHike.hike_date ? new Date(selectedHike.hike_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : selectedHike.imported_at}
+                  {selectedHike.hike_date ? preferredDisplayDate(new Date(selectedHike.hike_date + "T00:00:00")) : selectedHike.imported_at}
                 </div>
                 <div className="hiker-detail-meta">
                   {hikeAttendees.length} attendee{hikeAttendees.length !== 1 ? "s" : ""}

@@ -1,3 +1,5 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AGENTS, getAgent } from "../../agents/registry";
 import { resolveTools, agentConnector, agentProtocol, modelLabel } from "../../agents/agentProfile";
@@ -147,7 +149,7 @@ export default function CommandCenterPage() {
       const blob = markdownToPdfBlob(body || "", {
         title: title || "Agent reply",
         subtitle: subtitle || "",
-        footer: `heyscottybro · Command Center · ${new Date().toLocaleString()}`,
+        footer: `heyscottybro · Command Center · ${preferredDisplayDateTime(new Date())}`,
       });
       const filename = `${(title || "agent-reply").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "agent-reply"}.pdf`;
       setPdfDoc({ blob, title: title || "Agent reply", filename });
@@ -637,7 +639,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
               <button key={d.id || d.slug} type="button" className="cmd-doc" title={`Open “${d.title || d.slug}”`} onClick={() => onOpenDoc(d)}>
                 <span className="cmd-doc-title"><i className="fa-solid fa-note-sticky" aria-hidden="true" /> {d.title || d.slug}</span>
                 <span className="cmd-doc-meta">
-                  {(d.type || "note")}{d.updated_at ? ` · ${new Date(d.updated_at).toLocaleDateString()}` : ""}
+                  {(d.type || "note")}{d.updated_at ? ` · ${preferredDisplayDate(new Date(d.updated_at))}` : ""}
                 </span>
               </button>
             ))}

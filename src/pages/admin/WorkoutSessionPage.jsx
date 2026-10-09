@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { FormModal, Field } from "../../components/ui";
+import { Field, FormModal, Modal } from "../../components/ui";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { AddExerciseModal, LogSetModal } from "../../components/health/WorkoutModals";
@@ -191,6 +191,11 @@ export default function WorkoutSessionPage() {
                 </p>
               )}
               {last && <p className="exercise-last">Last time ({formatDisplayDate(toDateStr(new Date(last.startedAt)))}): {last.sets.map(setLabel).join(", ")}</p>}
+              {suggestion.sessions.length > 0 && (
+                <button type="button" className="exercise-history-btn" onClick={() => setModal({ type: "history", item })}>
+                  History <span aria-label={`${suggestion.sessions.length} sessions`}>{suggestion.sessions.length}</span> · {suggestion.confidence} confidence
+                </button>
+              )}
 
               {done.length > 0 && (
                 <ol className="set-list">
@@ -283,8 +288,33 @@ export default function WorkoutSessionPage() {
           }}
         />
       )}
+      {modal?.type === "history" && <ProgressionHistoryModal item={modal.item} onClose={() => setModal(null)} />}
       {dialog}
     </div>
+  );
+}
+
+function ProgressionHistoryModal({ item, onClose }) {
+  const { ex, suggestion } = item;
+  return (
+    <Modal title={`${ex.name} history`} width={640} onClose={onClose}>
+      <p className={`exercise-suggest kind-${suggestion.kind}`}>
+        <strong>{suggestion.weightLb == null ? "Pick a weight" : `${suggestion.weightLb} lb × ${suggestion.reps}`}</strong>
+        <span>{suggestion.reason}</span>
+        <span>{suggestion.confidence[0].toUpperCase() + suggestion.confidence.slice(1)} confidence · using {suggestion.sessions.length} session{suggestion.sessions.length === 1 ? "" : "s"}</span>
+      </p>
+      <div className="db-list progression-history-list">
+        {suggestion.sessions.map((session) => (
+          <div key={session.sessionId} className="db-list-item health-row">
+            <div className="db-list-item-content">
+              <span className="db-list-item-title">{session.weightLb} lb · {session.reps.join(", ")} reps</span>
+              <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(session.startedAt)))} · {session.completedSets}/{ex.sets} working sets{session.averageRpe != null ? ` · avg RPE ${session.averageRpe}` : ""}</span>
+            </div>
+            <span className="health-row-num">{session.bestE1rm}<small> est.</small></span>
+          </div>
+        ))}
+      </div>
+    </Modal>
   );
 }
 

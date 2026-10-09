@@ -1,9 +1,10 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import EmptyState from "../../components/EmptyState";
 import LineChart from "../../components/ui/LineChart";
-import { Modal } from "../../components/ui";
+import { Field, FormModal, Modal } from "../../components/ui";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useHealthData } from "../../components/health/useHealthData";
@@ -11,8 +12,8 @@ import { FoodModal, TargetsModal, WeightModal } from "../../components/health/He
 import { BuildWithAIModal, PlanEditorModal } from "../../components/health/WorkoutModals";
 import * as api from "../../api/healthApi";
 import { coachTake } from "../../api/aiHealth";
-import { buildInsights, dailyCalories, exerciseProgress, weekStart, weeklyVolume } from "../../utils/healthInsights";
-import { suggestNext } from "../../utils/overload";
+import { buildInsights, dailyCalories, exerciseLibraryStats, exerciseProgress, weekStart, weeklyVolume } from "../../utils/healthInsights";
+import { e1rm, suggestNext } from "../../utils/overload";
 import { toDateStr } from "../../utils/dates";
 import { addDaysStr, formatDisplayDate } from "../../utils/plannerUtils";
 import "./health.css";
@@ -26,6 +27,7 @@ import { PageSkeleton } from "../../components/Skeleton";
 const TABS = [
   { key: "overview", label: "Overview", icon: "fa-heart-pulse" },
   { key: "workouts", label: "Workouts", icon: "fa-dumbbell" },
+  { key: "exercises", label: "Exercises", icon: "fa-chart-line" },
   { key: "food", label: "Food", icon: "fa-utensils" },
   { key: "body", label: "Body", icon: "fa-weight-scale" },
 ];
@@ -33,7 +35,7 @@ const TABS = [
 const MEAL_ORDER = ["breakfast", "lunch", "dinner", "snack"];
 const MEAL_LABEL = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snack: "Snack" };
 const fmtInt = (n) => Math.round(n).toLocaleString();
-const shortDay = (ds) => new Date(`${ds}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const shortDay = (ds) => preferredDisplayDate(new Date(`${ds}T12:00:00`));
 const timeOf = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 const minutesBetween = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 60000));
 
@@ -52,12 +54,13 @@ export default function HealthPage() {
 
   const derived = useMemo(() => {
     if (data.status !== "ready") return null;
-    const { history, food, weights, profile, sessions } = data;
+    const { history, food, weights, profile, sessions, exercises } = data;
     const progress = exerciseProgress(history);
     const thisWeek = weekStart(today);
     return {
       progress,
-      knownNames: progress.map((p) => p.exercise).sort((a, b) => a.localeCompare(b)),
+      exercises: exerciseLibraryStats(exercises || [], history),
+      knownNames: [...new Set([...(exercises || []).map((exercise) => exercise.name), ...progress.map((p) => p.exercise)])].sort((a, b) => a.localeCompare(b)),
       insights: buildInsights({ history, foodLogs: food, weights, profile, today }),
       calories14: dailyCalories(food, today, 14),
       caloriesToday: food.filter((f) => f.date === today).reduce((a, f) => a + (Number(f.calories) || 0), 0),
@@ -249,6 +252,41 @@ export default function HealthPage() {
         </div>
       )}
 
+      {tab === "exercises" && (
+        <div className="health-stack">
+          <section className="db-card">
+            <div className="db-card-header">
+              <h3 className="db-card-title">Exercises</h3>
+              <span className="db-card-count" aria-label={`${derived.exercises.length} exercises`}>{derived.exercises.length}</span>
+            </div>
+            {derived.exercises.length === 0 ? (
+              <EmptyState icon="fa-dumbbell" title="No exercises yet" description="Exercises appear here after you save them in a workout or log a set." />
+            ) : (
+              <div className="db-list">
+                {derived.exercises.map((exercise) => (
+                  <button type="button" key={exercise.id} className="db-list-item health-row" onClick={() => setModal({ type: "exercise", exercise })}>
+                    <div className="db-list-item-content">
+                      <span className="db-list-item-title">{exercise.name}</span>
+                      <span className="db-list-item-subtitle">
+                        {exercise.goal
+                          ? `Goal ${exercise.goal.weightLb} lb × ${exercise.goal.reps}${exercise.goalAchieved ? " · achieved" : exercise.estimatedProgress != null ? ` · ${exercise.estimatedProgress}% estimated progress` : ""}`
+                          : "No performance goal yet"}
+                        {exercise.lastSet ? ` · last ${formatDisplayDate(toDateStr(new Date(exercise.lastSet.loggedAt || exercise.lastSet.startedAt)))}` : " · no sets logged"}
+                      </span>
+                    </div>
+                    <span className="health-row-num">
+                      {exercise.heaviest ? `${exercise.heaviest.weightLb} lb` : "—"}
+                      <small> heaviest</small>
+                    </span>
+                    <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
       {tab === "food" && (
         <FoodTab
           food={food} profile={profile} today={today} d={derived}
@@ -325,9 +363,70 @@ export default function HealthPage() {
         <BuildWithAIModal known={derived.progress} profile={profile} onClose={close}
           onDraft={(draft) => setModal({ type: "plan", initial: draft })} />
       )}
+      {modal?.type === "exercise" && (
+        <ExerciseModal exercise={modal.exercise} onClose={close} onSave={(goal) => api.saveExerciseGoal(modal.exercise.id, goal)} />
+      )}
       {modal?.type === "lift" && <LiftModal lift={modal.lift} onClose={close} />}
       {dialog}
     </div>
+  );
+}
+
+function ExerciseModal({ exercise, onClose, onSave }) {
+  const [weightLb, setWeightLb] = useState(exercise.goal?.weightLb ?? "");
+  const [reps, setReps] = useState(exercise.goal?.reps ?? "");
+  const goalLabel = exercise.goal ? `${exercise.goal.weightLb} lb × ${exercise.goal.reps}` : null;
+  return (
+    <FormModal title={exercise.name} width={700} submitLabel={goalLabel ? "Save goal" : "Set goal"} onClose={onClose} onSubmit={() => onSave({ weightLb, reps })}>
+      <div className="exercise-pr-grid" aria-label="Personal records">
+        <div>
+          <span>Heaviest weight</span>
+          <strong>{exercise.heaviest ? `${exercise.heaviest.weightLb} lb × ${exercise.heaviest.reps}` : "—"}</strong>
+        </div>
+        <div>
+          <span>Best estimated 1-rep max</span>
+          <strong>{exercise.strongest ? `${exercise.bestEstimate} lb` : "—"}</strong>
+          {exercise.strongest && <small>from {exercise.strongest.weightLb} lb × {exercise.strongest.reps}</small>}
+        </div>
+      </div>
+
+      {goalLabel && (
+        <div className={`exercise-goal-status ${exercise.goalAchieved ? "is-achieved" : ""}`}>
+          <strong>{exercise.goalAchieved ? `Goal achieved: ${goalLabel}` : `Current goal: ${goalLabel}`}</strong>
+          {!exercise.goalAchieved && exercise.estimatedProgress != null && <span>Estimated progress: {exercise.estimatedProgress}%</span>}
+          {exercise.goalAchieved && exercise.achievedSet && <span>Actual set: {exercise.achievedSet.weightLb} lb × {exercise.achievedSet.reps}</span>}
+        </div>
+      )}
+
+      <div className="exercise-goal-fields">
+        <Field label="Goal weight (lb)">
+          <input type="number" min="0.01" max="2000" step="2.5" inputMode="decimal" value={weightLb} onChange={(e) => setWeightLb(e.target.value)} placeholder="225" data-autofocus />
+        </Field>
+        <Field label="Goal reps" hint="Save both values. Leave both blank and save to clear the goal.">
+          <input type="number" min="1" max="200" step="1" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} placeholder="1" />
+        </Field>
+      </div>
+
+      <section className="exercise-history-section">
+        <div className="db-card-header">
+          <h4 className="db-card-title">Logged sets</h4>
+          <span className="db-card-count" aria-label={`${exercise.sets.length} logged sets`}>{exercise.sets.length}</span>
+        </div>
+        {exercise.sets.length === 0 ? <p className="no-entries">No sets logged yet.</p> : (
+          <div className="db-list exercise-history-list">
+            {exercise.sets.map((set) => (
+              <div key={set.id} className="db-list-item health-row">
+                <div className="db-list-item-content">
+                  <span className="db-list-item-title">{set.weightLb} lb × {set.reps}</span>
+                  <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(set.loggedAt || set.startedAt)))}{set.rpe != null ? ` · RPE ${set.rpe}` : ""}</span>
+                </div>
+                <span className="health-row-num">{e1rm(Number(set.weightLb), Number(set.reps))}<small> est.</small></span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </FormModal>
   );
 }
 

@@ -1,4 +1,5 @@
 import { downloadText } from "../../lib/exporter";
+import { formatDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { getBillDatesInRange, getIncomeDatesInRange, formatMoney, toDateStr, genId, getPayPeriod } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -49,7 +50,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     const calced = recalcBalances(r, bal);
     setRows(calced);
     const neg = calced.find(row => row.balance < 0);
-    setWarning(neg ? `Warning: balance goes negative on ${neg.date}. Consider adjusting your plan.` : "");
+    setWarning(neg ? `Warning: balance goes negative on ${formatDisplayDate(neg.date)}. Consider adjusting your plan.` : "");
   };
 
   const updateRow = (id, field, value) => {
@@ -64,7 +65,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
       const startBal2 = firstRow?.description === "Starting Balance" ? (firstRow.balance ?? 0) : 0;
       const recalced = recalcBalances(updated, startBal2);
       const neg = recalced.find(r => r.balance < 0);
-      setWarning(neg ? `Warning: balance goes negative on ${neg.date}.` : "");
+      setWarning(neg ? `Warning: balance goes negative on ${formatDisplayDate(neg.date)}.` : "");
       return recalced;
     });
   };
@@ -75,7 +76,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
       const startBal2 = updated[0]?.description === "Starting Balance" ? (updated[0].balance ?? 0) : 0;
       const recalced = recalcBalances(updated, startBal2);
       const neg = recalced.find(r => r.balance < 0);
-      setWarning(neg ? `Warning: balance goes negative on ${neg.date}.` : "");
+      setWarning(neg ? `Warning: balance goes negative on ${formatDisplayDate(neg.date)}.` : "");
       return recalced;
     });
   };
@@ -110,7 +111,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     setStartDate(sim.startDate); setEndDate(sim.endDate);
     setRows(sim.rows);
     const neg = sim.rows.find(r => r.balance < 0);
-    setWarning(neg ? `Warning: balance goes negative on ${neg.date}.` : "");
+    setWarning(neg ? `Warning: balance goes negative on ${formatDisplayDate(neg.date)}.` : "");
     setLoadSel("");
   };
 
@@ -161,7 +162,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
     const calced = recalcBalances(r, bal);
     setRows(calced);
     const neg = calced.find(row => row.balance < 0);
-    setWarning(neg ? `Warning: balance goes negative on ${neg.date} based on your spending habits.` : "");
+    setWarning(neg ? `Warning: balance goes negative on ${formatDisplayDate(neg.date)} based on your spending habits.` : "");
   };
 
   return (

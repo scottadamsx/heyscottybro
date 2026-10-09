@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { fileToContent, extract } from "../../lib/smartImport";
 import { formatMoney, genId } from "../../utils/budgetCalc";
@@ -277,7 +278,7 @@ export default function StatementImport({ transactions, setTransactions, categor
                         <span className="si-row-title">{r.tx.description}</span>
                         <span className="si-diff">
                           {formatMoney(r.tx.amount)} → <strong>{formatMoney(r.amount)}</strong>
-                          {r.tx.date !== r.date && <> · {r.tx.date} → <strong>{r.date}</strong></>}
+                          {r.tx.date !== r.date && <> · {preferredDisplayDate(r.tx.date)} → <strong>{preferredDisplayDate(r.date)}</strong></>}
                         </span>
                         {r.match_reason && <span className="si-reason">{r.match_reason}</span>}
                       </span>
@@ -295,7 +296,7 @@ export default function StatementImport({ transactions, setTransactions, categor
                       <input type="checkbox" checked={r.checked} onChange={() => toggle(r.key)} />
                       <span className="si-row-main">
                         <span className="si-row-title">{r.description} <em className="si-cat">{r.category_guess}</em></span>
-                        <span className="si-diff"><strong>{r.direction === "credit" ? "+" : "−"}{formatMoney(r.amount)}</strong> · {r.date}</span>
+                        <span className="si-diff"><strong>{r.direction === "credit" ? "+" : "−"}{formatMoney(r.amount)}</strong> · {preferredDisplayDate(r.date)}</span>
                         {r.warn && <span className="si-warn"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {r.warn}</span>}
                       </span>
                       {conf(r.confidence)}

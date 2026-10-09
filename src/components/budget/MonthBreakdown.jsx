@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { formatMoney } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
@@ -69,7 +70,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                     {tx.description}
                     {linked && <span className="bud-tx-link" title="Linked to a recurring source"><i className="fa-solid fa-link" aria-hidden="true" /><span className="visually-hidden">Linked to a recurring source</span></span>}
                   </div>
-                  <div className="bud-tx-meta">{tx.category} · {tx.date}</div>
+                  <div className="bud-tx-meta">{tx.category} · {preferredDisplayDate(tx.date)}</div>
                 </div>
                 <div className="bud-tx-amount">{signed >= 0 ? "+" : "-"}{formatMoney(signed)}</div>
                 <div className="bud-tx-actions">

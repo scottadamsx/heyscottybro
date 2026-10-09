@@ -1,3 +1,4 @@
+import { formatDisplayDate } from './dates.js';
 const DAY = 86400000;
 export const ANALYTICS_RANGES = [
   { key: "today", label: "Today", days: 1 },
@@ -158,6 +159,6 @@ export function activityTrend(events, range = "30d", now = new Date()) {
   return Array.from({ length: days }, (_, index) => {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days + index + 1);
     const key = localDateKey(date.toISOString());
-    return { key, label: index % Math.max(1, Math.ceil(days / 8)) === 0 ? key.slice(5) : "", title: key, value: counts.get(key) || 0 };
+    return { key, label: index % Math.max(1, Math.ceil(days / 8)) === 0 ? formatDisplayDate(key) : "", title: formatDisplayDate(key), value: counts.get(key) || 0 };
   });
 }

@@ -5,7 +5,11 @@ import {
   toggleHiddenPage,
   useHiddenPages,
   useJournalCleanupEnabled,
+  DATE_FORMAT,
+  useStringSetting,
+  setStringSetting,
 } from "../../utils/settings";
+import { formatDisplayDate } from "../../utils/dates.js";
 import { loadJournalCleanupStatus } from "../../api/journalCleanup";
 import { NAV_ITEMS } from "./AdminLayout";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -44,6 +48,8 @@ function Toggle({ checked, onChange, label }) {
 
 export default function SettingsPage() {
   const theme = useTheme();
+  const storedDateFormat = useStringSetting(DATE_FORMAT, "weekday-ordinal");
+  const dateFormat = storedDateFormat === "full-month" ? "full-month" : "weekday-ordinal";
   const hiddenPages = useHiddenPages();
   const { confirm, dialog } = useConfirm();
   const { addToast } = useToast();
@@ -118,6 +124,18 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="db-card">
+        <div className="settings-row">
+          <label className="settings-row-title" htmlFor="date-format">
+            <i className="fa-solid fa-calendar-day" aria-hidden="true" /> Date format
+          </label>
+          <select id="date-format" value={dateFormat} onChange={(event) => setStringSetting(DATE_FORMAT, event.target.value)}>
+            <option value="weekday-ordinal">{formatDisplayDate("2026-01-15", "weekday-ordinal")}</option>
+            <option value="full-month">{formatDisplayDate("2026-01-15", "full-month")}</option>
+          </select>
         </div>
       </div>
 

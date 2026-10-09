@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../utils/dates.js";
 import { useEffect, useRef, useState } from "react";
 import PopoverPortal from "./PopoverPortal";
 
@@ -18,7 +19,7 @@ function fmt(date) {
   return `${y}-${m}-${d}`;
 }
 function fmtDisplay(date) {
-  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  return preferredDisplayDate(date);
 }
 const sameDay = (a, b) =>
   a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

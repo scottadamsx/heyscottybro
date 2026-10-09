@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "../../api/coursesApi";
@@ -117,7 +118,7 @@ export default function SchoolPage() {
     title: `Semester report${term ? ` — ${term}` : ""}`,
     filename: "semester-report",
     toMarkdown: () => {
-      const L = [`# Semester report${term ? ` — ${term}` : ""}`, "", `_${new Date().toDateString()}_`, ""];
+      const L = [`# Semester report${term ? ` — ${term}` : ""}`, "", `_${preferredDisplayDate(new Date())}_`, ""];
       L.push(`**Semester average:** ${fmtPct(semesterAvg)} · **Courses:** ${courses.length} · **Open deadlines:** ${deadlines.length}`, "");
       for (const c of courses) {
         const st = courseStats[c.id] || {};
@@ -130,7 +131,7 @@ export default function SchoolPage() {
           cg.forEach((g) => L.push(`| ${g.name} | ${g.earned != null ? `${g.earned}/${g.max}` : "—"} | ${g.weight || 0}% |`));
         }
         const cds = deadlines.filter((r) => r.course_id === c.id);
-        if (cds.length) { L.push("", "**Deadlines:**"); cds.forEach((r) => L.push(`- ${r.date} — ${r.name}`)); }
+        if (cds.length) { L.push("", "**Deadlines:**"); cds.forEach((r) => L.push(`- ${preferredDisplayDate(r.date)} — ${r.name}`)); }
         L.push("");
       }
       return L.join("\n");
@@ -209,7 +210,7 @@ export default function SchoolPage() {
               </span>
               <span className="school-course-side">
                 {onTarget != null && <Badge tone={onTarget ? "good" : "bad"}>{onTarget ? "On target" : "Below target"}</Badge>}
-                {next && <Badge tone={daysUntil(next.date) <= 3 ? "warn" : "default"} icon="fa-clock">{next.date}</Badge>}
+                {next && <Badge tone={daysUntil(next.date) <= 3 ? "warn" : "default"} icon="fa-clock">{preferredDisplayDate(next.date)}</Badge>}
                 <i className={`fa-solid fa-chevron-${expanded ? "up" : "down"}`} aria-hidden="true" />
               </span>
             </button>
@@ -228,7 +229,7 @@ export default function SchoolPage() {
                         <button type="button" className="school-deadline-done" title="Mark done" aria-label={`Mark ${r.name} done`} onClick={() => completeDeadline(r)}><i className="fa-regular fa-circle" aria-hidden="true" /></button>
                         <span className="school-deadline-name">{r.name}</span>
                         <span className={`school-deadline-date${daysUntil(r.date) < 0 ? " overdue" : daysUntil(r.date) <= 3 ? " soon" : ""}`}>
-                          {r.date}{daysUntil(r.date) < 0 ? <span className="visually-hidden"> (overdue)</span> : daysUntil(r.date) <= 3 ? <span className="visually-hidden"> (due soon)</span> : null}
+                          {preferredDisplayDate(r.date)}{daysUntil(r.date) < 0 ? <span className="visually-hidden"> (overdue)</span> : daysUntil(r.date) <= 3 ? <span className="visually-hidden"> (due soon)</span> : null}
                         </span>
                       </div>
                     ))}
@@ -259,7 +260,7 @@ export default function SchoolPage() {
                   {(n.tags || []).some((t) => t.startsWith("doc:")) && <i className="fa-solid fa-file-pdf school-doc-icon" aria-hidden="true" />}
                   {n.title}
                 </Link>
-                <span className="school-deadline-date">{String(n.created_at || "").slice(0, 10)}</span>
+                <span className="school-deadline-date">{preferredDisplayDate(n.created_at)}</span>
                 <button
                   type="button"
                   className="school-deadline-done is-delete"
@@ -287,7 +288,7 @@ export default function SchoolPage() {
               <Badge>{courseById[r.course_id]?.code || "?"}</Badge>
               <Link to={`/admin/tasks/${r.id}`} className="school-deadline-name">{r.name}</Link>
               <span className={`school-deadline-date${daysUntil(r.date) < 0 ? " overdue" : daysUntil(r.date) <= 3 ? " soon" : ""}`}>
-                {r.date} ({daysUntil(r.date) < 0 ? `${-daysUntil(r.date)}d overdue` : daysUntil(r.date) === 0 ? "today" : `${daysUntil(r.date)}d`})
+                {preferredDisplayDate(r.date)} ({daysUntil(r.date) < 0 ? `${-daysUntil(r.date)}d overdue` : daysUntil(r.date) === 0 ? "today" : `${daysUntil(r.date)}d`})
               </span>
             </div>
           ))}

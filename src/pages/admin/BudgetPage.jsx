@@ -1,4 +1,5 @@
 import { ExportKit } from "../../components/ui";
+import { formatDisplayDate } from "../../utils/dates.js";
 import GroceryPage from "./GroceryPage";
 import StatementImport from "../../components/budget/StatementImport";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -315,12 +316,12 @@ export default function BudgetPage() {
             toMarkdown: () => {
               const snap = computeBudgetSnapshot(apiToPage(config || {}), (transactions || []).map(uiShape));
               const fm = (v) => `$${Number(v || 0).toFixed(2)}`;
-              const L = [`# Money report — ${new Date().toDateString()}`, ""];
+              const L = [`# Money report — ${formatDisplayDate(new Date())}`, ""];
               L.push(`- **Income this period:** ${fm(snap.incomeTotal)}`);
               L.push(`- **Spent:** ${fm(snap.spent)} · **Bills obligation:** ${fm(snap.billsObligation)} (paid ${fm(snap.billsPaid)})`);
               L.push(`- **Saved:** ${fm(snap.saved)} · **Remaining:** ${fm(snap.remaining)}`, "");
               L.push("## Transactions (this period)", "", "| Date | Description | Type | Category | Amount |", "|---|---|---|---|---|");
-              (snap.periodTx || []).forEach((t) => L.push(`| ${t.date} | ${t.description} | ${t.type} | ${t.category || ""} | ${fm(t.amount)} |`));
+              (snap.periodTx || []).forEach((t) => L.push(`| ${formatDisplayDate(t.date)} | ${t.description} | ${t.type} | ${t.category || ""} | ${fm(t.amount)} |`));
               return L.join("\n");
             },
             toRows: () => (transactions || []).map(uiShape).map((t) => ({ date: t.date, description: t.description, type: t.type, category: t.category, amount: t.amount })),

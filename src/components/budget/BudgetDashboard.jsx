@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { getPeriodBills, getQuantifiableBudgets, savingsPlan, getBillDatesInRange, getIncomeDatesInRange, formatMoney, formatMoneyAbs, formatPeriodLabel, parseDate, toDateStr, genId } from "../../utils/budgetCalc";
 import { computeBudgetSnapshot } from "./budgetSummary";
@@ -175,7 +176,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         : txs.map(t => (
           <div key={t.id} className="bud-drill-row">
             <span className="bud-ellipsis bud-drill-desc">{t.description || t.category}</span>
-            <span className="bud-drill-meta">{t.date} · <span className="bud-mono">{formatMoney(t.amount)}</span></span>
+            <span className="bud-drill-meta">{preferredDisplayDate(t.date)} · <span className="bud-mono">{formatMoney(t.amount)}</span></span>
           </div>
         ))}
     </div>
@@ -273,7 +274,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
           {weekly.weeks.map(w => {
             const over = w.remaining < 0;
             const pct = w.allowance > 0 ? Math.min(Math.max(w.spent / w.allowance * 100, 0), 100) : (w.spent > 0 ? 100 : 0);
-            const dr = `${parseDate(w.start).getDate()}–${parseDate(w.end).getDate()}`;
+            const dr = `${preferredDisplayDate(w.start)} – ${preferredDisplayDate(w.end)}`;
             return (
               <div key={w.index} className={`money-meter${w.isPast ? " is-past" : ""}${w.isCurrent ? " is-current" : ""}`}>
                 <div className="money-meter-head">
@@ -311,7 +312,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                   <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} bud-chev`} aria-hidden="true" />
                   <div className="money-bill-main">
                     <div className="money-bill-name bud-ellipsis">{b.name}</div>
-                    <div className="money-bill-sub">Due {b.date}{b.category ? ` · ${b.category}` : ""}</div>
+                    <div className="money-bill-sub">Due {preferredDisplayDate(b.date)}{b.category ? ` · ${b.category}` : ""}</div>
                   </div>
                   <span className="money-bill-amt">{formatMoney(b.amount)}</span>
                   {b.paid
@@ -323,8 +324,8 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                 {isOpen && (
                   <div className="bud-drill money-bill-sub">
                     {b.paid
-                      ? <span className="money-drill-ok"><i className="fa-solid fa-check" aria-hidden="true" /> Paid {payTx ? `${payTx.date} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
-                      : <span>Not paid yet. Due {b.date}.</span>}
+                      ? <span className="money-drill-ok"><i className="fa-solid fa-check" aria-hidden="true" /> Paid {payTx ? `${preferredDisplayDate(payTx.date)} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
+                      : <span>Not paid yet. Due {preferredDisplayDate(b.date)}.</span>}
                   </div>
                 )}
               </div>
@@ -457,7 +458,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
               <div key={t.id} className="money-tx">
                 <div className="money-tx-main">
                   <div className="money-tx-name">{t.description}</div>
-                  <div className="money-tx-sub">{t.category} · {t.date}</div>
+                  <div className="money-tx-sub">{t.category} · {preferredDisplayDate(t.date)}</div>
                 </div>
                 <span className={`money-tx-amt t-${t.type}`}>{t.type === "income" ? "+" : "−"}{formatMoneyAbs(t.amount)}</span>
               </div>
@@ -488,7 +489,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                     <div key={t.id} className="money-tx">
                       <div className="money-tx-main">
                         <div className="money-tx-name">{t.description || t.category || "—"}</div>
-                        <div className="money-tx-sub">{t.date}{t.category ? ` · ${t.category}` : ""}{(t.is_bill || t.fulfills_recurring_id) ? " · bill" : ""}</div>
+                        <div className="money-tx-sub">{preferredDisplayDate(t.date)}{t.category ? ` · ${t.category}` : ""}{(t.is_bill || t.fulfills_recurring_id) ? " · bill" : ""}</div>
                       </div>
                       <span className="money-tx-amt">{formatMoney(t.amount)}</span>
                     </div>

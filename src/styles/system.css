@@ -493,6 +493,7 @@
 .admin-shell .settings-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); }
 .admin-shell .settings-row + .settings-row { border-top: 1px solid var(--border-subtle); margin-top: var(--space-md); padding-top: var(--space-md); }
 .admin-shell .settings-row-body { min-width: 0; }
+.admin-shell #date-format { width: auto; max-width: 100%; min-width: 0; }
 .admin-shell .settings-row-title { display: flex; align-items: center; gap: var(--space-xs); font-weight: 600; }
 .admin-shell .settings-row-title i { width: 20px; text-align: center; color: var(--text-muted); }
 .admin-shell .settings-row-meta { margin-top: var(--space-2xs); font-size: var(--text-sm); color: var(--text-secondary); max-width: 60ch; }

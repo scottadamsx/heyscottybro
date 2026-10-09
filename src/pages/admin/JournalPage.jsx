@@ -1,3 +1,5 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
@@ -30,8 +32,8 @@ import { JOURNAL_CLEANUP_LIMIT, loadJournalCleanupStatus, requestJournalCleanup 
 import { useJournalCleanupEnabled } from "../../utils/settings";
 
 const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
-const shortDay = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-const savedTime = (iso) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const shortDay = (ds) => preferredDisplayDate(new Date(ds + "T00:00:00"));
+const savedTime = (iso) => preferredDisplayDateTime(new Date(iso));
 const draftFailedMsg = "Couldn't auto-save this draft — browser storage is full or blocked. Save it before closing.";
 const timerNow = () => performance.now();
 const draftMetadata = (timer, cleanup, now = timerNow()) => ({ timer: writingTimerMetadata(timer, now), cleanup });

@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { formatMoney, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
@@ -30,7 +31,7 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
     const now = new Date();
     let next = new Date(now.getFullYear(), now.getMonth(), dueDay);
     if (next < now) next = new Date(now.getFullYear(), now.getMonth() + 1, dueDay);
-    return `Next: ${next.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+    return `Next: ${preferredDisplayDate(next)}`;
   };
 
   if (editing) {
@@ -81,7 +82,7 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
       </div>
       <div className="bud-card-meta">
         {!isIncome && <span>{item.category || "Other"}</span>}
-        <span>{item.startDate || "—"}{item.endDate ? ` → ${item.endDate}` : ""}</span>
+        <span>{preferredDisplayDate(item.startDate) || "—"}{item.endDate ? ` → ${preferredDisplayDate(item.endDate)}` : ""}</span>
         <span>{nextDue()}</span>
       </div>
       {item.notes && <p className="bud-card-note">{item.notes}</p>}

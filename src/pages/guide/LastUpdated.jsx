@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useLocation } from "react-router-dom";
 import DATES from "./pageDates.json";
 
@@ -12,7 +13,7 @@ function pageKey(pathname) {
 
 function formatDay(iso) {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+  return preferredDisplayDate(new Date(y, m - 1, d));
 }
 
 export default function LastUpdated() {

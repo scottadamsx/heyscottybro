@@ -1,3 +1,5 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { loadAnalyticsData } from "../../api/analyticsApi";
@@ -152,8 +154,8 @@ export default function AnalyticsPage() {
               {filteredHistory.map((row, index) => {
                 const day = localDateKey(row.occurredAt);
                 const showDay = index === 0 || day !== localDateKey(filteredHistory[index - 1].occurredAt);
-                const content = <><span className="analytics-history-main"><strong>{row.label}</strong><span>{labelEvent(row.eventType)} · {row.source}</span></span><time dateTime={row.occurredAt}>{row.precision === "date_only" ? day : new Date(row.occurredAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time></>;
-                return <div key={row.id}>{showDay && <h3 className="analytics-day">{new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</h3>}{row.link ? <Link className="analytics-history-row" to={row.link}>{content}</Link> : <div className="analytics-history-row is-static">{content}</div>}</div>;
+                const content = <><span className="analytics-history-main"><strong>{row.label}</strong><span>{labelEvent(row.eventType)} · {row.source}</span></span><time dateTime={row.occurredAt}>{row.precision === "date_only" ? preferredDisplayDate(day) : preferredDisplayDateTime(new Date(row.occurredAt))}</time></>;
+                return <div key={row.id}>{showDay && <h3 className="analytics-day">{preferredDisplayDate(new Date(`${day}T12:00:00`))}</h3>}{row.link ? <Link className="analytics-history-row" to={row.link}>{content}</Link> : <div className="analytics-history-row is-static">{content}</div>}</div>;
               })}
             </div>
           )}

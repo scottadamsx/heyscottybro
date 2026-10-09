@@ -1,3 +1,4 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../utils/dates.js";
 import { useCallback, useEffect, useState } from "react";
 import { loadStorageUsage } from "../api/plannerApi";
 
@@ -113,7 +114,7 @@ export default function StorageUsage() {
 
           {data.measured_at && (
             <div className="card-foot-note">
-              Measured {new Date(data.measured_at).toLocaleString()}
+              Measured {preferredDisplayDateTime(new Date(data.measured_at))}
             </div>
           )}
         </>

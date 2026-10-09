@@ -10,24 +10,33 @@ export function parseLocalDate(isoStr) {
   return new Date(y, m - 1, d);
 }
 
-export function formatDisplayDate(isoDate) {
+export function getDateFormat() {
+  try { return localStorage.getItem("setting:dateFormat") === "full-month" ? "full-month" : "weekday-ordinal"; }
+  catch { return "weekday-ordinal"; }
+}
+
+export function formatDisplayDate(isoDate, dateFormat = getDateFormat()) {
   if (!isoDate) return "";
   try {
     const d = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? parseLocalDate(isoDate) : new Date(isoDate);
-    return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    if (Number.isNaN(d.getTime())) return "";
+    const day = d.getDate();
+    const suffix = day % 100 >= 11 && day % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[day % 10] || "th");
+    return `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${d.toLocaleDateString("en-US", { month: dateFormat === "full-month" ? "long" : "short" })} ${day}${suffix}`;
   } catch {
     return isoDate;
   }
 }
 
 export function formatShortDate(isoDate) {
-  if (!isoDate) return "";
-  try {
-    const d = parseLocalDate(isoDate);
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  } catch {
-    return isoDate;
-  }
+  return formatDisplayDate(isoDate);
+}
+
+export function formatDisplayDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${formatDisplayDate(date)} · ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 }
 
 export function isToday(isoDate) {

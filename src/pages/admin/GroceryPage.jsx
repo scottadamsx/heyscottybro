@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
 import { toDateStr } from "../../utils/plannerUtils";
@@ -185,7 +186,7 @@ export default function GroceryPage() {
     catch (err) { addToast(err.message || "Could not delete", "error"); }
   }
 
-  const fmtDate = (d) => (d ? new Date(d + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "");
+  const fmtDate = (d) => (d ? preferredDisplayDate(new Date(d + "T00:00:00")) : "");
 
   return (
     <div className="grocery-page">

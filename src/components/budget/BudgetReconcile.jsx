@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { getIncomePayPeriod, formatMoney, formatPeriodLabel, getIncomeDatesInRange, toDateStr } from "../../utils/budgetCalc";
 import "./budget.css";
@@ -107,7 +108,7 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
                   {unreconciled.map(t => (
                     <tr key={t.id}>
                       <td className="is-check"><input type="checkbox" checked={checked.has(t.id)} onChange={() => toggleCheck(t.id)} aria-label={`Select ${t.description}`} /></td>
-                      <td className="is-date">{t.date}</td>
+                      <td className="is-date">{preferredDisplayDate(t.date)}</td>
                       <td className="is-desc">{t.description}</td>
                       <td className="is-cat">{t.category}</td>
                       {amt(t)}
@@ -139,7 +140,7 @@ export default function BudgetReconcile({ config, transactions, setTransactions 
               <tbody>
                 {reconciled.map(t => (
                   <tr key={t.id} className="is-done">
-                    <td className="is-date">{t.date}</td>
+                    <td className="is-date">{preferredDisplayDate(t.date)}</td>
                     <td className="is-desc">{t.description}</td>
                     <td className="is-cat">{t.category}</td>
                     {amt(t)}

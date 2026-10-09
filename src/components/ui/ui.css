@@ -63,3 +63,6 @@ div.brief-item:hover { background: none; color: var(--text-secondary); }
 .lc-x span:first-child { transform: none; }
 .lc-x span:last-child { transform: translateX(-100%); }
 .lc-x span.is-active { color: var(--text-primary); font-weight: 600; }
+.lc-x.lc-x-long { display: flex; justify-content: space-between; gap: 16px; height: auto; }
+.lc-x.lc-x-long span { position: static; transform: none; white-space: normal; max-width: 48%; overflow-wrap: break-word; }
+.lc-x.lc-x-long span:last-child { text-align: right; }

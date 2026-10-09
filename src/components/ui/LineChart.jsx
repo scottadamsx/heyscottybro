@@ -66,6 +66,7 @@ export default function LineChart({ data, height = 192, format = String, ariaLab
   const pt = data[shown];
   const leftPct = (x(shown) / W) * 100;
   const topPx = y(pt.value);
+  const longLabels = data.some((p) => String(p.label).length > 14);
 
   return (
     <div className="lc" role="group" aria-label={ariaLabel}>
@@ -104,8 +105,8 @@ export default function LineChart({ data, height = 192, format = String, ariaLab
           ))}
         </div>
       </div>
-      <div className="lc-x" aria-hidden="true">
-        {data.map((p, i) => <span key={p.key ?? i} className={i === shown ? "is-active" : ""} style={{ left: `${(x(i) / W) * 100}%` }}>{p.label}</span>)}
+      <div className={`lc-x${longLabels ? " lc-x-long" : ""}`} aria-hidden="true">
+        {data.map((p, i) => (!longLabels || i === 0 || i === data.length - 1) && <span key={p.key ?? i} className={i === shown ? "is-active" : ""} style={longLabels ? undefined : { left: `${(x(i) / W) * 100}%` }}>{p.label}</span>)}
       </div>
     </div>
   );

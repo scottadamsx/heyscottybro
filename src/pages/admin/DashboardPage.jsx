@@ -1,3 +1,5 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadJournal, loadBudgetConfig, loadEvents, loadProjects, loadInitiatives, loadTransactions, getAIBriefing, loadAgentActions } from "../../api/plannerApi";
@@ -24,9 +26,9 @@ import "./today.css";
 
 const addDaysStr = (str, n) => { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); };
 const asDate = (ds) => new Date(ds + "T00:00:00");
-const weekdayLabel = (ds) => asDate(ds).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+const weekdayLabel = (ds) => preferredDisplayDate(asDate(ds));
 const shortDow = (ds) => asDate(ds).toLocaleDateString(undefined, { weekday: "short" });
-const shortDate = (ds) => asDate(ds).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const shortDate = (ds) => preferredDisplayDate(asDate(ds));
 // Money sums in integer cents (QF-4), displayed in dollars.
 const cents = (n) => Math.round((Number(n) || 0) * 100);
 const compactMoney = (v) => (v >= 1000 ? `$${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : `$${Math.round(v)}`);
@@ -152,7 +154,7 @@ export default function DashboardPage() {
   const today = new Date(nowTick);
   const todayStr = toDateStr(today);
   const nowMin = today.getHours() * 60 + today.getMinutes();
-  const todayLong = today.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const todayLong = preferredDisplayDate(today);
 
   // ── Money: the SAME snapshot the Money page uses, so figures always match ──
   const { budget, upcomingBills, series, last7, spendDelta, rangeTotal } = moneyView(data.config, data.transactions, todayStr, range);
@@ -488,7 +490,7 @@ export default function DashboardPage() {
                     <div className="db-list-item-content">
                       <div className="db-list-item-title act-title">{describeAction(a)}</div>
                       <div className="db-list-item-subtitle">
-                        <span className="act-agent">{a.agent_id}</span> · <span title={new Date(a.created_at).toLocaleString()}>{actionTime(a.created_at)}</span>
+                        <span className="act-agent">{a.agent_id}</span> · <span title={preferredDisplayDateTime(new Date(a.created_at))}>{actionTime(a.created_at)}</span>
                         {isErr && <> · <span className="act-err">failed</span></>}
                       </div>
                       {a.error && <div className="act-error" title={a.error}>{a.error}</div>}

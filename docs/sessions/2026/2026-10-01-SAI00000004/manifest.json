@@ -8,9 +8,9 @@
   "workspace": "<repo>",
   "timezone": "America/St_Johns",
   "started_on": "2026-10-01",
-  "cutoff": "2026-10-02 immediately before the combined commit-and-push approval request",
+  "cutoff": "2026-10-03 after exercise-library migration approval and the authentication blocker",
   "branch": "main",
-  "base_commit": "7afd2d56a540da23ed651797bfb73afcf4dfc68f",
+  "base_commit": "4d8a4063eb3ccbc49d278dcedf8425ffc6f4a481",
   "archive_path": "docs/sessions/2026/2026-10-01-SAI00000004",
   "intended_push_target": "none authorized",
   "approval_state": {
@@ -19,7 +19,8 @@
     "scope_decision": "Scott's cleanup everything retained all requested tools and selected the compliant expanded cleanup design",
     "live_ai_calls": "not authorized and none performed",
     "migration_application_and_feature_enablement": "not authorized and not performed",
-    "commit_push_deploy_or_production_write": "not authorized and not performed"
+    "commit_push_deploy_or_production_write": "not authorized and not performed",
+    "adaptive_progression_and_exercise_library": "complete expanded contract implemented locally; Scott approved only the exercise-library migration, but it remains unapplied because Supabase owner authentication is unavailable"
   },
   "approvals": [
     {
@@ -33,6 +34,22 @@
     {
       "message": "go",
       "scope": "The revised complete ten-unit journal-writing-tools contract, including bounded shared AI repair and additive migration source creation"
+    },
+    {
+      "message": "go",
+      "scope": "The complete research-backed adaptive workout progression contract and local implementation units"
+    },
+    {
+      "message": "go",
+      "scope": "The recommended sub-2% load-step decision: one smallest configured step whenever it is no more than 10%"
+    },
+    {
+      "message": "go",
+      "scope": "The complete expanded exercise-library, derived-PR, performance-goal, progression, BUG-065, test, and documentation contract"
+    },
+    {
+      "message": "go",
+      "scope": "Apply only the exercise-library migration to the configured Supabase project; exclude the journal migration and unrelated schema, data, release, and provider actions"
     }
   ],
   "files": {
@@ -40,6 +57,8 @@
       "api/_journalCleanup.js",
       "api/_journalCleanup.test.js",
       "docs/features/journal-writing-tools.md",
+      "docs/features/adaptive-workout-progression.md",
+      "docs/features/ai-workout-builder-validation.md",
       "docs/sessions/2026/2026-10-01-SAI00000004/TRANSCRIPT.md",
       "docs/sessions/2026/2026-10-01-SAI00000004/SESSION_SUMMARY.md",
       "docs/sessions/2026/2026-10-01-SAI00000004/manifest.json",
@@ -52,12 +71,16 @@
       "src/pages/admin/JournalPage.test.js",
       "src/utils/journalWriting.js",
       "src/utils/journalWriting.test.js",
+      "src/utils/exerciseLibrary.js",
+      "src/utils/exerciseLibrary.test.js",
       "src/utils/settings.test.js",
-      "supabase/migrations/2026-10-01-journal-ai-provenance.sql"
+      "supabase/migrations/2026-10-01-journal-ai-provenance.sql",
+      "supabase/migrations/2026-10-03-exercise-library.sql"
     ],
     "modified": [
       ".env.example",
       "CHANGELOG.md",
+      "CLAUDE.md",
       "SUPABASE_SETUP.sql",
       "api/_utils.js",
       "api/chat.js",
@@ -74,6 +97,7 @@
       "src/api/aiDraft.js",
       "src/api/aiGrades.js",
       "src/api/aiHealth.js",
+      "src/api/healthApi.js",
       "src/api/aiReceipt.js",
       "src/api/aiTiers.js",
       "src/api/archivist.js",
@@ -82,11 +106,19 @@
       "src/api/plannerApi.js",
       "src/lib/smartImport.js",
       "src/pages/admin/JournalPage.jsx",
+      "src/pages/admin/HealthPage.jsx",
+      "src/pages/admin/WorkoutSessionPage.jsx",
+      "src/pages/admin/health.css",
       "src/pages/admin/SettingsPage.jsx",
       "src/pages/admin/life.css",
       "src/utils/drafts.js",
       "src/utils/drafts.test.js",
+      "src/utils/healthInsights.js",
+      "src/utils/healthInsights.test.js",
+      "src/utils/overload.js",
+      "src/utils/overload.test.js",
       "src/utils/settings.js",
+      "src/components/health/useHealthData.js",
       "vite.config.js"
     ],
     "inherited_preserved": [
@@ -116,6 +148,8 @@
       "src/hooks/useConfirm.js",
       "src/utils/journalExport.js",
       "src/utils/paged.js",
+      "src/components/health/WorkoutModals.jsx",
+      "supabase/migrations/2026-09-17-health.sql",
       "supabase/migrations/2026-09-18-polish.sql",
       "scripts/session-registry.test.js",
       "scripts/session-registry.mjs",
@@ -125,7 +159,7 @@
       "<external-devrules>/housestyle-ai.md",
       "<external-devrules>/validate-ai.mjs"
     ],
-    "final_state": "Journal counts, timer, fail-closed cleanup, comparison/undo, provenance source, BUG-062 repair, shared AI governance, tests, and documentation are complete locally. The migration is unapplied and cleanup remains disabled unless separately enabled. All changes are uncommitted."
+    "final_state": "Journal work remains preserved. Adaptive progression, the exercise-library schema/API/UI, derived PRs, performance goals, progression evidence, and BUG-065 repair are complete locally and uncommitted. Scott approved only the exercise-library migration, but Supabase owner authentication blocked remote history inspection and application. Both migrations remain unapplied; no provider or production-data operation occurred."
   },
   "validation": [
     {
@@ -134,7 +168,7 @@
     },
     {
       "check": "full registered npm test suite",
-      "result": "305/306 pass; sole failure is known unrelated BUG-058 stale two-session projection"
+      "result": "pass: 320/320 after the separately completed BUG-058 repair"
     },
     {
       "check": "npm run lint",
@@ -142,7 +176,7 @@
     },
     {
       "check": "npm run build",
-      "result": "pass across 3151 modules; existing chunk-size advisory only"
+      "result": "pass across 3154 modules; existing chunk-size advisory only"
     },
     {
       "check": "npm run eval",
@@ -158,7 +192,7 @@
     },
     {
       "check": "session registry validation",
-      "result": "pass: four IDs; SAI00000005 next"
+      "result": "pass: six IDs; SAI00000007 next"
     },
     {
       "check": "isolated desktop and exact 390x844 rendered implementation inspection",
@@ -171,6 +205,14 @@
     {
       "check": "live model evals and deployed no-key verification",
       "result": "not authorized; not performed"
+    },
+    {
+      "check": "30 focused adaptive-progression, explicit-weight, goal-validation, and derived-PR cases",
+      "result": "pass"
+    },
+    {
+      "check": "local rendered Health/Exercises route",
+      "result": "blocked as expected by the unapplied exercise_library migration; visible retryable schema error, no false empty state; desktop/mobile feature layout remains unverified"
     }
   ],
   "bugs": [
@@ -181,28 +223,52 @@
     },
     {
       "id": "BUG-058",
-      "status": "known unrelated aggregate-suite failure; deferred",
-      "summary": "Session registry projection test hard-codes an obsolete session count"
+      "status": "resolved by separate approved release-repair work",
+      "summary": "The registry projection now follows reservations and the complete suite is green"
+    },
+    {
+      "id": "BUG-065",
+      "status": "resolved locally; uncommitted and not released",
+      "summary": "Explicit AI workout weights now use structured startWeightLb instead of note-only text"
     }
   ],
-  "attachments": [],
+  "attachments": [
+    {
+      "basename": "Screenshot 2026-10-03 at 1.59.30 PM.png",
+      "sha256": "f56645d93fb4d34cea1732c76b7e9c3ed6f044ac91149ed517a9f3da3f10d78c",
+      "purpose": "AI workout builder saving state",
+      "archived": false
+    },
+    {
+      "basename": "Screenshot 2026-10-03 at 2.00.15 PM.png",
+      "sha256": "07af0e71cf626bdcfbfa01cfb0eb4d0d86d9d54544b5dad59392214d67217d33",
+      "purpose": "Top of AI workout review",
+      "archived": false
+    },
+    {
+      "basename": "Screenshot 2026-10-03 at 2.00.24 PM.png",
+      "sha256": "0f4f6470c4fc2a8c5adcb1f8bf1710260b6dde8b7c0ad4ad17ffe582f6330c94",
+      "purpose": "Lower AI workout review rows",
+      "archived": false
+    }
+  ],
   "redactions": [],
   "unresolved_work": [
-    "Scott's exact go for the presented combined commit-and-push release; his push request did not resolve the prerequisite commit or satisfy the exact approval phrase",
-    "Separate approval before live AI/eval calls, migration application, feature enablement, provider changes, push, deployment, or production-data operations",
-    "Apply the journal provenance migration before enabling cleanup"
+    "Separate approval before either pending migration application, live AI/eval calls, feature enablement, provider changes, commit, push, deployment, or production-data operations",
+    "Authenticate to Supabase, inspect remote migration history, and apply only the exercise-library migration before rendered desktop/mobile and persistence verification",
+    "Review and present the complete mixed working tree before any commit decision"
   ],
   "risks": [
-    "The feature remains intentionally unavailable until both server and device gates are enabled",
+    "Journal cleanup remains intentionally unavailable until both server and device gates are enabled",
     "Live provider output quality is not claimed because live calls were outside approval",
-    "Enabling cleanup before applying the provenance migration can make an accepted-provenance save fail",
-    "The complete suite remains one test short of green solely because of deferred BUG-058",
-    "Inherited SAI00000003 documentation changes share the uncommitted working tree and must remain preserved"
+    "Enabling either schema-dependent feature before its migration can make Health or accepted journal provenance fail visibly",
+    "The exercise migration is statically reviewed and build-tested but has not run against PostgreSQL",
+    "The working tree contains preserved changes from several approved sessions and must not be committed indiscriminately"
   ],
   "handoff_actions": [
-    "Scott says exact go only if the presented combined commit-and-push release is approved",
-    "Commit the completed journal work and preserved closeout records, then push main and verify CI/Vercel only after that approval",
-    "Keep live AI/evals, migration application, feature enablement, push, and deployment behind separate approvals"
+    "Use Scott's recorded approval to apply only the exercise-library migration after Supabase owner authentication is available",
+    "After migration, verify exercise backfill, owner isolation, goal persistence, plan/live/set auto-creation, and desktop/mobile rendering",
+    "Keep live AI/evals, migration application, commit, push, production writes, and deployment behind separate approvals"
   ],
   "lifecycle": "No registry event is appropriate yet: SAI00000004 remains active pending the commit decision, and registry/glossary maintenance is Project Manager-owned."
 }

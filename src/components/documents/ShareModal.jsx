@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useEffect, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -136,7 +137,7 @@ export default function ShareModal({ doc, onClose }) {
                   </span>
                   {sh.shared_with_email && <span className="doc-share-email">→ {sh.shared_with_email}</span>}
                   <span className="doc-card-meta">
-                    {sh.expires_at ? `Expires ${new Date(sh.expires_at).toLocaleDateString()}` : "No expiry"}
+                    {sh.expires_at ? `Expires ${preferredDisplayDate(new Date(sh.expires_at))}` : "No expiry"}
                     {" · "}{sh.access_count || 0} view{(sh.access_count || 0) !== 1 ? "s" : ""}
                   </span>
                 </div>

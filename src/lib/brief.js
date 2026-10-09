@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../utils/dates.js";
 /**
  * The Morning Brief — reinvented (MASTERPLAN §2.4 + "the briefing sucks").
  *
@@ -12,7 +13,7 @@
  */
 import { toDateStr, formatMoney, remindersForDay, expandReminders, expandEvents, undatedReminders, formatTime12, nextOccurrence, addDaysStr } from "../utils/plannerUtils";
 
-const dayLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+const dayLabel = (ds) => preferredDisplayDate(new Date(ds + "T00:00:00"));
 
 export function buildBrief({
   reminders = [], events = [], budget = null, upcomingBills = [],
@@ -89,7 +90,7 @@ export function buildBrief({
     { key: "staff", title: "Your AI staff", icon: "fa-satellite-dish", items: staff, empty: "All quiet." },
   ];
 
-  const dateLabel = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const dateLabel = preferredDisplayDate(new Date());
 
   const toMarkdown = (aiTake = "") => {
     const L = [`# Morning Brief — ${dateLabel}`, ""];

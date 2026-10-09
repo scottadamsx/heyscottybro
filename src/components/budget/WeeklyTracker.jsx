@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { formatMoney, getWeekRange, toDateStr } from "../../utils/plannerUtils";
 import DatePicker from "../DatePicker";
@@ -150,7 +151,7 @@ export default function WeeklyTracker({
     };
   }, [transactions, recurringBills, incomeSources, events, weekOffset]);
 
-  const dateRange = `${week.start.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${week.end.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  const dateRange = `${preferredDisplayDate(week.start)} – ${preferredDisplayDate(week.end)}`;
   const label = weekOffset === 0 ? "This Week"
     : weekOffset === -1 ? "Last Week"
     : weekOffset === 1 ? "Next Week"
@@ -302,7 +303,7 @@ export default function WeeklyTracker({
                 );
               }
               const signed = Number(tx.amount);
-              const dayLabel = tx.date ? new Date(tx.date + "T00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric" }) : "";
+              const dayLabel = tx.date ? preferredDisplayDate(new Date(tx.date + "T00:00")) : "";
               return (
                 <div className={`bud-tx-row ${signed < 0 ? "expense" : "income"}`} key={tx.id}>
                   <div className="bud-tx-main">
@@ -326,7 +327,7 @@ export default function WeeklyTracker({
               <p className="bud-muted">No dated bills this week.<br /><span className="bud-week-hint">Set a &quot;Due day&quot; on a bill to see it here.</span></p>
             )}
             {week.scheduled.map((s, i) => {
-              const dueLabel = new Date(s.date + "T00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+              const dueLabel = preferredDisplayDate(new Date(s.date + "T00:00"));
               return (
                 <div className={`bud-src-row ${s.fulfilled ? "paid" : "expense"}`} key={`${s.bill.id}-${s.date}-${i}`}>
                   <div className="bud-tx-main">
@@ -352,7 +353,7 @@ export default function WeeklyTracker({
             <div className="bud-week-col">
               <h4 className="bud-week-col-head">Commitments ({week.commitments.length})</h4>
               {week.commitments.map(e => {
-                const dayLabel = new Date(e.date + "T00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+                const dayLabel = preferredDisplayDate(new Date(e.date + "T00:00"));
                 return (
                   <div className="bud-src-row commitment" key={e.id}>
                     <div className="bud-tx-main">
@@ -375,7 +376,7 @@ export default function WeeklyTracker({
               </div>
               <div className="bud-week-later-list">
                 {week.laterThisMonth.map(s => {
-                  const dueLabel = new Date(s.dueDate + "T00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+                  const dueLabel = preferredDisplayDate(new Date(s.dueDate + "T00:00"));
                   return (
                     <div className="bud-src-row expense" key={`later-${s.bill.id}`}>
                       <div className="bud-tx-main">

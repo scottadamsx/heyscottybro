@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../utils/dates.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { updateReminder, updateEvent } from "../api/plannerApi";
 import { expandReminders, expandEvents, formatTime12 } from "../utils/plannerUtils";
@@ -15,7 +16,7 @@ const DURATIONS = [15, 30, 45, 60, 90, 120, 180];
 const asDate = (ds) => new Date(ds + "T00:00:00");
 const dow = (ds) => asDate(ds).toLocaleDateString(undefined, { weekday: "short" });
 const dayNum = (ds) => asDate(ds).getDate();
-const longDay = (ds) => asDate(ds).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+const longDay = (ds) => preferredDisplayDate(asDate(ds));
 const hm = (m) => formatTime12(fromMinutes(m));
 const durLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60}` : `${m / 60} h`);
 const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };

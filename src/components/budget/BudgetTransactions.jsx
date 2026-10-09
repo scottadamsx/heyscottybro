@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState } from "react";
 import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -148,7 +149,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                         const isIncome = t.type === "income";
                         return (
                           <tr key={t.id}>
-                            <td className="is-date">{t.date}</td>
+                            <td className="is-date">{preferredDisplayDate(t.date)}</td>
                             <td className="is-desc">
                               {t.description}
                               {t.notes && <span className="is-note">· {t.notes}</span>}
@@ -213,7 +214,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                   <tbody>
                     {txPage.visible.map(t => (
                       <tr key={t.id}>
-                        <td className="is-date">{t.date}</td>
+                        <td className="is-date">{preferredDisplayDate(t.date)}</td>
                         <td className="is-desc">
                           {t.description}
                           {t.notes && <span className="is-note">· {t.notes}</span>}

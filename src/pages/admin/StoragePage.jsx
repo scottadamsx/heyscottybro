@@ -1,3 +1,4 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
 import { useCallback, useEffect, useState } from "react";
 import { loadStorageUsage } from "../../api/plannerApi";
 import "./mission.css";
@@ -157,7 +158,7 @@ export default function StoragePage() {
 
           {data.measured_at && (
             <p className="storage-measured">
-              Measured {new Date(data.measured_at).toLocaleString()}
+              Measured {preferredDisplayDateTime(new Date(data.measured_at))}
             </p>
           )}
         </>

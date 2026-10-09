@@ -1,3 +1,4 @@
+import { formatDisplayDateTime as preferredDisplayDateTime, formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { loadAnthropicUsage } from "../../api/anthropicUsage";
 import { loadAgentActions } from "../../api/plannerApi";
@@ -123,13 +124,13 @@ export default function UsagePage({ embedded = false, range = "30d" }) {
             </div>
             <div className="usage-bars" role="img" aria-label={`Agent actions per day over ${rangeLabel.toLowerCase()}, ${a.total} in total`}>
               {a.daily.map((day, i) => (
-                <div key={i} className="usage-bar-col" title={`${day.date}: ${day.n}`}>
+                <div key={i} className="usage-bar-col" title={`${preferredDisplayDate(day.date)}: ${day.n}`}>
                   <div className={`usage-bar${day.n ? "" : " is-zero"}`} style={{ height: `${Math.max(2, (day.n / a.maxDay) * 100)}%` }} />
                 </div>
               ))}
             </div>
             <div className="usage-axis" aria-hidden="true">
-              <span>{a.daily[0]?.date?.slice(5)}</span><span>{a.daily[a.daily.length - 1]?.date?.slice(5)}</span>
+              <span>{preferredDisplayDate(a.daily[0]?.date)}</span><span>{preferredDisplayDate(a.daily[a.daily.length - 1]?.date)}</span>
             </div>
           </section>
 
@@ -220,7 +221,7 @@ export default function UsagePage({ embedded = false, range = "30d" }) {
                       <span className="usage-recent-tool">
                         {r.tool}{r.collection ? ` · ${r.collection}` : ""}{r.error ? <span className="usage-err"> · error</span> : ""}
                       </span>
-                      <span className="usage-recent-time">{new Date(r.created_at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+                      <span className="usage-recent-time">{preferredDisplayDateTime(new Date(r.created_at))}</span>
                     </div>
                   );
                 })}

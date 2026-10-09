@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildInsights, dailyCalories, exerciseProgress, kgToLb, lbToKg, weekStart, weeklyVolume } from "./healthInsights.js";
+import { buildInsights, dailyCalories, exerciseLibraryStats, exerciseProgress, kgToLb, lbToKg, weekStart, weeklyVolume } from "./healthInsights.js";
 
 let seq = 0;
 const session = (date, exercise, sets) => {
@@ -27,6 +27,37 @@ test("progress and weekly volume", () => {
   assert.equal(bench.best, 180);
   const vol = weeklyVolume(h, "2026-09-17", 2);
   assert.deepEqual(vol, [{ week: "2026-09-07", volume: 2700, sessions: 1 }, { week: "2026-09-14", volume: 1120, sessions: 1 }]);
+});
+
+test("exercise library derives PRs and requires an actual set to achieve the exact goal", () => {
+  const exercises = [{ id: "bench", name: "Bench Press", goalWeightLb: 225, goalReps: 5, updatedAt: "2026-09-01" }];
+  const history = [
+    { id: "older", sessionId: "a", exercise: " bench   press ", weightLb: 225, reps: 4, loggedAt: "2026-09-01T18:00:00Z" },
+    { id: "stronger-estimate", sessionId: "b", exercise: "Bench Press", weightLb: 230, reps: 4, loggedAt: "2026-09-08T18:00:00Z" },
+    { id: "achieved", sessionId: "c", exercise: "BENCH PRESS", weightLb: 225, reps: 5, loggedAt: "2026-09-15T18:00:00Z" },
+  ];
+  const [bench] = exerciseLibraryStats(exercises, history);
+  assert.equal(bench.heaviest.id, "stronger-estimate");
+  assert.equal(bench.strongest.id, "achieved");
+  assert.equal(bench.goalAchieved, true);
+  assert.equal(bench.achievedSet.id, "achieved");
+  assert.equal(bench.estimatedProgress, 100);
+  assert.equal(bench.sessions, 3);
+
+  const [withoutActualGoal] = exerciseLibraryStats(exercises, history.filter((set) => set.id !== "achieved"));
+  assert.equal(withoutActualGoal.goalAchieved, false, "a heavier set with too few reps is not exact goal achievement");
+  assert.equal(withoutActualGoal.estimatedProgress, 99, "equivalent-strength progress stays separate from achievement");
+});
+
+test("exercise PR ties use the newest set and removal recalculates", () => {
+  const exercise = [{ id: "row", name: "Row", goalWeightLb: null, goalReps: null, updatedAt: "2026-09-01" }];
+  const history = [
+    { id: "old", sessionId: "a", exercise: "Row", weightLb: 100, reps: 10, loggedAt: "2026-09-01T18:00:00Z" },
+    { id: "new", sessionId: "b", exercise: "Row", weightLb: 100, reps: 10, loggedAt: "2026-09-08T18:00:00Z" },
+  ];
+  assert.equal(exerciseLibraryStats(exercise, history)[0].strongest.id, "new");
+  assert.equal(exerciseLibraryStats(exercise, history.slice(0, 1))[0].strongest.id, "old");
+  assert.equal(exerciseLibraryStats(exercise, [])[0].strongest, null);
 });
 
 test("daily calories fill empty days with 0 and mark them", () => {

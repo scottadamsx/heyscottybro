@@ -1,4 +1,5 @@
 import { supabase } from "../utils/supabase";
+import { formatDisplayDateTime } from "../utils/dates.js";
 import { uid } from "./_base";
 import { downloadBlob, slugify } from "../lib/exporter";
 import { lazyImport } from "../lib/lazyImport";
@@ -183,8 +184,8 @@ function bugMarkdown(b, shotFiles) {
   lines.push("");
   lines.push(`- **Status:** ${b.status}  ·  **Priority:** ${b.priority}`);
   if (b.page) lines.push(`- **Page:** ${b.page}`);
-  lines.push(`- **Logged:** ${new Date(b.created_at).toLocaleString()}`);
-  if (b.resolved_at) lines.push(`- **Resolved:** ${new Date(b.resolved_at).toLocaleString()}`);
+  lines.push(`- **Logged:** ${formatDisplayDateTime(b.created_at)}`);
+  if (b.resolved_at) lines.push(`- **Resolved:** ${formatDisplayDateTime(b.resolved_at)}`);
   lines.push("");
   if (b.description) { lines.push(`**Description**`, "", b.description, ""); }
   if (b.steps) { lines.push(`**Steps to reproduce**`, "", b.steps, ""); }
@@ -207,7 +208,7 @@ export async function exportBugsZip() {
   const zip = new JSZip();
   const shotsDir = zip.folder("screenshots");
 
-  const reportDate = new Date().toLocaleString();
+  const reportDate = formatDisplayDateTime(new Date());
   let bugCount = 0, featCount = 0, shotCount = 0;
   const bugMd = [], featMd = [];
 

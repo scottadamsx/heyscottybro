@@ -1,3 +1,4 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "./dates.js";
 /**
  * Turn a raw agent_actions row into a human one-liner + a friendly timestamp.
  * Shared by the Dashboard "recent actions" widget and the Command Center feed.
@@ -36,4 +37,4 @@ export function describeAction(a) {
 }
 
 export const actionTime = (ts) =>
-  new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  preferredDisplayDateTime(new Date(ts));

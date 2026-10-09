@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useMemo, useState, useCallback, useEffect, useDeferredValue } from "react";
 import { loadContext, addContextEntry, deleteContextEntry, refineContextEntry, syncLocalToCloud } from "../../api/contextApi";
 import { supabase } from "../../utils/supabase";
@@ -49,7 +50,7 @@ function timeAgo(ts) {
   if (d < 3600000) return `${Math.floor(d / 60000)}m ago`;
   if (d < 86400000) return `${Math.floor(d / 3600000)}h ago`;
   if (d < 7 * 86400000) return `${Math.floor(d / 86400000)}d ago`;
-  return new Date(ts).toLocaleDateString([], { month: "short", day: "numeric" });
+  return preferredDisplayDate(new Date(ts));
 }
 
 // Who saved a fact → a tone class (.ctx-item-by.by-*, brain.css); the name is always shown too.

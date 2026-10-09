@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { formatMoney, toDateStr, genId, getPayPeriod, getBillDatesInRange } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -90,7 +91,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, sta
   // Bills schedule off frequency + startDate (there is no separate "due day"
   // field — the day-of-month comes from startDate). Surface the next occurrence
   // so the due date is visible on each bill instead of only its start date.
-  const shortDate = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const shortDate = (ds) => preferredDisplayDate(new Date(ds + "T00:00:00"));
   const nextDueOf = (b) => {
     if (b.variable) return null; // variable bills are spending envelopes, not dated
     const today = toDateStr();

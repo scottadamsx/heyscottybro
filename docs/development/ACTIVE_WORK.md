@@ -1,5 +1,21 @@
 # Active work
 
+## Adaptive workout progression
+
+- **Feature document:** `docs/features/adaptive-workout-progression.md`
+- **Requested scope:** Use several completed sessions, reps, optional RPE, recency, equipment increments, and transparent history to recommend gradually progressive exercise weights. Add a durable Exercises list whose records are created from exercises actually added, show derived logged PRs/history, and save one weight-times-reps goal per exercise. Form knowledge is deferred.
+- **Approval:** Scott approved the original cited progression contract and load-step decision, then approved the complete expanded exercise-library/PR-goal contract and pseudocode with exact **“go”** on 2026-10-03. Local implementation is authorized.
+- **Current state:** Local implementation and automated validation are complete: 30 focused cases, all 320 registered tests, zero-warning lint, and the 3,154-module build pass. The Exercises UI, derived PRs/goals, transactional schema source, progression evidence, and `BUG-065` repair are uncommitted. The configured project ref was verified as the intended linked target, but migration inspection/application is blocked because neither the official CLI nor the isolated Supabase dashboard has an authenticated owner session. No migration or database write occurred.
+- **Next permitted work:** Scott approved only the exercise-library migration with exact **“go.”** After Scott signs in to Supabase, inspect the remote migration history, apply only `2026-10-03-exercise-library.sql` without including unrelated pending migrations, then validate backfill, RLS-visible data, triggers, and desktop/mobile rendering. Goal-write testing remains a separate production-data gate. Live/provider calls, unrelated production-data operations, dependency change, commit, push, and deployment remain closed.
+
+## AI workout builder validation
+
+- **Feature document:** `docs/features/ai-workout-builder-validation.md`
+- **Requested scope:** User-led end-to-end testing of the existing **Build a workout with AI** flow, one explicit action and screenshot at a time.
+- **Approval:** Scott said **“lets test”** on 2026-10-03. This authorizes observation of his live test flow, not an agent-initiated model request, application fix, save, production write, commit, push, migration, or deployment.
+- **Current state:** The real-provider request completed into an unsaved six-exercise review. Visible movements were grounded, and `BUG-065` records that an explicit 60 lb request was placed only in a cue while the functional Weight field stayed blank. Scott stopped the test before exercise 3, recovery, cancellation, persistence, duplicate-submit, or database save/reload checks. Other active and inherited workspace changes remain preserved.
+- **Next permitted work:** None for this validation unless Scott resumes it. No fix is approved.
+
 ## Release CI repair
 
 - Scott requested repair after the push error. GitHub run37086391814 confirms BUG-058 is the sole failed test (six sessions versus hard-coded two).

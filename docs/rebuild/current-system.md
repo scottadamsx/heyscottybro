@@ -106,6 +106,8 @@ These should be treated as dead designs:
 - `fin_settings`, `fin_categories`, `fin_income`, `fin_recurring_bills`, `fin_bill_instances`, `fin_expenses`, `fin_savings_goals`, `fin_savings_allocations`, `fin_debts`, `fin_debt_payments`, and their RPCs;
 - `ingredients`, `grocery_products`, `product_aliases`, `pantry_ledger`, `recipe_ingredients`, `meal_plans`, `meal_plan_items`.
 
+Separately, `2026-10-03-exercise-library.sql` is an approved pending migration, not a dead design. It adds owner-scoped exercise identity and performance goals; existing `workout_sets` remain the source of truth for logged performance and calculated PRs. It is not live until separately applied.
+
 ### 2.4 Calendula tables in the same project
 There are 27 tables prefixed `calendula_`. Notable row counts:
 - `calendula_schedule_runs` 69, `calendula_placements` 60, `calendula_chat_messages` 44
@@ -258,7 +260,7 @@ One row per user. Column `state` jsonb, schema **2** (`src/api/accountabilityApi
 | Clock time | Postgres TIME, written `"HH:MM"`, read back `"HH:MM:SS"` | |
 | Timestamps | timestamptz ISO strings; blobs use epoch ms | Mixed |
 | Duration | minutes (`duration_min`, `work_log.minutes`); default task length 30 min, event 60 min | |
-| Weight | kg in `weight_logs`, lb in `workouts` | Mixed units |
+| Weight | kg in `weight_logs`, lb in `workouts` and `workout_sets` | Mixed units |
 | Ids | DB UUIDs; plus 8-character, `rb-`/`inc-`, `loc-`, `a-` client ids; brain notes keyed by slug; kiwi-tasks ids = sha256(user:request) as a UUID | Several id schemes |
 | Recurrence | `recurrence` + `recur_until` + `recur_times` on the row; expanded on the client (`plannerUtils.expandReminders`) | No RRULE; multi-day events can't repeat |
 

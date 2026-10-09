@@ -31,7 +31,26 @@ export function addDays(s, n) {
   return toYMD(d)
 }
 
-export function formatDate(s, opts = { month: 'short', day: 'numeric', year: 'numeric' }) {
+export function formatDate(s, opts = {}) {
   if (!s) return ''
-  return parseYMD(s).toLocaleDateString(undefined, opts)
+  const d = parseYMD(s)
+  if (Number.isNaN(d.getTime())) return ''
+  const day = d.getDate()
+  const suffix = day % 100 >= 11 && day % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] || 'th')
+  const weekday = opts.weekday === false ? '' : `${d.toLocaleDateString('en-US', { weekday: 'long' })}, `
+  let month = 'short'
+  try { if (localStorage.getItem('setting:dateFormat') === 'full-month') month = 'long' } catch { /* default when storage is unavailable */ }
+  return `${weekday}${d.toLocaleDateString('en-US', { month })} ${day}${suffix}`
+}
+
+// Receipts contain generated ISO dates; leave stored receipt/source text unchanged.
+export function formatReceiptDates(value) {
+  return String(value || '').replace(/\b\d{4}-\d{2}-\d{2}\b/g, (date) => formatDate(date))
+}
+
+export function formatDateTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${formatDate(toYMD(date))} · ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
 }

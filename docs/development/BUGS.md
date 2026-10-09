@@ -848,3 +848,16 @@ Every discovered software defect belongs here, including defects found while bui
 - **Regression coverage:** Exact last-week/date-clarification case verifies the resolved date, blank Notes, preserved source and undo. Updated the existing integration assertion to require source/Notes separation.
 - **Data correction:** Repaired only the identified synthetic preview event and its undo snapshot with guarded writes. No production data was touched.
 - **Related work:** `docs/features/orbit-journal.md`.
+
+### BUG-065 — AI workout builder drops an explicitly requested starting weight
+
+- **Status:** Resolved locally; uncommitted and not released
+- **Discovered:** 2026-10-03
+- **Area:** Health › Workouts › Build a workout with AI
+- **Observed:** A request that explicitly assigns 60 lb to the straight-arm movement produces **Straight Arm Pulldown** with a blank Weight field. The model repeats “60 lbs” only inside the exercise cue.
+- **Expected:** An explicit user-supplied starting weight is either placed in the editable Weight field or surfaced as a genuine conflict requiring targeted clarification; it must not be demoted to non-functional note text.
+- **Impact:** Saving the apparently reviewed plan would discard the requested starting load from the field the workout runner uses.
+- **Cause:** The forced `build_workout` schema has no `startWeightLb` property, and its system instruction says not to prescribe weights even when the weight came from the user rather than being inferred. `cleanExercises` therefore receives no structured starting weight.
+- **Fix:** The forced `build_workout` tool now accepts `startWeightLb` only for a weight the user explicitly supplied. Its system contract prohibits invented weights and requires an explicit weight to be returned as structured data rather than note-only prose. A deterministic client check removes any returned starting weight whose exact pound value is absent from the user's prompt; the existing exercise cleaner and editor preserve accepted values.
+- **Regression coverage:** The original real-provider screenshots preserve the failure evidence. Pure coverage proves an explicit 60 lb value survives while an invented 135 lb value is removed, and the downstream first-time progression case proves structured starting weight reaches the recommendation. Lint and production build validate the changed tool schema. A new live-provider call remains intentionally unrun.
+- **Related work:** `docs/features/ai-workout-builder-validation.md`; `docs/features/adaptive-workout-progression.md`; `src/api/aiHealth.js`; `src/components/health/WorkoutModals.jsx`.

@@ -3,7 +3,7 @@ import { useUI } from '../../state/UIContext.jsx'
 import { useDerived } from '../../state/useDerived.js'
 import { RINGS } from '../../lib/constants.js'
 import { formatDate } from '../../lib/dates.js'
-import { giftBudget, nextChristmas } from '../../lib/derive/birthdays.js'
+import { giftBudget, nextChristmas, nextBirthday } from '../../lib/derive/birthdays.js'
 import { formatCents } from '../../lib/money.js'
 import Button from '../ui/Button.jsx'
 import Badge from '../ui/Badge.jsx'
@@ -53,7 +53,7 @@ export default function GiftsView() {
                 sub={
                   <>
                     {RINGS[r]} · {formatCents(giftBudget(settings, 'xmas', r))} Xmas · {formatCents(giftBudget(settings, 'bday', r))} bday
-                    {people[id].birthday && ` · ${formatDate(people[id].birthday.length === 5 ? `2000-${people[id].birthday}` : people[id].birthday, { month: 'short', day: 'numeric' })}`}
+                    {people[id].birthday && ` · ${formatDate(nextBirthday(people[id].birthday, asOf)?.date)}`}
                   </>
                 }
                 badge={idea ? <Badge tone="success"><Gift size={12} aria-label="Gift idea:" /> {idea.text}</Badge> : <Badge>no idea yet</Badge>}

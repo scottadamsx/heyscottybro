@@ -1,3 +1,4 @@
+import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { useState } from "react";
 import { fileToContent, extract } from "../../lib/smartImport";
 import { newReminder } from "../../api/plannerApi";
@@ -222,7 +223,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
                   <input type="checkbox" checked={!!checks[`d${i}`]} onChange={() => setChecks((c) => ({ ...c, [`d${i}`]: !c[`d${i}`] }))} />
                   <span className="si-row-main">
                     <span className="si-row-title">{d.name}</span>
-                    <span className="si-diff">{d.date}{d.detail ? ` · ${d.detail}` : ""}</span>
+                    <span className="si-diff">{preferredDisplayDate(d.date)}{d.detail ? ` · ${d.detail}` : ""}</span>
                     {d.already_tracked && <span className="si-warn"><i className="fa-solid fa-circle-info" aria-hidden="true" /> looks already tracked — left unchecked</span>}
                   </span>
                 </label>

@@ -1,3 +1,5 @@
+import { formatDisplayDateTime as preferredDisplayDateTime } from "../utils/dates.js";
+import { formatDisplayDate as preferredDisplayDate } from "../utils/dates.js";
 /**
  * "Last updated 3 hours ago" under a post. Recent times read relative; older
  * than a week reads as a date. The exact timestamp is in <time dateTime> and
@@ -19,10 +21,10 @@ export function relativeTime(iso, now = Date.now()) {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   const d = new Date(t);
-  return `on ${d.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(d.getFullYear() !== new Date(now).getFullYear() ? { year: "numeric" } : {}) })}`;
+  return `on ${preferredDisplayDate(d)}`;
 }
 
-export const absoluteTime = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+export const absoluteTime = (iso) => preferredDisplayDateTime(new Date(iso));
 
 export function wasEdited(updatedAt, createdAt, sameWithinMs = MIN) {
   if (!updatedAt) return false;
