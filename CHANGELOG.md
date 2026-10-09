@@ -34,6 +34,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Admin pages now recover once from a stale or interrupted JavaScript chunk fetch instead of leaving the app on a module-import error; genuine page errors still remain visible.
 - Frodo no longer misses recurring planner occurrences in date-specific questions; recurring multi-day events now repeat their whole span correctly.
 - Explicit weights in AI workout requests now populate the editable starting-weight field instead of being stranded in an exercise note.
 - Orbit keeps original journal input separate from event Notes; successful undo closes the log window with a brief confirmation. History is available through Entries rather than cluttering the composer.

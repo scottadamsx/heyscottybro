@@ -1,28 +1,29 @@
 /**
  * The admin page table — App.jsx renders it as nested <Route>s under /admin.
  */
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import { PageSkeleton } from "../../components/Skeleton";
+import { lazyWithReload } from "../../utils/lazyWithReload";
 
-const DashboardPage   = lazy(() => import("./DashboardPage.jsx"));
-const PlannerPage     = lazy(() => import("./PlannerPage.jsx"));
-const RemindersPage   = lazy(() => import("./RemindersPage.jsx"));
-const WorkLogPage     = lazy(() => import("./WorkLogPage.jsx"));
-const TaskDetailPage  = lazy(() => import("./TaskDetailPage.jsx"));
-const SchoolPage      = lazy(() => import("./SchoolPage.jsx"));
-const LifePage        = lazy(() => import("./LifePage.jsx"));
-const SchoolDocPage   = lazy(() => import("./SchoolDocPage.jsx"));
-const ArcadePage      = lazy(() => import("./ArcadePage.jsx"));
-const PeoplePage      = lazy(() => import("./PeoplePage.jsx"));
-const HealthPage      = lazy(() => import("./HealthPage.jsx"));
-const WorkoutSessionPage = lazy(() => import("./WorkoutSessionPage.jsx"));
-const MissionPage     = lazy(() => import("./MissionPage.jsx"));
-const AnalyticsPage   = lazy(() => import("./AnalyticsPage.jsx"));
-const BudgetPage      = lazy(() => import("./BudgetPage.jsx"));
-const VaultPage       = lazy(() => import("./VaultPage.jsx"));
-const SettingsPage    = lazy(() => import("./SettingsPage.jsx"));
-const BrainReaderPage = lazy(() => import("./BrainReaderPage.jsx"));
+const DashboardPage   = lazyWithReload(() => import("./DashboardPage.jsx"));
+const PlannerPage     = lazyWithReload(() => import("./PlannerPage.jsx"));
+const RemindersPage   = lazyWithReload(() => import("./RemindersPage.jsx"));
+const WorkLogPage     = lazyWithReload(() => import("./WorkLogPage.jsx"));
+const TaskDetailPage  = lazyWithReload(() => import("./TaskDetailPage.jsx"));
+const SchoolPage      = lazyWithReload(() => import("./SchoolPage.jsx"));
+const LifePage        = lazyWithReload(() => import("./LifePage.jsx"));
+const SchoolDocPage   = lazyWithReload(() => import("./SchoolDocPage.jsx"));
+const ArcadePage      = lazyWithReload(() => import("./ArcadePage.jsx"));
+const PeoplePage      = lazyWithReload(() => import("./PeoplePage.jsx"));
+const HealthPage      = lazyWithReload(() => import("./HealthPage.jsx"));
+const WorkoutSessionPage = lazyWithReload(() => import("./WorkoutSessionPage.jsx"));
+const MissionPage     = lazyWithReload(() => import("./MissionPage.jsx"));
+const AnalyticsPage   = lazyWithReload(() => import("./AnalyticsPage.jsx"));
+const BudgetPage      = lazyWithReload(() => import("./BudgetPage.jsx"));
+const VaultPage       = lazyWithReload(() => import("./VaultPage.jsx"));
+const SettingsPage    = lazyWithReload(() => import("./SettingsPage.jsx"));
+const BrainReaderPage = lazyWithReload(() => import("./BrainReaderPage.jsx"));
 
 /** Each lazy page gets its own ErrorBoundary — navigating away resets it. */
 export const Lazy = (el) => (

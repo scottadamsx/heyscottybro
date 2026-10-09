@@ -327,3 +327,14 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Added read-only `global_search`, which fans out to safe planner/Brain shelves concurrently, returns compact deterministic source-labelled rankings, reports an individual shelf failure without hiding other results, and deliberately excludes Vault snippets and audit records.
 - Updated Frodo’s prompt to prefer global search for broad discovery, explicitly query Vault only when warranted, and use occurrence expansion for date-specific planning questions. Delete confirmation remains unchanged.
 - Added six focused core/global-search regressions plus a recurring multi-day event regression. Focused tests, zero-warning lint, the complete 322-test suite, 3,156-module production build, and whitespace check pass. No database write, migration, live/private data query, commit, push, or deployment occurred.
+
+### Admin lazy-import failure diagnosis
+
+- Investigated the repeated production `Importing a module script failed` report without changing application behavior. The current production entry script and every lazy chunk it references return HTTP 200 with JavaScript MIME types, so no presently missing deployed asset was found.
+- Traced the failing `Lazy`/`Suspense` path to `adminRoutes.jsx`: unlike public routes, every admin route uses raw React `lazy`, bypassing the existing guarded stale-chunk reload helper. Logged `BUG-068`; its code fix awaits Scott’s exact approval.
+
+### Admin lazy-import recovery
+
+- Scott approved the documented `BUG-068` repair with exact “go.” Moved all admin route imports onto `lazyWithReload`, preserving route paths, page skeletons, and existing error boundaries.
+- Tightened the shared reload guard so a reload occurs only after session storage confirms the guard was persisted; browsers that block storage now show the real error rather than risking a refresh loop.
+- Added three focused regressions for the reported module-script error, one-reload/rearm behavior, ordinary-error non-reload behavior, and the admin source boundary. Focused tests, zero-warning lint, the complete 325-test suite, 3,156-module build, and whitespace check pass. No database, service-worker strategy, dependency, production-data, commit, push, or deployment change occurred.

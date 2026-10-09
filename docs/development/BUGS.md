@@ -886,3 +886,16 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** Added opt-in `expand_occurrences` reads for reminders/events using the existing recurrence utilities, with explicit source/occurrence metadata and no generated-row persistence. Fixed multi-day event expansion to repeat each span.
 - **Regression coverage:** `aiQueryCore` verifies view-only metadata and range validation; `plannerUtils` verifies recurring multi-day spans. Full lint, 322 tests, and build pass.
 - **Related work:** `docs/features/frodo-productivity-foundation.md`; `src/api/aiLibrary.js`; `src/utils/plannerUtils.js`.
+
+### BUG-068 — Admin route chunks bypass stale-deploy recovery
+
+- **Status:** Resolved locally; uncommitted and not released
+- **Discovered:** 2026-10-09
+- **Area:** Admin route lazy loading / production PWA
+- **Observed:** Production can show “Importing a module script failed” inside the `Lazy`/`Suspense` route boundary instead of recovering after a chunk fetch fails.
+- **Expected:** A stale or transient hashed admin-route chunk failure reloads the tab once to obtain the current deployment manifest, then either succeeds or presents an actionable non-looping error.
+- **Impact:** Phone/PWA users can be left on an error boundary when entering an admin route after a deployment or interrupted asset fetch.
+- **Cause:** `App.jsx` wraps public route imports with `lazyWithReload`, but `src/pages/admin/adminRoutes.jsx` imports `lazy` directly from React. Admin pages therefore bypass the existing one-reload stale-chunk recovery utility.
+- **Fix:** Replaced the raw admin route lazy imports with the shared `lazyWithReload` wrapper. The shared guard now requires a successful session-storage write/read before reloading, preventing blocked storage from causing a refresh loop.
+- **Regression coverage:** Production inspection on 2026-10-09 confirmed the current entry script and all currently referenced chunks return HTTP 200; this isolates the failure path to stale/transient loading rather than a presently missing asset. Three focused tests cover the reported error, one guarded reload/rearm, no loop, ordinary errors, and the admin route source boundary. Lint, 325 tests, build, and whitespace check pass.
+- **Related work:** `src/utils/lazyWithReload.js`; `src/pages/admin/adminRoutes.jsx`; `src/App.jsx`.

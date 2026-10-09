@@ -1,5 +1,13 @@
 # Active work
 
+## Admin lazy-chunk recovery
+
+- **Feature document:** `docs/features/admin-lazy-chunk-recovery.md`
+- **Requested scope:** Recover a phone/PWA admin route from the reported module-script import failure without masking genuine component errors.
+- **Approval:** Scott said “go” on 2026-10-09.
+- **Current state:** Resolved locally and uncommitted. All admin route chunks now use the existing one-reload stale-module recovery wrapper; a blocked storage guard cannot loop. Focused tests, lint, the 325-test suite, build, and whitespace check pass. No service-worker strategy, data, dependency, migration, commit, push, or deployment changed.
+- **Next permitted work:** Commit, push, and deploy require separate approval. After release, reproduce the stale-tab/PWA route transition to verify one reload and normal recovery.
+
 ## Frodo productivity foundation
 
 - **Feature document:** `docs/features/frodo-productivity-foundation.md`

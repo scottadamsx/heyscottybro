@@ -15,9 +15,9 @@ import { lazy } from "react";
  * missing (build error, not a stale deploy); the guard clears the next time any
  * chunk loads successfully, so the next deploy can self-heal too.
  */
-const RELOAD_KEY = "hsb-chunk-reload";
+export const STALE_CHUNK_RELOAD_KEY = "hsb-chunk-reload";
 
-function isStaleChunkError(err) {
+export function isStaleChunkError(err) {
   const msg = String((err && (err.message || err)) || "");
   return /Failed to fetch dynamically imported module|error loading dynamically imported module|not a valid JavaScript MIME type|Importing a module script failed|ChunkLoadError|Loading chunk [\w-]+ failed/i.test(msg);
 }
@@ -29,11 +29,18 @@ function isStaleChunkError(err) {
  */
 export function reloadOnceForStaleChunk() {
   try {
-    if (sessionStorage.getItem(RELOAD_KEY)) return false;
-    sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
-  } catch { /* sessionStorage blocked — still worth one reload */ }
+    if (sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, String(Date.now()));
+    // Never reload without a durable guard: otherwise a privacy-mode/storage
+    // failure can turn one stale chunk into an infinite refresh loop.
+    if (!sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)) return false;
+  } catch { return false; }
   window.location.reload();
   return true;
+}
+
+export function clearStaleChunkReloadGuard() {
+  try { sessionStorage.removeItem(STALE_CHUNK_RELOAD_KEY); } catch { /* noop */ }
 }
 
 export function lazyWithReload(factory) {
@@ -41,7 +48,7 @@ export function lazyWithReload(factory) {
     factory()
       .then((mod) => {
         // A chunk loaded cleanly — we're on a fresh manifest; re-arm the guard.
-        try { sessionStorage.removeItem(RELOAD_KEY); } catch { /* noop */ }
+        clearStaleChunkReloadGuard();
         return mod;
       })
       .catch((err) => {
