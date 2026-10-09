@@ -413,7 +413,7 @@ const COLLECTIONS = {
   },
   documents: {
     table: "documents",
-    description: "Uploaded documents (School › Documents / Vault) — metadata search. To read a specific uploaded PDF, DOCX or TXT, query its metadata then use Frodo's read_document tool with its id and your question. Reading is bounded and returns cited excerpts; scanned PDFs and other formats are not readable.",
+    description: "Uploaded documents (School › Documents / Vault) — owner-scoped metadata search. To find saved Frodo screenshots, query documents including id, name, filename, description, tags and mime_type; description holds the user's chat context. Cite a match with /admin/vault?tab=documents&open=<id> using its real id. Images open in the Documents preview and are not readable through read_document. For a specific PDF, DOCX or TXT, use read_document with its id and question; reading is bounded and returns cited excerpts. Scanned PDFs and other formats are not readable.",
     searchFields: ["name", "filename", "description"],
     defaultFields: ["id", "name", "filename", "mime_type", "size_bytes", "tags", "created_at"],
     fields: {

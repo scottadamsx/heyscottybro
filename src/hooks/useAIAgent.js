@@ -285,7 +285,13 @@ export default function useAIAgent() {
     const userContent = attachments.length
       ? [
           ...attachments.map((a) => ({ type: "image", source: { type: "base64", media_type: a.media_type, data: a.data } })),
-          { type: "text", text: text || "Here's an image — inspect it and tell me what you see." },
+          {
+            type: "text",
+            text: [
+              text || "Here's an image — inspect it and tell me what you see.",
+              ...attachments.filter((attachment) => attachment.document_id).map((attachment) => `This screenshot is saved in Documents as "${attachment.name}" (id ${attachment.document_id}). Open it at /admin/vault?tab=documents&open=${attachment.document_id} if you need to link to it.`),
+            ].join("\n\n"),
+          },
         ]
       : text;
 

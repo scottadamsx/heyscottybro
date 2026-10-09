@@ -28,6 +28,7 @@ import {
 } from "./chatBotUi";
 import { FRODO_CLEAR_CONFIRMATION, FRODO_CLEAR_SUCCESS } from "../utils/chatSessionPolicy";
 import { registerFrodoHistoryController } from "../utils/globalChatHistory";
+import { uploadDocument } from "../api/documentsApi";
 
 const TIER_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t]));
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -55,15 +56,20 @@ function SavedAttachmentPreview({ initialPreview, index }) {
   return (
     <div className="chat-shot">
       {preview.status === "ready" && preview.src ? (
-        <img src={preview.src} alt={`attached screenshot ${index + 1}`} onError={onImageError} />
+        preview.document_id
+          ? <a href={`/admin/vault?tab=documents&open=${preview.document_id}`} aria-label={`Open saved screenshot ${preview.name || index + 1}`} title="Open saved screenshot"><img src={preview.src} alt={`attached screenshot ${index + 1}`} onError={onImageError} /></a>
+          : <img src={preview.src} alt={`attached screenshot ${index + 1}`} onError={onImageError} />
       ) : preview.status === "refreshing" ? (
         <span className="chat-shot-spin" role="status" aria-label={`Refreshing attached screenshot ${index + 1}`}><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /></span>
       ) : (
-        <button type="button" className="chat-shot-error" onClick={refresh} aria-label={`Retry attached screenshot ${index + 1}`}>
-          <i className="fa-solid fa-image" aria-hidden="true" />
-          <span>Preview unavailable</span>
-          <span>Retry</span>
-        </button>
+        <>
+          {preview.document_id && <a className="chat-shot-open-saved" href={`/admin/vault?tab=documents&open=${preview.document_id}`} aria-label={`Open saved file ${preview.name || index + 1}`} title="Open saved file"><i className="fa-solid fa-folder-open" aria-hidden="true" /> Open file</a>}
+          <button type="button" className="chat-shot-error" onClick={refresh} aria-label={`Retry attached screenshot ${index + 1}`}>
+            <i className="fa-solid fa-image" aria-hidden="true" />
+            <span>Preview unavailable</span>
+            <span>Retry</span>
+          </button>
+        </>
       )}
     </div>
   );
@@ -102,6 +108,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   const [chatLogLive, setChatLogLive] = useState(false);
   const [voiceListening, setVoiceListening] = useState(false);
   const [speakingMessage, setSpeakingMessage] = useState(null);
+  const [savingForLater, setSavingForLater] = useState(false);
   const {
     displayMsgs,
     input,
@@ -127,6 +134,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
   const voiceFinalIndexRef = useRef(0);
+  const savingForLaterRef = useRef(false);
   const closeRef = useRef(null);
   const returnFocusRef = useRef(null);
   const wasLoadingRef = useRef(loading);
@@ -257,10 +265,13 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
       setShots((prev) => [...prev, {
         id,
         dataUrl: null,
+        file: null,
         media_type: original.type || "",
         name: original.name || "screenshot",
         size: original.size,
         path: null,
+        saveForLater: false,
+        document_id: null,
         uploading: true,
         failed: false,
         rejected: false,
@@ -302,7 +313,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
         const shownUrl = norm?.dataUrl || dataUrl;
         const mediaType = norm?.media_type || original.type;
         setShots((prev) => prev.map((shot) => (shot.id === id
-          ? { ...shot, dataUrl: shownUrl, media_type: mediaType }
+          ? { ...shot, dataUrl: shownUrl, file, media_type: mediaType }
           : shot)));
 
         try {
@@ -312,11 +323,11 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           });
           stagedPathsRef.current.add(metadata.path);
           setShots((prev) => prev.map((shot) => (shot.id === id
-            ? { ...shot, ...metadata, dataUrl: shownUrl, uploading: false }
+            ? { ...shot, ...metadata, dataUrl: shownUrl, file, uploading: false }
             : shot)));
         } catch (err) {
           setShots((prev) => prev.map((shot) => (shot.id === id
-            ? { ...shot, uploading: false, failed: true }
+            ? { ...shot, uploading: false, failed: true, file }
             : shot)));
           addToast(`${err.message || "Screenshot upload failed."} Frodo can still see it for this turn, but the preview won't survive a reload.`, "error");
         }
@@ -351,33 +362,52 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   // Keep staged paths in stagedPathsRef even after a composer thumbnail is
   // removed. Confirmed Clear can then delete those otherwise-orphaned copies.
   const removeShot = (id) => {
-    if (clearing || clearInFlightRef.current) return;
+    if (clearing || clearInFlightRef.current || savingForLaterRef.current) return;
     setShots((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const doSend = () => {
-    if (loading || clearing || clearInFlightRef.current || hydrating || !historyReady || hasPendingAttachmentWork(shots, attachmentWorkRef.current)) return;
-    // Every supported image goes to the model, even when storage staging
-    // failed. Evidence paths ride in this turn's attachment metadata, so they
-    // cannot leak into another concurrently-running agent conversation.
-    const attachments = visionAttachmentsFromShots(shots.filter((shot) => !shot.uploading && !shot.rejected));
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    // Unsupported images remain visible until Scott removes them or clears the
-    // conversation, preserving the actionable HEIC/JPEG guidance.
-    setShots((prev) => prev.filter((shot) => shot.rejected));
-    stopVoiceInput();
-    window.speechSynthesis?.cancel();
-    setSpeakingMessage(null);
-    sendMessage(attachments);
+  const doSend = async () => {
+    if (loading || clearing || clearInFlightRef.current || savingForLaterRef.current || hydrating || !historyReady || hasPendingAttachmentWork(shots, attachmentWorkRef.current)) return;
+    const readyShots = shots.filter((shot) => !shot.uploading && !shot.rejected);
+    const context = input.trim() || "Screenshot saved from a Frodo chat without an accompanying message.";
+    savingForLaterRef.current = true;
+    setSavingForLater(true);
+    try {
+      for (const shot of readyShots.filter((item) => item.saveForLater && !item.document_id)) {
+        if (!shot.file) throw new Error(`Couldn't save ${shot.name || "the screenshot"}: its image file is no longer available. Remove it and attach it again.`);
+        const saved = await uploadDocument(shot.file, {
+          name: shot.name || shot.file.name || "Frodo screenshot",
+          description: `Frodo chat context: ${context}`.slice(0, 4000),
+          tags: ["frodo", "screenshot"],
+        });
+        shot.document_id = saved.id;
+        setShots((prev) => prev.map((item) => item.id === shot.id ? { ...item, document_id: saved.id } : item));
+      }
+      // The saved screenshot link is retained in the display transcript as
+      // metadata only. Image bytes stay in the private Documents bucket.
+      const attachments = visionAttachmentsFromShots(readyShots);
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+      stopVoiceInput();
+      window.speechSynthesis?.cancel();
+      setSpeakingMessage(null);
+      const sent = await sendMessage(attachments);
+      if (!sent) throw new Error("Frodo couldn't start that message. The saved screenshot is still in Documents; try sending again.");
+      setShots((prev) => prev.filter((shot) => shot.rejected));
+    } catch (error) {
+      addToast(error?.message || "Couldn't save this screenshot for later. Your message wasn't sent; try again.", "error");
+    } finally {
+      savingForLaterRef.current = false;
+      setSavingForLater(false);
+    }
   };
 
   const assertClearReady = useCallback(() => {
-    if (clearing || clearDialogRef.current || clearInFlightRef.current) {
+    if (clearing || clearDialogRef.current || clearInFlightRef.current || savingForLaterRef.current) {
       throw new Error("Frodo's conversation is already busy or being cleared.");
     }
     if (loading) throw new Error("Frodo is still working — wait for the reply before clearing the conversation.");
     if (hydrating || !historyReady) throw new Error("Chat history must load successfully before it can be cleared.");
-    if (!canBeginAttachmentSafeClear(shots, attachmentWorkRef.current)) {
+    if (!canBeginAttachmentSafeClear(shots, attachmentWorkRef.current + (savingForLaterRef.current ? 1 : 0))) {
       throw new Error("Wait for the screenshot to finish preparing, then clear the conversation.");
     }
     return true;
@@ -538,7 +568,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
   };
 
   const hasSendableShot = visionAttachmentsFromShots(shots.filter((shot) => !shot.uploading && !shot.rejected)).length > 0;
-  const canSend = !loading && !clearing && !hydrating && historyReady
+  const canSend = !loading && !clearing && !savingForLater && !hydrating && historyReady
     && !hasPendingAttachmentWork(shots, attachmentWorkCount)
     && (input.trim() || hasSendableShot);
 
@@ -572,7 +602,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
               <button type="button" className="btn-mini muted chat-expand" onClick={() => setExpanded((v) => !v)} title={expanded ? "Shrink" : "Full screen"} aria-label={expanded ? "Exit full screen" : "Open full screen"}>
                 <i className={`fa-solid ${expanded ? "fa-compress" : "fa-expand"}`} />
               </button>
-              <button type="button" className="btn-mini muted" onClick={handleClear} disabled={clearing || loading || hydrating || !historyReady || attachmentWorkCount > 0} aria-busy={clearing || undefined} title="Clear conversation">
+              <button type="button" className="btn-mini muted" onClick={handleClear} disabled={clearing || loading || savingForLater || hydrating || !historyReady || attachmentWorkCount > 0} aria-busy={clearing || undefined} title="Clear conversation">
                 <i className={`fa-solid ${clearing ? "fa-spinner fa-spin" : "fa-rotate-left"}`} /> {clearing ? "Clearing…" : "Clear"}
               </button>
               <button ref={closeRef} type="button" className="btn-mini muted chat-close" onClick={() => setOpen(false)} title="Close" aria-label="Close assistant">
@@ -658,7 +688,16 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
                     : <span className="chat-shot-error"><i className="fa-solid fa-file-image" /> JPEG or PNG needed</span>}
                   {s.uploading && <span className="chat-shot-spin"><i className="fa-solid fa-spinner fa-spin" /></span>}
                   {s.failed && <span className="chat-shot-warn"><i className="fa-solid fa-triangle-exclamation" /></span>}
-                  <button type="button" className="chat-shot-x" onClick={() => removeShot(s.id)} disabled={clearing} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
+                  {s.document_id ? (
+                    <a className="chat-shot-save saved" href={`/admin/vault?tab=documents&open=${s.document_id}`} aria-label={`Saved in Files. Open ${s.name || "screenshot"}`} title="Saved in Files — open preview"><i className="fa-solid fa-folder-open" aria-hidden="true" /></a>
+                  ) : (
+                    <label className="chat-shot-save" title="Save this screenshot with your message in private Files">
+                      <input type="checkbox" checked={Boolean(s.saveForLater)} disabled={s.uploading || s.rejected || savingForLater} onChange={(event) => setShots((prev) => prev.map((item) => item.id === s.id ? { ...item, saveForLater: event.target.checked } : item))} aria-label={`Save ${s.name || "screenshot"} with chat context for later`} />
+                      <i className="fa-solid fa-folder-plus" aria-hidden="true" />
+                    </label>
+                  )}
+                  {savingForLater && s.saveForLater && !s.document_id && <span className="chat-shot-spin" role="status" aria-label="Saving screenshot for later"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /></span>}
+                  <button type="button" className="chat-shot-x" onClick={() => removeShot(s.id)} disabled={clearing || savingForLater} aria-label="Remove"><i className="fa-solid fa-xmark" /></button>
                 </div>
               ))}
             </div>
@@ -667,7 +706,7 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
           <div className={`chat-input-row${dragOver ? " drag-over" : ""}`}>
             <textarea ref={textareaRef} className="chat-input" value={input} maxLength={MAX_INPUT_CHARS}
               onChange={handleInput} onKeyDown={onKey} onPaste={onPaste}
-              disabled={clearing || hydrating || !historyReady}
+              disabled={clearing || savingForLater || hydrating || !historyReady}
               placeholder={clearing ? "Clearing conversation…" : dragOver ? "Drop screenshot to attach…" : "Ask Frodo, or drop a screenshot…"} rows={1} />
             {input.length > MAX_INPUT_CHARS * 0.85 && (
               <span className="chat-char-count">{input.length}/{MAX_INPUT_CHARS}</span>
@@ -678,13 +717,13 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
               accept="image/*"
               multiple
               style={{ display: "none" }}
-              disabled={clearing}
+              disabled={clearing || savingForLater}
               onChange={onPickFiles}
             />
-            <button type="button" className="chat-attach" onClick={() => fileInputRef.current?.click()} disabled={clearing || loading || hydrating || !historyReady} aria-label="Attach screenshot" title="Attach screenshot">
+            <button type="button" className="chat-attach" onClick={() => fileInputRef.current?.click()} disabled={clearing || loading || savingForLater || hydrating || !historyReady} aria-label="Attach screenshot" title="Attach screenshot">
               <i className="fa-solid fa-paperclip" />
             </button>
-            <button type="button" className={`chat-attach chat-voice${voiceListening ? " active" : ""}`} onClick={toggleVoiceInput} disabled={clearing || loading || hydrating || !historyReady} aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice input" : "Start voice input"} title={voiceListening ? "Stop listening" : "Dictate; your browser's speech service may process audio"}>
+            <button type="button" className={`chat-attach chat-voice${voiceListening ? " active" : ""}`} onClick={toggleVoiceInput} disabled={clearing || loading || savingForLater || hydrating || !historyReady} aria-pressed={voiceListening} aria-label={voiceListening ? "Stop voice input" : "Start voice input"} title={voiceListening ? "Stop listening" : "Dictate; your browser's speech service may process audio"}>
               <i className={`fa-solid ${voiceListening ? "fa-stop" : "fa-microphone"}`} aria-hidden="true" />
             </button>
             <button type="button" className="chat-send" onClick={doSend} disabled={!canSend} aria-label="Send">

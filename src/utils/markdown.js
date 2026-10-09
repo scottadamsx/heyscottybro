@@ -68,6 +68,19 @@ function safeHttpUrl(value) {
   }
 }
 
+function safeDocumentUrl(value) {
+  if (!/^\/admin\/vault\?tab=documents&open=[0-9a-f-]{36}$/i.test(value || "")) return false;
+  try {
+    const parsed = new URL(value, "https://heyscottybro.invalid");
+    return parsed.origin === "https://heyscottybro.invalid"
+      && parsed.pathname === "/admin/vault"
+      && parsed.searchParams.get("tab") === "documents"
+      && /^[0-9a-f-]{36}$/i.test(parsed.searchParams.get("open") || "");
+  } catch {
+    return false;
+  }
+}
+
 function inline(s) {
   let html = "";
   let cursor = 0;
@@ -77,6 +90,8 @@ function inline(s) {
     html += formatInlineText(s.slice(cursor, link.start));
     html += safeHttpUrl(link.href)
       ? `<a href="${escapeHtmlAttribute(link.href)}" target="_blank" rel="noreferrer">${formatInlineText(link.label)}</a>`
+      : safeDocumentUrl(link.href)
+        ? `<a href="${escapeHtmlAttribute(link.href)}">${formatInlineText(link.label)}</a>`
       : formatInlineText(link.source);
     cursor = link.end;
   }

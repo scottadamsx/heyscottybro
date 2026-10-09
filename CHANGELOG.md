@@ -6,6 +6,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Frodo screenshots can be explicitly saved to the private Documents library with their chat context, then reopened from a safe in-app file link; temporary attachments remain temporary unless selected.
 - Frodo can now search safe planner and Brain shelves in parallel with source-labelled results, use bounded rich data filters, and ask for the actual occurrences inside a reminder/event date range.
 - Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Release awaits its additive database migration.
 - Live workouts now show the six completed sessions behind each weight recommendation, including confidence and a plain-language reason.

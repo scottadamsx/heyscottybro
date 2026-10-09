@@ -9,6 +9,17 @@ test("normal HTTPS links remain clickable and preserve query parameters", () => 
   );
 });
 
+test("only the owner-app uploaded-document deep link is accepted as a local link", () => {
+  const id = "123e4567-e89b-12d3-a456-426614174000";
+  assert.equal(
+    renderMarkdown(`[Open screenshot](/admin/vault?tab=documents&open=${id})`),
+    `<p><a href="/admin/vault?tab=documents&amp;open=${id}">Open screenshot</a></p>`,
+  );
+  for (const href of ["/admin/vault", "/admin/other?open=" + id, "//evil.example/admin/vault?tab=documents&open=" + id, "/admin/vault?tab=documents&open=../../etc"]) {
+    assert.equal(renderMarkdown(`[unsafe](${href})`).includes("<a "), false, href);
+  }
+});
+
 test("quotes and tag text cannot break out of the href attribute", () => {
   const html = renderMarkdown('[click](https://example.com/"><img/src=x/onerror=evil>)');
   assert.equal(

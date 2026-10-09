@@ -328,6 +328,13 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Updated Frodo’s prompt to prefer global search for broad discovery, explicitly query Vault only when warranted, and use occurrence expansion for date-specific planning questions. Delete confirmation remains unchanged.
 - Added six focused core/global-search regressions plus a recurring multi-day event regression. Focused tests, zero-warning lint, the complete 322-test suite, 3,156-module production build, and whitespace check pass. No database write, migration, live/private data query, commit, push, or deployment occurred.
 
+### Frodo saved screenshot context
+
+- Added an opt-in Save for later control for attached screenshots. Selected images are stored in the existing owner-scoped Documents library with the message text as searchable description/context; failures keep the message unsent and the selection retryable. Clear conversation only removes temporary chat staging, not saved files.
+- Persisted only the Documents ID in chat attachment metadata. Frodo receives that ID and safe viewer route in the message context; document metadata instructions tell him to link saved screenshots, and the Markdown renderer permits only the UUID-shaped in-app Documents route.
+- DocumentsPage opens owner-loaded files from the one-shot `open` query. Saved screenshot thumbnails remain clickable even when their temporary preview has expired.
+- Added regressions for no-image-bytes metadata persistence and internal-link allow-listing. 32 focused tests, `npm run lint`, the full 327-test suite, production build (3,159 modules), and `git diff --check` pass. No migration, production-data operation, commit, push, or deployment occurred.
+
 ### Admin lazy-import failure diagnosis
 
 - Investigated the repeated production `Importing a module script failed` report without changing application behavior. The current production entry script and every lazy chunk it references return HTTP 200 with JavaScript MIME types, so no presently missing deployed asset was found.
@@ -355,4 +362,4 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 
 - Added Frodo-only document reading for existing private uploads. Owner-scoped metadata lookup precedes authenticated storage download; bounded PDF/DOCX/TXT text excerpts include page/paragraph/line labels. Prompt guidance requires citations and careful wording for résumé employment chronology. Added upload format guidance.
 - Scott clarified app uploads and user-selected phone files. The system file picker is user initiated through the Documents uploader; there is no ambient access to the device. Added explicit one-shot browser dictation and per-reply read-aloud buttons. Dictation errors/unsupported browsers are surfaced, possible browser speech-service audio processing is disclosed, and capture stops on close/send.
-- No live/private documents read. Lint/build/whitespace pass; tests and rendered checks were not run per instruction. No migration, dependency addition, commit, push or deploy.
+- Added five regressions for relevant résumé excerpts/source labels, required inputs, unsupported/oversized uploads, and empty/corrupt files; registered them in the standard npm test suite. Focused and full tests, lint, build, and whitespace pass. No live/private documents read and no rendered checks. No migration, dependency addition, commit, push or deploy.

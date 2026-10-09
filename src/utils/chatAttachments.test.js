@@ -21,6 +21,7 @@ import {
   stagingPathsEvictedByDisplayLimit,
   undecodableImageMessage,
   visionAttachmentsFromShots,
+  persistedAttachmentMetadata,
 } from "./chatAttachments.js";
 
 function shot(id) {
@@ -117,6 +118,16 @@ test("a failed durable Clear retains the local attachment draft for retry", () =
     shots,
     stagedPaths,
   });
+});
+
+test("saved document references survive chat metadata serialization without image bytes", () => {
+  const id = "123e4567-e89b-12d3-a456-426614174000";
+  const attachment = { ...shot("saved"), path: "owner/_staging/screenshot.png", name: "screenshot.png", document_id: id };
+  const [metadata] = persistedAttachmentMetadata([attachment]);
+  assert.equal(metadata.document_id, id);
+  assert.equal(Object.hasOwn(metadata, "data"), false);
+  assert.equal(Object.hasOwn(metadata, "dataUrl"), false);
+  assert.equal(persistedAttachmentMetadata([{ ...attachment, document_id: "not-an-id" }])[0].document_id, undefined);
 });
 
 test("send stays blocked until every attachment preparation and upload settles", () => {

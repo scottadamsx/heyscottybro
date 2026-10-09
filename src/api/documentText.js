@@ -1,12 +1,21 @@
 import JSZip from "jszip";
-import { pdfjs } from "react-pdf";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const MAX_PDF_PAGES = 40;
 const MAX_EXTRACTED_CHARS = 100_000;
 const MAX_RETURNED_CHARS = 12_000;
 
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+let pdfjsPromise;
+
+async function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import("react-pdf").then(({ pdfjs }) => {
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      return pdfjs;
+    });
+  }
+  return pdfjsPromise;
+}
 
 function formatError(message) {
   return { error: message };
@@ -22,6 +31,7 @@ function documentKind(doc) {
 }
 
 async function extractPdf(blob) {
+  const pdfjs = await loadPdfJs();
   const pdf = await pdfjs.getDocument({ data: await blob.arrayBuffer() }).promise;
   const pages = [];
   const count = Math.min(pdf.numPages, MAX_PDF_PAGES);
@@ -56,12 +66,20 @@ async function extractText(blob) {
 
 function selectRelevant(sections, question) {
   const terms = [...new Set(String(question || "").toLowerCase().match(/[a-z0-9]{3,}/g) || [])];
+  const employmentQuestion = /\b(job|work|employment|career|role|position)\b/i.test(question);
+  const chronologyQuestion = /\b(first|earliest|oldest)\b/i.test(question);
+  if (employmentQuestion) terms.push("experience", "employment", "career", "position", "work history", "job history");
   const ranked = sections.map((section, index) => ({
     ...section,
     index,
-    score: terms.reduce((sum, term) => sum + (section.text.toLowerCase().includes(term) ? 1 : 0), 0),
+    score: terms.reduce((sum, term) => sum + (section.text.toLowerCase().includes(term) ? 1 : 0), 0)
+      + (chronologyQuestion && /\b(?:19|20)\d{2}\b/.test(section.text) ? 2 : 0),
   }));
   const matches = ranked.filter((section) => section.score > 0);
+  if (employmentQuestion && matches.length) {
+    const contextIndexes = new Set(matches.flatMap((section) => [section.index - 1, section.index, section.index + 1]));
+    for (const section of ranked) if (contextIndexes.has(section.index)) section.score = Math.max(section.score, 1);
+  }
   const chosen = (matches.length ? matches : ranked).sort((a, b) => b.score - a.score || a.index - b.index);
   const excerpts = [];
   let remaining = MAX_RETURNED_CHARS;
@@ -112,8 +130,10 @@ export async function readUploadedDocument({ id, question }, { getDocument, down
 
   const { excerpts, matchedTerms } = selectRelevant(bounded, question);
   return {
+    id: doc.id,
     document: doc.name || doc.filename,
     format: kind.toUpperCase(),
+    open_url: `/admin/vault?tab=documents&open=${doc.id}`,
     excerpts,
     source_coverage: `${bounded.length} readable section${bounded.length === 1 ? "" : "s"}${extracted.truncated || total >= MAX_EXTRACTED_CHARS ? "; extraction capped" : ""}`,
     note: matchedTerms ? undefined : "No question keywords matched; excerpts are the start of the document and may not answer the question.",

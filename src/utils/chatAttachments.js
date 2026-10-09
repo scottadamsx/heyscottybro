@@ -126,6 +126,7 @@ export function visionAttachmentsFromShots(shots = []) {
       ...(shot.path ? { path: shot.path } : {}),
       ...(shot.name ? { name: shot.name } : {}),
       ...(Number.isFinite(shot.size) ? { size: shot.size } : {}),
+      ...(typeof shot.document_id === "string" ? { document_id: shot.document_id } : {}),
     }];
   });
 }
@@ -145,6 +146,9 @@ export function persistedAttachmentMetadata(attachments = [], { preserveUnknown 
       media_type: attachment.media_type || "image/jpeg",
       name: attachment.name || "screenshot",
       size: Number.isFinite(attachment.size) ? attachment.size : null,
+      ...(typeof attachment.document_id === "string" && /^[0-9a-f-]{36}$/i.test(attachment.document_id)
+        ? { document_id: attachment.document_id }
+        : {}),
     }];
   });
 }

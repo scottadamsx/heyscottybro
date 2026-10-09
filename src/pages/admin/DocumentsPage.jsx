@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useDeferredValue } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useConfirm } from "../../hooks/useConfirm";
 import { PageSkeleton } from "../../components/Skeleton";
@@ -26,7 +26,8 @@ export default function DocumentsPage() {
   const [viewing, setViewing] = useState(null);          // non-PDF (image/other) → DocumentViewer
   const [pdfView, setPdfView] = useState(null);          // { url, doc } → full PdfViewer
   const [sharing, setSharing] = useState(null);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const handledOpenIdRef = useRef(null);
   // ?q= arrives from the search palette: open already filtered to that document.
   const [search, setSearch] = useState(() => params.get("q") || "");
   const deferredSearch = useDeferredValue(search); // typing stays instant; filtering catches up
@@ -49,7 +50,7 @@ export default function DocumentsPage() {
 
   // PDFs open in the full viewer (paging/zoom/download); everything else uses
   // the lightweight DocumentViewer.
-  const handleView = async (doc) => {
+  const handleView = useCallback(async (doc) => {
     if (doc.mime_type === "application/pdf") {
       try {
         const url = await getSignedUrl(doc.storage_path, 3600);
@@ -60,7 +61,26 @@ export default function DocumentsPage() {
     } else {
       setViewing(doc);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const requestedId = params.get("open");
+    if (!requestedId || loading || error || handledOpenIdRef.current === requestedId) return;
+    handledOpenIdRef.current = requestedId;
+    const next = new URLSearchParams(params);
+    next.delete("open");
+    setParams(next, { replace: true });
+    if (!/^[0-9a-f-]{36}$/i.test(requestedId)) {
+      setError("That file link is invalid.");
+      return;
+    }
+    const doc = docs.find((row) => row.id === requestedId);
+    if (!doc) {
+      setError("That file isn't available in your Documents library.");
+      return;
+    }
+    handleView(doc);
+  }, [docs, error, handleView, loading, params, setParams]);
 
   const handleDelete = async (doc) => {
     if (!await confirm(`Delete "${doc.name}"? This also revokes any share links and cannot be undone.`, { title: "Delete document", confirmLabel: "Delete" })) return;
