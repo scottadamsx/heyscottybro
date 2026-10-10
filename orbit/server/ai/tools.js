@@ -121,6 +121,7 @@ const RAW_TOOLS = [
         repeat_until: str('For a stretch ("every day for 3 weeks", "daily calls this past week"): the last day, YYYY-MM-DD. One event is logged for each day from date to repeat_until. Ask Scotty how often if it is unclear.'),
         merge_occasion: { type: 'boolean', description: 'Set true only when Scotty explicitly confirmed these people belong to an existing event with the same date, kind and title.' },
         different_occasion: { type: 'boolean', description: 'Set true only when Scotty confirmed this is a separate occasion from one already logged that day with the same people.' },
+        source_host_event_id: str('Internal source reference from the host app. Only use when supplied by the active Orbit logging flow.'),
       },
       required: ['date', 'kind', 'people'],
       additionalProperties: false,
@@ -350,6 +351,8 @@ const run = {
 
   log_event(input) {
     const { date, repeat_until } = input
+    if (input.source_host_event_id && !repo.ID.test(input.source_host_event_id)) return err('invalid host event source')
+    if (input.source_host_event_id && repeat_until) return err('a source-linked event cannot be expanded as a date range')
     if (!repeat_until) return logOne(input)
     if (!isYMD(date) || !isYMD(repeat_until)) return err('date and repeat_until must be real YYYY-MM-DD dates')
     const span = daysBetween(date, repeat_until)
@@ -369,7 +372,7 @@ const run = {
   },
 }
 
-function logOne({ date, title, kind, place, people: names, updates, notes, merge_occasion, different_occasion }) {
+function logOne({ date, title, kind, place, people: names, updates, notes, merge_occasion, different_occasion, source_host_event_id }) {
   {
     if (!isYMD(date)) return err('date must be a real YYYY-MM-DD')
     if (!KIND_IDS.includes(kind)) return err(`kind must be one of ${KIND_IDS.join(', ')}`)
@@ -408,13 +411,25 @@ function logOne({ date, title, kind, place, people: names, updates, notes, merge
       const line = added.length ? `Added ${names} to ${e.title} (${date})` : `Updated ${e.title} (${date})`
       return { ok: true, message: `${line}.`, line }
     }
-    const sameDay = Object.values(store.get('events')).find(
-      (e) => e.date === date && e.kind !== 'Note' && ids_.every((pid) => e.people.includes(pid)),
+    const sameDayEntry = Object.entries(store.get('events')).find(
+      ([, e]) => e.date === date && e.kind !== 'Note' && ids_.every((pid) => e.people.includes(pid)),
     )
+    const sameDay = sameDayEntry?.[1]
     if (sameDay && !different_occasion) {
-      return { ok: true, message: `Already logged on ${date}: ${sameDay.title} (${sameDay.kind}) with them. Nothing new saved. If this was a separate occasion, ask ${OWNER}, then call again with different_occasion true.` }
+      if (source_host_event_id && !sameDay.sourceHostEventId) {
+        const [sameDayId] = sameDayEntry
+        const linked = repo.saveEvent(sameDayId, { ...sameDay, sourceHostEventId: source_host_event_id }, { allowDuplicate: true })
+        if (!linked.ok) return err(linked.message)
+        return { ok: true, message: `Linked the existing ${sameDay.title} on ${date} to the host calendar event.`, line: `Linked ${sameDay.title} (${date})`, eventId: sameDayId }
+      }
+      if (source_host_event_id && sameDay.sourceHostEventId === source_host_event_id) return { ok: true, message: `This host event is already linked to ${sameDay.title}.`, eventId: sameDayEntry[0] }
+      if (!source_host_event_id) return { ok: true, message: `Already logged on ${date}: ${sameDay.title} (${sameDay.kind}) with them. Nothing new saved. If this was a separate occasion, ask ${OWNER}, then call again with different_occasion true.` }
     }
-    const out = repo.saveEvent(newId('e'), {
+    const id = source_host_event_id ? `host_${source_host_event_id}` : newId('e')
+    if (source_host_event_id && store.get('events')[id]) {
+      return { ok: true, message: `This host-app event is already logged as ${store.get('events')[id].title}. Nothing new was saved.`, eventId: id }
+    }
+    const out = repo.saveEvent(id, {
       date,
       title: clean(title) || kind,
       kind,
@@ -424,12 +439,13 @@ function logOne({ date, title, kind, place, people: names, updates, notes, merge
       updates: ups,
       status,
       createdAt: new Date().toISOString(),
+      ...(source_host_event_id ? { sourceHostEventId: source_host_event_id } : {}),
     })
-    if (out.code === 'duplicate') return { ok: true, message: 'That event was already logged, so nothing new was saved.' }
+    if (out.code === 'duplicate') return { ok: true, message: 'That event was already logged, so nothing new was saved.', eventId: out.existingId }
     if (!out.ok) return err(out.message)
     const who = [...new Set(ids)].map((id) => roster[id].name.split(' ')[0]).join(', ')
     const verb = status === 'planned' ? 'Planned' : 'Logged'
-    return { ok: true, message: `${verb} ${kind} on ${date} with ${who}.`, line: `${verb} ${clean(title) || kind} with ${who} (${date})` }
+    return { ok: true, message: `${verb} ${kind} on ${date} with ${who}.`, line: `${verb} ${clean(title) || kind} with ${who} (${date})`, eventId: out.id }
   }
 }
 
@@ -459,10 +475,18 @@ Object.assign(run, {
 })
 
 /** Run one tool call. Never throws; failures come back as { ok: false, message } for the model to read. */
-export function executeTool(name, input) {
+export function executeTool(name, input, context = {}) {
   let result
   try {
-    result = run[name] ? run[name](input || {}) : err(`unknown tool ${name}`)
+    const scoped = name === 'log_event' && (context.sourceHostEventId || context.goal === 'log_hangout')
+      ? {
+        ...(input || {}),
+        ...(context.sourceHostEventId ? { source_host_event_id: context.sourceHostEventId } : {}),
+        ...(context.eventDate ? { date: context.eventDate } : {}),
+        ...(context.eventTitle ? { title: context.eventTitle } : {}),
+      }
+      : input
+    result = run[name] ? run[name](scoped || {}) : err(`unknown tool ${name}`)
     // After a write, remind the model what's on file so its next question isn't about something known.
     if (result.ok && name !== 'get_person') {
       const who = (name === 'log_event' ? input.people : [input.name]) || []

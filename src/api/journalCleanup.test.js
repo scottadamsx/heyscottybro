@@ -12,12 +12,12 @@ const jsonResponse = (body, ok = true, status = ok ? 200 : 500) => ({ ok, status
 
 test("status fails closed and caches availability", async () => {
   let calls = 0;
-  const request = async () => { calls += 1; return jsonResponse({ journalCleanup: { available: true } }); };
-  assert.deepEqual(await loadJournalCleanupStatus({ request, authHeaders }), { available: true });
-  assert.deepEqual(await loadJournalCleanupStatus({ request, authHeaders }), { available: true });
+  const request = async () => { calls += 1; return jsonResponse({ journalCleanup: { available: true }, eventDrafting: { available: false } }); };
+  assert.deepEqual(await loadJournalCleanupStatus({ request, authHeaders }), { available: true, eventDraftingAvailable: false });
+  assert.deepEqual(await loadJournalCleanupStatus({ request, authHeaders }), { available: true, eventDraftingAvailable: false });
   assert.equal(calls, 1);
   resetJournalCleanupStatusCache();
-  assert.deepEqual(await loadJournalCleanupStatus({ request: async () => { throw new Error("offline"); }, authHeaders }), { available: false });
+  assert.deepEqual(await loadJournalCleanupStatus({ request: async () => { throw new Error("offline"); }, authHeaders }), { available: false, eventDraftingAvailable: false });
 });
 
 test("cleanup sends only operation and body and validates the response", async () => {

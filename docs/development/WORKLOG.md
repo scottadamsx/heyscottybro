@@ -309,6 +309,14 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 
 ## 2026-10-09
 
+### Journal–Orbit workflow feature planning
+
+- Inspected the host Journal AI-cleanup and draft/save flow, shared EventForm and Planner/Calendar entry points, generic reminder completion, the embedded Orbit profile routes and guarded writes, and Orbit's journal/event logging UI. Recorded Scott's request and his decisions to review changes before saving, receive a post-event Log prompt, and open the proper flow for app-action reminders (initial fixed map: weight, food, workout, journal, Orbit hangout).
+- Added `docs/features/journal-orbit-workflows.md` with current architecture, proposed behaviors, safety/accessibility requirements, test matrix and pseudocode. Four SPEC-GAPs remain for Orbit source/idempotency and undo, event prompt dismissal, reminder completion timing, and AI privacy disclosure. No application code or migration was changed; no provider, database, or private-record operation occurred.
+- Follow-up: Scott approved the four recorded recommendations with **“go”**. Added deterministic journal-person matching, reminder action phrase mapping, event-expiry eligibility, and event-log transition helpers with four focused passing tests. A separate default-off event-AI connector question remains open; provider work stays gated while deterministic workflows continue.
+- Follow-up: Scott selected a separate default-off AI event-drafting setting. Implemented the disclosed event-draft endpoint/UI, persistent post-event Orbit prompt with dismiss/reopen and idempotent source linking, and the five explicit reminder routes with completion only after destination save. Added the unapplied additive migration source and host/Orbit listeners; no migration or provider request was run. Scott then asked to reuse Orbit's existing Interview code for hangout logging and rename its visible UI to Orbit. Wired the host's Orbit action through that existing tool loop, preserving host event source/date/title, retry identity, and manual fallback. Journal cleanup person proposals/review/receipts are still to be built; full gates are in progress.
+- Counted tracked code-like source files by physical lines: 72,851 total including the synchronized 9,437-line Orbit copy; host-only source is 63,414 lines. Counts include blank/comment lines and exclude JSON/config and documentation.
+
 ### Governance and Frodo history recovery
 
 - Scott retired the Project Manager/SAI startup gate. `DR-028` records that legacy SAI archives remain retrieval material only; feature records, bug and decision ledgers, the work log, changelog, validation evidence, and Git history remain the durable agent-readable record.
@@ -363,3 +371,10 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Added Frodo-only document reading for existing private uploads. Owner-scoped metadata lookup precedes authenticated storage download; bounded PDF/DOCX/TXT text excerpts include page/paragraph/line labels. Prompt guidance requires citations and careful wording for résumé employment chronology. Added upload format guidance.
 - Scott clarified app uploads and user-selected phone files. The system file picker is user initiated through the Documents uploader; there is no ambient access to the device. Added explicit one-shot browser dictation and per-reply read-aloud buttons. Dictation errors/unsupported browsers are surfaced, possible browser speech-service audio processing is disclosed, and capture stops on close/send.
 - Added five regressions for relevant résumé excerpts/source labels, required inputs, unsupported/oversized uploads, and empty/corrupt files; registered them in the standard npm test suite. Focused and full tests, lint, build, and whitespace pass. No live/private documents read and no rendered checks. No migration, dependency addition, commit, push or deploy.
+
+## 2026-10-10 — Requested source push
+
+- Scott requested committing/pushing the current heyScottyBro snapshot to origin/main alongside the SJLC signup fix repositories.
+- Steps: inspect changes/remote state; validate; record limits; commit existing files; push and verify remote commit. Inspection and validation are complete; Git history records completion of commit/push.
+- Lint and npm test passed, including 14 pretests and the main 328-test run. Production build passed after allowing local build-output writes; the existing large-bundle advisory remains.
+- Existing Journal–Orbit source, synced Orbit source, tests and unapplied migration are included. No additional application logic was changed in this push task. No migration, production-data write or live provider call occurred. Live/mobile verification and unfinished journal profile review remain open.

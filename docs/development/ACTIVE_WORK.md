@@ -1,5 +1,17 @@
 # Active work
 
+## October 10 source push
+
+Scott explicitly requested pushing the current heyScottyBro changes. This authorizes committing and pushing the existing source snapshot to origin/main, not applying migrations or activating providers. Fresh lint, npm test and production build pass. Journal–Orbit's outstanding review/receipt work and live/mobile verification remain open; this push is not a claim that the full feature is complete.
+
+## Journal–Orbit workflow integration
+
+- **Feature document:** `docs/features/journal-orbit-workflows.md`
+- **Requested scope:** Reviewable AI cleanup with Orbit person links/profile proposals, natural-language event prefill, post-event Orbit logging, and action-aware reminders.
+- **Decisions received:** Review each proposed journal/profile change; prompt with an explicit Log action after an event passes; open the destination flow for app-action reminders; start with weight, food, workout, journal, and Orbit hangout phrase-map intents.
+- **Current state:** Scott said exact “go” on 2026-10-09 and selected a separate default-off event-drafting setting. The event AI draft, persistent event→Orbit prompt/source link (with dismiss/reopen), five conservative reminder actions and save-confirmed current-occurrence completion are implemented locally. On 2026-10-09 Scott additionally directed that hangout logging reuse Orbit's existing Interview tool loop, labeled **Orbit**, with a manual-entry fallback; source event title/date/ID are preserved and retry-safe. Host lint, all 328 tests and build pass; Orbit's 209 tests, build, UI/AI checks and ledger-only check pass. The full Orbit ledger check needs generated-doc recompilation after the newly recorded decision; those compiled documents were not hand-edited. Canonical Orbit work is uncommitted and unrelated date-formatting edits are preserved. Journal cleanup proposals/profile review and receipt UI remain outstanding. The migration source is unapplied; no live AI/provider call or production data operation occurred.
+- **Next permitted work:** Finish Journal name-link/profile proposal review and receipts, then run full quality gates and synthetic UI verification. Migration application, live AI calls, production data, commit, push, and deployment remain separate approvals.
+
 ## Frodo assistant expansion
 
 - Feature: `docs/features/frodo-assistant-expansion.md`.

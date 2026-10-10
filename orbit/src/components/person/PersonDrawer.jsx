@@ -75,7 +75,7 @@ export default function PersonDrawer({ id }) {
         </Button>
         {ai.available && (
           <Button size="sm" onClick={() => open('interview', { about: id })}>
-            <Sparkles size={14} aria-hidden /> Interview
+            <Sparkles size={14} aria-hidden /> Orbit
           </Button>
         )}
         <Button size="sm" variant="ghost" className="push-right" onClick={() => open('removePerson', { id })}>

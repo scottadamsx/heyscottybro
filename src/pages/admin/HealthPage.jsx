@@ -1,5 +1,5 @@
 import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PageTabs from "../../components/PageTabs";
 import EmptyState from "../../components/EmptyState";
@@ -18,6 +18,7 @@ import { toDateStr } from "../../utils/dates";
 import { addDaysStr, formatDisplayDate } from "../../utils/plannerUtils";
 import "./health.css";
 import { PageSkeleton } from "../../components/Skeleton";
+import { notifyReminderDestinationSaved } from "../../utils/journalOrbit";
 
 /**
  * HEALTH — Achilles inside heyScottyBro (DR-018): food, body weight, workouts built by
@@ -47,6 +48,7 @@ export default function HealthPage() {
   const { confirm, dialog } = useConfirm();
   const [modal, setModal] = useState(null);
   const [starting, setStarting] = useState(false);
+  const handledReminderAction = useRef("");
   const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
   const setTab = (key) => setParams(key === "overview" ? {} : { tab: key }, { replace: true });
   const today = toDateStr();
@@ -73,19 +75,6 @@ export default function HealthPage() {
     };
   }, [data, today]);
 
-  if (data.status === "loading") return <PageSkeleton variant="health" label="Loading health" actions={2} />;
-  if (data.status === "error") {
-    return (
-      <div className="combined-page">
-        <div className="combined-page-header"><h1 className="combined-page-title">Health</h1></div>
-        <div className="load-error" role="alert">
-          <p>{data.error}</p>
-          <button type="button" className="btn btn-secondary" onClick={data.reload}>Try again</button>
-        </div>
-      </div>
-    );
-  }
-
   const { profile, plans, sessions, weights, food, openSession } = data;
 
   const run = async (fn, okMessage) => {
@@ -97,12 +86,13 @@ export default function HealthPage() {
     }
   };
 
-  const startWorkout = async (plan = null) => {
-    if (openSession) return navigate(`/admin/health/workout/${openSession.id}`);
+  const startWorkout = async (plan = null, reminder = null) => {
+    const suffix = reminder ? `?reminderId=${encodeURIComponent(reminder.id)}&occurrenceDate=${encodeURIComponent(reminder.date)}` : "";
+    if (openSession) return navigate(`/admin/health/workout/${openSession.id}${suffix}`);
     setStarting(true);
     try {
       const s = await api.startSession({ plan });
-      navigate(`/admin/health/workout/${s.id}`);
+      navigate(`/admin/health/workout/${s.id}${suffix}`);
     } catch (err) {
       addToast(err.message, "error");
     } finally {
@@ -118,6 +108,34 @@ export default function HealthPage() {
   const openFood = (initial) => setModal({ type: "food", initial });
   const openWeight = () => setModal({ type: "weight" });
   const openTargets = () => setModal({ type: "targets" });
+
+  useEffect(() => {
+    if (data.status !== "ready") return;
+    const action = params.get("action");
+    const id = params.get("reminderId");
+    const date = params.get("occurrenceDate");
+    const key = `${action}:${id}:${date}`;
+    if (!id || !date || handledReminderAction.current === key) return;
+    if (!["log-weight", "log-food", "log-workout"].includes(action)) return;
+    handledReminderAction.current = key;
+    const reminder = { id, date };
+    if (action === "log-weight") setModal({ type: "weight", date, reminder });
+    else if (action === "log-food") setModal({ type: "food", date, reminder });
+    else startWorkout(null, reminder);
+  }, [data.status, params, startWorkout]);
+
+  if (data.status === "loading") return <PageSkeleton variant="health" label="Loading health" actions={2} />;
+  if (data.status === "error") {
+    return (
+      <div className="combined-page">
+        <div className="combined-page-header"><h1 className="combined-page-title">Health</h1></div>
+        <div className="load-error" role="alert">
+          <p>{data.error}</p>
+          <button type="button" className="btn btn-secondary" onClick={data.reload}>Try again</button>
+        </div>
+      </div>
+    );
+  }
 
   const headerAction = openSession ? (
     <button type="button" className="btn btn-primary" onClick={() => navigate(`/admin/health/workout/${openSession.id}`)}>
@@ -348,10 +366,10 @@ export default function HealthPage() {
 
       {modal?.type === "food" && (
         <FoodModal initial={modal.initial} defaultDate={modal.date} onClose={close}
-          onSave={(f) => (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFood(profile.id, f))} />
+          onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFood(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
       )}
       {modal?.type === "weight" && (
-        <WeightModal latestLb={derived.latestWeight?.weightLb} onClose={close} onSave={(w) => api.saveWeight(profile.id, w)} />
+        <WeightModal latestLb={derived.latestWeight?.weightLb} defaultDate={modal.date} onClose={close} onSave={async (w) => { await api.saveWeight(profile.id, w); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "weight log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
       )}
       {modal?.type === "targets" && (
         <TargetsModal profile={profile} onClose={close} onSave={(t) => api.updateTargets(profile.id, t)} />

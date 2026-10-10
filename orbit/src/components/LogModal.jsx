@@ -11,16 +11,18 @@ import Button from './ui/Button.jsx'
 import { DateField, SelectField, TextArea, TextField } from './ui/Field.jsx'
 import PeoplePicker from './ui/PeoplePicker.jsx'
 import { firstName } from './ui/PersonChip.jsx'
-import JournalDrawer from './JournalDrawer.jsx'
+import InterviewDrawer from './InterviewDrawer.jsx'
 
 /**
  * Log a hangout, plan one, or edit an event.
  * props: eventId (edit) · people · date · kind · title · status · plan (default to a week out)
  */
 export default function LogModal({ eventId, onClose, mode, ...prefill }) {
-  const { people, events, saveEvent, health, ai } = useOrbit()
+  const { people, events, saveEvent, ai } = useOrbit()
   const { notify, openEvent } = useUI()
-  const existing = eventId ? events[eventId] : null
+  const effectiveEventId = eventId || (prefill.sourceHostEventId ? `host_${prefill.sourceHostEventId}` : null)
+  const existing = effectiveEventId ? events[effectiveEventId] : null
+  const startInOrbit = ai.available && !eventId && !prefill.plan && (!effectiveEventId || (prefill.sourceHostEventId && !existing))
   const now = today()
 
   const [form, setForm] = useState(() => ({
@@ -36,8 +38,7 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const [errors, setErrors] = useState({})
   const [dup, setDup] = useState(null)
   const [busy, setBusy] = useState(false)
-  const journalAvailable = health?.journal?.available === true
-  const [entryMode, setEntryMode] = useState(() => mode || (journalAvailable && ai.available && !eventId && !prefill.plan ? 'journal' : 'manual'))
+  const [entryMode, setEntryMode] = useState(() => mode || (startInOrbit ? 'orbit' : 'manual'))
   const set = (k) => (v) => {
     setForm((f) => ({ ...f, [k]: v }))
     setDup(null)
@@ -47,9 +48,9 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const status = existing ? form.status : future ? 'planned' : 'done'
   const similar = useMemo(() => {
     if (!isYMD(form.date) || !form.people.length) return null
-    const d = findDuplicateEvent(events, { ...form, status }, eventId)
+    const d = findDuplicateEvent(events, { ...form, status }, effectiveEventId)
     return d?.match === 'similar' ? d.id : null
-  }, [events, form, status, eventId])
+  }, [events, form, status, effectiveEventId])
 
   const build = () => ({
     ...(existing || {}),
@@ -65,6 +66,7 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
     ),
     notes: form.notes.trim(),
     status,
+    ...(prefill.sourceHostEventId ? { sourceHostEventId: prefill.sourceHostEventId } : {}),
     createdAt: existing?.createdAt ?? new Date().toISOString(),
   })
 
@@ -76,9 +78,9 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
     setErrors(e)
     if (Object.keys(e).length) return
     const doc = build()
-    const id = eventId || newId('e')
+    const id = effectiveEventId || newId('e')
     if (!allowDuplicate) {
-      const d = findDuplicateEvent(events, doc, eventId)
+      const d = findDuplicateEvent(events, doc, effectiveEventId)
       if (d?.match === 'exact' && (!existing || findDuplicateEvent({ x: existing }, doc)?.match !== 'exact')) {
         setDup(d.id)
         return
@@ -87,6 +89,12 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
     setBusy(true)
     try {
       await saveEvent(id, doc, { allowDuplicate })
+      if (prefill.sourceHostEventId) {
+        window.dispatchEvent(new CustomEvent('orbit:host-event-saved', { detail: { sourceHostEventId: prefill.sourceHostEventId, orbitEventId: id } }))
+      }
+      if (prefill.reminderId && prefill.occurrenceDate) {
+        window.dispatchEvent(new CustomEvent('app:reminder-destination-saved', { detail: { reminderId: prefill.reminderId, occurrenceDate: prefill.occurrenceDate, destination: 'Orbit hangout' } }))
+      }
       const who = doc.people.map((p) => firstName(people[p]?.name)).join(', ')
       notify(existing ? 'Saved' : `${status === 'planned' ? 'Planned' : 'Logged'} ${doc.title} with ${who}`)
       onClose()
@@ -99,8 +107,8 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const label = existing ? 'Save' : future ? 'Plan it' : 'Log it'
   const dupEvent = dup && events[dup]
 
-  if (entryMode === 'journal' && journalAvailable && !eventId && !prefill.plan) {
-    return <JournalDrawer onClose={onClose} onManual={() => setEntryMode('manual')} />
+  if (entryMode === 'orbit' && ai.available && (!effectiveEventId || (prefill.sourceHostEventId && !existing)) && !prefill.plan) {
+    return <InterviewDrawer onClose={onClose} onManual={() => setEntryMode('manual')} goal="log_hangout" eventPeople={prefill.people || []} sourceHostEventId={prefill.sourceHostEventId} eventDate={prefill.date} eventTitle={prefill.title} reminderId={prefill.reminderId} occurrenceDate={prefill.occurrenceDate} />
   }
 
   return (
@@ -116,10 +124,10 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
         </>
       }
     >
-      {journalAvailable && !eventId && !prefill.plan && (
+      {ai.available && !effectiveEventId && !prefill.plan && (
         <div className="journal-mode-switch segmented" role="group" aria-label="Entry method">
-          <button type="button" className="seg" aria-pressed={false} onClick={() => setEntryMode('journal')} disabled={busy}>Orbit</button>
-          <button type="button" className="seg" aria-pressed={true}>Manual</button>
+          <button type="button" className="seg" aria-pressed={false} onClick={() => setEntryMode('orbit')} disabled={busy}>Orbit</button>
+          <button type="button" className="seg" aria-pressed={true}>Manual entry</button>
         </div>
       )}
       <form

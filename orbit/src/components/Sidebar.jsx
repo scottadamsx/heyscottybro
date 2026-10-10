@@ -40,7 +40,7 @@ function QuickActions() {
         </Button>
         {ai.available && (
           <Button onClick={() => open('interview')}>
-            <Sparkles size={16} aria-hidden /> Interview me
+            <Sparkles size={16} aria-hidden /> Orbit
           </Button>
         )}
       </div>

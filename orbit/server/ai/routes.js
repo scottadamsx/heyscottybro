@@ -157,9 +157,17 @@ export function aiRouter() {
     })
     const base = { session: String(req.body?.session || '').slice(0, 64), prompt: `interview@${loadPrompt('interview').version}`, model: MODEL, user: history.at(-1).content }
     try {
-      const out = await interview(history, controller.signal)
+      const sourceHostEventId = String(req.body?.sourceHostEventId || '')
+      if (sourceHostEventId && !/^[\w-]{1,64}$/.test(sourceHostEventId)) return res.status(400).json(fail('invalid', 'Invalid host event source.'))
+      const goal = req.body?.goal === 'log_hangout' ? 'log_hangout' : ''
+      const eventDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body?.eventDate || '')) ? String(req.body.eventDate) : ''
+      const eventTitle = typeof req.body?.eventTitle === 'string' ? req.body.eventTitle.trim().slice(0, 160) : ''
+      const out = await interview(history, controller.signal, { sourceHostEventId, goal, eventDate, eventTitle })
       logChat({ ...base, reply: out.reply, saved: out.lines, tools: out.toolLog })
-      res.json({ ok: true, reply: out.reply, lines: out.lines, wrote: out.wrote })
+      const loggedEvent = out.toolLog.some((item) => item.tool === 'log_event' && item.ok)
+      const linkedTool = out.toolLog.find((item) => item.tool === 'log_event' && item.ok && item.eventId)
+      const hostEvents = sourceHostEventId && loggedEvent && linkedTool ? [{ sourceHostEventId, orbitEventId: linkedTool.eventId }] : []
+      res.json({ ok: true, reply: out.reply, lines: out.lines, wrote: out.wrote, hostEvents, loggedEvent })
     } catch (e) {
       if (controller.signal.aborted) return logChat({ ...base, stopped: true })
       logChat({ ...base, error: e.message })
@@ -183,12 +191,13 @@ export function sanitizeHistory(messages) {
 }
 
 /** Manual tool loop: runs until Claude answers in words or the round cap is hit. */
-async function interview(history, signal) {
+async function interview(history, signal, context = {}) {
   const prompt = loadPrompt('interview')
   // Stable instructions + tools are cached; the roster changes every turn, so it comes after.
   const system = [
     { type: 'text', text: prompt.text, cache_control: { type: 'ephemeral' } },
     { type: 'text', text: rosterText() },
+    ...(context.goal === 'log_hangout' ? [{ type: 'text', text: `The user explicitly opened Orbit's hangout logging flow. Interview them for the date, kind and attendees; never guess attendees. Once the required facts are clear, save the hangout with log_event. ${context.sourceHostEventId ? `This is a host calendar event; preserve its exact title/date and attach source_host_event_id="${context.sourceHostEventId}" to log_event.` : ''}` }] : []),
   ]
   const messages = history.map((m) => ({ ...m }))
   const lines = []
@@ -223,8 +232,8 @@ async function interview(history, signal) {
     }
     messages.push({ role: 'assistant', content: msg.content })
     const results = calls.map((call) => {
-      const result = executeTool(call.name, call.input)
-      toolLog.push({ tool: call.name, input: call.input, ok: result.ok, message: result.message })
+      const result = executeTool(call.name, call.input, context)
+      toolLog.push({ tool: call.name, input: call.input, ok: result.ok, message: result.message, eventId: result.eventId })
       if (result.line) {
         lines.push(result.line)
         wrote = true

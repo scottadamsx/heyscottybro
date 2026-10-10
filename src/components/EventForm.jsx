@@ -13,10 +13,12 @@
  * Values in/out are the events row shape: title, date, end_date, start_time,
  * end_time, description, project_id, event_type_id. Times are "HH:MM".
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DatePicker from "./DatePicker";
 import TimePicker from "./TimePicker";
 import { FormModal } from "./ui";
+import { loadEventDraftingStatus, requestEventDraft } from "../api/eventDrafting";
+import { useEventDraftingEnabled } from "../utils/settings";
 
 const plusHour = (t) => { const [h, m] = t.split(":").map(Number); return `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`; };
 const daySpan = (a, b) => Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000) + 1;
@@ -45,6 +47,36 @@ export default function EventForm({
   const [eventTypeId, setEventTypeId] = useState(initial.event_type_id || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [draftDescription, setDraftDescription] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [draftNotice, setDraftNotice] = useState("");
+  const [aiFormOpen, setAiFormOpen] = useState(true);
+  const eventDraftingEnabled = useEventDraftingEnabled();
+
+  useEffect(() => {
+    let active = true;
+    if (!initial.id) loadEventDraftingStatus().then((available) => { if (active) setAiAvailable(available); });
+    return () => { active = false; };
+  }, [initial.id]);
+
+  const fillFromDescription = async () => {
+    if (!draftDescription.trim() || drafting) return;
+    setDrafting(true); setDraftNotice("");
+    try {
+      const { draft } = await requestEventDraft(draftDescription.trim());
+      setTitle(draft.title || "");
+      setDate(fixedDate || draft.date || "");
+      setEndDate(draft.end_date || "");
+      setStartTime(draft.start_time || "");
+      setEndTime(draft.end_time || "");
+      setEndAuto(false);
+      setDescription(draft.description || draftDescription.trim());
+      setDraftNotice(draft.date ? "Draft filled. Check every field before adding the event." : "Draft filled, but no unambiguous date was found. Choose a date before adding the event.");
+    } catch (err) {
+      setDraftNotice(err?.message || "Couldn't draft the event. Your description is still here.");
+    } finally { setDrafting(false); }
+  };
 
   const theDate = fixedDate || date;
   const invalid = () => (!theDate ? "Pick a date." : !title.trim() ? "Give it a title." : "");
@@ -64,6 +96,19 @@ export default function EventForm({
 
   const fields = (
     <>
+      {!initial.id && aiAvailable && eventDraftingEnabled && aiFormOpen && (
+        <div className="event-ai-draft">
+          <label htmlFor="event-ai-description">Describe the event</label>
+          <textarea id="event-ai-description" value={draftDescription} onChange={(event) => setDraftDescription(event.target.value)} rows={2} placeholder="Dinner with McKenna tomorrow at 6" />
+          <p className="field-hint">Pressing Fill form sends this description, today's local date, and timezone to the configured AI provider. Nothing is saved; review the fields below. Manual entry is always available.</p>
+          <div className="event-form-actions">
+            <button type="button" className="btn btn-secondary" onClick={fillFromDescription} disabled={drafting || !draftDescription.trim()}>{drafting ? "Filling…" : "Fill form"}</button>
+            <button type="button" className="btn btn-ghost" onClick={() => { setAiFormOpen(false); setDraftNotice("Manual entry selected. The event description has not been sent."); }}>Manual entry</button>
+          </div>
+          {draftNotice && <p className="draft-status" role="status">{draftNotice}</p>}
+        </div>
+      )}
+      {!initial.id && aiAvailable && eventDraftingEnabled && !aiFormOpen && <button type="button" className="btn btn-ghost" onClick={() => setAiFormOpen(true)}>Describe event with AI</button>}
       <input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus={autoFocus} aria-label="Event title" />
       {!fixedDate && (
         <div className="day-time-row">

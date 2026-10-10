@@ -114,8 +114,8 @@ export function FoodModal({ initial, defaultDate, onClose, onSave }) {
   );
 }
 
-export function WeightModal({ latestLb, onClose, onSave }) {
-  const [date, setDate] = useState(toDateStr());
+export function WeightModal({ latestLb, defaultDate, onClose, onSave }) {
+  const [date, setDate] = useState(defaultDate || toDateStr());
   const [weight, setWeight] = useState(latestLb ? String(latestLb) : "");
   const [note, setNote] = useState("");
   return (

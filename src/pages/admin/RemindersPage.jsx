@@ -14,6 +14,7 @@ import { ShowMore } from "../../components/ui";
 import { usePaged } from "../../hooks/usePaged";
 import "./plan.css";
 import { PageSkeleton, SkeletonList } from "../../components/Skeleton";
+import { reminderActionForName, reminderActionUrl, REMINDER_ACTION_LABELS } from "../../utils/journalOrbit";
 
 export default function RemindersPage() {
   const [params] = useSearchParams();
@@ -178,6 +179,8 @@ export default function RemindersPage() {
 
   const renderTask = (r) => {
     const overdue = r.next && r.next < todayStr;
+    const action = reminderActionForName(r.name);
+    const actionUrl = action && r.next <= todayStr ? reminderActionUrl(action, r.id, r.next || todayStr) : null;
     // Display-only formatting: the stored time stays "HH:MM" (QF-4).
     const meta = [
       r.time ? formatTime12(String(r.time).slice(0, 5)) : null,
@@ -215,6 +218,7 @@ export default function RemindersPage() {
           )}
         </span>
         <span className="task-row-actions">
+          {actionUrl && <button type="button" className="btn-mini accent" onClick={() => navigate(actionUrl)}>{REMINDER_ACTION_LABELS[action]}</button>}
           {(r.recurrence || "none") === "none" && (overdue
             ? <button type="button" className="btn-mini accent" onClick={() => openSchedule(r)}><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Fit it in</button>
             : <button type="button" className="btn-mini" onClick={() => openSchedule(r)} title="Schedule a time" aria-label={`Schedule ${r.name}`}><i className="fa-regular fa-clock" aria-hidden="true" /></button>)}

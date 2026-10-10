@@ -20,8 +20,19 @@ test("GET status is authenticated and reports only feature availability", async 
   await handleChatRoute({ method: "GET" }, allowed, {
     verify: async () => true,
     status: () => ({ available: true }),
+    draftStatus: () => ({ available: false }),
   });
-  assert.deepEqual(allowed.body, { journalCleanup: { available: true } });
+  assert.deepEqual(allowed.body, { journalCleanup: { available: true }, eventDrafting: { available: false } });
+});
+
+test("event draft requests dispatch only to the dedicated handler", async () => {
+  let received;
+  const res = response();
+  await handleChatRoute({ method: "POST", body: JSON.stringify({ feature: "event_draft", description: "Dinner tomorrow" }) }, res, {
+    draft: async (req, responseObject) => { received = req.body; return responseObject.status(202).json({ accepted: true }); },
+  });
+  assert.deepEqual(received, { feature: "event_draft", description: "Dinner tomorrow" });
+  assert.equal(res.statusCode, 202);
 });
 
 test("journal cleanup operation dispatches to its guarded handler", async () => {

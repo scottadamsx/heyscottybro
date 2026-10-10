@@ -10,9 +10,9 @@ export async function loadJournalCleanupStatus({ request = fetch, authHeaders = 
       try {
         const response = await request("/api/chat", { headers: await authHeaders() });
         const data = await parseResponse(response);
-        return { available: Boolean(response.ok && data?.journalCleanup?.available) };
+        return { available: Boolean(response.ok && data?.journalCleanup?.available), eventDraftingAvailable: Boolean(response.ok && data?.eventDrafting?.available) };
       } catch {
-        return { available: false };
+        return { available: false, eventDraftingAvailable: false };
       }
     })();
   }

@@ -30,6 +30,7 @@ import {
 } from "../../utils/journalWriting";
 import { JOURNAL_CLEANUP_LIMIT, loadJournalCleanupStatus, requestJournalCleanup } from "../../api/journalCleanup";
 import { useJournalCleanupEnabled } from "../../utils/settings";
+import { notifyReminderDestinationSaved } from "../../utils/journalOrbit";
 
 const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
 const shortDay = (ds) => preferredDisplayDate(new Date(ds + "T00:00:00"));
@@ -292,6 +293,10 @@ export default function JournalPage() {
       });
     } catch (err) {
       throw new Error(`Couldn't save entry: ${err?.message || "unknown error"}`, { cause: err });
+    }
+    if (notifyReminderDestinationSaved(params.get("reminderId"), params.get("occurrenceDate"), "journal entry")) {
+      const next = new URLSearchParams(params); next.delete("reminderId"); next.delete("occurrenceDate");
+      setParams(next, { replace: true });
     }
     // Only clear the draft once the save has actually succeeded.
     clearDraft(JOURNAL_NEW_DRAFT);

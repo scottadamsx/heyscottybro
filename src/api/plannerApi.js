@@ -321,8 +321,18 @@ export async function newEvent({ title, description, date, end_date, project_id,
   if (recurrence && recurrence !== "none") row.recurrence = recurrence;
   if (recur_until) row.recur_until = recur_until;
   if (recur_times) row.recur_times = Number(recur_times);
+  row.orbit_log_status = "pending";
   const result = await op(
-    async () => { const userId = await uid(); const { data, error } = await supabase.from("events").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
+    async () => {
+      const userId = await uid();
+      let { data, error } = await supabase.from("events").insert({ user_id: userId, ...row }).select().single();
+      if (error && isMissingColumn(error, "orbit_log_status")) {
+        const { orbit_log_status: _unsupported, ...legacyRow } = row;
+        ({ data, error } = await supabase.from("events").insert({ user_id: userId, ...legacyRow }).select().single());
+      }
+      if (error) throw error;
+      return data;
+    },
     () => local.insert("events", row),
     "events.insert",
   );
@@ -333,7 +343,7 @@ export async function newEvent({ title, description, date, end_date, project_id,
 export async function updateEvent(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times", "start_time", "end_time", "end_date"].forEach((k) => {
+  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times", "start_time", "end_time", "end_date", "orbit_log_status", "orbit_event_id"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Field, FormModal, Modal } from "../../components/ui";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -12,6 +12,7 @@ import { formatDisplayDate } from "../../utils/plannerUtils";
 import { toDateStr } from "../../utils/dates";
 import "./health.css";
 import { PageSkeleton } from "../../components/Skeleton";
+import { notifyReminderDestinationSaved } from "../../utils/journalOrbit";
 
 /**
  * A workout, live or finished (/admin/health/workout/:id). Live: each exercise shows
@@ -35,6 +36,7 @@ const perSideText = (totalLb, ex) => {
 
 export default function WorkoutSessionPage() {
   const { id } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { confirm, dialog } = useConfirm();
@@ -283,6 +285,11 @@ export default function WorkoutSessionPage() {
           onClose={() => setModal(null)}
           onSave={async (notes) => {
             await api.finishSession(session.id, { notes });
+            notifyReminderDestinationSaved(searchParams.get("reminderId"), searchParams.get("occurrenceDate"), "completed workout");
+            if (searchParams.has("reminderId")) {
+              const clean = new URLSearchParams(searchParams); clean.delete("reminderId"); clean.delete("occurrenceDate");
+              setSearchParams(clean, { replace: true });
+            }
             setRest(null);
             addToast("Workout saved.", "success");
           }}

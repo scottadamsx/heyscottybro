@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { THEMES, useTheme, setTheme } from "../../utils/theme";
 import {
   setJournalCleanupEnabled,
+  setEventDraftingEnabled,
   toggleHiddenPage,
   useHiddenPages,
   useJournalCleanupEnabled,
+  useEventDraftingEnabled,
   DATE_FORMAT,
   useStringSetting,
   setStringSetting,
@@ -56,11 +58,13 @@ export default function SettingsPage() {
   const { prepareAllThreadClear, clearAllThreads } = useAgentRuntime();
   const [clearingChat, setClearingChat] = useState(false);
   const journalCleanupEnabled = useJournalCleanupEnabled();
+  const eventDraftingEnabled = useEventDraftingEnabled();
   const [journalCleanupAvailable, setJournalCleanupAvailable] = useState(false);
+  const [eventDraftingAvailable, setEventDraftingAvailable] = useState(false);
 
   useEffect(() => {
     let active = true;
-    loadJournalCleanupStatus().then((status) => { if (active) setJournalCleanupAvailable(status.available); });
+    loadJournalCleanupStatus().then((status) => { if (active) { setJournalCleanupAvailable(status.available); setEventDraftingAvailable(status.eventDraftingAvailable); } });
     return () => { active = false; };
   }, []);
 
@@ -155,6 +159,18 @@ export default function SettingsPage() {
               onChange={setJournalCleanupEnabled}
               label="Allow Journal AI cleanup"
             />
+          </div>
+        </div>
+      )}
+
+      {eventDraftingAvailable && (
+        <div className="db-card">
+          <div className="settings-row">
+            <div className="settings-row-body">
+              <div className="settings-row-title"><i className="fa-solid fa-calendar-plus" /> AI event drafting</div>
+              <div className="settings-row-meta">Allow an event description to be sent to the configured AI provider only when you press Fill form. This switch is independent from Journal AI cleanup and is off by default on this device.</div>
+            </div>
+            <Toggle checked={eventDraftingEnabled} onChange={setEventDraftingEnabled} label="Allow AI event drafting" />
           </div>
         </div>
       )}

@@ -18,6 +18,7 @@ import EventForm from "../../components/EventForm";
 import RescheduleSheet from "../../components/RescheduleSheet";
 import DayTimeline from "../../components/DayTimeline";
 import { dayBlocks, overdueReminders, plannerTimelineStartMinute } from "../../utils/reschedule";
+import { eventNeedsOrbitPrompt } from "../../utils/journalOrbit";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
 import "./plan.css";
 import { RowChevron } from "../../components/ui";
@@ -310,6 +311,19 @@ export default function CalendarPage() {
     }
   };
 
+  const openOrbitLog = (event) => {
+    const query = new URLSearchParams({ sourceHostEventId: String(event.id), title: event.title, date: event.date });
+    navigate(`/admin/people?${query.toString()}`);
+  };
+  const setOrbitPromptStatus = async (event, status) => {
+    try {
+      await updateEvent(event.id, { orbit_log_status: status });
+      await load();
+    } catch (err) {
+      addToast(`Couldn't update the Orbit prompt: ${err?.message || "unknown error"}`, "error");
+    }
+  };
+
   const saveTask = async () => {
     if (!selectedDate || !taskName.trim()) return;
     const tempId = `temp-${Date.now()}`;
@@ -350,6 +364,7 @@ export default function CalendarPage() {
   const longDate = selectedDate
     ? preferredDisplayDate(new Date(selectedDate + "T00:00:00"))
     : "";
+  const passedOrbitEvents = loaded ? events.filter((event) => eventNeedsOrbitPrompt(event, new Date())) : [];
 
   return (
     <div className="module-page cal-page">
@@ -376,6 +391,19 @@ export default function CalendarPage() {
       <div className="module-header cal-page-header">
         <h1>Calendar</h1>
       </div>
+
+      {passedOrbitEvents.length > 0 && (
+        <section className="db-card event-orbit-prompt-list" aria-label="Events to log in Orbit">
+          <div className="day-section-head"><span>Ready to log in Orbit</span><span className="day-count">{passedOrbitEvents.length}</span></div>
+          {passedOrbitEvents.map((event) => (
+            <div className="day-item" key={`orbit-prompt-${event.id}`}>
+              <div className="day-item-body"><div className="day-item-title">{event.title}</div><div className="day-item-sub">{formatDisplayDate(event.date)}</div></div>
+              <button type="button" className="btn-mini accent" onClick={() => openOrbitLog(event)}>Log in Orbit</button>
+              <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(event, "dismissed")}>Dismiss</button>
+            </div>
+          ))}
+        </section>
+      )}
 
       {!loaded ? <PageSkeleton variant="calendar" label="Loading calendar" header={false} page={false} /> : (
       <div className="db-card cal-card">
@@ -605,6 +633,15 @@ export default function CalendarPage() {
                       <div className="day-item-title">{e.title}</div>
                       {e.description && <div className="day-item-sub">{e.description}</div>}
                       <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
+                  {eventNeedsOrbitPrompt(events.find((item) => String(item.id) === String(e.id)) || e) && (
+                    <div className="day-item-sub event-orbit-prompt">
+                      <span>Event finished — log what happened in Orbit?</span>
+                      <button type="button" className="btn-mini accent" onClick={() => openOrbitLog(events.find((item) => String(item.id) === String(e.id)) || e)}>Log in Orbit</button>
+                      <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "dismissed")}>Dismiss</button>
+                    </div>
+                  )}
+                  {e.orbit_log_status === "dismissed" && <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "pending")}>Reopen Orbit log prompt</button>}
+                  {e.orbit_log_status === "logged" && <div className="day-item-sub">Logged in Orbit</div>}
                     </div>
                     <button type="button" className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event" aria-label={`Edit ${e.title}`}><i className="fa-solid fa-pen" aria-hidden="true" /></button>
                     <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>

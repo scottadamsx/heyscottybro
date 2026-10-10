@@ -12,6 +12,7 @@ export const THEME = "theme";
 export const DATE_FORMAT = "dateFormat";
 export const HIDDEN_PAGES = "hiddenPages";
 export const JOURNAL_CLEANUP = "journalCleanup";
+export const EVENT_DRAFTING = "eventDrafting";
 const JOURNAL_CLEANUP_SCHEMA = 1;
 
 const listeners = new Set();
@@ -97,6 +98,9 @@ export function setJournalCleanupEnabled(enabled) {
 export function useJournalCleanupEnabled() {
   return useSyncExternalStore(subscribe, getJournalCleanupEnabled, () => false);
 }
+
+export const setEventDraftingEnabled = (enabled) => setSetting(EVENT_DRAFTING, enabled);
+export const useEventDraftingEnabled = () => useSetting(EVENT_DRAFTING, false);
 
 /** Hidden pages: a set of nav `to` paths removed from the rail, the mobile
  * menu, and the command palette (data is kept). */

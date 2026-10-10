@@ -71,6 +71,7 @@ export function validateEvent(doc, today) {
   if (status === 'done' && isYMD(doc.date) && today && doc.date > today) e.push('a future event can only be planned')
   if (!Array.isArray(doc.people) || doc.people.some((p) => !isStr(p))) e.push('people must be a list of ids')
   if (doc.updates != null && !isObj(doc.updates)) e.push('updates must be an object keyed by person id')
+  if (doc.sourceHostEventId != null && !/^[\w-]{1,64}$/.test(doc.sourceHostEventId)) e.push('source host event id is invalid')
   if (e.length) return result(e)
   const people = [...new Set(doc.people)]
   // An update only makes sense for someone who was there.

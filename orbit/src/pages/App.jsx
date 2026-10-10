@@ -1,5 +1,7 @@
-import { matchPath, useLocation } from 'react-router-dom'
+import { matchPath, useLocation, useSearchParams } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import { useOrbit } from '../state/OrbitContext.jsx'
+import { useUI } from '../state/UIContext.jsx'
 import Header from '../components/Header.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import MapCard from '../components/MapCard.jsx'
@@ -15,6 +17,26 @@ import { isEmbedded } from '../lib/runtime.js'
 /** Deep links open a drawer or modal over the same screen. */
 function RoutedLayer() {
   const { pathname } = useLocation()
+  const [params, setParams] = useSearchParams()
+  const { open } = useUI()
+  const consumedSource = useRef(null)
+  useEffect(() => {
+    const sourceHostEventId = params.get('sourceHostEventId')
+    const openLog = params.get('openLog') === '1'
+    const token = sourceHostEventId || (openLog ? `reminder:${params.get('reminderId')}` : null)
+    if (!token || consumedSource.current === token) return
+    consumedSource.current = token
+    open('log', {
+      ...(sourceHostEventId ? { sourceHostEventId } : {}),
+      date: params.get('date') || undefined,
+      title: params.get('title') || undefined,
+      reminderId: params.get('reminderId') || undefined,
+      occurrenceDate: params.get('occurrenceDate') || undefined,
+    })
+    const next = new URLSearchParams(params)
+    next.delete('sourceHostEventId'); next.delete('title'); next.delete('date'); next.delete('openLog')
+    setParams(next, { replace: true })
+  }, [params, setParams, open])
   const person = matchPath('/person/:id', pathname)
   if (person) return <PersonDrawer key={person.params.id} id={person.params.id} />
   const event = matchPath('/event/:id', pathname)
