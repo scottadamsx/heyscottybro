@@ -1,5 +1,16 @@
 # Bug and fix ledger
 
+## 2026-10-10 — Supabase security-advisor findings (deferred)
+
+Discovered before the approved Journal–Orbit migration and still present afterward. These are advisor findings requiring a separate scoped review, not established exploit claims. No event-table RLS finding was reported; its owner-only access was preserved.
+
+- ERROR: `public._calendula_migrations` has RLS disabled in an exposed schema. [Remediation](https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public).
+- WARN: six functions have a mutable search_path; one SECURITY DEFINER trigger function is executable by anon; eleven functions are executable by authenticated users as SECURITY DEFINER and need intended-access review. [Search-path guidance](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable), [anonymous execution](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), [authenticated execution](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- INFO: `txtsquad.prospects` has RLS enabled without policies (access denied by default). [Guidance](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+- WARN: leaked-password protection disabled. [Guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+
+Status: deferred, no permission/security changes authorized by the event-link migration scope.
+
 Every discovered software defect belongs here, including defects found while building another feature. Entries are never deleted; resolved entries retain the cause and proof of the fix.
 
 **Closure evidence (2026-09-29):** Every entry marked Resolved in the Frodo reliability work was revalidated on the settled tree by all 255 registered tests, zero-warning ESLint, the 3,148-module production build, and `git diff --check`. Earlier per-entry notes saying broader gates remained describe intermediate checkpoints and are superseded by this final evidence. Direct assembled-production integration gaps remain honestly deferred as `BUG-055/056`.

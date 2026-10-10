@@ -1,11 +1,14 @@
 -- Journal/Orbit integration state. Additive only; apply separately after review.
 -- Existing events are deliberately excluded from new post-event prompts.
+-- Applied via Supabase MCP as 20261010034910_journal_orbit_links on 2026-10-10.
+set lock_timeout = '5s';
+set statement_timeout = '30s';
 alter table public.events
   add column if not exists orbit_log_status text not null default 'legacy',
   add column if not exists orbit_event_id text;
 
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'events_orbit_log_status_check') then
+  if not exists (select 1 from pg_constraint where conname = 'events_orbit_log_status_check' and conrelid = 'public.events'::regclass) then
     alter table public.events
       add constraint events_orbit_log_status_check
       check (orbit_log_status in ('legacy', 'pending', 'dismissed', 'logged'));

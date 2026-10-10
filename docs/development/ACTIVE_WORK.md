@@ -2,6 +2,8 @@
 
 ## October 10 source push
 
+**Migration follow-up:** Scott subsequently requested running the migration. Applied `journal_orbit_links` to verified Command Center project `mogoybejtmkoheqvfvuc`, recorded remotely as `20261010034910`. Verified both columns, allowed-state constraint, partial index, all 80 existing events in legacy state, and unchanged owner-only RLS. Provider activation and full live/mobile feature verification remain open. Earlier references below to this specific migration being unapplied are superseded by this verified result.
+
 Scott explicitly requested pushing the current heyScottyBro changes. This authorizes committing and pushing the existing source snapshot to origin/main, not applying migrations or activating providers. Fresh lint, npm test and production build pass. Journal–Orbit's outstanding review/receipt work and live/mobile verification remain open; this push is not a claim that the full feature is complete.
 
 ## Journal–Orbit workflow integration

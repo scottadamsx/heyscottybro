@@ -378,3 +378,10 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Steps: inspect changes/remote state; validate; record limits; commit existing files; push and verify remote commit. Inspection and validation are complete; Git history records completion of commit/push.
 - Lint and npm test passed, including 14 pretests and the main 328-test run. Production build passed after allowing local build-output writes; the existing large-bundle advisory remains.
 - Existing Journal–Orbit source, synced Orbit source, tests and unapplied migration are included. No additional application logic was changed in this push task. No migration, production-data write or live provider call occurred. Live/mobile verification and unfinished journal profile review remain open.
+
+### Approved migration follow-up
+
+- Scott subsequently instructed “run the migration too”; Supabase connection became available. Verified configured project `mogoybejtmkoheqvfvuc` is Command Center and the event-link columns were absent.
+- Applied only the existing Journal–Orbit event-link migration, with bounded lock/statement timeouts and a table-scoped constraint existence check. Remote migration version: `20261010034910`, name `journal_orbit_links`.
+- Verified both column definitions, four-state constraint, partial pending-event index, unchanged owner-only SELECT/write policy and enabled RLS. All 80 pre-existing events remain present with legacy status and null Orbit links. No event content or account data was edited.
+- Pre/post security advisors reported unrelated pre-existing findings, recorded in BUGS.md; none involved the changed events table. No unrelated security settings were changed.
