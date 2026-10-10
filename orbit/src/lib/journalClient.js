@@ -8,8 +8,8 @@ export function journalContext() {
   }
 }
 
-export function pendingJournalDraft(current, text) {
-  return current || { id: newId('j'), context: journalContext(), text: text.trim() }
+export function pendingJournalDraft(current, text, seed = {}) {
+  return current || { id: seed.id || newId('j'), context: { ...journalContext(), ...(seed.context || {}) }, text: text.trim() }
 }
 
 export function journalCounts(entries) {

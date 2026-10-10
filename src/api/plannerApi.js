@@ -260,13 +260,14 @@ async function loadJournalUncached() {
 }
 
 export async function newJournalEntry({ title, entry, date, aiProvenance = null }) {
-  const row = { title, entry, date, ai_provenance: aiProvenance };
+  const row = { id: genId(), title, entry, date, ai_provenance: aiProvenance };
   await op(
     async () => { const userId = await uid(); const { error } = await supabase.from("journal").insert({ user_id: userId, ...row }); if (error) throw error; },
     () => { local.insert("journal", row); },
     "journal.insert",
   );
   emitDataChange("journal");
+  return row;
 }
 
 export async function updateJournalEntry(id, fields) {

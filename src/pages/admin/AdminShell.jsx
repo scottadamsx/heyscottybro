@@ -3,7 +3,7 @@ import ProtectedRoute from "../../components/ProtectedRoute";
 import MotionScope from "../../components/motion/MotionScope";
 import { AgentRuntimeProvider } from "../../contexts/AgentRuntimeContext";
 import AdminLayout from "./AdminLayout";
-import { updateEvent, completeReminder } from "../../api/plannerApi";
+import { updateEvent, completeReminder, loadJournal, updateJournalEntry } from "../../api/plannerApi";
 import { useToast } from "../../contexts/ToastContext";
 
 /**
@@ -33,10 +33,48 @@ export default function AdminShell() {
         addToast(`Your ${destination || "entry"} was saved, but the reminder is still open. Mark it done manually or retry: ${err?.message || "unknown error"}`, "error");
       }
     };
+    const onOrbitJournalSaved = async (event) => {
+      const { sourceHostJournalId, orbitJournalId, receipt } = event.detail || {};
+      if (!sourceHostJournalId || !orbitJournalId) return;
+      try {
+        const entries = await loadJournal();
+        const source = entries.find((entry) => String(entry.id) === String(sourceHostJournalId));
+        if (!source) throw new Error("The original journal entry could not be found.");
+        const previous = source.ai_provenance && typeof source.ai_provenance === "object" ? source.ai_provenance : {};
+        await updateJournalEntry(source.id, { aiProvenance: {
+          ...previous,
+          orbit: { status: "saved", orbitJournalId, personReferences: receipt?.personReferences || [], receipt: receipt || null },
+        } });
+        addToast("Orbit updates saved and linked to this journal entry.", "success");
+      } catch (err) {
+        addToast(`Orbit saved the updates, but the journal link wasn't recorded. Reopen Review in Orbit to retry. ${err?.message || ""}`, "error");
+      }
+    };
+    const onOrbitJournalUndone = async (event) => {
+      const { sourceHostJournalId, orbitJournalId } = event.detail || {};
+      if (!sourceHostJournalId || !orbitJournalId) return;
+      try {
+        const entries = await loadJournal();
+        const source = entries.find((entry) => String(entry.id) === String(sourceHostJournalId));
+        if (!source) return;
+        const previous = source.ai_provenance && typeof source.ai_provenance === "object" ? source.ai_provenance : {};
+        await updateJournalEntry(source.id, { aiProvenance: {
+          ...previous,
+          orbit: { ...(previous.orbit || {}), status: "undone", orbitJournalId, personReferences: [], receipt: null },
+        } });
+        addToast("Orbit changes were undone; the journal entry remains.", "success");
+      } catch (err) {
+        addToast(`Orbit undid its changes, but couldn't update the journal link: ${err?.message || "unknown error"}`, "error");
+      }
+    };
     window.addEventListener("orbit:host-event-saved", onOrbitSaved);
+    window.addEventListener("orbit:host-journal-saved", onOrbitJournalSaved);
+    window.addEventListener("orbit:host-journal-undone", onOrbitJournalUndone);
     window.addEventListener("app:reminder-destination-saved", onReminderSaved);
     return () => {
       window.removeEventListener("orbit:host-event-saved", onOrbitSaved);
+      window.removeEventListener("orbit:host-journal-saved", onOrbitJournalSaved);
+      window.removeEventListener("orbit:host-journal-undone", onOrbitJournalUndone);
       window.removeEventListener("app:reminder-destination-saved", onReminderSaved);
     };
   }, [addToast]);

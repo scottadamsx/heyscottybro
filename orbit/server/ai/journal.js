@@ -135,6 +135,8 @@ function question(id, textValue, kind, options) {
 function personChoice(people, mention, answer) {
   const match = matchJournalPerson(people, mention)
   if (answer) {
+    if (answer === 'skip') return { skip: true }
+    if (answer.startsWith('link:') && people[answer.slice(5)]) return { id: answer.slice(5) }
     if (answer === `create:${mention}`) return { create: mention }
     if (people[answer]) return { id: answer }
     const byName = matchJournalPerson(people, answer)
@@ -226,7 +228,8 @@ export async function putJournal(id, body) {
     status: body.answers ? 'needs_details' : 'draft', error: undefined,
   }) : {
     id, schemaVersion: 1, revision: 1, text: body.text, referenceDate: body.referenceDate,
-    timeZone: body.timeZone, createdAt: now, updatedAt: now, status: 'draft', questions: [], answers: {},
+    timeZone: body.timeZone, ...(body.sourceHostJournalId ? { sourceHostJournalId: body.sourceHostJournalId } : {}),
+    createdAt: now, updatedAt: now, status: 'draft', questions: [], answers: {},
   }
   return saveEntry(previous, entry)
 }
@@ -258,11 +261,21 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
     const questions = []
     for (const mention of mentions) {
       const id = journalQuestionId('person', mention)
-      const choice = personChoice(people, mention, entry.answers[id])
+      let choice = personChoice(people, mention, entry.answers[id])
+      if (entry.sourceHostJournalId && choice.id) {
+        const referenceId = journalQuestionId('reference', mention)
+        const answer = entry.answers[referenceId]
+        if (answer === 'skip') choice = { skip: true }
+        else if (answer !== `link:${choice.id}`) questions.push(question(referenceId, `Link “${mention}” to ${people[choice.id].name} in Orbit?`, 'person', [
+          { value: `link:${choice.id}`, label: `Link ${people[choice.id].name}` },
+          { value: 'skip', label: 'Leave this mention unlinked' },
+        ]))
+      }
       choices.set(mention, choice)
-      if (!choice.id && !choice.create) {
+      if (!choice.id && !choice.create && !choice.skip) {
         const options = choice.candidates.map((pid) => ({ value: pid, label: people[pid].name }))
-        options.push({ value: `create:${mention}`, label: `Add ${mention}` })
+        if (!entry.sourceHostJournalId) options.push({ value: `create:${mention}`, label: `Add ${mention}` })
+        options.push({ value: 'skip', label: 'Leave this mention unlinked' })
         questions.push(question(id, `Who is ${mention}?`, 'person', options))
       }
     }
@@ -295,6 +308,14 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
       const answer = entry.answers[answerId]
       const proposedOutcome = outcome
       if (attribution && outcome !== 'context') outcome = 'uncertain'
+      if (entry.sourceHostJournalId && !choices.get(f.mention)?.id && !choices.get(f.mention)?.create) outcome = 'context'
+      if (entry.sourceHostJournalId && outcome === 'add') {
+        if (entry.answers[qid] === 'skip') outcome = 'context'
+        else if (entry.answers[qid] !== 'add') questions.push(question(qid, `Add “${f.k}: ${f.v}” to ${f.mention}’s Orbit profile?`, 'fact', [
+          { value: 'add', label: 'Add this profile update' },
+          { value: 'skip', label: 'Keep it only in the journal' },
+        ]))
+      }
       if (outcome === 'uncertain') {
         if (answer === 'add') outcome = proposedOutcome === 'already_known' ? 'already_known' : 'add'
         else if (answer === 'skip') outcome = 'context'
@@ -302,6 +323,14 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
           ? `Does "${f.evidence}" refer to ${f.mention}?`
           : `Should Orbit remember "${f.k}: ${f.v}" for ${f.mention}?`, 'fact', [
           { value: 'add', label: attribution ? 'Yes, remember for this person' : 'Add as a new fact' }, { value: 'skip', label: 'Keep only in this entry' },
+        ]))
+      }
+      if (entry.sourceHostJournalId && outcome === 'already_known') {
+        if (entry.answers[qid] === 'support') outcome = 'supported'
+        else if (entry.answers[qid] === 'skip') outcome = 'context'
+        else questions.push(question(qid, `Add this journal as support for ${f.mention}’s existing fact “${f.k}: ${f.v}”?`, 'fact', [
+          { value: 'support', label: 'Link as supporting context' },
+          { value: 'skip', label: 'Keep it only in this journal' },
         ]))
       }
       outcomes.push({ index, outcome, evidence: f.evidence, mention: f.mention, ...(outcome === 'already_known' && decision.known ? { known: decision.known } : {}) })
@@ -341,7 +370,8 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
       mutations.people[pid].addedFacts.push(fact)
     })
     extracted.facts.forEach((f, index) => {
-      if (outcomes[index].outcome !== 'already_known') return
+      if (!['already_known', 'supported'].includes(outcomes[index].outcome)) return
+      if (entry.sourceHostJournalId && outcomes[index].outcome !== 'supported') return
       const pid = resolved.get(f.mention)
       if (!pid) return
       const before = people[pid]
@@ -415,10 +445,11 @@ export async function processJournal(id, revision, { ask = providerAsk } = {}) {
     const lines = [eventSummary, ...outcomes.filter((o) => Number.isInteger(o.index)).map((o) => {
       const f = extracted.facts[o.index]
       const name = people[resolved.get(f.mention)]?.name || f.mention
-      const action = o.outcome === 'add' ? 'Added' : o.outcome === 'already_known' ? 'Already known' : 'Kept in this entry'
+      const action = o.outcome === 'add' ? 'Added' : o.outcome === 'supported' ? 'Supported' : o.outcome === 'already_known' ? 'Already known' : 'Kept in this entry'
       return `${action}: ${f.k}: ${f.v} for ${name}.`
     })]
-    const receipt = { summary: eventSummary, lines, ...(eventRef ? { eventId: eventRef } : {}) }
+    const personReferences = [...resolved.entries()].map(([mention, personId]) => ({ mention, personId, name: people[personId]?.name || mention }))
+    const receipt = { summary: eventSummary, lines, personReferences, ...(eventRef ? { eventId: eventRef } : {}) }
     const reads = extracted.event?.people.map((m) => resolved.get(m)).filter((pid) => pid && !changes.some((c) => c.t === 'people' && c.id === pid))
       .map((pid) => ({ t: 'people', id: pid, exists: true })) || []
     if (occasionRead) reads.push(occasionRead)

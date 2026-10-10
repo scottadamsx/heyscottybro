@@ -1,6 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { eventNeedsOrbitPrompt, eventOrbitLogPatch, reminderActionForName, reminderActionUrl, REMINDER_ACTION_LABELS, resolveJournalPerson } from "./journalOrbit.js";
+import { eventNeedsOrbitPrompt, eventOrbitLogPatch, reminderActionForName, reminderActionUrl, REMINDER_ACTION_LABELS, resolveJournalPerson, splitJournalPersonMentions } from "./journalOrbit.js";
+
+test("journal people links match whole mentions, prefer the longest name, and preserve prose", () => {
+  assert.deepEqual(splitJournalPersonMentions("McKenna met Kenna. Mckenna!", [
+    { mention: "Kenna", personId: "short" },
+    { mention: "McKenna", personId: "long" },
+  ]), [
+    { text: "McKenna", personId: "long", name: "McKenna" },
+    { text: " met " },
+    { text: "Kenna", personId: "short", name: "Kenna" },
+    { text: ". " },
+    { text: "Mckenna", personId: "long", name: "McKenna" },
+    { text: "!" },
+  ]);
+  assert.deepEqual(splitJournalPersonMentions("Mckennas", [{ mention: "McKenna", personId: "p1" }]), [{ text: "Mckennas" }]);
+});
 
 test("person references resolve only a unique exact, alias, or first-name match", () => {
   const people = {

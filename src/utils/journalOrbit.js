@@ -10,6 +10,34 @@ export function normalizePersonName(value) {
     .replace(/\s+/g, " ");
 }
 
+/** Split journal prose into exact person-mention links without interpreting HTML/Markdown. */
+export function splitJournalPersonMentions(text, references = []) {
+  const source = String(text || "");
+  const matches = (Array.isArray(references) ? references : [])
+    .filter((item) => item && typeof item.mention === "string" && item.mention.trim() && typeof item.personId === "string")
+    .sort((a, b) => b.mention.length - a.mention.length);
+  const parts = [];
+  let plainStart = 0;
+  let index = 0;
+  while (index < source.length) {
+    const match = matches.find(({ mention }) => {
+      const candidate = source.slice(index, index + mention.length);
+      if (candidate.toLocaleLowerCase() !== mention.toLocaleLowerCase()) return false;
+      const before = index ? String.fromCodePoint(source.codePointAt(index - 1)) : "";
+      const afterIndex = index + mention.length;
+      const after = afterIndex < source.length ? String.fromCodePoint(source.codePointAt(afterIndex)) : "";
+      return (!before || !/[\p{L}\p{N}]/u.test(before)) && (!after || !/[\p{L}\p{N}]/u.test(after));
+    });
+    if (!match) { index += String.fromCodePoint(source.codePointAt(index)).length; continue; }
+    if (plainStart < index) parts.push({ text: source.slice(plainStart, index) });
+    parts.push({ text: source.slice(index, index + match.mention.length), personId: match.personId, name: match.name || match.mention });
+    index += match.mention.length;
+    plainStart = index;
+  }
+  if (plainStart < source.length) parts.push({ text: source.slice(plainStart) });
+  return parts.length ? parts : [{ text: source }];
+}
+
 /** Resolve only a unique exact name/alias or a unique first-name match. */
 export function resolveJournalPerson(people, mention) {
   const key = normalizePersonName(mention);

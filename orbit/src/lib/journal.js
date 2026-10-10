@@ -28,6 +28,12 @@ export function validateJournalInput(body, previous = null) {
   if (previous && (body.referenceDate !== previous.referenceDate || body.timeZone !== previous.timeZone)) {
     return { ok: false, message: 'The captured date and time zone cannot change.' }
   }
+  if (body.sourceHostJournalId !== undefined && !/^[\w-]{1,64}$/.test(body.sourceHostJournalId)) {
+    return { ok: false, message: 'Bad source journal reference.' }
+  }
+  if (previous && body.sourceHostJournalId !== undefined && body.sourceHostJournalId !== previous.sourceHostJournalId) {
+    return { ok: false, message: 'The source journal reference cannot change.' }
+  }
   if (body.answers !== undefined) {
     if (!plain(body.answers) || Object.keys(body.answers).length > JOURNAL_MAX_ANSWERS) {
       return { ok: false, message: 'Too many answers.' }
@@ -37,7 +43,7 @@ export function validateJournalInput(body, previous = null) {
       const q = questions.get(id)
       if (!q || !finiteText(answer, 200)) return { ok: false, message: 'Unknown or invalid answer.' }
       if (q.kind === 'date' && !isYMD(answer)) return { ok: false, message: 'Answer with an exact YYYY-MM-DD date.' }
-      if (q.kind === 'person' && q.options?.length && !q.options.some((o) => o.value === answer) && answer.startsWith('create:')) {
+      if (q.kind === 'person' && q.options?.length && !q.options.some((o) => o.value === answer)) {
         return { ok: false, message: 'Unknown person choice.' }
       }
       if (q.kind === 'fact' && !q.options?.some((o) => o.value === answer)) {
@@ -79,5 +85,6 @@ export function validJournalEntry(entry) {
     Number.isSafeInteger(entry.revision) && entry.revision > 0 &&
     JOURNAL_STATUSES.has(entry.status) && finiteText(entry.text, JOURNAL_MAX_TEXT) &&
     isYMD(entry.referenceDate) && validTimeZone(entry.timeZone) &&
+    (entry.sourceHostJournalId === undefined || /^[\w-]{1,64}$/.test(entry.sourceHostJournalId)) &&
     Array.isArray(entry.questions) && plain(entry.answers)
 }

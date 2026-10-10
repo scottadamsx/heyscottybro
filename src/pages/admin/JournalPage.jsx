@@ -1,7 +1,7 @@
 import { formatDisplayDateTime as preferredDisplayDateTime } from "../../utils/dates.js";
 import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { loadJournal, newJournalEntry, updateJournalEntry, deleteJournalEntry } from "../../api/plannerApi";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field, Modal, ShowMore } from "../../components/ui";
@@ -30,7 +30,8 @@ import {
 } from "../../utils/journalWriting";
 import { JOURNAL_CLEANUP_LIMIT, loadJournalCleanupStatus, requestJournalCleanup } from "../../api/journalCleanup";
 import { useJournalCleanupEnabled } from "../../utils/settings";
-import { notifyReminderDestinationSaved } from "../../utils/journalOrbit";
+import { notifyReminderDestinationSaved, splitJournalPersonMentions } from "../../utils/journalOrbit";
+import { queueOrbitJournalReview } from "../../utils/orbitJournalBridge";
 
 const monthLabel = (ds) => new Date(ds + "T00:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
 const shortDay = (ds) => preferredDisplayDate(new Date(ds + "T00:00:00"));
@@ -41,6 +42,7 @@ const draftMetadata = (timer, cleanup, now = timerNow()) => ({ timer: writingTim
 
 export default function JournalPage() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const selectedId = params.get("id");
   // ?new=1 opens the compose modal (deep-linkable, and keeps other params like tab=journal).
   const composeOpen = params.get("new") === "1";
@@ -61,9 +63,10 @@ export default function JournalPage() {
   useEffect(() => { composeRef.current = compose; }, [compose]);
   useEffect(() => { composeCleanupRef.current = composeCleanup; }, [composeCleanup]);
   const updateCompose = (patch, { bodyInput = false } = {}) => {
-    const next = { ...compose, ...patch };
+    const next = { ...composeRef.current, ...patch };
     const nextTimer = bodyInput ? writingTimerInput(composeTimer, timerNow()) : composeTimer;
     const nextCleanup = bodyInput ? null : composeCleanup;
+    composeRef.current = next;
     setCompose(next);
     if (bodyInput) { setComposeTimer(nextTimer); setComposeCleanup(null); }
     setDraftFailed(!saveDraft(JOURNAL_NEW_DRAFT, next, draftMetadata(nextTimer, nextCleanup)));
@@ -82,6 +85,8 @@ export default function JournalPage() {
   const [cleanupAvailable, setCleanupAvailable] = useState(false);
   const cleanupEnabled = useJournalCleanupEnabled();
   const [cleanupBusy, setCleanupBusy] = useState(null);
+  const [composeSpeaking, setComposeSpeaking] = useState(false);
+  const [editSpeaking, setEditSpeaking] = useState(false);
   const [cleanupNotice, setCleanupNotice] = useState(null);
   const [cleanupReview, setCleanupReview] = useState(null);
   const composeOpenRef = useRef(composeOpen);
@@ -128,6 +133,16 @@ export default function JournalPage() {
 
   const todayLong = formatDisplayDate(toDateStr(new Date()));
 
+  const openOrbitReview = (journalEntry) => {
+    if (!journalEntry?.id || !queueOrbitJournalReview({
+      hostJournalId: String(journalEntry.id), text: journalEntry.entry || "", date: journalEntry.date,
+    })) {
+      addToast("Couldn't open the Orbit review for this entry.", "error");
+      return;
+    }
+    navigate(`/admin/people?openJournalReview=1&sourceHostJournalId=${encodeURIComponent(journalEntry.id)}`);
+  };
+
   const entryFields = (e) => ({ title: e.title || "", entry: e.entry || "", date: e.date || toDateStr(new Date()) });
   // Edits are cached per entry too; closing the edit modal (or leaving the entry)
   // keeps the draft and the Edit button becomes "Resume edits". Only Discard or a
@@ -141,9 +156,10 @@ export default function JournalPage() {
     setEditing(true);
   };
   const updateEdit = (patch, { bodyInput = false } = {}) => {
-    const next = { ...editForm, ...patch };
+    const next = { ...editFormRef.current, ...patch };
     const nextTimer = bodyInput ? writingTimerInput(editTimer, timerNow()) : editTimer;
     const nextCleanup = bodyInput ? null : editCleanup;
+    editFormRef.current = next;
     setEditForm(next);
     if (bodyInput) { setEditTimer(nextTimer); setEditCleanup(null); }
     setDraftFailed(!saveDraft(journalEditDraft(selectedEntry.id), next, draftMetadata(nextTimer, nextCleanup)));
@@ -284,8 +300,9 @@ export default function JournalPage() {
 
   const submit = async () => {
     if (!entry.trim()) return false;
+    let saved;
     try {
-      await newJournalEntry({
+      saved = await newJournalEntry({
         title: title.trim() || todayLong,
         entry: entry.trim(),
         date: toDateStr(new Date()),
@@ -306,6 +323,7 @@ export default function JournalPage() {
     setComposeTimer(createWritingTimer());
     setComposeCleanup(null);
     await load();
+    if (saved?.id) openOrbitReview({ id: saved.id, entry: entry.trim(), date: toDateStr(new Date()) });
   };
 
   const hasEditDraft = selectedEntry && !editing && loadDraft(journalEditDraft(selectedEntry.id)) !== null;
@@ -478,6 +496,9 @@ export default function JournalPage() {
                   {/* Untitled entries already show the date as their title */}
                   <p className="journal-sheet-date">{selectedEntry.title !== formatDisplayDate(selectedEntry.date) ? formatDisplayDate(selectedEntry.date) : ""}</p>
                   <div className="journal-sheet-actions">
+                    <button type="button" className="btn-sm btn-secondary-sm" onClick={() => openOrbitReview(selectedEntry)} title="Review this entry's people and updates in Orbit">
+                      <i className="fa-solid fa-users" aria-hidden="true" /> Review in Orbit
+                    </button>
                     <button type="button" className="btn-sm btn-secondary-sm" onClick={() => startEdit(selectedEntry)} title={hasEditDraft ? "You have unsaved edits to this entry" : "Edit entry"}>
                       <i className="fa-solid fa-pen" aria-hidden="true" /> {hasEditDraft ? "Resume edits" : "Edit"}
                     </button>
@@ -495,7 +516,25 @@ export default function JournalPage() {
                     <span> · {selectedEntry.ai_provenance.model} · {selectedEntry.ai_provenance.prompt} v{selectedEntry.ai_provenance.promptVersion} · {savedTime(selectedEntry.ai_provenance.generatedAt)}</span>
                   </p>
                 )}
-                <p className="journal-sheet-body">{selectedEntry.entry}</p>
+                {selectedEntry.ai_provenance?.orbit?.status === "saved" && (
+                  <section className="journal-ai-provenance" aria-label="Orbit updates">
+                    <strong>Orbit updates</strong>
+                    {selectedEntry.ai_provenance.orbit.personReferences?.length > 0 && (
+                      <p>People: {selectedEntry.ai_provenance.orbit.personReferences.map((person, index) => (
+                        <Fragment key={`${person.personId}-${person.mention}`}>
+                          {index > 0 ? ", " : ""}<a href={`/admin/people/person/${encodeURIComponent(person.personId)}`}>{person.name || person.mention}</a>
+                        </Fragment>
+                      ))}</p>
+                    )}
+                    {selectedEntry.ai_provenance.orbit.receipt?.lines?.length > 0 && (
+                      <ul>{selectedEntry.ai_provenance.orbit.receipt.lines.map((line, index) => <li key={index}>{line}</li>)}</ul>
+                    )}
+                  </section>
+                )}
+                <p className="journal-sheet-body">{splitJournalPersonMentions(selectedEntry.entry, selectedEntry.ai_provenance?.orbit?.personReferences)
+                  .map((part, index) => part.personId
+                    ? <a key={index} href={`/admin/people/person/${encodeURIComponent(part.personId)}`} title={`Open ${part.name} in Orbit`}>{part.text}</a>
+                    : <Fragment key={index}>{part.text}</Fragment>)}</p>
               </article>
             )}
           </div>
@@ -561,7 +600,7 @@ export default function JournalPage() {
           width={720}
           className="journal-modal"
           submitLabel="Save entry"
-          submitDisabled={!entry.trim()}
+          submitDisabled={!entry.trim() || composeSpeaking}
           onClose={closeCompose}
           onSubmit={submit}
           extraActions={hasDraft && <button className="btn btn-ghost" type="button" onClick={discardDraft}>Discard draft</button>}
@@ -583,6 +622,11 @@ export default function JournalPage() {
           </Field>
           <WritingTools
             body={entry}
+            onRecordingChange={setComposeSpeaking}
+            onTranscript={(text) => {
+              const current = composeRef.current.entry || "";
+              updateCompose({ entry: `${current}${current && !/\s$/.test(current) ? " " : ""}${text}` }, { bodyInput: true });
+            }}
             timer={composeTimer}
             clock={clock}
             onTimer={(action) => setTimerAction("compose", action)}
@@ -611,7 +655,7 @@ export default function JournalPage() {
           width={720}
           className="journal-modal"
           submitLabel="Save changes"
-          submitDisabled={!editForm.entry.trim()}
+          submitDisabled={!editForm.entry.trim() || editSpeaking}
           onClose={dismissEdit}
           onSubmit={saveEdit}
           extraActions={<button className="btn btn-ghost" type="button" onClick={discardEdit}>Discard changes</button>}
@@ -631,6 +675,11 @@ export default function JournalPage() {
           </Field>
           <WritingTools
             body={editForm.entry}
+            onRecordingChange={setEditSpeaking}
+            onTranscript={(text) => {
+              const current = editFormRef.current.entry || "";
+              updateEdit({ entry: `${current}${current && !/\s$/.test(current) ? " " : ""}${text}` }, { bodyInput: true });
+            }}
             timer={editTimer}
             clock={clock}
             onTimer={(action) => setTimerAction("edit", action)}
@@ -656,11 +705,78 @@ export default function JournalPage() {
   );
 }
 
-function WritingTools({ body, timer, clock, onTimer, cleanupVisible, cleanupBusy, onCleanup, pendingCleanup, onUndo, notice }) {
+function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onTimer, cleanupVisible, cleanupBusy, onCleanup, pendingCleanup, onUndo, notice }) {
   const counts = journalWritingCounts(body);
   const elapsed = elapsedWritingMs(timer, clock);
   const offline = typeof navigator !== "undefined" && !navigator.onLine;
   const cleanupDisabled = !body.trim() || counts.characters > JOURNAL_CLEANUP_LIMIT || offline || cleanupBusy;
+  const [recording, setRecording] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [speechNotice, setSpeechNotice] = useState(null);
+  const recognitionRef = useRef(null);
+  const SpeechRecognition = typeof window !== "undefined"
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+    : null;
+  useEffect(() => () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      onRecordingChange(false);
+    }
+  }, [onRecordingChange]);
+  const toggleSpeech = () => {
+    if (recording) {
+      setStopping(true);
+      setSpeechNotice({ type: "status", text: "Finishing your transcript…" });
+      recognitionRef.current?.stop();
+      return;
+    }
+    if (!SpeechRecognition) {
+      setSpeechNotice({ type: "error", text: "Voice typing isn't supported in this browser. You can still type your entry." });
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = navigator.language || "en-US";
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results).slice(event.resultIndex)
+          .filter((result) => result.isFinal)
+          .map((result) => result[0]?.transcript?.trim())
+          .filter(Boolean)
+          .join(" ");
+        if (transcript) {
+          onTranscript(transcript);
+          setSpeechNotice({ type: "status", text: "Transcript added to your draft. Save it, then review the people and proposed Orbit updates." });
+        }
+      };
+      recognition.onerror = (event) => {
+        setRecording(false);
+        setStopping(false);
+        onRecordingChange(false);
+        setSpeechNotice({ type: "error", text: event.error === "not-allowed"
+          ? "Microphone access was blocked. Allow it in your browser settings and try again."
+          : `Voice typing stopped (${event.error || "recognition error"}). Your existing draft is unchanged.` });
+      };
+      recognition.onend = () => { setRecording(false); setStopping(false); onRecordingChange(false); recognitionRef.current = null; };
+      recognitionRef.current = recognition;
+      setSpeechNotice({ type: "status", text: "Listening. Speak naturally; select Stop when you’re done." });
+      recognition.start();
+      setRecording(true);
+      setStopping(false);
+      onRecordingChange(true);
+    } catch {
+      recognitionRef.current = null;
+      setRecording(false);
+      setStopping(false);
+      onRecordingChange(false);
+      setSpeechNotice({ type: "error", text: "Couldn't start voice typing. Check microphone permission and try again." });
+    }
+  };
   return (
     <div className="journal-writing-tools" aria-label="Writing tools">
       <div className="journal-writing-stats">
@@ -671,6 +787,9 @@ function WritingTools({ body, timer, clock, onTimer, cleanupVisible, cleanupBusy
         <span className="journal-timer" aria-label={`Writing time ${formatWritingDuration(elapsed)}`}>{formatWritingDuration(elapsed)}</span>
       </div>
       <div className="journal-writing-actions">
+        <button type="button" className={`btn btn-sm ${recording ? "btn-primary" : "btn-secondary-sm"}`} onClick={toggleSpeech} aria-pressed={recording} disabled={stopping}>
+          <i className={`fa-solid ${recording ? "fa-stop" : "fa-microphone"}`} aria-hidden="true" /> {stopping ? "Finishing…" : recording ? "Stop speaking" : "Speak entry"}
+        </button>
         {timer.status === "running" ? (
           <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => onTimer("pause")}>Pause</button>
         ) : timer.status === "paused" ? (
@@ -691,6 +810,8 @@ function WritingTools({ body, timer, clock, onTimer, cleanupVisible, cleanupBusy
         )}
         {pendingCleanup && <button type="button" className="btn btn-sm btn-ghost" onClick={onUndo}>Undo cleanup</button>}
       </div>
+      <p className="journal-cleanup-notice" role="note">Voice typing uses your browser’s speech-recognition service; audio may be processed by your browser provider. Nothing is added until you start speaking, and the transcript stays an editable draft until you save.</p>
+      {speechNotice && <p className={`journal-cleanup-notice${speechNotice.type === "error" ? " is-error" : ""}`} role={speechNotice.type === "error" ? "alert" : "status"}>{speechNotice.text}</p>}
       {notice && <p className={`journal-cleanup-notice${notice.type === "error" ? " is-error" : ""}`} role={notice.type === "error" ? "alert" : "status"}>{notice.text}</p>}
     </div>
   );

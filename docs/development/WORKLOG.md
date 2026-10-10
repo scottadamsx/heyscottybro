@@ -385,3 +385,23 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Applied only the existing Journal–Orbit event-link migration, with bounded lock/statement timeouts and a table-scoped constraint existence check. Remote migration version: `20261010034910`, name `journal_orbit_links`.
 - Verified both column definitions, four-state constraint, partial pending-event index, unchanged owner-only SELECT/write policy and enabled RLS. All 80 pre-existing events remain present with legacy status and null Orbit links. No event content or account data was edited.
 - Pre/post security advisors reported unrelated pre-existing findings, recorded in BUGS.md; none involved the changed events table. No unrelated security settings were changed.
+
+### Journal voice capture and Orbit entity review
+
+- Connected successful host Journal saves to Orbit's evidence-grounded journal processor using a stable, content-derived Orbit ID and an in-memory handoff; journal text is not placed in the route or local storage.
+- Orbit now requires explicit review for each person link and proposed fact/support change before its atomic write. Host journal mentions cannot create people implicitly; unknown mentions may remain unlinked. Verified receipts and selected person IDs return to existing Journal provenance, where safe profile links and action summaries are rendered.
+- Added browser speech-recognition controls to both new and edit Journal drafts. Audio processing disclosure is visible, recognized text appends to the editable autosaved draft, and the ordinary Journal save still must be pressed before Orbit review begins.
+- The Journal Save action stays disabled until speech recognition has ended, including the stopping interval while the browser delivers any final transcript, preventing a partial transcript from being saved before dictation fully finishes.
+- Added focused regressions for safe mention rendering, approved/declined Orbit profile updates, and voice-entry controls. Host `npm test` passes 329 tests; canonical Orbit `npm test` passes 212 tests; lint, host/Orbit production builds, Orbit UI/AI checks, and ledger-only validation pass. Embedded Orbit was synchronized from canonical source.
+- Scott explicitly approved local voice-dictation implementation with exact **“go”** on 2026-10-10. Not verified: microphone permission/results on real devices, rendered desktop/mobile flows, real AI/provider behavior, and live linked-record round trips. No real provider call, production journal/profile write, deployment, commit, or push occurred. Commit, push, and deployment require separate approval.
+
+## 2026-10-10 — Approved Journal–Orbit production release
+
+- Scott explicitly approved deploying the current canonical Orbit and synchronized heyScottyBro source with **“go”**. Scope is commits and pushes to each existing `main`, then verification of automatic host production deployment. No new migration, production-record write, or live AI request is authorized.
+- Canonical Orbit release checks pass: 212/212 tests, production build, UI validator, AI validator, ledger-only validator, and `git diff --check`. The first restricted run could not bind its test-only loopback server; rerunning with loopback access passed all integration suites.
+- Committed the canonical Orbit changes as `22d8764508cdf885a77e791c58ac0190b1c1e4cb` (`Add source-aware journal and Orbit workflows`); its worktree is clean. Host synchronization and validation remain next.
+- Pushed canonical Orbit `main`; a fetch confirmed remote `origin/main` is exactly `22d8764508cdf885a77e791c58ac0190b1c1e4cb`. The host push is next.
+- Synchronized host `orbit/` from that exact canonical commit. Final host lint, all 329 tests, production build, six-session registry check, and whitespace validation pass. The build retains its existing >500 kB chunk advisory. Provider evals were intentionally not run because deployment approval did not include live Anthropic requests.
+- Committed the synchronized heyScottyBro source and release records (`Ship Journal Orbit workflows`). Pushes are next, Orbit first.
+- Do not run Orbit's live-provider evals: they call Anthropic and are outside the explicit release approval. No production AI request has been sent.
+- Next: push Orbit before heyScottyBro and confirm remote commits, CI, and Vercel Production. Report microphone, provider, and rendered desktop/mobile scenarios as unverified.

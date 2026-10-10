@@ -22,11 +22,19 @@ function RoutedLayer() {
   const consumedSource = useRef(null)
   useEffect(() => {
     const sourceHostEventId = params.get('sourceHostEventId')
+    const sourceHostJournalId = params.get('sourceHostJournalId')
     const openLog = params.get('openLog') === '1'
-    const token = sourceHostEventId || (openLog ? `reminder:${params.get('reminderId')}` : null)
+    const openJournalReview = params.get('openJournalReview') === '1'
+    const token = sourceHostEventId || (openJournalReview ? `journal:${sourceHostJournalId}` : openLog ? `reminder:${params.get('reminderId')}` : null)
     if (!token || consumedSource.current === token) return
     consumedSource.current = token
-    open('log', {
+    if (openJournalReview && sourceHostJournalId) {
+      const pending = window.__pendingOrbitJournalReview
+      if (pending && String(pending.hostJournalId) === sourceHostJournalId && Date.now() - pending.queuedAt <= 120_000) {
+        delete window.__pendingOrbitJournalReview
+        open('journal', pending)
+      }
+    } else open('log', {
       ...(sourceHostEventId ? { sourceHostEventId } : {}),
       date: params.get('date') || undefined,
       title: params.get('title') || undefined,
@@ -35,6 +43,7 @@ function RoutedLayer() {
     })
     const next = new URLSearchParams(params)
     next.delete('sourceHostEventId'); next.delete('title'); next.delete('date'); next.delete('openLog')
+    next.delete('sourceHostJournalId'); next.delete('openJournalReview')
     setParams(next, { replace: true })
   }, [params, setParams, open])
   const person = matchPath('/person/:id', pathname)

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useOrbit } from '../state/OrbitContext.jsx'
 import { useUI } from '../state/UIContext.jsx'
 import { formatDate, formatDateTime, formatReceiptDates } from '../lib/dates.js'
-import { journalAnswersReady, journalCounts, pendingJournalDraft } from '../lib/journalClient.js'
+import { journalAnswersReady, journalContext, journalCounts, pendingJournalDraft } from '../lib/journalClient.js'
 import Modal from './ui/Modal.jsx'
 import Button from './ui/Button.jsx'
 import Badge from './ui/Badge.jsx'
@@ -45,23 +45,35 @@ function Question({ question, value, onChange, disabled }) {
   )
 }
 
-export default function JournalDrawer({ entryId, onClose, onManual }) {
+export default function JournalDrawer({ entryId, onClose, onManual, initialText, sourceHostJournalId, orbitJournalId, referenceDate }) {
   const { ai, health, journals, journalState, journalError, reloadJournals, sendJournal, answerJournal, retryJournal, undoJournal } = useOrbit()
   const { openEvent, notify } = useUI()
   const [selectedId, setSelectedId] = useState(entryId || null)
   const [showEntries, setShowEntries] = useState(false)
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText || '')
   const [answers, setAnswers] = useState({})
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const lock = useRef(false)
   const persisted = useRef(false)
-  const pendingDraft = useRef(null)
+  const pendingDraft = useRef(initialText && sourceHostJournalId ? {
+    id: orbitJournalId,
+    context: { ...journalContext(), referenceDate: referenceDate || journalContext().referenceDate, sourceHostJournalId },
+    text: initialText.trim(),
+  } : null)
   const inputRef = useRef(null)
   const entries = Object.values(journals).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   const counts = journalCounts(journals)
   const selected = selectedId ? journals[selectedId] : null
   const available = health?.journal?.available === true
+
+  const reportHostJournal = (entry, status = 'saved') => {
+    if (sourceHostJournalId && entry?.status === 'saved') {
+      window.dispatchEvent(new CustomEvent('orbit:host-journal-saved', { detail: {
+        sourceHostJournalId, orbitJournalId: entry.id, status, receipt: entry.receipt || null,
+      } }))
+    }
+  }
 
   useEffect(() => {
     const pending = pendingDraft.current
@@ -100,31 +112,38 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
 
   const send = () => {
     if (!ai.available || !available || !text.trim() || lock.current) return
-    const draft = pendingJournalDraft(pendingDraft.current, text)
+    const draft = pendingJournalDraft(pendingDraft.current, text, sourceHostJournalId ? {
+      id: orbitJournalId,
+      context: { referenceDate: referenceDate || journalContext().referenceDate, sourceHostJournalId },
+    } : {})
     pendingDraft.current = draft
     setSelectedId(draft.id)
     const alreadySaved = journals[draft.id]
     if (alreadySaved) {
       setText('')
       pendingDraft.current = null
-      run(() => retryJournal(alreadySaved))
+      run(async () => reportHostJournal(await retryJournal(alreadySaved)))
       return
     }
     run(async (onPersist) => {
-      await sendJournal(draft.text, draft.id, draft.context, (entry) => {
+      const entry = await sendJournal(draft.text, draft.id, draft.context, (entry) => {
         onPersist(entry)
         setText('')
         pendingDraft.current = null
       })
+      reportHostJournal(entry)
     }, { needsPersist: true })
   }
 
   const submitAnswers = () => {
     if (!selected || !journalAnswersReady(selected, answers) || !ai.available) return
-    run(() => answerJournal(selected, answers, () => {
-      persisted.current = true
-      setBusy('processing')
-    }), { needsPersist: true })
+    run(async () => {
+      const entry = await answerJournal(selected, answers, () => {
+        persisted.current = true
+        setBusy('processing')
+      })
+      reportHostJournal(entry)
+    }, { needsPersist: true })
   }
 
   const close = () => {
@@ -183,7 +202,7 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
                     <Question key={question.id} question={question} value={answers[question.id] || ''} onChange={(value) => setAnswers((current) => ({ ...current, [question.id]: value }))} disabled={!!busy || !ai.available} />
                   ))}
                   {ai.available && <Button variant="primary" onClick={submitAnswers} disabled={!!busy || !journalAnswersReady(selected, answers)}>
-                    {busy ? 'Saving…' : 'Continue'}
+                    {busy ? 'Saving…' : sourceHostJournalId ? 'Save approved changes' : 'Continue'}
                   </Button>}
                 </div>
               )}
@@ -196,6 +215,7 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
                     {selected.receipt.eventId && <Button variant="secondary" onClick={() => { close(); openEvent(selected.receipt.eventId) }}>Open event</Button>}
                     <Button variant="danger" onClick={() => run(async () => {
                       await undoJournal(selected)
+                      if (sourceHostJournalId) window.dispatchEvent(new CustomEvent('orbit:host-journal-undone', { detail: { sourceHostJournalId, orbitJournalId: selected.id } }))
                       onClose()
                       notify('Save undone')
                     })} disabled={!!busy}>Undo save</Button>
@@ -234,8 +254,9 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
             </div>
           ) : ai.available ? (
             <div className="stack">
-              <Field label="What happened?">
-                {(id) => <textarea id={id} ref={inputRef} className="input textarea journal-textarea" value={text} onChange={(event) => setText(event.target.value)} rows={8} maxLength={8000} placeholder="Write about the time you spent together…" data-autofocus disabled={!ai.available || !available || !!busy || !!pendingDraft.current} onKeyDown={(event) => {
+              {sourceHostJournalId && <p className="muted">This journal entry is already saved. Orbit will identify people and proposed profile updates, then ask you to review them before saving any changes.</p>}
+              <Field label={sourceHostJournalId ? 'Journal entry to review' : 'What happened?'}>
+                {(id) => <textarea id={id} ref={inputRef} className="input textarea journal-textarea" value={text} onChange={(event) => setText(event.target.value)} readOnly={!!sourceHostJournalId} rows={8} maxLength={8000} placeholder="Write about the time you spent together…" data-autofocus disabled={!ai.available || !available || !!busy || !!pendingDraft.current} onKeyDown={(event) => {
                   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.nativeEvent.isComposing) {
                     event.preventDefault()
                     send()
@@ -245,7 +266,7 @@ export default function JournalDrawer({ entryId, onClose, onManual }) {
               <div className="journal-composer-actions">
                 <span className="muted">{text.length} / 8000</span>
                 <Button variant="primary" onClick={send} disabled={!ai.available || !available || !text.trim() || !!busy}>
-                  <Send size={15} aria-hidden /> {busy ? 'Saving…' : pendingDraft.current ? 'Retry save' : 'Send'}
+                  <Send size={15} aria-hidden /> {busy ? 'Saving…' : sourceHostJournalId ? 'Find people and updates' : pendingDraft.current ? 'Retry save' : 'Send'}
                 </Button>
               </div>
             </div>
