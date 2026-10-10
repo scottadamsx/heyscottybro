@@ -2,12 +2,16 @@
 
 User-visible product changes are recorded here. Internal work appears in `docs/development/WORKLOG.md`.
 
-## Unreleased
+## 2026-10-10 Production release
 
 ### Added
 
 - Journal entries can be dictated in new/edit forms with an explicit microphone action; saved entries open a review in Orbit for person links and proposed profile notes, and approved references appear as clickable people links with an action receipt. The browser speech provider may process audio; the transcript remains an editable draft until saved.
-- Optional AI event-form drafting, source-linked post-event Orbit logging, and action-aware reminder handoffs are in the source snapshot. Event drafting stays separately gated; the event-link migration was applied and verified on 2026-10-10. Real-provider and rendered-device verification remain open.
+- Optional AI event-form drafting, source-linked post-event Orbit logging, and action-aware reminder handoffs are released. Event drafting stays separately gated; the event-link migration was applied and verified on 2026-10-10. Real-provider and feature-specific desktop/mobile verification remain open.
+
+## Unreleased
+
+### Added
 
 - Frodo screenshots can be explicitly saved to the private Documents library with their chat context, then reopened from a safe in-app file link; temporary attachments remain temporary unless selected.
 - Frodo can now search safe planner and Brain shelves in parallel with source-labelled results, use bounded rich data filters, and ask for the actual occurrences inside a reminder/event date range.

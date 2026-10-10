@@ -1,6 +1,6 @@
 # Feature: Journal–Orbit workflows
 
-**Status:** Implemented — release approved; release checks in progress; rendered and live-provider checks remain
+**Status:** Released to production 2026-10-10 — desktop/mobile feature flows and live-provider behavior remain unverified
 **Owner:** Scott  
 **Started:** 2026-10-09
 
@@ -147,12 +147,13 @@ APP-ACTION REMINDERS
 
 ## Implementation record
 
-- Files changed: host event drafting, calendar, reminders, health/workout/journal flows and settings; Orbit's conversational event logger/host linking; `src/utils/journalOrbit.js` and tests; additive unapplied host migration; feature record, decision ledger and work logs.
+- Files changed: host event drafting, calendar, reminders, health/workout/journal flows and settings; Orbit's conversational event logger/host linking; `src/utils/journalOrbit.js` and tests; additive event-link migration (applied and verified); feature record, decision ledger and work logs.
 - Decisions: Four originally identified SPEC-GAPs were accepted with Scott's exact “go”. The event-drafting switch is separate and default-off. Hangout logging reuses the existing Interview tool loop under the Orbit UI name, with source-aware linking and manual fallback. Host-sourced journal updates now require explicit per-person and per-fact review; all Orbit writes remain in Orbit. Scott approved voice dictation and then deployment of the canonical Orbit + synchronized host change set with exact “go” on 2026-10-10. No new migration, production-record write, or live provider request is authorized.
 - Data/API: Event source-link migration `journal_orbit_links` was applied and verified on 2026-10-10 as recorded in `ACTIVE_WORK.md`. No new schema or production journal/profile data was changed for this implementation; no live AI/provider call was made.
 
 ## Validation
 
 - Automated: After final sync, host `npm run lint`, `npm test` (329 tests), `npm run build`, `npm run session-registry:check`, and `git diff --check` pass. Canonical Orbit `npm test` (212 tests), `npm run build`, `npm run check:ui`, `npm run check:ai`, `npm run check:ledger -- --ledger-only`, and whitespace checks pass. Full Orbit ledger validation has a generated-document compilation warning; generated docs were not hand-edited. Live-provider evals were not run because they send requests to Anthropic and are outside deployment approval.
-- Desktop/mobile visual check: Not run. Browser microphone behavior, actual device permission prompts, real-provider extraction, and live linked-record behavior remain unverified.
+- Production: GitHub's Vercel check reports success for host commit `4352a8f86f86bca671a28081001758e051b32438`. Reloading the authenticated app resolved `/admin` to `/admin/today`, which finished loading. This smoke test does not cover the new Journal/Orbit flow.
+- Desktop/mobile feature visual check: Not run. Browser microphone behavior, actual device permission prompts, real-provider extraction, and live linked-record behavior remain unverified.
 - Known limitations: Voice dictation uses the browser speech-recognition provider and may transmit audio; only the user-initiated UI flow was implemented, not live microphone verification. Event AI drafting was not called. The applied migration covers event links only; no new schema was added for journal links/receipts, which are stored in the host journal's existing provenance JSON.
