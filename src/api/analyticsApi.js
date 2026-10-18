@@ -26,6 +26,8 @@ async function loadSource(userId, [table, order, maybeSingle]) {
   let total = null;
   for (let from = 0; from < maxRows; from += pageSize) {
     let query = supabase.from(table).select("*", { count: "exact" }).eq("user_id", userId).order(order, { ascending: false });
+    // A stalled source must reject into the per-source error path, never hang the page.
+    query = query.abortSignal(AbortSignal.timeout(15000));
     query = maybeSingle ? query.limit(1) : query.range(from, Math.min(from + pageSize - 1, maxRows - 1));
     const { data, error, count } = await query;
     if (error) throw new Error(error.message || String(error));
