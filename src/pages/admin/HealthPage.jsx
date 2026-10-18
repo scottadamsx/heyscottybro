@@ -365,8 +365,8 @@ export default function HealthPage() {
       )}
 
       {modal?.type === "food" && (
-        <FoodModal initial={modal.initial} defaultDate={modal.date} onClose={close}
-          onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFood(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
+        <FoodModal initial={modal.initial} defaultDate={modal.date} profileId={profile.id} onClose={close}
+          onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFoodItems(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
       )}
       {modal?.type === "weight" && (
         <WeightModal latestLb={derived.latestWeight?.weightLb} defaultDate={modal.date} onClose={close} onSave={async (w) => { await api.saveWeight(profile.id, w); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "weight log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />

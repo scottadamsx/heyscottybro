@@ -127,6 +127,35 @@ export async function addFood(profileId, food) {
   changed();
 }
 
+/**
+ * Save an AI estimate as one food_logs row per item (ungrouped).
+ * Each item's source is "ai-cache" when it came from the food database,
+ * "ai" when freshly estimated. Falls back to a single row when items is empty.
+ */
+export async function addFoodItems(profileId, form) {
+  const items = (form.items || []).filter((it) => it && String(it.name || "").trim());
+  if (items.length === 0) return addFood(profileId, form);
+  const userId = await uid();
+  const rows = items.map((it) => ({
+    date: form.date || toDateStr(),
+    meal_type: MEALS.includes(form.meal_type) ? form.meal_type : "snack",
+    name: String(it.name).trim().slice(0, 120),
+    description: it.quantity ? String(it.quantity).slice(0, 200) : "",
+    calories: Math.max(0, Math.round(Number(it.calories) || 0)),
+    protein_g: Math.max(0, Math.round(Number(it.protein_g) || 0)),
+    carbs_g: Math.max(0, Math.round(Number(it.carbs_g) || 0)),
+    fat_g: Math.max(0, Math.round(Number(it.fat_g) || 0)),
+    quantity: 1,
+    source: it.cached ? "ai-cache" : "ai",
+    items: [],
+    user_id: userId,
+    profile_id: profileId,
+  }));
+  const { error } = await supabase.from("food_logs").insert(rows);
+  if (error) fail("log those foods", error);
+  changed();
+}
+
 export async function updateFood(id, food) {
   const { error } = await supabase.from("food_logs").update(cleanFood(food)).eq("id", id);
   if (error) fail("update that food", error);

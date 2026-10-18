@@ -406,3 +406,18 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Do not run Orbit's live-provider evals: they call Anthropic and are outside the explicit release approval. No production AI request has been sent.
 - Pushed Orbit first, then heyScottyBro. Remote refs were verified at Orbit `22d8764508cdf885a77e791c58ac0190b1c1e4cb` and host `4352a8f86f86bca671a28081001758e051b32438`; the host's GitHub Vercel Production check succeeded. A read-only production smoke reload redirected authenticated `/admin` to `/admin/today`, and the page finished loading.
 - Remaining unverified: Journal/Orbit feature flows on desktop/mobile, real microphone capture and permission, live-provider behavior/evals, and actual linked-record save/reload. No new migration or production-record write occurred. The host build retains its existing >500 kB bundle advisory.
+
+## 2026-10-18
+
+### Food log AI — item database caching (implementation)
+
+- Scott said "go" on the feature contract + pseudocode (docs/features/food-item-cache.md).
+- New migration MIGRATION_2026-10-18-food-item-cache.sql (NOT applied): creates food_item_cache table (profile-scoped, unique on profile_id + name_normalized, owner-only RLS) and widens the food_logs source CHECK to allow 'ai-cache'.
+- New src/api/foodEstimateCore.js: pure, side-effect-free core (normalizeFoodName, splitFoodItems, cacheRowToItem, mealFromItems, estimateFoodCore) so it runs under plain node:test.
+- New src/api/foodItemCache.js: supabase-backed lookupCache / saveToCache (upsert + use_count bump); re-exports the pure helpers.
+- estimateFood (src/api/aiHealth.js) now takes profileId: whole-description cache check, per-item split + cache check, AI only for unknown items, each AI item saved to cache. Items carry cached:true/false.
+- New addFoodItems (src/api/healthApi.js): saves each estimate item as its own food_logs row (source 'ai-cache' or 'ai'); falls back to single-row addFood when no items.
+- FoodModal accepts profileId, passes it to estimateFood, and shows a "from your food database" badge on cached items.
+- HealthPage passes profile.id to FoodModal and uses addFoodItems for new food saves (edits still use updateFood).
+- New src/api/foodItemCache.test.js (6 tests): normalization, splitting, zero-AI-call cached repeat, mixed cached+unknown (one AI call, new item cached), no-profileId passthrough, cacheRowToItem flag. All pass. Added to the npm test script.
+- No commit, push, deploy, or migration application (per approval scope: local implementation only).

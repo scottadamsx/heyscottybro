@@ -6,6 +6,8 @@ import { parseJsonResponse } from "../lib/http";
 import { cleanExercises } from "./healthApi";
 import { AI_MODELS } from "../config/aiModels";
 import { keepExplicitStartWeights } from "../utils/exerciseLibrary";
+import { lookupCache, saveToCache } from "./foodItemCache";
+import { estimateFoodCore } from "./foodEstimateCore";
 
 const FAST = AI_MODELS.fast;
 const SMART = AI_MODELS.smart;
@@ -92,27 +94,36 @@ const FOOD_TOOL = {
 /**
  * "Big Mac meal with a large coke" → checked nutrition. The model searches the web for
  * published values (chains, packaged food) before estimating, and says what it used.
+ *
+ * Item database caching: when profileId is given, the description is first checked
+ * against the food_item_cache (whole description, then each split-out item). Cached
+ * items return instantly with no web search and no AI call; only unknown items go
+ * through the AI flow, and each AI-returned item is then saved to the cache.
+ * Every returned item carries `cached: true/false`.
  */
-export async function estimateFood(description, { mealType } = {}) {
-  const text = String(description || "").trim();
-  if (!text) throw new Error("Describe what you ate first.");
-  const { input: out, searches } = await searchThenTool({
-    model: FAST,
-    system:
-      "You work out calories and macros (grams of protein, carbs, fat) for what someone ate.\n" +
-      "FIRST search the web for published nutrition facts whenever a restaurant, chain, brand or packaged " +
-      "product is named (e.g. \"Tim Hortons large iced capp nutrition\"), and prefer the official or a " +
-      "reputable database value over your own guess. For plain home food, estimate from typical portions " +
-      "without searching. Say in `source` where the numbers came from, with `source_url` when you used a page. " +
-      "State portion assumptions in one short line. Round calories to the nearest 5 and grams to whole numbers. " +
-      "Finish by calling estimate_meal.",
-    text: `${mealType ? `Meal: ${mealType}. ` : ""}What I ate: ${text}`,
-    tool: FOOD_TOOL,
+export async function estimateFood(description, { mealType, profileId } = {}) {
+  return estimateFoodCore(String(description || "").trim(), {
+    mealType,
+    profileId,
+    aiFlow: (t) => searchThenTool({
+      model: FAST,
+      system:
+        "You work out calories and macros (grams of protein, carbs, fat) for what someone ate.\n" +
+        "FIRST search the web for published nutrition facts whenever a restaurant, chain, brand or packaged " +
+        "product is named (e.g. \"Tim Hortons large iced capp nutrition\"), and prefer the official or a " +
+        "reputable database value over your own guess. For plain home food, estimate from typical portions " +
+        "without searching. Say in `source` where the numbers came from, with `source_url` when you used a page. " +
+        "State portion assumptions in one short line. Round calories to the nearest 5 and grams to whole numbers. " +
+        "Finish by calling estimate_meal.",
+      text: `${mealType ? `Meal: ${mealType}. ` : ""}What I ate: ${t}`,
+      tool: FOOD_TOOL,
+    }),
+    cache: { lookupCache, saveToCache },
   });
-  const n = (v) => Math.max(0, Math.round(Number(v) || 0));
-  if (!(n(out.calories) > 0)) throw new Error("The estimate came back empty. Add a little more detail and try again.");
-  return { ...out, calories: n(out.calories), protein_g: n(out.protein_g), carbs_g: n(out.carbs_g), fat_g: n(out.fat_g), searches };
 }
+
+// Re-exported for tests and other modules; the pure core lives in foodEstimateCore.js.
+export { estimateFoodCore } from "./foodEstimateCore";
 
 // ── Workout builder ──────────────────────────────────────────────────────────
 

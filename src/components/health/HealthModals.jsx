@@ -21,7 +21,7 @@ export function mealForNow(d = new Date()) {
  * Log or edit food. Describe it and let AI estimate, or type the numbers.
  * initial: an existing food_logs row (edit) or undefined (new).
  */
-export function FoodModal({ initial, defaultDate, onClose, onSave }) {
+export function FoodModal({ initial, defaultDate, profileId, onClose, onSave }) {
   const [f, setF] = useState(() => ({
     date: initial?.date || defaultDate || toDateStr(),
     meal_type: initial?.meal_type || mealForNow(),
@@ -44,7 +44,7 @@ export function FoodModal({ initial, defaultDate, onClose, onSave }) {
     setEstimating(true);
     setEstimateError(null);
     try {
-      const out = await estimateFood(describe, { mealType: f.meal_type });
+      const out = await estimateFood(describe, { mealType: f.meal_type, profileId });
       setF((x) => ({
         ...x,
         name: out.name || x.name,
@@ -88,6 +88,20 @@ export function FoodModal({ initial, defaultDate, onClose, onSave }) {
               {checked.assumptions && <p className="field-hint">Assumed: {checked.assumptions}</p>}
               {checked.searches.length > 0 && <p className="field-hint">Searched: {checked.searches.join("; ")}</p>}
             </div>
+          )}
+          {f.items && f.items.length > 0 && (
+            <ul className="health-items">
+              {f.items.map((it, i) => (
+                <li key={i}>
+                  {it.name}{it.quantity ? ` (${it.quantity})` : ""} — {it.calories} cal
+                  {it.cached && (
+                    <span className="health-cache-badge" title="Pulled from your food database, no lookup needed">
+                      <i className="fa-solid fa-database" aria-hidden="true" /> from your food database
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
