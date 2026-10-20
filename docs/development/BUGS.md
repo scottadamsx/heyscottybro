@@ -910,3 +910,17 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** Replaced the raw admin route lazy imports with the shared `lazyWithReload` wrapper. The shared guard now requires a successful session-storage write/read before reloading, preventing blocked storage from causing a refresh loop.
 - **Regression coverage:** Production inspection on 2026-10-09 confirmed the current entry script and all currently referenced chunks return HTTP 200; this isolates the failure path to stale/transient loading rather than a presently missing asset. Three focused tests cover the reported error, one guarded reload/rearm, no loop, ordinary errors, and the admin route source boundary. Lint, 325 tests, build, and whitespace check pass.
 - **Related work:** `src/utils/lazyWithReload.js`; `src/pages/admin/adminRoutes.jsx`; `src/App.jsx`.
+
+
+### BUG-069 — Food estimate items could not carry macros; portions ran small
+
+- **Status:** Resolved locally (uncommitted; ship gate pending Scott's "go")
+- **Discovered:** 2026-10-20
+- **Area:** Health food log AI estimate (`src/api/aiHealth.js`)
+- **Observed:** Per-item food rows saved with 0 g protein/carbs/fat, and plated entrees estimated at diet-portion sizes (a full chicken parmesan at 240 kcal / 22 g protein on 2026-10-20).
+- **Expected:** Every estimated item carries its own macros, and unstated portions default to a standard restaurant/catering serving.
+- **Impact:** Per-item macros in the food log and in `food_item_cache` were always 0 for AI-estimated items; cached calories could also be understated, and cached rows repeat the error instantly on reuse.
+- **Cause:** `FOOD_TOOL`'s items schema declared only `name`, `quantity`, `calories`, so the model had no field to return per-item macros in; the save path and pure core already handled macros. The prompt also set no portion standard or consistency rule.
+- **Fix:** Items schema now requires `protein_g`, `carbs_g`, `fat_g` per item; the prompt adds a full-plate portion default, per-item macro requirement, entree anchor ranges, and a totals-equal-sum-of-items consistency rule.
+- **Regression coverage:** New `src/api/foodEstimateSchema.test.js` (source-boundary) pins the schema fields, the required list, and the prompt rules; added to the npm test script. Lint, full test suite, and production build pass 2026-10-20.
+- **Related work:** `docs/features/food-estimate-accuracy.md`; `docs/features/food-item-cache.md`.

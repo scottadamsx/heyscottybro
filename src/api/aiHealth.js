@@ -79,8 +79,15 @@ const FOOD_TOOL = {
         type: "array",
         items: {
           type: "object",
-          properties: { name: { type: "string" }, quantity: { type: "string" }, calories: { type: "number" } },
-          required: ["name", "calories"],
+          properties: {
+            name: { type: "string" },
+            quantity: { type: "string" },
+            calories: { type: "number" },
+            protein_g: { type: "number" },
+            carbs_g: { type: "number" },
+            fat_g: { type: "number" },
+          },
+          required: ["name", "calories", "protein_g", "carbs_g", "fat_g"],
         },
       },
       assumptions: { type: "string", description: "One short line on the portion sizes assumed" },
@@ -114,6 +121,13 @@ export async function estimateFood(description, { mealType, profileId } = {}) {
         "reputable database value over your own guess. For plain home food, estimate from typical portions " +
         "without searching. Say in `source` where the numbers came from, with `source_url` when you used a page. " +
         "State portion assumptions in one short line. Round calories to the nearest 5 and grams to whole numbers. " +
+        "PORTIONS: when no size is stated, assume one standard restaurant or catering serving, a full plate " +
+        "portion, never a diet or tasting portion. A plated entree item is one full serving. " +
+        "EVERY item must carry its own protein_g, carbs_g and fat_g; use 0 only when the food truly has none " +
+        "(water, black coffee). Sanity anchors for a single entree serving: chicken parmesan 450-650 kcal and " +
+        "35-45 g protein; a plain grilled chicken breast 250-350 kcal and 30-40 g protein; a burger 550-800 kcal; " +
+        "a cup of cooked pasta 220-320 kcal before sauce and cheese. A meat serving's protein is rarely under 20 g. " +
+        "CONSISTENCY: the meal totals must equal the sum of the items. " +
         "Finish by calling estimate_meal.",
       text: `${mealType ? `Meal: ${mealType}. ` : ""}What I ate: ${t}`,
       tool: FOOD_TOOL,

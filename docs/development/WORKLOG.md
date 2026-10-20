@@ -421,3 +421,14 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - HealthPage passes profile.id to FoodModal and uses addFoodItems for new food saves (edits still use updateFood).
 - New src/api/foodItemCache.test.js (6 tests): normalization, splitting, zero-AI-call cached repeat, mixed cached+unknown (one AI call, new item cached), no-profileId passthrough, cacheRowToItem flag. All pass. Added to the npm test script.
 - No commit, push, deploy, or migration application (per approval scope: local implementation only).
+
+
+## 2026-10-20
+
+### Food estimate accuracy fix (BUG-069)
+
+- Scott's chat instruction 2026-10-20: the calorie guess "must be on point", find a way to fix it, produce a completion document. Recorded in docs/features/food-estimate-accuracy.md.
+- Diagnosis: `FOOD_TOOL` items schema in src/api/aiHealth.js had no per-item macro fields, so AI items (and their cache rows) always saved 0 macros; the prompt set no portion standard, so entrees came back small.
+- Fix: items schema requires protein_g/carbs_g/fat_g per item; prompt adds full-plate portion default, per-item macro rule, entree anchors, totals consistency rule.
+- New src/api/foodEstimateSchema.test.js (2 source-boundary tests), added to the npm test script. Focused tests 8/8 pass (with foodItemCache), lint clean, full suite passes, production build passes.
+- No commit, push, deploy, or production data change. Follow-ups needing Scott's approval: correct today's chicken parmesan log entry; re-estimate or clear pre-fix food_item_cache rows.
