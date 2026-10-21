@@ -11,6 +11,10 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ## Unreleased
 
+### Changed
+
+- The admin app has a new frame (Muse-UI rewrite, Phases 0 and 1, built locally and not yet deployed): a slim icon rail replaces the wide sidebar on desktop (Today in the brand mark, Plan, Tasks, Money, Health, People pinned, Search, and a More popover for the other sections), a bottom bar with a More sheet replaces the drawer on phones, Settings opens as a dialog from the rail menu, and a slide-in detail panel (starting with a Status view) is the shell's new detail surface. All type is now DM Sans with DM Mono for numbers and labels; the serif display face is gone. Every page keeps its interior, routes, and data.
+
 ### Added
 
 - Bin: a new holding space at /admin/bin where you can drop text excerpts, documents, and links from any computer; Muse picks each space up and turns it into finished work, or saves it as life context when you mark it Context. Goes live once its database migration is applied.

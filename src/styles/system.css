@@ -68,23 +68,77 @@
 
 /* ── 2. Shell ────────────────────────────────────────────────────────────── */
 
-.admin-shell .sidebar {
+/* The Muse shell (Muse-UI rewrite, Phase 1): a slim icon rail on desktop,
+   a bottom bar on phones. The wide labelled sidebar, its collapse state and
+   the phone drawer are retired. */
+.admin-shell .rail {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 120;
-  width: var(--sidebar-w);
+  width: var(--rail-w);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-lg) var(--space-md);
-  padding-top: max(var(--space-lg), env(safe-area-inset-top));
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xs);
+  padding-top: max(var(--space-md), env(safe-area-inset-top));
   background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
   overflow-y: auto;
   overscroll-behavior: contain;
-  transition: width var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+.admin-shell .rail-brand {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: var(--radius-md);
+  color: var(--text-primary); text-decoration: none;
+}
+.admin-shell .rail-brand:hover { background: var(--sidebar-hover); }
+.admin-shell .rail-avatar {
+  width: 40px; height: 40px; border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+  background: var(--shell-accent-soft); color: var(--shell-accent-hover);
+  font: inherit; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.02em;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+.admin-shell .rail-avatar:hover { background: var(--shell-accent); color: var(--text-inverse); }
+.admin-shell .rail-nav { flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; gap: var(--space-2xs); }
+.admin-shell .rail-foot { display: flex; flex-direction: column; align-items: center; }
+.admin-shell .rail-btn {
+  width: 48px; height: 48px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: var(--radius-md); background: transparent;
+  color: var(--text-secondary); font-size: 17px; text-decoration: none; cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+.admin-shell .rail-btn:hover { background: var(--sidebar-hover); color: var(--text-primary); }
+.admin-shell .rail-btn.active { background: var(--shell-accent-soft); color: var(--shell-accent); }
+.admin-shell .rail-pop-wrap { position: relative; display: flex; }
+.admin-shell .pop-scrim { position: fixed; inset: 0; z-index: 118; }
 
-.admin-shell .sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-xs); min-height: var(--control-h); padding-inline: var(--space-sm); }
+/* More popover + rail menu: labelled rows anchored to the rail */
+.admin-shell .more-pop {
+  position: absolute; left: calc(100% + var(--space-sm)); z-index: 130;
+  width: 232px; padding: var(--space-xs);
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-floating);
+}
+.admin-shell .more-pop.pop-down { top: 0; }
+.admin-shell .more-pop.pop-up { bottom: 0; }
+.admin-shell .nav-row {
+  display: flex; align-items: center; gap: var(--space-sm);
+  width: 100%; min-height: var(--control-h); padding: 0 var(--space-sm);
+  border: none; border-radius: var(--radius-md); background: none;
+  color: var(--text-primary); font: inherit; font-weight: 500; text-align: left;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
+}
+.admin-shell .nav-row i { flex-shrink: 0; width: 20px; text-align: center; font-size: 15px; color: var(--text-secondary); }
+.admin-shell .nav-row:hover { background: var(--bg-raised); }
+.admin-shell .nav-row.active { background: var(--shell-accent-soft); color: var(--shell-accent-hover); }
+.admin-shell .nav-row.active i { color: var(--shell-accent); }
+.admin-shell .nav-row-logout:hover, .admin-shell .nav-row-logout:hover i { color: var(--red); }
 
 .admin-shell .brand { display: inline-flex; align-items: center; gap: var(--space-sm); min-width: 0; color: var(--text-primary); text-decoration: none; border-radius: var(--radius-sm); }
 .admin-shell .brand-word { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
@@ -96,22 +150,7 @@
 .admin-shell .brand-mark i:nth-child(3) { height: 13px; background: var(--amber); }
 .admin-shell .brand-mark i:nth-child(4) { height: 8px; background: var(--teal); }
 
-/* Collapse control straddles the sidebar edge. */
-.admin-shell .sidebar-toggle {
-  /* fixed, not absolute: the sidebar scrolls, and a scroller clips overhang */
-  position: fixed; top: calc(var(--space-lg) + 8px); left: calc(var(--sidebar-w) - 12px); z-index: 121;
-  width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-primary); border-radius: var(--radius-full);
-  background: var(--bg-card); color: var(--text-secondary); box-shadow: var(--shadow-raised);
-  font-size: 10px; cursor: pointer;
-  transition: color var(--dur-fast), left var(--dur) var(--ease);
-}
-.admin-shell .sidebar-toggle:hover { color: var(--text-primary); }
-.admin-shell.is-collapsed .sidebar-toggle { left: calc(var(--sidebar-w-collapsed) - 12px); }
-.admin-shell.is-collapsed .sidebar-toggle i { transform: rotate(180deg); }
-.admin-shell .icon-btn.drawer-close { display: none; }
-
-.admin-shell .sidebar-profile { display: flex; align-items: center; gap: var(--space-sm); padding-inline: var(--space-sm); min-width: 0; }
+.admin-shell .status-profile { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
 .admin-shell .avatar {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: var(--radius-full);
   display: inline-flex; align-items: center; justify-content: center;
@@ -122,67 +161,101 @@
 .admin-shell .sidebar-name { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; line-height: 1.5; white-space: nowrap; }
 .admin-shell .sidebar-role { font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.admin-shell .sidebar-nav { flex: 1 0 auto; display: flex; flex-direction: column; gap: var(--space-2xs); margin-inline: calc(var(--space-2xs) * -1); padding-inline: var(--space-2xs); }
-.admin-shell .sidebar-foot { display: flex; flex-direction: column; gap: var(--space-2xs); padding-top: var(--space-md); border-top: 1px solid var(--border-primary); }
-
-.admin-shell .nav-item {
-  display: flex; align-items: center; gap: var(--space-sm);
-  width: 100%; min-height: var(--control-h); padding: 0 var(--space-sm);
-  border: none; border-radius: var(--radius-md); background: none;
-  color: var(--text-secondary); font: inherit; font-weight: 500; text-align: left; text-decoration: none;
-  white-space: nowrap; cursor: pointer;
-  transition: background-color var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
+/* Phone bottom bar + More sheet (bar shown in the small-screens section) */
+.admin-shell .bottombar { display: none; }
+.admin-shell .bottombar a,
+.admin-shell .bottombar button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; border: none; border-radius: var(--radius-md); background: none;
+  color: var(--text-secondary); font-size: 18px; text-decoration: none; cursor: pointer;
+  transition: background-color var(--dur-fast), color var(--dur-fast);
 }
-.admin-shell .nav-item i { flex-shrink: 0; width: 20px; text-align: center; font-size: 15px; color: var(--text-secondary); transition: color var(--dur-fast); }
-.admin-shell .nav-item:hover { background: var(--sidebar-hover); color: var(--text-primary); }
-.admin-shell .nav-item.active { background: var(--bg-selected); color: var(--text-primary); font-weight: 600; box-shadow: var(--shadow-raised); }
-.admin-shell .nav-item.active i { color: var(--accent); }
-.admin-shell .nav-label { overflow: hidden; text-overflow: ellipsis; }
-.admin-shell .nav-kbd {
-  margin-left: auto; padding: 0 var(--space-2xs); min-width: 28px; height: 20px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border-primary); border-radius: var(--radius-xs);
-  font: 500 var(--text-2xs)/1 var(--font-body); color: var(--text-secondary);
+.admin-shell .bottombar a:hover, .admin-shell .bottombar button:hover { color: var(--text-primary); }
+.admin-shell .bottombar a.active, .admin-shell .bottombar button.active { color: var(--shell-accent); }
+.admin-shell .sheet-wrap { position: fixed; inset: 0; z-index: 1250; }
+.admin-shell .sheet-backdrop { position: absolute; inset: 0; border: none; background: var(--overlay); cursor: pointer; }
+.admin-shell .more-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  max-height: 82vh; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--space-md) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom));
+  background: var(--bg-card); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-modal);
+  animation: sheet-in var(--dur) var(--ease);
 }
-.admin-shell .nav-item-logout:hover, .admin-shell .nav-item-logout:hover i { color: var(--red); }
+@keyframes sheet-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.admin-shell .more-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.admin-shell .more-sheet-head h2 { margin: 0; font-size: var(--text-md); }
+.admin-shell .more-sheet-list { display: flex; flex-direction: column; gap: 2px; }
 
-/* Short screens (13" laptops, landscape tablets): tighter rhythm, same order */
-@media (max-height: 840px) {
-  .admin-shell .sidebar { gap: var(--space-md); padding-block: var(--space-md); }
-  .admin-shell .nav-item { min-height: 36px; }
-  .admin-shell .sidebar-nav, .admin-shell .sidebar-foot { gap: 2px; }
-  .admin-shell .sidebar-foot { padding-top: var(--space-sm); }
-  .admin-shell .avatar { width: 32px; height: 32px; font-size: var(--text-xs); }
-  .admin-shell .sidebar-toggle { top: calc(var(--space-md) + 8px); }
+/* Detail panel: the shell's standard detail surface. Overlays from the
+   right; on phones it is a full-screen sheet. */
+.admin-shell .detail-panel-wrap { position: fixed; inset: 0; z-index: 1250; }
+.admin-shell .detail-panel-backdrop { position: absolute; inset: 0; border: none; background: transparent; cursor: default; }
+.admin-shell .detail-panel {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: min(var(--panel-w), 100vw);
+  display: flex; flex-direction: column;
+  background: var(--bg-surface); border-left: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-panel);
+  animation: panel-in var(--dur) var(--ease);
+}
+@keyframes panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.admin-shell .detail-panel:focus { outline: none; }
+.admin-shell .detail-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-subtle);
+}
+.admin-shell .detail-panel-head h2 { margin: 0; font-size: var(--text-lg); }
+.admin-shell .detail-panel-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-lg); }
+
+/* Status view (Phase 1 shell: profile + Upcoming/Activity tabs) */
+.admin-shell .status-panel { display: flex; flex-direction: column; gap: var(--space-lg); }
+.admin-shell .status-tabs { align-self: flex-start; }
+
+/* Settings dialog: the Settings page hosted in the Muse dialog pattern */
+.settings-dialog-backdrop {
+  position: fixed; inset: 0; z-index: 1400;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-md);
+  background: var(--overlay); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.admin-shell .settings-dialog {
+  width: min(880px, 100%); max-height: min(720px, 92vh);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow-modal);
+}
+.admin-shell .settings-dialog:focus { outline: none; }
+.admin-shell .settings-dialog-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-subtle);
+}
+.admin-shell .settings-dialog-head h2 { margin: 0; font-size: var(--text-lg); }
+.admin-shell .settings-dialog-body { overflow-y: auto; overscroll-behavior: contain; padding: var(--space-lg); }
+/* The hosted page brings its own header; the dialog already titles it. */
+.admin-shell .settings-dialog-body .module-header { display: none; }
+@media (max-width: 640px) {
+  .settings-dialog-backdrop { padding: 0; align-items: flex-end; }
+  .admin-shell .settings-dialog { max-height: 94vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
 }
 
-/* Collapsed: an icon rail */
-.admin-shell.is-collapsed .sidebar { width: var(--sidebar-w-collapsed); padding-inline: var(--space-sm); }
-.admin-shell.is-collapsed .sidebar-head,
-.admin-shell.is-collapsed .sidebar-profile { justify-content: center; padding-inline: 0; }
-.admin-shell.is-collapsed .brand-word,
-.admin-shell.is-collapsed .sidebar-profile-text,
-.admin-shell.is-collapsed .nav-label,
-.admin-shell.is-collapsed .nav-kbd { display: none; }
-.admin-shell.is-collapsed .nav-item { justify-content: center; padding: 0; }
-
-/* Main column */
+/* Main column: data width by default; a page opts into the reading measure
+   by putting .content-reading on its root (Muse-UI rewrite width classes). */
 .admin-shell .admin-main {
-  margin-left: var(--sidebar-w);
+  margin-left: var(--rail-w);
   min-height: 100vh;
   padding: var(--space-xl) var(--page-pad) var(--space-3xl);
   transition: margin var(--dur) var(--ease);
   outline: none;
 }
-.admin-shell.is-collapsed .admin-main { margin-left: var(--sidebar-w-collapsed); }
 .admin-shell .admin-main > * { max-width: var(--content-max); margin-inline: auto; }
+.admin-shell .admin-main > .content-reading { max-width: var(--content-reading); }
 @media (min-width: 901px) {
   .admin-shell.chat-open .admin-main { margin-right: var(--chat-w); }
 }
 
 /* Phone/tablet chrome (hidden on desktop) */
 .admin-shell .topbar { display: none; }
-.admin-shell .drawer-backdrop { display: none; }
 
 .admin-shell .icon-btn {
   flex-shrink: 0; width: var(--control-h); height: var(--control-h);
@@ -764,9 +837,9 @@ body.uik-modal-open { overflow: hidden; }
 }
 
 
-/* Command palette (⌘K) */
-.cmdk-backdrop { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: flex-start; justify-content: center; padding: 12vh var(--space-md) 0; background: var(--overlay); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.cmdk { width: 100%; max-width: 560px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-modal); }
+/* Command palette (⌘K): the Muse search overlay (Phase 1 restyle) */
+.cmdk-backdrop { position: fixed; inset: 0; z-index: 9500; display: flex; align-items: flex-start; justify-content: center; padding: 14vh var(--space-md) 0; background: var(--overlay); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.cmdk { width: 100%; max-width: 640px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); animation: panel-in var(--dur) var(--ease); }
 .cmdk-search { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); }
 .admin-shell .cmdk-search input { flex: 1; min-height: 32px; padding: 0; border: none; background: none; box-shadow: none; font-size: var(--text-md); color: var(--text-primary); caret-color: var(--accent); }
 .admin-shell .cmdk-search input:focus { box-shadow: none; }
@@ -862,8 +935,8 @@ body.uik-modal-open { overflow: hidden; }
 .confirm-actions .btn:active:not(:disabled), .toast-x:active { transform: scale(0.97); }
 /* Pressed: rows, tabs, chips, tiles darken */
 .admin-shell :is(.btn-mini, .btn-secondary, .btn-secondary-sm, .btn-sm, .btn-ghost, .icon-btn, .icon-x, .uik-modal-x,
-  .db-list-item--clickable, .kpi, button.uik-stat, .nav-item, .cmdk-item, .export-kit-menu button, .calendar-cell:not(.empty),
-  .un-row, .page-tab, .uik-tab, .fin-tab, .segmented-opt, .planner-switch button):not(.accent):not(.btn-delete):not(.btn-complete):active:not(:disabled) { background: var(--bg-active); }
+  .db-list-item--clickable, .kpi, button.uik-stat, .cmdk-item, .export-kit-menu button, .calendar-cell:not(.empty),
+  .un-row, .page-tab, .uik-tab, .fin-tab, .segmented-opt, .planner-switch button, .nav-row, .rail-btn):not(.accent):not(.btn-delete):not(.btn-complete):active:not(:disabled) { background: var(--bg-active); }
 .admin-shell .chip:not(.active):not([aria-pressed="true"]):active:not(:disabled) { background: var(--bg-active); }
 .admin-shell :is(.btn, .btn-primary, .btn-primary-sm, .page-action-btn, .btn-mini.accent, .chip.active, .chip[aria-pressed="true"]):not(.btn-secondary):not(.btn-secondary-sm):not(.btn-ghost):not(.btn-danger):not(.danger):not(.tone-secondary):active:not(:disabled) { background: var(--bg-inverse-hover); }
 .admin-shell :is(.btn-delete, .btn-danger, .btn.danger, .btn-mini.danger):active:not(:disabled) { background: var(--danger-bg); border-color: var(--red); }
@@ -1108,7 +1181,7 @@ body.uik-modal-open { overflow: hidden; }
   .admin-shell .col-4, .admin-shell .col-5, .admin-shell .col-7 { grid-column: span 6; }
 }
 
-/* ≤900: the sidebar becomes a drawer behind a top bar */
+/* ≤900: the rail gives way to a top bar + bottom bar (Muse shell) */
 @media (max-width: 900px) {
   .admin-shell .topbar {
     position: sticky; top: 0; z-index: 110;
@@ -1116,27 +1189,19 @@ body.uik-modal-open { overflow: hidden; }
     min-height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) var(--space-xs) 0;
     background: var(--bg-sidebar); border-bottom: 1px solid var(--border-primary);
   }
-  .admin-shell .sidebar,
-  .admin-shell.is-collapsed .sidebar {
-    width: min(288px, 86vw); padding-inline: var(--space-md);
-    transform: translateX(-100%); box-shadow: none;
+  .admin-shell .rail { display: none; }
+  .admin-shell .bottombar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
+    display: flex; align-items: stretch; gap: var(--space-2xs);
+    padding: var(--space-2xs) var(--space-xs) calc(var(--space-2xs) + env(safe-area-inset-bottom));
+    background: var(--bg-sidebar); border-top: 1px solid var(--border-primary);
   }
-  .admin-shell.drawer-open .sidebar { transform: none; box-shadow: var(--shadow-modal); }
-  .admin-shell .drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 115; border: none; background: var(--overlay); cursor: pointer; }
-  .admin-shell .sidebar-toggle { display: none; }
+  .admin-shell .detail-panel-backdrop { background: var(--overlay); }
   .admin-shell .topbar-actions { display: flex; align-items: center; }
   .admin-shell .topbar-chat { position: relative; }
   .admin-shell .topbar-dot { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--red); box-shadow: 0 0 0 2px var(--bg-sidebar); }
   .admin-shell .chat-fab { display: none; }
-  .admin-shell .icon-btn.drawer-close { display: inline-flex; margin-right: calc(var(--space-xs) * -1); }
-  .admin-shell.is-collapsed .brand-word,
-  .admin-shell.is-collapsed .sidebar-profile-text,
-  .admin-shell.is-collapsed .nav-label { display: initial; }
-  .admin-shell.is-collapsed .sidebar-head { justify-content: space-between; padding-inline: var(--space-sm); }
-  .admin-shell.is-collapsed .sidebar-profile { justify-content: flex-start; padding-inline: var(--space-sm); }
-  .admin-shell.is-collapsed .nav-item { justify-content: flex-start; padding: 0 var(--space-sm); }
-  .admin-shell .admin-main,
-  .admin-shell.is-collapsed .admin-main { margin-left: 0; padding: var(--space-lg) var(--page-pad) calc(var(--space-3xl) + env(safe-area-inset-bottom)); }
+  .admin-shell .admin-main { margin-left: 0; padding: var(--space-lg) var(--page-pad) calc(var(--space-3xl) + 56px + env(safe-area-inset-bottom)); }
   .admin-shell .col-4, .admin-shell .col-5, .admin-shell .col-6,
   .admin-shell .col-7, .admin-shell .col-8,
   .admin-shell .fin-grid .col-5, .admin-shell .fin-grid .col-7 { grid-column: span 12; }
@@ -1193,7 +1258,7 @@ body.uik-modal-open { overflow: hidden; }
 
 /* While any dialog is open, the chat button steps aside (it sat on top of
    the phone day sheet's "Add event"). */
-.admin-shell:has(.event-overlay, .uik-modal-backdrop, .doc-viewer-overlay, .confirm-overlay) .chat-fab { display: none; }
+.admin-shell:has(.event-overlay, .uik-modal-backdrop, .doc-viewer-overlay, .confirm-overlay, .detail-panel-wrap, .settings-dialog-backdrop, .sheet-wrap) .chat-fab { display: none; }
 
 /* Touch: mini controls grow to real targets */
 @media (pointer: coarse) {
