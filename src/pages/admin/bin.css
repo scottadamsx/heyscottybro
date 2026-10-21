@@ -1,0 +1,65 @@
+/* Bin page (docs/features/bin.md). Scott's standing type rules, scoped to
+   this page: DM Sans for text and headings, DM Mono for labels and numbers. */
+.bin-page { font-family: "DM Sans", "IBM Plex Sans", system-ui, sans-serif; }
+.bin-page .module-header h1 { font-family: "DM Sans", "IBM Plex Sans", system-ui, sans-serif; font-weight: 500; letter-spacing: -0.015em; }
+.bin-page .bin-count {
+  font-family: "DM Mono", "IBM Plex Mono", ui-monospace, monospace;
+  font-size: var(--text-sm); color: var(--text-secondary); margin-left: var(--space-sm);
+}
+.bin-page .bin-summary { font-size: var(--text-sm); color: var(--text-secondary); margin: 0; }
+.bin-page .bin-kind,
+.bin-page .bin-pill,
+.bin-page .bin-meta { font-family: "DM Mono", "IBM Plex Mono", ui-monospace, monospace; }
+
+/* Touch targets and input text size on this page */
+.bin-page .btn,
+.bin-page .btn-mini,
+.bin-page .chip { min-height: 44px; }
+.bin-page input,
+.bin-page textarea,
+.bin-page select { font-size: 16px; }
+
+.bin-card {
+  display: flex; align-items: flex-start; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+}
+.bin-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2xs); }
+.bin-card-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); }
+.bin-kind { font-size: var(--text-xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.bin-pill {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 var(--space-xs);
+  border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 500;
+  background: var(--bg-raised); color: var(--text-secondary);
+}
+.bin-pill-context { background: var(--info-bg); color: var(--blue); }
+.bin-status-new { background: var(--accent-bg); color: var(--accent); }
+.bin-status-picked_up { background: var(--warning-bg, var(--bg-raised)); color: var(--text-primary); }
+.bin-status-done { background: var(--success-bg); color: var(--green); }
+
+.bin-title {
+  align-self: flex-start; max-width: 100%; padding: 0; border: 0; background: none;
+  font: inherit; font-weight: 500; letter-spacing: -0.015em; color: var(--text-primary);
+  text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: text;
+  min-height: 32px;
+}
+.bin-title-input { width: 100%; min-height: 44px; }
+.bin-preview { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); overflow-wrap: anywhere; }
+.bin-link-preview { color: var(--accent); }
+.bin-meta { font-size: var(--text-xs); color: var(--text-muted); }
+
+.bin-card-actions { display: flex; flex-shrink: 0; align-items: center; flex-wrap: wrap; gap: var(--space-xs); }
+.bin-context-toggle {
+  display: inline-flex; align-items: center; gap: var(--space-2xs);
+  min-height: 44px; padding: 0 var(--space-xs); cursor: pointer;
+  font-size: var(--text-sm); color: var(--text-secondary);
+}
+.bin-context-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.bin-kind-picker { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-bottom: var(--space-md); }
+
+@media (max-width: 640px) {
+  .bin-card { flex-wrap: wrap; padding: var(--space-sm) var(--space-md); }
+  .bin-card-actions { width: 100%; justify-content: flex-end; }
+}

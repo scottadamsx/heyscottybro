@@ -1,5 +1,11 @@
 # Active work
 
+## Bin (remote clipboard)
+
+- **Approval:** Scott said "make it live" on 2026-10-21, with the same-day addition that context items are saved, not worked.
+- **Current state:** `/admin/bin` is implemented, tested (full suite and lint pass), built, and pushed with the feature record at `docs/features/bin.md`.
+- **Next gate:** Apply `supabase/migrations/2026-10-21-bin-items.sql` to project `mogoybejtmkoheqvfvuc` (needs Scott's Supabase sign-in), then verify a signed-in round trip on desktop and phone.
+
 ## October 10 Journal–Orbit release
 
 - **Approval:** Scott explicitly said **“go”** on 2026-10-10 to deploy the current Journal–Orbit work. This authorizes committing and pushing the canonical Orbit source and synchronized heyScottyBro host source to their existing `main` branches, then verifying the resulting production deployment. No new database migration, production-record write, or live AI request is included.

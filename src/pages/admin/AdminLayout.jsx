@@ -28,6 +28,7 @@ export const NAV_ITEMS = [
   { to: "/admin/analytics", icon: "fa-chart-line",      label: "Analytics" },
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
+  { to: "/admin/bin",       icon: "fa-box-open",        label: "Bin" },
 ];
 
 const COLLAPSE_KEY = "adminRailCollapsed";
