@@ -443,3 +443,23 @@ Append-only record of completed workspace changes. Git remains the line-level hi
 - Migration `supabase/migrations/2026-10-21-bin-items.sql` ships with the code (owner RLS, updated_at trigger, explicit grants for authenticated and service_role). It is NOT applied yet: applying needs Scott's Supabase sign-in (SQL editor or an authenticated session), which this work unit did not have. Until it is applied, the Bin page loads and shows its load error with Retry.
 - Validation: `src/utils/binHelpers.test.js` (4 tests: status flow, labels, excerpt, title) registered in the `npm test` script; full `npm test` passes with zero failures (final block 333 tests), `npm run lint` passes with zero warnings, `npm run build` passes and emits the BinPage chunk (the pre-existing large-bundle advisory remains). This repo has no separate typecheck script; the Vite build and ESLint are the gates.
 - Not verified: signed-in rendered desktop/mobile behavior and a live data round trip, both blocked on the unapplied migration. No production data was written.
+
+### Brain Dump decision record
+
+- Scott's Bin specification was initially selected for a heyScottyBro feature, then refined as a data-getting surface with local collection and phrase-based discovery.
+- Scott superseded that direction on 2026-10-21: Brain Dump is a standalone HTML input collector outside this repository. `docs/features/brain-dump.md` is now a brief decision record, and no `ACTIVE_WORK.md` feature entry was created.
+- No application code, database migration, production data, commit, push, or deployment resulted from the planning pass.
+
+### Muse-UI rewrite: approval recorded, Phase 0 + Phase 1 build started
+
+- Scott approved both executive plans on 2026-10-21 ("approval on both"): the Muse-UI rewrite (`docs/features/muse-ui-rewrite.md`, SPEC-GAP recommendations adopted) and Connected Pages. Per the plan's sequencing recommendation, the rewrite's shell lands first so Connected Pages surfaces are born in the new system.
+- Ledger DR-032 appended: admin typefaces are DM Sans (everything including headers) and DM Mono (numbers and labels), no serif; supersedes DR-013's font choice only.
+- Baseline before changes: `npm test` full pass (333/333 final block), `npm run lint` clean, `npm run build` pass. (One harness-delivered capture showed two chatRoute failures; the run's own log, a standalone rerun, and the Phase 0 suite all pass, so the full pass stands as the baseline of record.)
+- Phase 0 (fonts and shell tokens) and Phase 1 (Muse shell) follow in this work unit; results are recorded in the feature document's build record. Local commits only; push and deploy wait for Scott's review.
+
+### Muse-UI rewrite: Phase 0 + Phase 1 built locally
+
+- Phase 0 (commit `7954182`): `--font-body`/`--font-display`/`--font-mono` repointed to DM Sans / DM Mono in `globals.css` and in the `people-orbit.css` token mapping; the Roboto Slab serif stack is deleted and out of the `index.html` font request. New shell tokens (rail width, panel width, reading width, card radius, the Muse clone's teal accent, panel shadow) added in light and dark scopes. Base heading rule takes the spec metrics (weight 500, -0.015em, 1.12).
+- Phase 1: `AdminLayout.jsx` rewritten as the Muse shell: 68px icon rail (brand anchor to Today, Status avatar button, pinned Plan/Tasks/Money/Health/People, Search, More popover, bottom menu with Settings dialog / View site / Log out), phone top bar plus icon bottom bar (Today, Plan, Tasks, Money, More) with a More sheet, slide-in detail panel host (`DetailPanelContext` + `DetailPanel`) with a Status view shell (Upcoming/Activity tabs, honestly labelled as shells until their source phases), Settings hosted in a dialog (`SettingsDialog`) with the `/admin/settings` route kept, and the Cmd-K palette restyled as the Muse search overlay. Sidebar, drawer, and collapse are retired; `--sidebar-w` tokens removed. Frodo mutual exclusion with the panel works in both directions; routes, data, APIs, page interiors, and the Orbit host listeners are unchanged.
+- Validation: `npm run lint` clean, `npm test` full pass (333/333 final block), `npm run build` pass, at both phase boundaries. Production-preview smoke pass: all 15 main admin routes returned HTTP 200; built JS carries the new shell and no collapse code; SettingsDialog is its own lazy chunk. Not verified: signed-in rendered desktop/phone behaviour (preview is auth-gated); Scott's rendered review is the gate before any push.
+- No push, deploy, migration, or production data change. Phase 2 (Today, Planner, Finance interiors) needs its own approval.
