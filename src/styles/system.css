@@ -31,9 +31,10 @@
 }
 .admin-shell h1, .admin-shell h2, .admin-shell h3 {
   font-family: var(--font-display);
+  font-weight: 500;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
-  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+  line-height: 1.12;
 }
 .admin-shell h4, .admin-shell h5, .admin-shell h6 {
   font-family: var(--font-body);

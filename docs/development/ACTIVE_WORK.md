@@ -1,5 +1,12 @@
 # Active work
 
+## Muse-UI rewrite (heyScottyBro in the Muse app UI)
+
+- **Feature document:** `docs/features/muse-ui-rewrite.md`
+- **Approval:** Scott said "approval on both" on 2026-10-21, approving this rewrite's executive plan (with its SPEC-GAP recommendations) and Connected Pages. The approved visual reference is `~/workspace/your_files/heyscottybro-ui-before-after/before-after.html`.
+- **Current state:** Phase 0 (DM Sans/DM Mono fonts, shell tokens, DR-032) and Phase 1 (icon rail shell, More, phone bottom bar, detail-panel host, Settings dialog host, palette restyle) built locally and committed on 2026-10-21; not pushed. Every existing page keeps its interior, routes, data, and APIs. Baseline before the build: full test pass (333/333 final block), lint clean, build pass; phase results are recorded in the feature document's build record.
+- **Next gate:** Scott reviews the result, then approves the push/deploy. Phase 2 (Today, Planner, Finance interiors) is a separate per-phase approval. Connected Pages surfaces should be born in the new shell.
+
 ## Bin (remote clipboard)
 
 - **Approval:** Scott said "make it live" on 2026-10-21, with the same-day addition that context items are saved, not worked.

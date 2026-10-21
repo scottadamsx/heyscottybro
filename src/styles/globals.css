@@ -13,8 +13,9 @@
    The system, in one breath:
    · 8-point grid. Every space is 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64.
    · One type scale: 11 · 12 · 13 · 14 · 16 · 20 · 24 · 32 · 40, line
-     heights on the 4-point grid. Body 14/20. Slab display face for titles
-     and headline numbers, SF/system for everything you read.
+     heights on the 4-point grid. Body 14/20. DM Sans for everything,
+     titles and headline numbers included; DM Mono for numbers and
+     labels; no serif anywhere (DR-032, supersedes DR-013's fonts).
    · Radii: 6 (checkboxes, tags) · 8 (small chips) · 12 (inputs, list rows)
      · 16 (cards) · 24 (feature panels, dialogs). Buttons, tabs and pills are
      capsules (full). Nested radius = outer − gap.
@@ -95,10 +96,10 @@
   --shadow-floating: 0 12px 32px rgba(34, 30, 27, 0.10), 0 2px 6px rgba(34, 30, 27, 0.05);
   --shadow-modal: 0 24px 64px rgba(34, 30, 27, 0.20), 0 4px 12px rgba(34, 30, 27, 0.06);
 
-  /* ── Type ── */
-  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
-  --font-display: "Roboto Slab", "Rockwell", "Georgia", serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* ── Type (DR-032: DM Sans everywhere, DM Mono for numbers/labels) ── */
+  --font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --letter-spacing-body: 0;
   --text-2xs: 0.6875rem;   /* 11 */
   --text-xs: 0.75rem;      /* 12 */
@@ -138,6 +139,20 @@
   --sidebar-w: 256px;
   --sidebar-w-collapsed: 72px;
   --content-max: 1200px;
+
+  /* ── Muse shell tokens (Muse-UI rewrite, Phase 0) ──
+     The clone's values: a 68px icon rail, a slide-in detail panel, a
+     reading measure beside the data width above, 20px cards, and the
+     clone's teal accent scoped to the shell chrome (page interiors keep
+     the app accent until their own migration phase). */
+  --rail-w: 68px;
+  --panel-w: 400px;
+  --content-reading: 45rem;
+  --radius-card: 20px;
+  --shell-accent: #0e7c66;
+  --shell-accent-hover: #0b6a57;
+  --shell-accent-soft: #e2f1ec;
+  --shadow-panel: 0 16px 48px rgba(20, 24, 22, 0.16), 0 4px 12px rgba(20, 24, 22, 0.08);
   --page-pad: 40px;
   --chat-w: 380px;
   --nav-height: 64px;
@@ -214,6 +229,11 @@
   --umber: #C39A7C;
   --teal-deep: #2B7A70;
   --chart-grid: rgba(255, 240, 225, 0.07);
+
+  --shell-accent: #45c2a5;
+  --shell-accent-hover: #5ccdb2;
+  --shell-accent-soft: #1c3530;
+  --shadow-panel: 0 16px 48px rgba(0, 0, 0, 0.5);
 
   --overlay: rgba(0, 0, 0, 0.55);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.30);
