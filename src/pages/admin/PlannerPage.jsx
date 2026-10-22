@@ -27,7 +27,9 @@ const TABS = [
 
 export default function PlannerPage() {
   const [params, setParams] = useSearchParams();
-  const tab = params.get("tab") || "overview";
+  // Validate like the other combined pages: an unknown ?tab= must fall
+  // back to Overview instead of rendering no panel at all.
+  const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
   const [mobilePanel, setMobilePanel] = useState("cal");
   const { addToast } = useToast();
 
