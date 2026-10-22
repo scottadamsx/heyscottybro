@@ -143,7 +143,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating, 
       <div className={`xpd-body${w.href || w.to ? " linked" : ""}`} onClick={go} role={w.href || w.to ? "link" : undefined} tabIndex={w.href || w.to ? 0 : undefined} onKeyDown={(e) => { if (e.key === "Enter" && (w.href || w.to)) go(e); }}>
         {floating && <span className="xpd-resize" onPointerDown={(e) => startDrag(e, "resize")} aria-hidden="true" />}
         {/* The boot-time featured window's shot is the first thing painted: eager + high priority. */}
-        {w.img && <img className="xpd-shot" src={w.img} alt="" width={1200} height={800} decoding="async" {...(featured ? { fetchpriority: "high" } : { loading: "lazy" })} />}
+        {w.img && <img className="xpd-shot" src={w.img} alt={w.title ? `Screenshot of ${w.title}` : "Project screenshot"} width={1200} height={800} decoding="async" {...(featured ? { fetchpriority: "high" } : { loading: "lazy" })} />}
         {w.kicker && <div className="xpd-kicker">{w.kicker}</div>}
         {w.tag && !w.kicker && <div className="xpd-kicker">{w.tag}</div>}
         {w.body ? w.body.map((p, i) => <p key={i}>{p}</p>) : <p>{w.desc}</p>}
@@ -240,7 +240,7 @@ export default function HomePage() {
           </button>
           {startOpen && (
             <div className="xpd-startmenu" role="menu">
-              <div className="xpd-sm-head"><img src="/images/scott_headshot.JPEG" alt="" width={40} height={40} loading="lazy" decoding="async" /> <span>Scott Adams</span></div>
+              <div className="xpd-sm-head"><img src="/images/scott_headshot.JPEG" alt="Scott Adams" width={40} height={40} loading="lazy" decoding="async" /> <span>Scott Adams</span></div>
               <div className="xpd-sm-cols">
                 <div className="xpd-sm-col">
                   <div className="xpd-sm-label">Featured</div>
