@@ -924,3 +924,68 @@ Every discovered software defect belongs here, including defects found while bui
 - **Fix:** Items schema now requires `protein_g`, `carbs_g`, `fat_g` per item; the prompt adds a full-plate portion default, per-item macro requirement, entree anchor ranges, and a totals-equal-sum-of-items consistency rule.
 - **Regression coverage:** New `src/api/foodEstimateSchema.test.js` (source-boundary) pins the schema fields, the required list, and the prompt rules; added to the npm test script. Lint, full test suite, and production build pass 2026-10-20.
 - **Related work:** `docs/features/food-estimate-accuracy.md`; `docs/features/food-item-cache.md`.
+
+### BUG-070 — Journal has no nav entry of its own and reads as "hidden"
+
+- **Status:** Resolved
+- **Discovered:** 2026-10-22
+- **Area:** Admin shell navigation (`src/pages/admin/AdminLayout.jsx`)
+- **Observed:** Scott reported the Journal page is hidden: he cannot find or reach the journal in the admin. Journal exists only as a tab inside Life; the Muse shell puts Life behind the icon-only More button, so the path is More, then Life, then the Journal tab, with nothing on screen naming Journal (or even Life) until the popover opens. The pre-rewrite sidebar had the same missing entry, but its always-visible text labels made the Life row scannable; the icon rail removed that.
+- **Expected:** A first-class destination that the command palette and the `/admin/journal` redirect already treat by name is also named in the nav.
+- **Impact:** Journal is effectively undiscoverable from the shell; Scott experiences it as a hidden page.
+- **Cause:** No nav item points at `/admin/life?tab=journal`. `NAV_ITEMS`/`MORE_ITEMS` carry one slot per space and Journal was never given a row, even though the palette has listed it as its own destination all along.
+- **Fix:** Added a labelled Journal row (`/admin/life?tab=journal`, `fa-book`) to `MORE_ITEMS` directly under Life, so it appears in the desktop More popover and the phone More sheet. The shell's hidden-pages filter now uses the command palette's matching (a hidden page also hides its tab links), so hiding Life hides Journal with it. `NavRow` computes its active state search-aware, because NavLink's `isActive` compares pathnames only and would have lit the Journal row on every Life tab; plain paths keep prefix matching for subroutes.
+- **Regression coverage:** Lint clean, full suite 333/333, production build pass; the built entry chunk contains the `life?tab=journal` nav item. Signed-in rendered check remains Scott's review (preview is auth-gated).
+- **Related work:** `docs/features/muse-ui-rewrite.md` (shell); BUG-074 (the same report's desktop-nav half).
+
+### BUG-071 — Money page ignores the `?tab=` its own links promise
+
+- **Status:** Resolved
+- **Discovered:** 2026-10-22
+- **Area:** Finance (`src/pages/admin/BudgetPage.jsx`)
+- **Observed:** Links that name a Money tab land on whatever tab was last open instead: the command palette's Transactions / Bills & Income / Receipts / Banker entries, Today's KPI and upcoming-bills links (`?tab=transactions`, `?tab=bills`), the brief's next-bill link, and the `/admin/grocery` redirect (`?tab=receipts`).
+- **Expected:** A link to `/admin/finance?tab=bills` opens Money on Bills & Income.
+- **Impact:** Every deep link into Money's tabs is a dead promise; users land on Overview and must hunt for the tab bar.
+- **Cause:** `BudgetPage` never read the URL. Its tab state initialised from `sessionStorage` (`budgetTab`) only; the `?tab=` convention every other combined page (Life, Health, Vault, Mission Control, Plan) honours was never implemented here. Present since the budget tracker's introduction, not a shell-rewrite regression.
+- **Fix:** `BudgetPage` reads `useSearchParams`: a valid `?tab=` wins at first render and whenever the param changes while the page is open (palette navigation from Money back into a Money tab), and is remembered in `budgetTab`; the remembered tab still fills in when the URL names none. Invalid values are ignored.
+- **Regression coverage:** Lint clean, full suite 333/333, production build pass; the built Budget chunk carries the param handling. Signed-in rendered check remains Scott's review.
+- **Related work:** `src/components/CommandPalette.jsx`; `src/pages/admin/DashboardPage.jsx`; `src/pages/admin/adminRoutes.jsx` (grocery redirect).
+
+### BUG-072 — Plan page renders nothing for an unknown `?tab=`
+
+- **Status:** Resolved
+- **Discovered:** 2026-10-22
+- **Area:** Planner (`src/pages/admin/PlannerPage.jsx`)
+- **Observed:** Opening `/admin/planner?tab=<anything-not-a-tab>` shows the Plan header and tab bar with no panel beneath it: every panel is conditional on the tab value and none matches.
+- **Expected:** An unknown tab param falls back to Overview, as on Life, Health, Vault, and Mission Control.
+- **Impact:** A mistyped or stale tab link blanks the Plan page's content area.
+- **Cause:** `PlannerPage` used `params.get("tab") || "overview"` without validating against `TABS`; the other combined pages validate with `TABS.some(...)`.
+- **Fix:** Same one-line validation as HealthPage: `TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview"`.
+- **Regression coverage:** Lint clean, full suite 333/333, production build pass.
+- **Related work:** BUG-071 (same scan: the admin's tab-param conventions).
+
+### BUG-073 — Money page pays two serial round trips before first render
+
+- **Status:** Resolved
+- **Discovered:** 2026-10-22
+- **Area:** Finance load path (`src/pages/admin/BudgetPage.jsx`)
+- **Observed:** A cold Money page sat on "Loading money" for roughly 30 seconds on 2026-10-21. The page gates all rendering on `ready`, which waited for the budget config fetch and then the transactions fetch strictly one after another, although the two reads are independent.
+- **Expected:** Independent reads are fetched together; the page still shows one honest loading state and one error surface.
+- **Impact:** One full extra round trip of latency on every cold Money load and every post-Banker reload. (The bulk of the 30 seconds is cold-start and chunk latency, which this fix does not claim to solve; this removes the avoidable serial wait only.)
+- **Cause:** `loadAll` (and `reload`) awaited `loadBudgetConfig()` before starting `loadTransactions()`.
+- **Fix:** Both now start both reads immediately and `Promise.all` them. Error behaviour is preserved: each read keeps its own console label, the first failure sets the same `loadError`, config is applied only after both succeed, and the legacy-transaction migration still runs on the pair before `ready`.
+- **Regression coverage:** Lint clean, full suite 333/333, production build pass.
+- **Related work:** BUG-071 (same file, same scan).
+
+### BUG-074 — "Can't see the nav on desktop" report: shell verified correct, cause is client-side
+
+- **Status:** Investigating (no code defect found in the shell; awaiting Scott's browser state)
+- **Discovered:** 2026-10-22
+- **Area:** Admin shell (`src/pages/admin/AdminLayout.jsx`, `src/styles/system.css`)
+- **Observed:** Scott reported that on desktop he cannot see the nav at all, the same night the Muse-UI shell went live.
+- **Expected:** At desktop widths the 68px icon rail renders at the left with pinned sections, Search, More, and the menu.
+- **Impact:** If the rail's sections are not visible or not identifiable, every space behind them (including Journal, BUG-070) is unreachable in practice.
+- **Cause:** Not established as a code defect. Verified 2026-10-22 against the deployed build: the served CSS contains the base `.admin-shell .rail` rule (fixed, flex, `width: var(--rail-w)`, `--rail-w: 68px` defined) and its only `display: none` for the rail sits inside `@media (max-width: 900px)` (proven by brace matching on the served bundle); the served JS contains the full AdminLayout (rail buttons, "More sections", More popover). The remaining causes live in Scott's browser state, in order of likelihood: (1) the hidden-pages setting (`setting:hiddenPages` in localStorage) has pages hidden, so the rail keeps only its chrome and More is empty of them, and the only way back (menu, Settings, Hidden pages) is itself behind an unlabelled icon; (2) the window's CSS width is 900px or less (snapped or scaled), where the rail hides by design in favour of the top and bottom bars; (3) the Font Awesome CDN stylesheet failed to load, leaving every rail button a blank 48px square, since the rail's labels are tooltips only and all its glyphs are icon-font.
+- **Fix:** None in code: the shell as deployed renders the rail at desktop widths. The discoverability half of the report is addressed by BUG-070 (Journal named in More; Life's row is labelled text once More opens). If it recurs, the checks are: Settings, Hidden pages (unhide all), widen the window past 900px, and confirm icons render elsewhere in the app (a site-wide absence of glyphs means the icon font did not load).
+- **Regression coverage:** Served-asset inspection recorded above; no test can cover a single browser's localStorage from the repo.
+- **Related work:** BUG-070; `docs/features/muse-ui-rewrite.md`.
