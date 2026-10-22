@@ -49,6 +49,10 @@ const MORE_ITEMS = [
   { to: "/admin/work",      icon: "fa-briefcase",       label: "Work log" },
   { to: "/admin/school",    icon: "fa-graduation-cap",  label: "School" },
   { to: "/admin/life",      icon: "fa-heart-pulse",     label: "Life" },
+  // Journal is a Life tab, but it is a destination in its own right (the
+  // command palette and the /admin/journal redirect treat it as one), so it
+  // gets its own labelled row here instead of hiding behind Life's tab bar.
+  { to: "/admin/life?tab=journal", icon: "fa-book",     label: "Journal" },
   { to: "/admin/analytics", icon: "fa-chart-line",      label: "Analytics" },
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
@@ -64,10 +68,19 @@ function BrandMark() {
 }
 
 function NavRow({ item, onNavigate }) {
+  const { pathname, search } = useLocation();
+  // NavLink's isActive only compares pathnames, so a tab link like Journal
+  // (/admin/life?tab=journal) would light up on every Life tab. Compare the
+  // search too when the item carries one; plain paths keep prefix matching
+  // so subroutes (e.g. a School doc) still light their space.
+  const [itemPath, itemSearch] = item.to.split("?");
+  const isActive =
+    (pathname === itemPath || pathname.startsWith(`${itemPath}/`)) &&
+    (!itemSearch || search === `?${itemSearch}`);
   return (
     <NavLink
       to={item.to}
-      className={({ isActive }) => `nav-row${isActive ? " active" : ""}`}
+      className={`nav-row${isActive ? " active" : ""}`}
       onClick={onNavigate}
     >
       <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
@@ -94,8 +107,11 @@ function AdminLayoutFrame() {
   const [chatUnread, setChatUnread] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const pinned = RAIL_PINNED.filter((item) => !hiddenPages.includes(item.to));
-  const moreItems = MORE_ITEMS.filter((item) => !hiddenPages.includes(item.to));
+  // Same matching the command palette uses: a hidden page also hides its
+  // tab links (Journal follows Life), never the other way around.
+  const isHidden = (to) => hiddenPages.some((base) => to === base || to.startsWith(`${base}?`) || to.startsWith(`${base}/`));
+  const pinned = RAIL_PINNED.filter((item) => !isHidden(item.to));
+  const moreItems = MORE_ITEMS.filter((item) => !isHidden(item.to));
   const bottomItems = [TODAY_ITEM, ...pinned.slice(0, 3)];
   const sheetItems = [...pinned.slice(3), ...moreItems];
   const moreActive = sheetItems.some(
