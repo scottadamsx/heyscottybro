@@ -11,8 +11,8 @@
 
 - **Feature document:** `docs/features/connected-pages.md`
 - **Approval:** Scott directed the interconnection on 2026-10-21 and approved the plan the same day ("approval on both", covering this plan and the Muse-UI rewrite). The interactive blueprint at `~/workspace/your_files/connected-pages-blueprint/connected-pages-blueprint.html` was delivered 2026-10-21. On 2026-10-22 Scott said "go on all items", approving the build: Phase 0 (cascade and gap-watcher foundations) and Phase 1 (Finance to Meal Plan, subphases 1A to 1D), using the plan's recommended SPEC-GAP defaults.
-- **Current state:** Build in progress (2026-10-22). Migration sources are written with the code but are NOT applied: application needs Scott's Supabase sign-in (no authenticated session in the agent environment), so the new surfaces degrade to named load errors until the migrations land, following the Bin precedent. Phase 2 (Orbit to Planner) is not part of this approval round.
-- **Next gate:** Apply the Connected Pages migrations to project `mogoybejtmkoheqvfvuc`, then verify the Meal Plan and Finance flows signed-in on desktop and phone.
+- **Current state:** Phase 0 and Phase 1 BUILT and pushed 2026-10-22 (commits `357f95f`, `ce0f019`, `a722a36`; lint clean, full test suite green, build pass). Migration sources are written with the code but are NOT applied: application needs an authenticated Supabase session (none in the agent environment), so the new surfaces degrade to named load errors until the migrations land, following the Bin precedent. Phase 2 (Orbit to Planner) is not part of this approval round.
+- **Next gate:** Apply `2026-10-18-task-priority.sql`, then `2026-10-22-connected-pages-foundations.sql` and `2026-10-22-connected-pages-phase1.sql` to project `mogoybejtmkoheqvfvuc`; set the Leo's Restaurant task to high priority; then verify the Meal Plan and Finance flows signed-in on desktop and phone.
 
 ## Bin (remote clipboard)
 

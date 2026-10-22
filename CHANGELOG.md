@@ -11,6 +11,10 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ## Unreleased
 
+### Added
+
+- Meal Plan (Health): plan a week of dinners and other meals from your recipes, see what each meal costs from a dated grocery price snapshot, get one aggregated shopping list, and mark the week ready to freeze the numbers. Planning a meal creates its cook task (and prep task when the recipe needs one) and a weekly shopping task; skipping a day on purpose is respected, and an unplanned week raises one reminder that clears itself once the week is filled. "Log as eaten" writes the meal into the Food Log. Money shows the same week with its grocery budget, planned grocery spend, and logged grocery spending kept separate. Goes live once its database migrations are applied.
+
 ### Changed
 
 - The admin app has a new frame (Muse-UI rewrite, Phases 0 and 1, built locally and not yet deployed): a slim icon rail replaces the wide sidebar on desktop (Today in the brand mark, Plan, Tasks, Money, Health, People pinned, Search, and a More popover for the other sections), a bottom bar with a More sheet replaces the drawer on phones, Settings opens as a dialog from the rail menu, and a slide-in detail panel (starting with a Status view) is the shell's new detail surface. All type is now DM Sans with DM Mono for numbers and labels; the serif display face is gone. Every page keeps its interior, routes, and data.
