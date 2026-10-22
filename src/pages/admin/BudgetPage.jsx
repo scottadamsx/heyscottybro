@@ -3,6 +3,7 @@ import { formatDisplayDate } from "../../utils/dates.js";
 import GroceryPage from "./GroceryPage";
 import StatementImport from "../../components/budget/StatementImport";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toDateStr, genId } from "../../utils/budgetCalc";
 import {
   loadBudgetConfig, saveBudgetConfig,
@@ -62,11 +63,25 @@ const TABS = [
 
 export default function BudgetPage() {
   const { addToast } = useToast();
+  const [params] = useSearchParams();
+  const urlTab = params.get("tab");
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState(() => {
+    // A ?tab= link (command palette, Today, the /admin/grocery redirect)
+    // names the tab it wants; the remembered tab only fills in when the
+    // URL doesn't say.
+    if (TABS.some((t) => t.key === urlTab)) return urlTab;
     const saved = sessionStorage.getItem("budgetTab");
     return TABS.some((t) => t.key === saved) ? saved : "dashboard";
   });
+  // Same rule when the param changes while the page is already open
+  // (palette navigation from Money back into a Money tab).
+  useEffect(() => {
+    if (TABS.some((t) => t.key === urlTab)) {
+      setTab(urlTab);
+      sessionStorage.setItem("budgetTab", urlTab);
+    }
+  }, [urlTab]);
   const [periodOffset, setPeriodOffset] = useState(0);
 
   // Raw setters are for data that came FROM the server. The wrapped setters
@@ -103,24 +118,25 @@ export default function BudgetPage() {
   useEffect(() => { aliveRef.current = true; return () => { aliveRef.current = false; }; }, []);
   const loadAll = useCallback(async () => {
     setLoadError(null);
-    let cfg;
-    try {
-      cfg = await loadBudgetConfig();
-    } catch (err) {
+    // Config and transactions are independent reads; fetch them together
+    // instead of paying two serial round trips before first render.
+    const cfgPromise = loadBudgetConfig().catch((err) => {
       console.error("[budget] config load failed", err);
+      throw err;
+    });
+    const rowsPromise = loadTransactions().then((r) => r.map(uiShape)).catch((err) => {
+      console.error("[budget] transactions load failed", err);
+      throw err;
+    });
+    let cfg, rows;
+    try {
+      [cfg, rows] = await Promise.all([cfgPromise, rowsPromise]);
+    } catch (err) {
       if (aliveRef.current) setLoadError(err?.message || String(err));
       return;
     }
     if (!aliveRef.current) return;
     applyServerConfig(cfg);
-    let rows;
-    try {
-      rows = (await loadTransactions()).map(uiShape);
-    } catch (err) {
-      console.error("[budget] transactions load failed", err);
-      if (aliveRef.current) setLoadError(err?.message || String(err));
-      return;
-    }
 
     // One-time migration: lift any transactions that only ever lived in the
     // old config blob into the table, so nothing the UI saved before is lost.
@@ -150,9 +166,11 @@ export default function BudgetPage() {
   // banker agent) makes ledger changes, so the page reflects them immediately.
   const reload = useCallback(async () => {
     try {
-      const cfg = await loadBudgetConfig();
+      const [cfg, rows] = await Promise.all([
+        loadBudgetConfig(),
+        loadTransactions().then((r) => r.map(uiShape)),
+      ]);
       applyServerConfig(cfg);
-      const rows = (await loadTransactions()).map(uiShape);
       setTxState(rows);
     } catch (err) {
       console.error("[budget] reload failed", err);
