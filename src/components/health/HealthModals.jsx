@@ -21,7 +21,7 @@ export function mealForNow(d = new Date()) {
  * Log or edit food. Describe it and let AI estimate, or type the numbers.
  * initial: an existing food_logs row (edit) or undefined (new).
  */
-export function FoodModal({ initial, defaultDate, profileId, onClose, onSave }) {
+export function FoodModal({ initial, defaultDate, profileId, onClose, onSave, title }) {
   const [f, setF] = useState(() => ({
     date: initial?.date || defaultDate || toDateStr(),
     meal_type: initial?.meal_type || mealForNow(),
@@ -63,7 +63,7 @@ export function FoodModal({ initial, defaultDate, profileId, onClose, onSave }) 
 
   return (
     <FormModal
-      title={initial ? "Edit food" : "Log food"}
+      title={title || (initial ? "Edit food" : "Log food")}
       submitLabel={initial ? "Save" : "Log it"}
       submitDisabled={estimating || !f.name.trim() || f.calories === ""}
       onClose={onClose}

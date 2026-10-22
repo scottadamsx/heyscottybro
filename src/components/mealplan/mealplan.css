@@ -1,0 +1,28 @@
+/* Connected Pages — Meal Plan tab + Finance grocery week card. */
+
+.mp-weekbar { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+.mp-weekbar strong { font-family: var(--font-display); }
+
+.mp-pending {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md);
+  background: var(--warn-bg); color: var(--text-primary); font-size: var(--text-sm);
+}
+
+.mp-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-sm); }
+.mp-summary > div { display: flex; flex-direction: column; gap: 2px; }
+.mp-summary span { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.mp-summary strong { font-family: var(--font-display); font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+
+.mp-item-actions { display: inline-flex; align-items: center; gap: var(--space-2xs); flex-shrink: 0; flex-wrap: wrap; }
+
+.mp-lines { display: flex; flex-direction: column; gap: var(--space-xs); }
+.mp-line-row { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+.mp-line-row input[type="text"], .mp-line-row > input { min-width: 0; }
+.mp-line-row > input:first-child { flex: 2 1 140px; }
+.mp-line-row > input:nth-child(2) { flex: 0 1 84px; }
+.mp-line-row > input:nth-child(4) { flex: 1 1 110px; }
+.mp-line-opt { display: inline-flex; align-items: center; gap: var(--space-2xs); font-size: var(--text-sm); color: var(--text-secondary); }
+
+.mp-macro-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-xs); }
+.mp-macro-row input { min-width: 0; }

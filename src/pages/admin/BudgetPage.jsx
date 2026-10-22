@@ -18,6 +18,7 @@ import BudgetBillsIncome from "../../components/budget/BudgetBillsIncome";
 import BudgetSimulator from "../../components/budget/BudgetSimulator";
 import BudgetAnalytics from "../../components/budget/BudgetAnalytics";
 import BudgetBanker from "../../components/budget/BudgetBanker";
+import GroceryWeekCard from "../../components/mealplan/GroceryWeekCard";
 // Config/transaction normalisers live in budgetSummary so the home Dashboard
 // widget and this page read the data in exactly the same shape.
 import { DEFAULT_CONFIG, apiToPage, uiShape, computeBudgetSnapshot } from "../../components/budget/budgetSummary";
@@ -369,6 +370,9 @@ export default function BudgetPage() {
               transactions={transactions}
               startingBalance={startingBalance}
             />
+          )}
+          {tab === "dashboard" && (
+            <GroceryWeekCard transactions={transactions} />
           )}
           {tab === "banker" && (
             <BudgetBanker onChanged={reload} />

@@ -38,6 +38,8 @@ import { loadProfile as loadHealthProfile, loadFood as loadHealthFood, loadWeigh
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
 import { loadAllWatchers } from "./gapWatchersApi";
+import { loadPriceImports } from "./groceryPricesApi";
+import { loadAllPlans } from "./mealPlanApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
 import { planReminderRows, normalizeTime } from "../utils/recurrence";
 import { toDateStr } from "../utils/plannerUtils";
@@ -390,6 +392,34 @@ const COLLECTIONS = {
       reminder_id: { type: "string" },
     },
     load: loadAllWatchers,
+  },
+  grocery_price_imports: {
+    description: "Connected Pages grocery price snapshots — read-only. One row per imported dataset (source, capture date, row/rejected counts, status imported or superseded). Meal Plan costs come from the active import's items.",
+    dateField: "captured_at",
+    searchFields: ["source_name", "status"],
+    defaultFields: ["id", "source_name", "captured_at", "row_count", "rejected_count", "status"],
+    fields: {
+      source_name: { type: "string" },
+      captured_at: { type: "date" },
+      imported_at: { type: "date" },
+      row_count: { type: "number" },
+      rejected_count: { type: "number" },
+      status: { type: "enum", values: ["imported", "failed", "superseded"] },
+    },
+    load: loadPriceImports,
+  },
+  meal_plans: {
+    description: "Connected Pages week meal plans — read-only. One row per week (week_start, status draft/ready/completed/cancelled, chosen shopping store). Items, shopping, and costs live behind the Meal Plan tab in Health.",
+    dateField: "week_start",
+    searchFields: ["status", "shopping_store_name"],
+    defaultFields: ["id", "week_start", "status", "shopping_store_name"],
+    fields: {
+      week_start: { type: "date" },
+      status: { type: "enum", values: ["draft", "ready", "completed", "cancelled"] },
+      shopping_store_key: { type: "string" },
+      shopping_store_name: { type: "string" },
+    },
+    load: loadAllPlans,
   },
   // Health space (Achilles, DR-018) — read-only here; log_food / log_weight write.
   food_log: {

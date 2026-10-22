@@ -100,11 +100,11 @@ export async function deleteWeight(id) {
 // ── Food (food_logs) ─────────────────────────────────────────────────────────
 
 export const MEALS = ["breakfast", "lunch", "dinner", "snack"];
-const FOOD_FIELDS = ["date", "meal_type", "name", "description", "calories", "protein_g", "carbs_g", "fat_g", "quantity", "source", "items"];
+const FOOD_FIELDS = ["date", "meal_type", "name", "description", "calories", "protein_g", "carbs_g", "fat_g", "quantity", "source", "items", "recipe_id", "meal_plan_item_id"];
 
 export async function loadFood(profileId, { from } = {}) {
   return allRows(() => {
-    let q = supabase.from("food_logs").select("id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, source, items, created_at").eq("profile_id", profileId);
+    let q = supabase.from("food_logs").select("id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, quantity, source, items, recipe_id, meal_plan_item_id, created_at").eq("profile_id", profileId);
     if (from) q = q.gte("date", from);
     return q.order("date", { ascending: false }).order("created_at", { ascending: true });
   }, "load your food log");
@@ -125,6 +125,20 @@ export async function addFood(profileId, food) {
   const { error } = await supabase.from("food_logs").insert(row);
   if (error) fail("log that food", error);
   changed();
+}
+
+/**
+ * Connected Pages 1D: log a food entry and return the saved row, so the
+ * caller can link a meal plan item to it (food_logs.meal_plan_item_id is
+ * unique — a duplicate link fails loudly instead of double-logging).
+ */
+export async function addFoodReturning(profileId, food) {
+  const userId = await uid();
+  const row = { date: toDateStr(), meal_type: "snack", source: "manual", ...cleanFood(food), user_id: userId, profile_id: profileId };
+  const { data, error } = await supabase.from("food_logs").insert(row).select().single();
+  if (error) fail("log that food", error);
+  changed();
+  return data;
 }
 
 /**
