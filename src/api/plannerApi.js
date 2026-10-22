@@ -112,8 +112,10 @@ async function loadRemindersUncached() {
   );
 }
 
+const PRIORITIES = ["low", "medium", "high"];
+
 /** Normalise caller fields into a reminders row (no user_id). */
-function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id }) {
+function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id, priority }) {
   const base = {
     name,
     date: date || null,
@@ -121,6 +123,7 @@ function reminderRow({ name, date, time, description, recurrence, project_id, re
     completed: false,
     show_on_calendar: show_on_calendar !== false,
   };
+  if (PRIORITIES.includes(priority)) base.priority = priority;
   if (project_id) base.project_id = project_id;
   if (course_id) base.course_id = course_id;
   if (event_id) base.event_id = event_id;
@@ -147,6 +150,11 @@ export async function newReminders(list) {
       if (error && isMissingColumn(error, "event_id") && payload.some((r) => "event_id" in r)) {
         console.error("[plannerApi] reminders.event_id column is missing — run supabase/migrations/2026-09-06-phase1.sql. Inserting WITHOUT the event link:", error.message);
         const stripped = payload.map((r) => { const c = { ...r }; delete c.event_id; return c; });
+        ({ data, error } = await supabase.from("reminders").insert(stripped).select());
+      }
+      if (error && isMissingColumn(error, "priority") && payload.some((r) => "priority" in r)) {
+        console.error("[plannerApi] reminders.priority column is missing — run supabase/migrations/2026-10-18-task-priority.sql. Inserting WITHOUT priority:", error.message);
+        const stripped = payload.map((r) => { const c = { ...r }; delete c.priority; return c; });
         ({ data, error } = await supabase.from("reminders").insert(stripped).select());
       }
       if (error) throw error;
@@ -206,7 +214,7 @@ export async function completeReminder(id, occurrenceDate) {
 export async function updateReminder(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min"].forEach((k) => {
+  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min", "priority"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
@@ -216,10 +224,14 @@ export async function updateReminder(id, fields) {
   await op(
     async () => {
       let { error } = await supabase.from("reminders").update(patch).eq("id", id);
-      if (error && "duration_min" in patch && isMissingColumn(error, "duration_min")) {
-        console.error("[plannerApi] reminders.duration_min is missing — run supabase/migrations/2026-09-14-reminder-duration.sql. Saving the rest of the edit WITHOUT the duration:", error.message);
-        const rest = { ...patch }; delete rest.duration_min;
-        dropped = ["duration_min"];
+      // Columns added by migrations that may not be applied yet: drop each one
+      // the DB reports missing and save the rest of the edit.
+      for (const col of ["duration_min", "priority"]) {
+        if (!(error && col in patch && isMissingColumn(error, col))) continue;
+        const migration = col === "priority" ? "2026-10-18-task-priority.sql" : "2026-09-14-reminder-duration.sql";
+        console.error(`[plannerApi] reminders.${col} is missing — run supabase/migrations/${migration}. Saving the rest of the edit WITHOUT the ${col}:`, error.message);
+        const rest = { ...patch }; delete rest[col];
+        dropped = [...dropped, col];
         ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
       }
       if (error) throw error;

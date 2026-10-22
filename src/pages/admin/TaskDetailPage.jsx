@@ -169,6 +169,9 @@ export default function TaskDetailPage() {
             {task.completed && <span className="task-badge task-badge--done">Completed</span>}
             {overdue && <span className="task-badge task-badge--overdue">Overdue</span>}
             {dueToday && <span className="task-badge task-badge--today">Today</span>}
+            {task.priority === "high" && <span className="task-badge task-badge--overdue">High priority</span>}
+            {task.priority === "medium" && <span className="task-badge">Medium priority</span>}
+            {task.priority === "low" && <span className="task-badge">Low priority</span>}
             {task.recurrence && task.recurrence !== "none" && (
               <span className="task-badge">{RECUR_LABEL[task.recurrence] || task.recurrence}</span>
             )}
