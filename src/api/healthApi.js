@@ -102,12 +102,25 @@ export async function deleteWeight(id) {
 export const MEALS = ["breakfast", "lunch", "dinner", "snack"];
 const FOOD_FIELDS = ["date", "meal_type", "name", "description", "calories", "protein_g", "carbs_g", "fat_g", "quantity", "source", "items", "recipe_id", "meal_plan_item_id"];
 
+const FOOD_COLS_FULL = "id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, quantity, source, items, recipe_id, meal_plan_item_id, created_at";
+const FOOD_COLS_LEGACY = "id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, source, items, created_at";
+
 export async function loadFood(profileId, { from } = {}) {
-  return allRows(() => {
-    let q = supabase.from("food_logs").select("id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, quantity, source, items, recipe_id, meal_plan_item_id, created_at").eq("profile_id", profileId);
+  const build = (cols) => () => {
+    let q = supabase.from("food_logs").select(cols).eq("profile_id", profileId);
     if (from) q = q.gte("date", from);
     return q.order("date", { ascending: false }).order("created_at", { ascending: true });
-  }, "load your food log");
+  };
+  try {
+    return await allRows(build(FOOD_COLS_FULL), "load your food log");
+  } catch (e) {
+    // food_logs.meal_plan_item_id arrives with the Connected Pages Phase 1
+    // migration; until it is applied, load with the legacy column list
+    // instead of failing the whole Health space.
+    if (!/meal_plan_item_id|PGRST204|42703/.test(e.message || "")) throw e;
+    console.error("[health] food_logs.meal_plan_item_id missing (Connected Pages Phase 1 migration not applied); loading without it");
+    return allRows(build(FOOD_COLS_LEGACY), "load your food log");
+  }
 }
 
 const cleanFood = (f) => {
