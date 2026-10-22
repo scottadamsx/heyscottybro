@@ -7,6 +7,13 @@
 - **Current state:** Phase 0 (DM Sans/DM Mono fonts, shell tokens, DR-032) committed locally as `7954182` and Phase 1 (icon rail shell, More popover/sheet, phone bottom bar, detail-panel host with Status view shell, Settings dialog host, palette restyle) committed locally on 2026-10-21; not pushed. Every existing page keeps its interior, routes, data, and APIs. Lint, full tests (333/333), and build pass at both phase boundaries; a production-preview smoke pass returned HTTP 200 for all 15 main admin routes. Signed-in rendered desktop/phone checks were not run (preview is auth-gated). DR-032 and the WORKLOG entries sit in the working tree alongside the prior session's uncommitted DR-031 records.
 - **Next gate:** Scott reviews the result (rendered check), then approves the push/deploy. Phase 2 (Today, Planner, Finance interiors) is a separate per-phase approval. Connected Pages surfaces should be born in the new shell.
 
+## Connected Pages (heyscottybro interconnection)
+
+- **Feature document:** `docs/features/connected-pages.md`
+- **Approval:** Scott directed the interconnection on 2026-10-21 and approved the plan the same day ("approval on both", covering this plan and the Muse-UI rewrite). The interactive blueprint at `~/workspace/your_files/connected-pages-blueprint/connected-pages-blueprint.html` was delivered 2026-10-21. On 2026-10-22 Scott said "go on all items", approving the build: Phase 0 (cascade and gap-watcher foundations) and Phase 1 (Finance to Meal Plan, subphases 1A to 1D), using the plan's recommended SPEC-GAP defaults.
+- **Current state:** Build in progress (2026-10-22). Migration sources are written with the code but are NOT applied: application needs Scott's Supabase sign-in (no authenticated session in the agent environment), so the new surfaces degrade to named load errors until the migrations land, following the Bin precedent. Phase 2 (Orbit to Planner) is not part of this approval round.
+- **Next gate:** Apply the Connected Pages migrations to project `mogoybejtmkoheqvfvuc`, then verify the Meal Plan and Finance flows signed-in on desktop and phone.
+
 ## Bin (remote clipboard)
 
 - **Approval:** Scott said "make it live" on 2026-10-21, with the same-day addition that context items are saved, not worked.
