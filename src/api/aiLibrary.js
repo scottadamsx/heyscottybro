@@ -37,6 +37,7 @@ import { loadPeople, loadPeopleEvents } from "./peopleApi";
 import { loadProfile as loadHealthProfile, loadFood as loadHealthFood, loadWeights as loadHealthWeights, loadHistory as loadLiftHistory } from "./healthApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
+import { loadAllWatchers } from "./gapWatchersApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
 import { planReminderRows, normalizeTime } from "../utils/recurrence";
 import { toDateStr } from "../utils/plannerUtils";
@@ -95,6 +96,12 @@ const COLLECTIONS = {
       course_id: { type: "string", description: "Link to a courses row — makes this a school deadline (shows in School + Plan)" },
       show_on_calendar: { type: "boolean" },
       completed: { type: "boolean", updateOnly: true },
+      priority: { type: "enum", values: ["low", "medium", "high"], description: "Task priority (needs the 2026-10-18 task-priority migration; saves drop it until then)" },
+      source_type: { type: "string", description: "Connected Pages provenance: what generated this task (event, meal_plan_item, meal_plan_week, watcher). Read-mostly — set by cascades, not by hand." },
+      source_id: { type: "string", description: "Connected Pages provenance: the owning record's id" },
+      source_key: { type: "string", description: "Connected Pages provenance: the task's role within its source (cook, prep, shopping, brief:…)" },
+      generator: { type: "string", description: "Connected Pages provenance: the rule that generated this task" },
+      managed_state: { type: "enum", values: ["manual", "generated", "detached"], description: "manual = Scott's own task; generated = cascade-managed; detached = was generated, Scott edited it by hand" },
     },
     load: loadReminders, create: createReminderPlanned, update: updateReminder, remove: deleteReminder,
     echoFields: ["id", "name", "date", "time", "recurrence", "recur_until", "recur_times", "project_id"],
@@ -366,6 +373,23 @@ const COLLECTIONS = {
       notes: { type: "string", long: true },
     },
     load: loadPeopleEvents,
+  },
+  gap_watchers: {
+    description: "Connected Pages gap watchers — read-only. One row per watcher episode: watcher_key (meals-week, grocery-budget-week), scope_id (the week start), status (active, resolved, suppressed, expired), and the reminder it raised. Watchers are driven by the app, not by hand.",
+    dateField: "scope_start",
+    searchFields: ["watcher_key", "scope_id", "status"],
+    defaultFields: ["id", "watcher_key", "scope_id", "scope_start", "status", "episode", "reminder_id"],
+    fields: {
+      watcher_key: { type: "string" },
+      scope_type: { type: "string" },
+      scope_id: { type: "string" },
+      scope_start: { type: "date" },
+      scope_end: { type: "date" },
+      status: { type: "enum", values: ["active", "resolved", "suppressed", "expired"] },
+      episode: { type: "number" },
+      reminder_id: { type: "string" },
+    },
+    load: loadAllWatchers,
   },
   // Health space (Achilles, DR-018) — read-only here; log_food / log_weight write.
   food_log: {

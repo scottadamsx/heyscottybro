@@ -115,7 +115,7 @@ async function loadRemindersUncached() {
 const PRIORITIES = ["low", "medium", "high"];
 
 /** Normalise caller fields into a reminders row (no user_id). */
-function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id, priority }) {
+function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id, priority, source_type, source_id, source_key, generator, generated_hash, managed_state }) {
   const base = {
     name,
     date: date || null,
@@ -124,6 +124,16 @@ function reminderRow({ name, date, time, description, recurrence, project_id, re
     show_on_calendar: show_on_calendar !== false,
   };
   if (PRIORITIES.includes(priority)) base.priority = priority;
+  // Connected Pages provenance (docs/features/connected-pages.md): carried
+  // only when a cascade supplies it, so ordinary tasks stay untouched.
+  if (source_type) {
+    base.source_type = source_type;
+    base.source_id = source_id != null ? String(source_id) : null;
+    base.source_key = source_key || null;
+    base.generator = generator || null;
+    base.generated_hash = generated_hash || null;
+    base.managed_state = managed_state || "generated";
+  }
   if (project_id) base.project_id = project_id;
   if (course_id) base.course_id = course_id;
   if (event_id) base.event_id = event_id;
@@ -155,6 +165,15 @@ export async function newReminders(list) {
       if (error && isMissingColumn(error, "priority") && payload.some((r) => "priority" in r)) {
         console.error("[plannerApi] reminders.priority column is missing — run supabase/migrations/2026-10-18-task-priority.sql. Inserting WITHOUT priority:", error.message);
         const stripped = payload.map((r) => { const c = { ...r }; delete c.priority; return c; });
+        ({ data, error } = await supabase.from("reminders").insert(stripped).select());
+      }
+      if (error && isMissingColumn(error, "source_type") && payload.some((r) => "source_type" in r)) {
+        console.error("[plannerApi] reminders provenance columns are missing — run supabase/migrations/2026-10-22-connected-pages-foundations.sql. Inserting WITHOUT provenance:", error.message);
+        const stripped = payload.map((r) => {
+          const c = { ...r };
+          for (const k of ["source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state"]) delete c[k];
+          return c;
+        });
         ({ data, error } = await supabase.from("reminders").insert(stripped).select());
       }
       if (error) throw error;
@@ -211,18 +230,29 @@ export async function completeReminder(id, occurrenceDate) {
   return patch;
 }
 
-export async function updateReminder(id, fields) {
+export async function updateReminder(id, fields, opts = {}) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
-  const patch = {};
-  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min", "priority"].forEach((k) => {
+  let patch = {};
+  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min", "priority", "source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
+  // Connected Pages (SPEC-GAP 4 default): Scott editing a generated task's
+  // title, date, or time by hand detaches it from its source, so a later
+  // source save never silently overwrites his change. Cascade writes pass
+  // { generated: true } (or set managed_state themselves) and never detach.
+  const detachCheck = !opts.generated && patch.managed_state === undefined
+    && ["name", "date", "time"].some((k) => fields[k] !== undefined);
   // Returns { dropped: [...] } when a column the DB doesn't have yet had to be
   // left out (the rest of the edit still saved) — the caller must tell Scott.
   let dropped = [];
   await op(
     async () => {
+      if (detachCheck) {
+        const { data: cur, error: readErr } = await supabase.from("reminders").select("managed_state").eq("id", id).maybeSingle();
+        if (!readErr && cur?.managed_state === "generated") patch = { ...patch, managed_state: "detached" };
+        else if (readErr && !isMissingColumn(readErr, "managed_state")) console.error("[plannerApi] detach check failed; saving the edit unmanaged:", readErr.message);
+      }
       let { error } = await supabase.from("reminders").update(patch).eq("id", id);
       // Columns added by migrations that may not be applied yet: drop each one
       // the DB reports missing and save the rest of the edit.
@@ -234,9 +264,23 @@ export async function updateReminder(id, fields) {
         dropped = [...dropped, col];
         ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
       }
+      const provenanceCols = ["source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state"];
+      if (error && provenanceCols.some((c) => c in patch && isMissingColumn(error, c))) {
+        console.error("[plannerApi] reminders provenance columns are missing — run supabase/migrations/2026-10-22-connected-pages-foundations.sql. Saving the rest of the edit WITHOUT provenance:", error.message);
+        const rest = { ...patch };
+        for (const c of provenanceCols) delete rest[c];
+        dropped = [...dropped, "provenance"];
+        ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
+      }
       if (error) throw error;
     },
-    () => local.update("reminders", id, patch),
+    () => {
+      if (detachCheck) {
+        const row = local.list("reminders").find((r) => String(r.id) === String(id));
+        if (row?.managed_state === "generated") patch = { ...patch, managed_state: "detached" };
+      }
+      local.update("reminders", id, patch);
+    },
     "reminders.update",
   );
   emitDataChange("reminders");

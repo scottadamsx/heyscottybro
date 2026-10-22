@@ -5,6 +5,7 @@
  */
 import { newEvent, newReminders } from "../api/plannerApi";
 import { toDateStr } from "../utils/plannerUtils";
+import { stampEventTaskProvenance } from "./cascades";
 
 /**
  * Task rows for an event: one per auto-task on its event type, dated by the
@@ -74,7 +75,10 @@ export async function createEventWithAutoTasks(values, eventTypes = [], options 
   const row = eventRowFromForm(values);
   if (!row.title || !row.date) throw new Error("An event needs a title and a date");
   const created = await newEvent(row);
-  const tasks = eventTaskRows({ ...row, id: created?.id }, eventTypes, options);
+  const rawTasks = eventTaskRows({ ...row, id: created?.id }, eventTypes, options);
+  // Connected Pages Phase 0: event-type tasks now carry the shared generated-
+  // task provenance (source_type "event"); visible behavior is unchanged.
+  const tasks = stampEventTaskProvenance(rawTasks, created?.id);
   if (tasks.length) await newReminders(tasks);
   return created;
 }
