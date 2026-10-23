@@ -99,6 +99,9 @@ function AdminLayoutFrame() {
 
   const [moreOpen, setMoreOpen] = useState(false);     // desktop More popover
   const [menuOpen, setMenuOpen] = useState(false);     // rail bottom menu
+  // BUG-074: the rail rests slim and expands on hover; the pin holds it open.
+  const [railPinned, setRailPinned] = useState(() => { try { return localStorage.getItem("hsb:rail-pinned") === "1"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("hsb:rail-pinned", railPinned ? "1" : "0"); } catch { /* storage unavailable */ } }, [railPinned]);
   const [sheetOpen, setSheetOpen] = useState(false);   // phone More sheet
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -148,7 +151,7 @@ function AdminLayoutFrame() {
     ? window.dispatchEvent(new Event("hsb:toggle-chat"))
     : setChatPending(true));
 
-  const shellClass = ["admin-shell", chatOpen && "chat-open", panel && "panel-open"]
+  const shellClass = ["admin-shell", chatOpen && "chat-open", panel && "panel-open", railPinned && "rail-pinned"]
     .filter(Boolean)
     .join(" ");
 
@@ -193,10 +196,12 @@ function AdminLayoutFrame() {
               title={item.label}
             >
               <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
+              <span className="rail-label">{item.label}</span>
             </NavLink>
           ))}
           <button type="button" className="rail-btn" onClick={() => setPaletteOpen(true)} aria-label="Search" title="Search (⌘K)">
             <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+            <span className="rail-label">Search</span>
           </button>
           <div className="rail-pop-wrap">
             <button
@@ -208,6 +213,7 @@ function AdminLayoutFrame() {
               title="More"
             >
               <i className="fa-solid fa-ellipsis" aria-hidden="true" />
+              <span className="rail-label">More</span>
             </button>
             {moreOpen && (
               <div className="more-pop pop-down" role="menu" aria-label="More sections">
@@ -217,6 +223,17 @@ function AdminLayoutFrame() {
           </div>
         </nav>
         <div className="rail-foot">
+          <button
+            type="button"
+            className={`rail-btn${railPinned ? " active" : ""}`}
+            onClick={() => setRailPinned((p) => !p)}
+            aria-pressed={railPinned}
+            aria-label={railPinned ? "Unpin sidebar" : "Pin sidebar open"}
+            title={railPinned ? "Unpin sidebar" : "Pin sidebar open"}
+          >
+            <i className="fa-solid fa-thumbtack" aria-hidden="true" />
+            <span className="rail-label">{railPinned ? "Unpin" : "Pin"}</span>
+          </button>
           <div className="rail-pop-wrap">
             <button
               type="button"
@@ -227,6 +244,7 @@ function AdminLayoutFrame() {
               title="Menu"
             >
               <i className="fa-solid fa-bars" aria-hidden="true" />
+              <span className="rail-label">Menu</span>
             </button>
             {menuOpen && (
               <div className="more-pop pop-up" role="menu" aria-label="Menu">

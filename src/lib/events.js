@@ -60,6 +60,10 @@ export function eventRowFromForm(v) {
     end_time: v.end_time || null,
     project_id: v.project_id || null,
     event_type_id: v.event_type_id || null,
+    location: String(v.location || "").trim() || null,
+    // People links (DR-033): carried only when the form supplied them, so
+    // callers that never mention people leave existing links untouched.
+    attendees: Array.isArray(v.attendees) ? v.attendees : undefined,
   };
 }
 

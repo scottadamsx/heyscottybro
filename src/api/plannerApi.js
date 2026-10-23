@@ -17,6 +17,7 @@ import { toDateStr, nextOccurrence } from "../utils/plannerUtils";
 import { emitDataChange } from "../utils/dataEvents";
 import { uid, getUserId, genId } from "./_base";
 import { AI_MODELS } from "../config/aiModels";
+import { normalizeAttendeeIds } from "../lib/attendees";
 
 /* ── connection + mode state ─────────────────── */
 let _connected = null; // null = unknown, true, false
@@ -89,6 +90,12 @@ async function op(remote, localFn, label = "call") {
 function isMissingColumn(err, column) {
   const msg = String(err?.message || "");
   return (err?.code === "PGRST204" || err?.code === "42703" || /column|schema cache/i.test(msg)) && msg.includes(column);
+}
+
+/** PostgREST / Postgres "that table doesn't exist" — schema cache (PGRST205) or 42P01. */
+function isMissingTable(err, table) {
+  const msg = String(err?.message || "");
+  return (err?.code === "PGRST205" || err?.code === "42P01" || /find the table|does not exist/i.test(msg)) && msg.includes(table);
 }
 
 const byDateAsc = (k = "date") => (a, b) => String(a[k] || "").localeCompare(String(b[k] || ""));
@@ -366,13 +373,90 @@ async function loadEventsUncached() {
   );
 }
 
-export async function newEvent({ title, description, date, end_date, project_id, event_type_id, recurrence, recur_until, recur_times, start_time, end_time }) {
+/* ── Event people (Connected Pages Phase 2 slice 1, DR-033) ──
+   Links live in event_people (event id + Orbit person id; names are never
+   stored, renders resolve them from Orbit). The cached read shares the
+   "events" collection tag, so any event write refreshes it. */
+export function loadEventPeople() {
+  return cachedRead("loadEventPeople", "events", loadEventPeopleUncached);
+}
+
+async function loadEventPeopleUncached() {
+  return op(
+    async () => {
+      const userId = await uid();
+      const { data, error } = await supabase.from("event_people").select("event_id, person_id").eq("user_id", userId);
+      if (error) {
+        if (isMissingTable(error, "event_people")) {
+          console.error("[plannerApi] event_people table is missing — run supabase/migrations/2026-10-23-event-people.sql. Showing events without people.");
+          return {};
+        }
+        throw error;
+      }
+      const map = {};
+      for (const row of data ?? []) (map[row.event_id] ||= []).push(row.person_id);
+      return map;
+    },
+    () => {
+      const map = {};
+      for (const row of local.list("event_people")) (map[row.event_id] ||= []).push(row.person_id);
+      return map;
+    },
+    "event_people.select",
+  );
+}
+
+/**
+ * Replace one event's people links. Never throws: the event itself has
+ * already saved by the time links are written, so a failure comes back as
+ * { ok: false, warning } for the caller to surface (CP-06). A missing table
+ * (migration not run yet) is the expected pre-migration state, not an error.
+ */
+async function saveEventPeople(eventId, personIds) {
+  const ids = normalizeAttendeeIds(personIds);
+  let outcome;
+  try {
+    outcome = await op(
+      async () => {
+        const userId = await uid();
+        const del = await supabase.from("event_people").delete().eq("user_id", userId).eq("event_id", eventId);
+        if (del.error) {
+          if (isMissingTable(del.error, "event_people")) {
+            console.error("[plannerApi] event_people table is missing — run supabase/migrations/2026-10-23-event-people.sql. People were NOT saved.");
+            return "missing";
+          }
+          throw del.error;
+        }
+        if (ids.length) {
+          const rows = ids.map((person_id) => ({ user_id: userId, event_id: eventId, person_id }));
+          const ins = await supabase.from("event_people").insert(rows);
+          if (ins.error) throw ins.error;
+        }
+        return "saved";
+      },
+      () => {
+        local.list("event_people").filter((r) => String(r.event_id) === String(eventId)).forEach((r) => local.remove("event_people", r.id));
+        ids.forEach((person_id) => local.insert("event_people", { event_id: eventId, person_id }));
+        return "saved";
+      },
+      "event_people.replace",
+    );
+  } catch (err) {
+    console.error("[plannerApi] saving event people failed:", err?.message || err);
+    return { ok: false, warning: `The event saved, but its people couldn't be updated (${err?.message || "unknown error"}). Edit the event to retry the people.` };
+  }
+  if (outcome === "missing") return { ok: false, warning: "The event saved, but people aren't attached yet: the event people setup hasn't run on the database." };
+  return { ok: true };
+}
+
+export async function newEvent({ title, description, date, end_date, project_id, event_type_id, recurrence, recur_until, recur_times, start_time, end_time, location, attendees }) {
   const row = { title, description, date };
   if (end_date && end_date > date) row.end_date = end_date;
   if (start_time) row.start_time = start_time;
   if (end_time) row.end_time = end_time;
   if (project_id) row.project_id = project_id;
   if (event_type_id) row.event_type_id = event_type_id;
+  if (location) row.location = location;
   // Recurrence keys are only sent when set, so inserts keep working on
   // databases that haven't run the events-recurrence migration yet.
   if (recurrence && recurrence !== "none") row.recurrence = recurrence;
@@ -382,10 +466,17 @@ export async function newEvent({ title, description, date, end_date, project_id,
   const result = await op(
     async () => {
       const userId = await uid();
-      let { data, error } = await supabase.from("events").insert({ user_id: userId, ...row }).select().single();
-      if (error && isMissingColumn(error, "orbit_log_status")) {
-        const { orbit_log_status: _unsupported, ...legacyRow } = row;
-        ({ data, error } = await supabase.from("events").insert({ user_id: userId, ...legacyRow }).select().single());
+      const insert = (r) => supabase.from("events").insert({ user_id: userId, ...r }).select().single();
+      let attempt = { ...row };
+      let { data, error } = await insert(attempt);
+      // Strip one not-yet-migrated optional column at a time and retry.
+      for (const col of ["orbit_log_status", "location"]) {
+        if (error && col in attempt && isMissingColumn(error, col)) {
+          console.error(`[plannerApi] events.${col} column is missing — inserting WITHOUT it:`, error.message);
+          attempt = { ...attempt };
+          delete attempt[col];
+          ({ data, error } = await insert(attempt));
+        }
       }
       if (error) throw error;
       return data;
@@ -393,6 +484,10 @@ export async function newEvent({ title, description, date, end_date, project_id,
     () => local.insert("events", row),
     "events.insert",
   );
+  if (Array.isArray(attendees) && result?.id != null) {
+    const saved = await saveEventPeople(result.id, attendees);
+    if (!saved.ok) result.people_warning = saved.warning;
+  }
   emitDataChange("events");
   return result;
 }
@@ -400,16 +495,33 @@ export async function newEvent({ title, description, date, end_date, project_id,
 export async function updateEvent(id, fields) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   const patch = {};
-  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times", "start_time", "end_time", "end_date", "orbit_log_status", "orbit_event_id"].forEach((k) => {
+  ["title", "date", "description", "project_id", "event_type_id", "recurrence", "recur_until", "recur_times", "start_time", "end_time", "end_date", "orbit_log_status", "orbit_event_id", "location"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
   await op(
-    async () => { const { error } = await supabase.from("events").update(patch).eq("id", id); if (error) throw error; },
+    async () => {
+      let { error } = await supabase.from("events").update(patch).eq("id", id);
+      if (error && patch.location !== undefined && isMissingColumn(error, "location")) {
+        console.error("[plannerApi] events.location column is missing — run supabase/migrations/2026-10-23-event-people.sql. Updating WITHOUT location:", error.message);
+        const { location: _dropped, ...rest } = patch;
+        if (Object.keys(rest).length) ({ error } = await supabase.from("events").update(rest).eq("id", id));
+        else error = null;
+      }
+      if (error) throw error;
+    },
     () => local.update("events", id, patch),
     "events.update",
   );
+  // People links are replaced only when the caller supplied them; an edit
+  // that never mentions people leaves the links untouched.
+  let peopleWarning = "";
+  if (fields.attendees !== undefined) {
+    const saved = await saveEventPeople(id, fields.attendees);
+    if (!saved.ok) peopleWarning = saved.warning;
+  }
   emitDataChange("events");
+  return { people_warning: peopleWarning };
 }
 
 /** Delete an event AND the tasks it generated (reminders.event_id). */
@@ -424,6 +536,7 @@ export async function deleteEvent(id) {
     },
     () => {
       local.list("reminders").filter((r) => r.event_id != null && String(r.event_id) === String(id)).forEach((r) => local.remove("reminders", r.id));
+      local.list("event_people").filter((r) => String(r.event_id) === String(id)).forEach((r) => local.remove("event_people", r.id));
       local.remove("events", id);
     },
     "events.delete",

@@ -13,7 +13,15 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
-- Meal Plan (Health): plan a week of dinners and other meals from your recipes, see what each meal costs from a dated grocery price snapshot, get one aggregated shopping list, and mark the week ready to freeze the numbers. Planning a meal creates its cook task (and prep task when the recipe needs one) and a weekly shopping task; skipping a day on purpose is respected, and an unplanned week raises one reminder that clears itself once the week is filled. "Log as eaten" writes the meal into the Food Log. Money shows the same week with its grocery budget, planned grocery spend, and logged grocery spending kept separate. Goes live once its database migrations are applied.
+- Events can now carry people from Orbit: pick attendees in the event form (search, tap to add) and a who's-coming indicator shows on the calendar, name chips in the day view and initial dots in the upcoming list. Names always come from Orbit, so renaming someone updates every event at once. Events also gain a Location field, shown in the day view.
+
+### Changed
+
+- The desktop sidebar rail now expands with text labels when you hover or tab into it, and a pin toggle at the bottom of the rail keeps it open; the choice is remembered between visits. (BUG-074)
+
+### Added
+
+- Meal Plan (Health): plan a week of dinners and other meals from your recipes, see what each meal costs from a dated grocery price snapshot, get one aggregated shopping list, and mark the week ready to freeze the numbers. Planning a meal creates its cook task (and prep task when the recipe needs one) and a weekly shopping task; skipping a day on purpose is respected, and an unplanned week raises one reminder that clears itself once the week is filled. "Log as eaten" writes the meal into the Food Log. Money shows the same week with its grocery budget, planned grocery spend, and logged grocery spending kept separate. Its database migrations were applied on 2026-10-23.
 
 ### Changed
 
@@ -21,11 +29,11 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
-- Bin: a new holding space at /admin/bin where you can drop text excerpts, documents, and links from any computer; Muse picks each space up and turns it into finished work, or saves it as life context when you mark it Context. Goes live once its database migration is applied.
+- Bin: a new holding space at /admin/bin where you can drop text excerpts, documents, and links from any computer; Muse picks each space up and turns it into finished work, or saves it as life context when you mark it Context. Its database migration was applied on 2026-10-23.
 
 - Frodo screenshots can be explicitly saved to the private Documents library with their chat context, then reopened from a safe in-app file link; temporary attachments remain temporary unless selected.
 - Frodo can now search safe planner and Brain shelves in parallel with source-labelled results, use bounded rich data filters, and ask for the actual occurrences inside a reminder/event date range.
-- Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Release awaits its additive database migration.
+- Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Its additive database migration was applied on 2026-10-23.
 - Live workouts now show the six completed sessions behind each weight recommendation, including confidence and a plain-language reason.
 - People / Orbit now has a locally implemented conversational journal with person/date clarification, source-backed memory updates, saved receipts, pending-entry history, and conflict-aware undo. Hosted release awaits its separate database migration and live-provider validation.
 - Journal create and edit now include Unicode-aware live character/word counts and a resumable active-writing timer with pause, reset, idle pause, and draft recovery.

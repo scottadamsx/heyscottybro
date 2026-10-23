@@ -1522,9 +1522,9 @@ These are product decisions, not implementation details. The recommendations are
 
 ### Phase 2: Orbit and Planner
 
-- [ ] Add `event_people` and brief-state migration source.
-- [ ] Build read-only person options and the EventForm People picker.
-- [ ] Render linked people and derived birthdays in Planner and Calendar.
+- [x] Add `event_people` migration source (slice 1, 2026-10-23, see the slice record at the end of this document). Brief-state migration source still pending.
+- [x] Build read-only person options and the EventForm People picker (slice 1, 2026-10-23).
+- [ ] Render linked people and derived birthdays in Planner and Calendar. (Linked people rendered in slice 1, 2026-10-23; derived birthdays still pending.)
 - [ ] Build the host-event read adapter through an existing handler or Library path.
 - [ ] Implement the canonical Orbit profile Calendar section and synchronize it.
 - [ ] Build the pre-hangout brief and its read state.
@@ -1598,10 +1598,54 @@ Built under Scott's 2026-10-22 "go on all items", using the SPEC-GAP recommended
 
 **Phase 1D, shipped:** Log as eaten opens the Food modal prefilled from the plan item (recipe title, slot, planned date, servings, per-serving macros scaled); the food row saves first with `recipe_id` + `meal_plan_item_id` (`healthApi.addFoodReturning`), and only then is the item marked cooked and its open cook task completed through the normal path. Deleting a linked food entry returns the item to planned.
 
-**Migrations: created, NOT applied.** `2026-10-18-task-priority.sql` (pre-existing), `2026-10-22-connected-pages-foundations.sql`, and `2026-10-22-connected-pages-phase1.sql` all wait on an authenticated Supabase session (none exists in the agent environment; prior migrations went through parent-agent browser sessions). Until they are applied, the new surfaces degrade to named load errors and priority/provenance writes drop their new fields loudly. Real-database verification of the scenario matrix is therefore still outstanding; scripted results below are library-level.
+**Migrations: APPLIED (verified 2026-10-23).** The "not applied" note that stood here was stale: a Supabase dashboard state check on 2026-10-23 found `reminders.priority`, the foundations tables (`gap_watchers`), and the Phase 1 tables (`meal_plans`) already present, and `2026-10-21-bin-items.sql` and `events.location` likewise. The same session applied the two files that were genuinely missing (`2026-10-03-exercise-library.sql`, `2026-10-23-event-people.sql`). Real-database verification of the scenario matrix is still outstanding; scripted results below are library-level.
 
 **Scenario matrix, scripted results (library tests):** CP-11 pass (mealPlanCost: partial meal counts only priced lines, names the unpriced line); CP-12 pass (three meals aggregate before package rounding); CP-17 pass (cook at 17:00 for an 18:00 dinner with 15 prep + 45 cook); CP-18 pass (night-before prep at 20:00); CP-21 partial (reconciliation create/update/retire is idempotent at the diff level; the no-duplicates guarantee also rests on the partial unique index, database pending); CP-22 pass (a desired key existing only as completed is a conflict, never recreated); CP-23 pass (diff leaves detached rows alone; detach-on-edit wired in plannerApi); CP-24, CP-25, CP-28, CP-29, CP-30, CP-31, CP-33 pass (gapWatchers predicate + decision tests). CP-09/CP-10 partial (parser enforces capture date and reports per-row rejections; the import write path is database pending). CP-13, CP-14, CP-15, CP-16, CP-19, CP-20, CP-26, CP-27, CP-32, CP-38: implemented in code, untested against a real database. CP-01 to CP-08 and CP-34 to CP-37 belong to Phase 2/3 and were not built in this round.
 
 **Decisions recorded during the build:** (1) A meal item's `advance_prep_kind` of `none` means "no override", so a recipe's prep profile cannot be cancelled per item in v1. (2) Watcher expiry retires (deletes) its open reminder rather than completing it, because Scott never acted on it. (3) "Food log removed" has no dedicated field; a deleted linked food entry returns the item to planned, and the removal itself is visible in the Food Log. (4) `docs/rebuild/live-schema.md` shows a pre-existing `reminders.priority` text column (default `none`, no check constraint); if that reflects production, the priority migration's `ADD COLUMN IF NOT EXISTS` will no-op and existing rows may carry `none`, which the form and badges ignore. Verify when applying.
 
 **Validation:** `npm run lint` clean; `npm test` exit 0 (333-test main suite plus standalone suites: cascades 17, gapWatchers 12, recipeIngredients 24, priceImport 23, mealPlanCost 17, all passing); `npm run build` pass (pre-existing large-chunk advisory only). Signed-in rendered behavior is not verified (auth-gated from the build environment); live verification is by served-asset inspection after the push.
+
+## Phase 2, slice 1: event people and event location (2026-10-23)
+
+**Directive.** On 2026-10-23 Scott said: "I need calendar to allow for putting people in my orbit as attendees for an event, so a little indicator shows who's at an event", then: "put this in to heyscottybro, make the migrations yourself and add anything else that you've noticed is interfering with productivity". This is the approval for this slice and for applying its migration. It follows a same-day failure that motivates it: the 2026-10-24 Rena Adams event could not carry an attendee or a location because neither field exists.
+
+**Scope.** (1) `event_people` link table and `events.location`, migration `supabase/migrations/2026-10-23-event-people.sql`. (2) EventForm People picker and Location field. (3) Attendee indicator (initial circles, full names on the day sheet) in Calendar (day sheet, upcoming list) and the Plan day list. (4) BUG-074 sidebar fix under the same instruction (the plan was presented 2026-10-22): the desktop rail expands to labelled navigation on hover or focus, a pin toggle locks it open. (5) Applying the already-approved but still-pending migrations when the dashboard session confirms they are missing (task priority, Bin, Connected Pages foundations and Phase 1, exercise library), because degraded surfaces are the other standing productivity interference.
+
+**Non-goals for this slice.** Brief state, brief view/cascade/watcher, derived birthdays, the Orbit profile Calendar read model, person merge rewriting, and person-deletion cleanup of links beyond render tolerance. Those stay in Phase 2 as planned and need their own decisions.
+
+**Contract.**
+- A link is (event id, Orbit person id). Names are never copied onto the event or the link; every render resolves the id to the person's current Orbit name (CP-01, CP-02).
+- The picker only ever links real Orbit people Scott explicitly taps. Search text never creates a person or a link (CP-04).
+- Saving an event with the People field present replaces that event's link set. Editing an event through a path that does not supply people leaves links untouched.
+- If the link write fails because `event_people` is not migrated yet, the event still saves, the failure logs loudly, and the user is told people were not attached. Any other link failure names the people step in its error (CP-06).
+- Deleting an event deletes its links (foreign-key cascade). A link whose person no longer exists in Orbit is skipped at render.
+- Location is one free-text field on the event, shown on the day sheet when set. Insert and update strip it and retry when the column is missing, the established pattern from `orbit_log_status`.
+
+**Pseudocode.**
+
+People picker (EventForm):
+1. On mount, load Orbit people (id, name, group) through `peopleApi.loadPeople`. Seed the selection from `initial.attendees` (ids the parent loaded from `loadEventPeople`).
+2. Selected people render as chips with remove buttons. A search input filters unselected people by name; results are buttons; activating one adds its id to the selection (a set, so no duplicates).
+3. If the people load fails, show "People couldn't load" in place of the search; keep any seeded ids in the form values so a save cannot wipe existing links.
+4. Submit values gain `attendees` (array of ids) and `location` (trimmed string, empty becomes null downstream).
+
+Persistence (plannerApi):
+1. `newEvent` inserts the event row (location included only when set; strip-and-retry on a missing location column), then replaces the event's links when `attendees` is an array.
+2. `updateEvent` whitelists `location`; when `fields.attendees` is present it replaces links after the row update; when absent it never touches links.
+3. `loadEventPeople` returns a map of event id to person ids, cached with the events tag so any event write refreshes it.
+4. `deleteEvent` relies on the cascade; the local fallback removes cached links for the event.
+
+Indicator (Calendar day sheet, Calendar upcoming list, Plan day list):
+1. Resolve the event's person ids against the loaded people map; skip unknown ids.
+2. Compact rows show up to three initial circles in per-person colours plus a "+N" circle; the accessible name and tooltip list every attendee's current name.
+3. The day sheet shows name chips and, when set, a location line under the title.
+
+Sidebar (BUG-074):
+1. At widths above 900px the rail is 68px at rest. On hover or focus-within it widens to 232px over the content, revealing a text label beside every icon.
+2. A pin toggle in the rail foot locks the expanded state; the shell's `--rail-w` becomes 232px so content shifts instead of being covered. The choice persists in localStorage.
+3. At 900px and below nothing changes: the rail stays hidden and the phone bars remain the navigation.
+
+**Tests.** `src/lib/attendees.test.js` (registered in the `npm test` chain) covers id normalization, resolution against a people map (a rename shows the new name without touching the link), unknown-id skipping, initials, and overflow counting. Lint, the full suite, and the production build must pass. Live verification is separate: apply the migration, tag Rena Adams on the 2026-10-24 event, and confirm the indicator renders signed-in.
+
+**Implementation record (2026-10-23).** Built as recorded above with three refinements. (1) Link failures never throw after the event has saved: `saveEventPeople` returns a warning the caller toasts, naming the people step (CP-06's intent, without stranding a duplicate-prone form retry). (2) The picker is safe on every edit surface, not just seeded ones: EventForm loads an edited event's links itself when the caller did not supply them, and only sends `attendees` once the selection is seeded, loaded, or touched, so an uninvolved edit cannot wipe links. (3) The Plan surface renders its calendar through CalendarPage, so the indicator ships in the day sheet and upcoming list there; PlannerPage's own addition is surfacing the people warning on create. Migration `2026-10-23-event-people.sql` applied 2026-10-23 (dashboard state check: `event_people` present afterward; `events.location` was already present). BUG-074 shipped in the same change (see `docs/development/BUGS.md`).

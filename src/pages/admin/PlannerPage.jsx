@@ -50,8 +50,9 @@ export default function PlannerPage() {
   }, [showEventModal]);
 
   const addEvent = async (values) => {
-    await createEventWithAutoTasks(values, eventTypes);
+    const created = await createEventWithAutoTasks(values, eventTypes);
     addToast("Event added.", "success");
+    if (created?.people_warning) addToast(created.people_warning, "error");
   };
 
   // Throws on failure: the modal stays open with the error and what was typed.
