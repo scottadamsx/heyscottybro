@@ -33,7 +33,7 @@ import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./work
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
-import { loadPeople, loadPeopleEvents } from "./peopleApi";
+import { createPerson, loadPeople, loadPeopleEvents, updatePerson } from "./peopleApi";
 import { loadProfile as loadHealthProfile, loadFood as loadHealthFood, loadWeights as loadHealthWeights, loadHistory as loadLiftHistory } from "./healthApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
@@ -345,13 +345,14 @@ const COLLECTIONS = {
     load: loadGrades,
   },
   // No `table`: the People space (Orbit) keeps each record as a jsonb doc and owns every
-  // write (validation, duplicate checks, cascades) through /api/orbit — so read-only here.
+  // write (validation, duplicate checks, cascades) through /api/orbit. Reads flatten the
+  // docs here; create/update call that same API from peopleApi (DR-034), never the rows.
   people: {
-    description: "People Scott knows (People space, the Orbit CRM) — read-only. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them; open_items = to-dos and gift ideas. To add or change someone, tell Scott to use People › Interview me (it saves as he talks).",
+    description: "People Scott knows (People space, the Orbit CRM) — you can add and edit people here; writes go through Orbit's own API, which validates and refuses exact-name duplicates. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them (on create/update, pass 'label: value' pairs separated by '; ' — they are appended as saved facts); open_items = to-dos and gift ideas (read-only summary — save follow-ups in notes instead). No delete: removing a person stays Scott's call in the People UI.",
     searchFields: ["name", "how", "notes", "facts", "open_items"],
     defaultFields: ["id", "name", "group", "how", "birthday"],
     fields: {
-      name: { type: "string" },
+      name: { type: "string", required: true },
       group: { type: "enum", values: ["partner", "family", "friends", "sjhc", "sjlc", "carrick", "school", "other"] },
       how: { type: "string" },
       birthday: { type: "string", description: "YYYY-MM-DD, or MM-DD with no year" },
@@ -360,6 +361,8 @@ const COLLECTIONS = {
       open_items: { type: "string", long: true },
     },
     load: loadPeople,
+    create: createPerson,
+    update: updatePerson,
   },
   people_events: {
     description: "Time Scott spent with people (People space): hangouts, calls, texts, plans — read-only. people = names of who was there; status done, planned or skipped.",

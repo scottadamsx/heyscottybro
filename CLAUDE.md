@@ -121,7 +121,10 @@ made by `npm run sync-orbit`. Never edit it here: change Orbit in its own repo
 is `api/orbit.js` (rows `orbit_people` / `orbit_events` / `orbit_settings`, one
 `orbit_apply` call per request, caller's session + RLS). The local Orbit app uses
 the same rows. Agents read people through the Library (`people`,
-`people_events`) and never write them directly.
+`people_events`) and never write the rows directly; since DR-034 the Library's
+`people` collection also creates and updates people, but only by calling
+Orbit's own API (`/api/orbit`) exactly as the People UI does, so Orbit's
+validation and duplicate rules govern agent writes too.
 
 Vercel Hobby allows **12 functions**, and every non-underscore `.js` in `api/`
 counts (tests too — keep them out of `api/`). `api/` is at 12, so a new

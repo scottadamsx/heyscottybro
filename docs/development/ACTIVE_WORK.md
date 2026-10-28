@@ -1,5 +1,12 @@
 # Active work
 
+## Frodo–Orbit writes and chat attachment clearing (BUG-075, BUG-076)
+
+- **Feature document:** `docs/features/frodo-orbit-writes-and-chat-attachment-clear.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("fix this", on Frodo refusing to add Aaron Burke to Orbit and on the sent image's preview sticking in the composer) authorises the fixes and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. Frodo's Library `people` collection now creates and updates people through Orbit's own API (`/api/orbit`, the People UI's exact path; DR-034); the composer clears sent attachments at handoff and restores them on a refused send. Lint clean, full test suite green, build pass; Bug 075 verified end to end against the real Orbit server on throwaway data (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: ask Frodo to add a person and see them in People, and send a chat message with an image and watch the composer clear.
+
 ## Muse-UI rewrite (heyScottyBro in the Muse app UI)
 
 - **Feature document:** `docs/features/muse-ui-rewrite.md`

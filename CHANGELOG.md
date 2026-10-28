@@ -13,6 +13,14 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Frodo can now add people to Orbit and edit existing people right in the chat (name, how you know them, notes, and saved facts), and confirms what it saved. It no longer sends you to People › Interview me to add someone. (BUG-075)
+
+### Fixed
+
+- In the Frodo chat, an attached image's preview now clears from the composer as soon as the message is sent, instead of staying there until the reply finishes. If a send is refused before it starts, the attachment is put back so nothing is lost. (BUG-076)
+
+### Added
+
 - Events can now carry people from Orbit: pick attendees in the event form (search, tap to add) and a who's-coming indicator shows on the calendar, name chips in the day view and initial dots in the upcoming list. Names always come from Orbit, so renaming someone updates every event at once. Events also gain a Location field, shown in the day view.
 
 ### Changed
