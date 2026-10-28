@@ -1,5 +1,12 @@
 # Active work
 
+## Person pictures in Orbit
+
+- **Feature document:** `docs/features/person-pictures-in-orbit.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("i'm unable to add a picture to orbit, I wanna be able to send screenshots like I can for frodo") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. `photo` storage path on the person doc (JSONB, no migration), bytes in the existing private `bug-screenshots` bucket under `<uid>/people/<personId>/`, a host-supplied `media` capability through `configureOrbit`, Avatar rendering with initials fallback, a Picture field in Edit basics (picker, paste, drop, remove), and a Frodo route that claims a chat-staged screenshot as a person's picture (DR-035). Lint clean, full test suite green (337 in the final group), build pass; the real Orbit server harness passes the photo validation matrix, and a rendered run of the real Orbit app (stub media store) covered add, change, and remove with screenshots, see the feature document's validation section. Committed locally; not pushed. Note: the Orbit-side edits land in the `orbit/` copy because the canonical Orbit repo is not present in this environment; they must be ported before the next sync (see the feature document).
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: add a picture to a person in People (real bucket upload and signed-URL display) and have Frodo set a picture from an attached screenshot.
+
 ## Search modal scroll reset (BUG-077)
 
 - **Feature document:** `docs/features/search-modal-scroll-reset.md`

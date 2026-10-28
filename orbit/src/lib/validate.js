@@ -32,12 +32,18 @@ function result(errors, value) {
   return errors.length ? { ok: false, errors } : { ok: true, value }
 }
 
+/** A stored profile picture: "" or a storage path of safe segments ending in an image extension. */
+export function isPhotoPath(s) {
+  return isStr(s) && s.length <= 300 && /^[\w-]+(\/[\w-]+)*\.(png|jpe?g|webp|gif)$/i.test(s)
+}
+
 export function validatePerson(doc) {
   const e = []
   if (!isObj(doc)) return result(['person must be an object'])
   if (!isStr(doc.name) || !doc.name.trim()) e.push('name is required')
   if (doc.group != null && !GROUP_IDS.has(doc.group)) e.push(`unknown group "${doc.group}"`)
   if (!isBirthday(doc.birthday)) e.push('birthday must be "", MM-DD or YYYY-MM-DD')
+  if (doc.photo != null && doc.photo !== '' && !isPhotoPath(doc.photo)) e.push('photo must be a stored image path')
   for (const f of doc.facts || []) {
     if (!isStr(f.k) || !f.k.trim()) e.push('every fact needs a label (k)')
     if (f.topic != null && !TOPIC_IDS.has(f.topic)) e.push(`unknown fact topic "${f.topic}"`)
@@ -55,6 +61,7 @@ export function validatePerson(doc) {
     name: doc.name.trim(),
     group: doc.group || 'other',
     birthday: doc.birthday || '',
+    photo: doc.photo || '',
     facts: dedupeFacts(doc.facts || []),
     intents: dedupeIntents(doc.intents || []),
   })

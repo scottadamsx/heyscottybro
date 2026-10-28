@@ -6,6 +6,9 @@ import {
   imageExtension,
   isChatStagingPath,
   isOwnedChatStagingPath,
+  isOwnedPersonPhotoPath,
+  isPersonPhotoPath,
+  personPhotoStoragePath,
 } from "./storageKeys.js";
 
 const base = { userId: "owner-123", timestamp: 1234567890, randomId: "abc_123" };
@@ -56,4 +59,24 @@ test("generated path segments are validated", () => {
     randomId: "bad id (1)",
     file: { name: "shot.png", type: "image/png" },
   }), /Invalid storage random id/);
+});
+
+test("person photo keys live under the owner's people folder", () => {
+  const path = personPhotoStoragePath({
+    ...base,
+    personId: "p_01J8Z3K4",
+    file: { name: "Mum at the beach.JPG", type: "image/jpeg" },
+  });
+  assert.equal(path, "owner-123/people/p_01J8Z3K4/1234567890-abc_123.jpg");
+  assert.equal(isPersonPhotoPath(path), true);
+  assert.equal(isOwnedPersonPhotoPath(path, "owner-123"), true);
+  assert.equal(isOwnedPersonPhotoPath(path, "other-owner"), false);
+});
+
+test("person photo path checks reject staging files, urls and other shapes", () => {
+  assert.equal(isPersonPhotoPath("owner-123/_staging/123-abc.png"), false);
+  assert.equal(isPersonPhotoPath("owner-123/people/p_1/123-abc.bmp"), false);
+  assert.equal(isPersonPhotoPath("https://example.com/people/p_1/123-abc.png"), false);
+  assert.equal(isPersonPhotoPath("owner-123/people/p_1/sub/123-abc.png"), false);
+  assert.equal(isPersonPhotoPath(""), false);
 });

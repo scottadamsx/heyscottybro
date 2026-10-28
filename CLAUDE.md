@@ -124,7 +124,12 @@ the same rows. Agents read people through the Library (`people`,
 `people_events`) and never write the rows directly; since DR-034 the Library's
 `people` collection also creates and updates people, but only by calling
 Orbit's own API (`/api/orbit`) exactly as the People UI does, so Orbit's
-validation and duplicate rules govern agent writes too.
+validation and duplicate rules govern agent writes too. Since DR-035 a person
+may carry one picture: the doc's `photo` field holds a storage path in the
+private `bug-screenshots` bucket (`<uid>/people/<personId>/…`), the host
+supplies Orbit its storage through `configureOrbit`'s `media` capability, and
+an agent setting `photo` to a chat-staged screenshot path claims it by copy
+into the person's folder before the write.
 
 Vercel Hobby allows **12 functions**, and every non-underscore `.js` in `api/`
 counts (tests too — keep them out of `api/`). `api/` is at 12, so a new

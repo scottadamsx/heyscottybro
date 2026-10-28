@@ -33,6 +33,7 @@ test("buildNewPersonDoc saves the same shape as the People UI's Add People form"
     birthday: "",
     how: "Used to work with him at Anderson's Butcher",
     notes: "",
+    photo: "",
     facts: [{ k: "Gym", v: "wants to work out together" }],
     intents: [],
     createdAt: "2026-10-28T16:00:00.000Z",
@@ -96,7 +97,23 @@ test("flattenPersonDoc matches the Library read model", () => {
     how: "Anderson's Butcher",
     birthday: "03-04",
     notes: "n",
+    photo: "",
     facts: "Work: Anderson's Butcher",
     open_items: "to-do: Call him",
   });
+});
+
+test("photo rides through create, update and the read model as a plain path", () => {
+  const path = "owner-123/people/p_1/1234567890-abc.jpg";
+  const doc = buildNewPersonDoc({ name: "Aaron Burke", photo: path }, "2026-10-28T16:00:00.000Z");
+  assert.equal(doc.photo, path);
+  const before = { name: "Aaron Burke", group: "other", birthday: "", how: "", notes: "", photo: path, facts: [], intents: [], createdAt: "t" };
+  assert.equal(mergePersonUpdate(before, { notes: "x" }).photo, path); // untouched when unnamed
+  assert.equal(mergePersonUpdate(before, { photo: "" }).photo, ""); // empty string clears
+  assert.equal(flattenPersonDoc("p_1", before).photo, path);
+});
+
+test("a non-string photo is refused on create and update", () => {
+  assert.throws(() => buildNewPersonDoc({ name: "A", photo: 42 }, "t"), /photo must be a stored image path/);
+  assert.throws(() => mergePersonUpdate({ name: "A" }, { photo: { path: "x" } }), /photo must be a stored image path/);
 });

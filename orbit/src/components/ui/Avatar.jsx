@@ -1,4 +1,5 @@
 import { groupOf } from '../../lib/constants.js'
+import { usePhotoUrl } from '../../lib/photoUrl.js'
 
 export function initials(name = '') {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -8,11 +9,12 @@ export function initials(name = '') {
   return (first + last).toUpperCase()
 }
 
-/** Initials on a tint of the person's group colour. */
+/** The person's picture when they have one, else initials on a tint of their group colour. */
 export default function Avatar({ person, size = 'md' }) {
+  const url = usePhotoUrl(person?.photo)
   return (
     <span className={`avatar avatar-${size} avatar-${groupOf(person?.group).id}`} aria-hidden>
-      {initials(person?.name)}
+      {url ? <img src={url} alt="" /> : initials(person?.name)}
     </span>
   )
 }

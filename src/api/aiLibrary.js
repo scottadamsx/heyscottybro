@@ -348,15 +348,16 @@ const COLLECTIONS = {
   // write (validation, duplicate checks, cascades) through /api/orbit. Reads flatten the
   // docs here; create/update call that same API from peopleApi (DR-034), never the rows.
   people: {
-    description: "People Scott knows (People space, the Orbit CRM) — you can add and edit people here; writes go through Orbit's own API, which validates and refuses exact-name duplicates. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them (on create/update, pass 'label: value' pairs separated by '; ' — they are appended as saved facts); open_items = to-dos and gift ideas (read-only summary — save follow-ups in notes instead). No delete: removing a person stays Scott's call in the People UI.",
+    description: "People Scott knows (People space, the Orbit CRM) — you can add and edit people here; writes go through Orbit's own API, which validates and refuses exact-name duplicates. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them (on create/update, pass 'label: value' pairs separated by '; ' — they are appended as saved facts); photo = the person's picture: to set it from a screenshot attached in this conversation, pass the staged path the conversation gives you and it is saved permanently as their picture; an empty string clears it; open_items = to-dos and gift ideas (read-only summary — save follow-ups in notes instead). No delete: removing a person stays Scott's call in the People UI.",
     searchFields: ["name", "how", "notes", "facts", "open_items"],
-    defaultFields: ["id", "name", "group", "how", "birthday"],
+    defaultFields: ["id", "name", "group", "how", "birthday", "photo"],
     fields: {
       name: { type: "string", required: true },
       group: { type: "enum", values: ["partner", "family", "friends", "sjhc", "sjlc", "carrick", "school", "other"] },
       how: { type: "string" },
       birthday: { type: "string", description: "YYYY-MM-DD, or MM-DD with no year" },
       notes: { type: "string", long: true },
+      photo: { type: "string", description: "The person's picture: a staged screenshot path from this conversation, an existing People picture path, or an empty string to clear it" },
       facts: { type: "string", long: true },
       open_items: { type: "string", long: true },
     },

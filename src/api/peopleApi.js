@@ -6,8 +6,10 @@
 // directly.
 import { newId } from "../../orbit/src/lib/ids.js";
 import { supabase, getAuthHeaders } from "../utils/supabase";
+import { isChatStagingPath, isOwnedPersonPhotoPath } from "../utils/storageKeys";
 import { uid } from "./_base";
 import { buildNewPersonDoc, flattenPersonDoc, mergePersonUpdate } from "./peopleCore";
+import { claimPersonPhoto, removePersonPhoto } from "./peoplePhotoStorage";
 
 const PAGE = 1000;
 
@@ -69,10 +71,24 @@ async function orbitRequest(method, path, body) {
   return out;
 }
 
+/**
+ * Turn a write's photo value into the path stored on the document. A chat
+ * screenshot is claimed by copy, so clearing the chat can never break the
+ * picture; an existing People picture path passes as-is; anything else is
+ * refused before anything is written.
+ */
+async function resolvePhotoPath(personId, photo) {
+  if (photo === "") return "";
+  if (isChatStagingPath(photo)) return claimPersonPhoto(personId, photo);
+  if (isOwnedPersonPhotoPath(photo, await uid())) return photo;
+  throw new Error("photo must be a screenshot attached in this conversation or an existing People picture path — nothing was saved");
+}
+
 /** Add a person to Orbit; Orbit's server validates and refuses duplicates. */
 export async function createPerson(data) {
-  const doc = buildNewPersonDoc(data, new Date().toISOString());
   const id = newId("p");
+  const photo = typeof data?.photo === "string" && data.photo ? await resolvePhotoPath(id, data.photo) : data?.photo;
+  const doc = buildNewPersonDoc({ ...data, photo }, new Date().toISOString());
   const out = await orbitRequest("PUT", `/people/${encodeURIComponent(id)}`, doc);
   return flattenPersonDoc(id, out.value || doc);
 }
@@ -82,7 +98,15 @@ export async function updatePerson(id, data) {
   const people = await orbitRequest("GET", "/people");
   const doc = people?.[id];
   if (!doc) throw new Error(`no person with id ${id} in People — query for the real id first`);
-  const next = mergePersonUpdate(doc, data);
+  let next = mergePersonUpdate(doc, data);
+  if (data.photo !== undefined && data.photo !== (doc.photo || "")) {
+    next = { ...next, photo: await resolvePhotoPath(id, data.photo) };
+  }
   const out = await orbitRequest("PUT", `/people/${encodeURIComponent(id)}`, next);
-  return flattenPersonDoc(id, out.value || next);
+  const stored = out.value || next;
+  const oldPhoto = doc.photo || "";
+  if (oldPhoto && oldPhoto !== stored.photo) {
+    removePersonPhoto(oldPhoto).catch((e) => console.warn("[peopleApi] replaced picture cleanup failed:", e.message));
+  }
+  return flattenPersonDoc(id, stored);
 }

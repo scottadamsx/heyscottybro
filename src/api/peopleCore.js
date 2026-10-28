@@ -17,13 +17,14 @@ export function flattenPersonDoc(id, doc = {}) {
     how: doc.how || "",
     birthday: doc.birthday || "",
     notes: doc.notes || "",
+    photo: doc.photo || "",
     facts: factText(doc.facts),
     open_items: intentText(doc.intents),
   };
 }
 
 /** Scalar person fields an agent write may set; facts are handled separately. */
-export const PERSON_SCALAR_FIELDS = ["name", "group", "birthday", "how", "notes"];
+export const PERSON_SCALAR_FIELDS = ["name", "group", "birthday", "how", "notes", "photo"];
 
 /**
  * The Library's flattened people fields are a read model. Scalars and facts
@@ -37,6 +38,9 @@ function guardWriteData(data) {
   }
   if (data.open_items !== undefined) {
     throw new Error("open_items is a read-only summary — save follow-ups in notes instead; Orbit intents keep their own ids and due dates");
+  }
+  if (data.photo !== undefined && typeof data.photo !== "string") {
+    throw new Error("photo must be a stored image path (text) or an empty string to clear it");
   }
 }
 
@@ -64,6 +68,7 @@ export function buildNewPersonDoc(data, nowIso) {
     birthday: data.birthday || "",
     how: data.how || "",
     notes: data.notes || "",
+    photo: data.photo || "",
     facts: parseFactsString(data.facts),
     intents: [],
     createdAt: nowIso,

@@ -55,6 +55,26 @@ export function bugScreenshotStoragePath({ userId, bugId, file, timestamp, rando
   return `${owner}/${bug}/${objectName(file, timestamp, randomId)}`;
 }
 
+export const PEOPLE_PHOTOS_FOLDER = "people";
+
+/** A person's profile picture: <uid>/people/<personId>/<file>, beside the chat folders. */
+export function personPhotoStoragePath({ userId, personId, file, timestamp, randomId }) {
+  const owner = assertStorageSegment(userId, "storage owner id");
+  const person = assertStorageSegment(personId, "person id");
+  return `${owner}/${PEOPLE_PHOTOS_FOLDER}/${person}/${objectName(file, timestamp, randomId)}`;
+}
+
+export function isPersonPhotoPath(path) {
+  const parts = String(path || "").split("/");
+  return parts.length === 4 && parts[1] === PEOPLE_PHOTOS_FOLDER
+    && parts.slice(0, 3).every((p) => SAFE_SEGMENT.test(p))
+    && /^[\w-]+\.(gif|jpe?g|png|webp)$/i.test(parts[3]);
+}
+
+export function isOwnedPersonPhotoPath(path, userId) {
+  return isPersonPhotoPath(path) && String(path).split("/")[0] === String(userId || "");
+}
+
 export function fileFromStoragePath(path) {
   const name = String(path || "").split("/").pop() || "screenshot.png";
   return { name, type: imageMediaType({ name }) };
