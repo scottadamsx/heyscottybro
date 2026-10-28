@@ -18,6 +18,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 ### Fixed
 
 - In the Frodo chat, an attached image's preview now clears from the composer as soon as the message is sent, instead of staying there until the reply finishes. If a send is refused before it starts, the attachment is put back so nothing is lost. (BUG-076)
+- The search modal (⌘K) no longer jumps back to the top when you move the mouse after scrolling down: the results list now holds its place while you hover, and lower results are reachable again. Keyboard navigation is unchanged. (BUG-077)
 
 ### Added
 

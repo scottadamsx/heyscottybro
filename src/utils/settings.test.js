@@ -1,6 +1,9 @@
 import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getJournalCleanupEnabled, setJournalCleanupEnabled } from "./settings.js";
+
+const settingsSource = readFileSync(new URL("./settings.js", import.meta.url), "utf8");
 
 const memory = new Map();
 globalThis.localStorage = {
@@ -28,4 +31,16 @@ test("an unreadable future connector setting fails closed and is quarantined", (
   } finally {
     console.error = original;
   }
+});
+
+test("useHiddenPages memoizes its parse on the raw string (BUG-077)", () => {
+  // A fresh JSON.parse per render gives the hook a new array identity every
+  // render; the command palette memoizes its result groups on that identity,
+  // so its cursor-reset effect fired after every render and the first mouse
+  // move after scrolling snapped the results list back to the top.
+  const hookAt = settingsSource.indexOf("export function useHiddenPages()");
+  assert.notEqual(hookAt, -1);
+  const hookBody = settingsSource.slice(hookAt, settingsSource.indexOf("\n}", hookAt));
+  assert.match(hookBody, /useMemo\(\(\) => parseHiddenPages\(raw\), \[raw\]\)/);
+  assert.doesNotMatch(hookBody, /return parseHiddenPages\(/);
 });

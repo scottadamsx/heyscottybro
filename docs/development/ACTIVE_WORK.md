@@ -1,5 +1,12 @@
 # Active work
 
+## Search modal scroll reset (BUG-077)
+
+- **Feature document:** `docs/features/search-modal-scroll-reset.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("there's a bug that if you move the cursor even just a bit when scrolled down on the search modal, it will jump back up to the top so you can never reach what you wanna reach, heyscottybro fix it") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. Root cause: `useHiddenPages()` re-parsed on every render, so the palette's `groups` memo changed identity every render and its cursor-reset effect (plus the scroll-into-view effect) snapped the list to the top on the first mouse move after scrolling. Fix shipped in `src/utils/settings.js`: the parse is memoized on the raw stored string; `CommandPalette.jsx` is untouched. Lint clean, full test suite green (335 in the final group), build pass; rendered check of the real palette confirms the scroll position now holds under the mouse (and that reverting the one change reproduces the jump), see the feature document's validation section. Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, repeat the two-minute scroll-and-hover check in the signed-in palette.
+
 ## Frodo–Orbit writes and chat attachment clearing (BUG-075, BUG-076)
 
 - **Feature document:** `docs/features/frodo-orbit-writes-and-chat-attachment-clear.md`
