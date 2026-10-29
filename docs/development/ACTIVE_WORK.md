@@ -1,5 +1,12 @@
 # Active work
 
+## Ad Formats library
+
+- **Feature document:** `docs/features/ad-formats-library.md`
+- **Approval:** Scott's direct order on 2026-10-29 ("steal these and put them in heyscottybro", about the @byjoeym reel "35 S-Tier Ad Formats to Steal") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-29. A static `/admin/ads` page renders 32 format cards from `src/lib/adFormats.js` (reel numbers 1–31 and 34; 32, 33, and 35 were illegible in the reel and are omitted, not invented; all descriptions and examples are original, rotating across the Lift Club, myBackyard, BONSAI, and Websites at eight each), with a local text filter and the header count reading `N of 32` while filtering. Reachable from the More list, the phone sheet, the Settings hide list, and ⌘K. Lint clean, full test suite green (9 new data tests in the chain), build pass; a rendered Playwright run of the real page confirmed the 32-card grid, the filter narrowing/empty/restore behaviour, and the phone layout (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: open Ad Formats from More and from ⌘K, filter the grid, and hide the page in Settings to confirm it disappears from nav and palette.
+
 ## Person pictures in Orbit
 
 - **Feature document:** `docs/features/person-pictures-in-orbit.md`

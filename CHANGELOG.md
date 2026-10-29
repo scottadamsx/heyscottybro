@@ -15,6 +15,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 - People in Orbit can have a picture now. In Edit basics on any person, Add picture (or paste or drop an image) uploads it, and the picture replaces their initials on their profile and in the People list. Frodo can also set a person's picture from a screenshot you attach in the chat: just ask it to make the screenshot that person's picture. Pictures live in the same private storage as chat screenshots; the person's record keeps only the path. (DR-035)
 - Frodo can now add people to Orbit and edit existing people right in the chat (name, how you know them, notes, and saved facts), and confirms what it saved. It no longer sends you to People › Interview me to add someone. (BUG-075)
+- A new Ad Formats page (More › Ad Formats, or ⌘K) collects 32 short-form ad formats worth stealing, one card each: how the format works and an example written for the Lift Club, myBackyard, BONSAI, or the websites service. A filter box at the top narrows the cards as you type.
 
 ### Fixed
 

@@ -33,6 +33,7 @@ export const NAV_ITEMS = [
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
   { to: "/admin/bin",       icon: "fa-box-open",        label: "Bin" },
+  { to: "/admin/ads",       icon: "fa-rectangle-ad",    label: "Ad Formats" },
 ];
 
 // Muse shell derivation (docs/features/muse-ui-rewrite.md): a short pinned
@@ -57,6 +58,7 @@ const MORE_ITEMS = [
   { to: "/admin/mission",   icon: "fa-satellite-dish",  label: "Mission Control" },
   { to: "/admin/vault",     icon: "fa-vault",           label: "Vault" },
   { to: "/admin/bin",       icon: "fa-box-open",        label: "Bin" },
+  { to: "/admin/ads",       icon: "fa-rectangle-ad",    label: "Ad Formats" },
   { to: "/admin/arcade",    icon: "fa-gamepad",         label: "Arcade" },
 ];
 const TODAY_ITEM = { to: "/admin/today", icon: "fa-house", label: "Today" };
