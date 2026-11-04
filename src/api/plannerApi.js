@@ -670,7 +670,7 @@ export async function linkTransactionToIncome(txId, incomeId) {
 }
 
 const DEFAULT_CONFIG = {
-  categories: ["Food", "Transport", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"],
+  categories: ["Food", "Groceries", "Transport", "Gas", "Bills", "Entertainment", "Housing", "Car", "Subscriptions", "Travel", "Other"],
   incomeSources: [],
   recurringBills: [],
   taxRate: 0.18,

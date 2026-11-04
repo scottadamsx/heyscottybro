@@ -532,3 +532,14 @@ button.money-status { cursor: pointer; }
   .bud-tx-row, .bud-src-row { grid-template-columns: minmax(0, 1fr) auto; }
   .bud-tx-row .bud-tx-actions, .bud-src-row .btn-mini { grid-column: 1 / -1; justify-self: end; }
 }
+
+/* Rings card (2026-11-04): Scott's four buckets as SVG rings. */
+.money-rings { display: flex; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-md); }
+.money-ring { display: flex; flex-direction: column; align-items: center; gap: var(--space-2xs); flex: 1 1 118px; min-width: 118px; }
+.money-ring-visual { position: relative; width: 96px; height: 96px; }
+.money-ring-visual svg { display: block; }
+.money-ring-track { stroke: var(--bg-raised); }
+.money-ring-centre { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none; }
+.money-ring-value { font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.money-ring-cap { font-size: var(--text-xs); color: var(--text-secondary); }
+.money-ring .money-meter-name, .money-ring .money-meter-nums { min-height: 44px; display: inline-flex; align-items: center; }

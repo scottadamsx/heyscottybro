@@ -1,5 +1,12 @@
 # Active work
 
+## Money rings: Groceries, Fun/Entertainment, Gas, and Bills buckets
+
+- **Feature document:** `docs/features/money-rings.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("make a groceries, I should have 3 rings in heyscottybro... groceries, fun/entertainment and gas, bills are another bucket but that's already logged, these buckets must be added") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. Pure ring builder in `src/lib/budgetRings.js` (6 unit tests, in the test chain); the Overview's Category budgets card is now a Rings card, first in the money grid, with SVG rings for Groceries, Fun / Entertainment, Gas, plus a display-only Bills ring from billsPaid/billsObligation, reusing the existing budget modals and transaction drill-down; plannerApi fallback categories gained Groceries and Gas. Lint clean, full test suite green, build pass; rendered harness passed all checks at desktop and 390px with screenshots read (see the feature document's validation record). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the live setup runs through the UI: add Groceries and Gas categories, set budgets (Groceries $150, Entertainment $100, Gas $70, Scott's couples-budget ring amounts), move the four Nov 4, 2026 purchases logged as Other (Walmart $26.78, Dollarama $10.64, Tahitian vanilla $8.99, Sobeys $11.49) to Groceries, then signed-in verification.
+
 ## Money Overview Add purchase (BUG-078)
 
 - **Feature document:** `docs/features/money-overview-add-purchase.md`
