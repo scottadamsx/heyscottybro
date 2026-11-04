@@ -1,5 +1,12 @@
 # Active work
 
+## Client Finder (Harvey playbook)
+
+- **Feature document:** `docs/features/client-finder-harvey.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("get this in heyscottybro", about the Nick Saraev reel presenting Harvey, the open-source AI sales agent) authorises the feature and a local commit, per source-of-truth rule 1 and the Ad Formats precedent. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. A static `/admin/client-finder` page renders the playbook from `src/lib/clientFinder.js`: the Harvey header with the repo link and verified stats (MIT, Python, 4,361 stars, 912 forks, last push Nov 2, 2026, verified Nov 4, 2026), a verdict card (real tool, demo-only proof, no keyword engagement), the 9 workflow steps as numbered cards, Scott's ICP card on his approved websites terms (free build upfront, $300 if they love it, $50 per month care) with fit signals, the 9-field per-prospect checklist, one original draft example email for a fictional roofing company, and a guardrails card (automatic sending and replies OFF, Scott approves the kit and every batch, CASL, club outreach is a separate lane). Every list section shows its count from the data. Reachable from the More list, the phone sheet, the Settings hide list, and ⌘K. Lint clean, full test suite green (10 new data tests in the chain), build pass; a rendered Playwright run of the real page confirmed every section and the phone layout (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: open Client Finder from More and from ⌘K, and hide the page in Settings to confirm it disappears from nav and palette. Running Harvey itself is separate, unapproved work.
+
 ## Ad Formats library
 
 - **Feature document:** `docs/features/ad-formats-library.md`
