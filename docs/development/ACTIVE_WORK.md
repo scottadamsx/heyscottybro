@@ -1,5 +1,12 @@
 # Active work
 
+## Money Overview Add purchase (BUG-078)
+
+- **Feature document:** `docs/features/money-overview-add-purchase.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("there's poor ui because I can't input a purchase put a button near the top of the screen so it's easy or even on the same row as the two arrows on the other side", with a screenshot of the live Money Overview) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. The Money Overview's period arrows now sit in a bar row under the period title with an "Add purchase" button on the right (standard pill, 44px minimum height). `BudgetPage` owns a one-shot nonce: the button bumps it and switches to the Transactions tab, where `BudgetTransactions` opens its existing, untouched "Log transaction" form once and clears the nonce, so a later manual visit does not reopen it. Lint clean, full test suite green (final group 340, including 3 new wiring tests), build pass; a rendered Playwright harness around the real dashboard and transactions components confirmed the row layout at desktop and 390px, the click-through to the open form, and the no-reopen behaviour (see the feature document's validation record). Committed locally; not pushed. This stacks on the same unpushed main as the Orbit pictures, Ad Formats, and Client Finder commits, so one push ships all four.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in check: open Money, confirm the Add purchase button on the arrows row, tap it, and confirm the Log transaction form opens on the Transactions tab.
+
 ## Client Finder (Harvey playbook)
 
 - **Feature document:** `docs/features/client-finder-harvey.md`

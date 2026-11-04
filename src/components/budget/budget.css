@@ -87,6 +87,9 @@
 .money-period-title { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.75rem; font-weight: 600; }
 .money-period-sub { margin: 2px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
 .money-period-nav { display: flex; align-items: center; gap: var(--space-xs); }
+/* BUG-078: the arrows row under the period title; purchase entry sits opposite the arrows. */
+.money-period-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-top: var(--space-sm); }
+.money-period-bar .btn { min-height: 44px; }
 .money-kpi-value.tone-good { color: var(--green); }
 .money-kpi-value.tone-warn { color: var(--orange); }
 .money-kpi-value.tone-bad { color: var(--red); }

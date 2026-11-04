@@ -66,7 +66,7 @@ function MoneyChart({ config, transactions, period }) {
   );
 }
 
-export default function BudgetDashboard({ config, transactions, periodOffset, setPeriodOffset, onPayBill, onUnpayBill, onSetCategoryBudget, onSaveGoals }) {
+export default function BudgetDashboard({ config, transactions, periodOffset, setPeriodOffset, onPayBill, onUnpayBill, onSetCategoryBudget, onSaveGoals, onAddPurchase }) {
   const today = toDateStr();
 
   // Pay-period dashboard: the period runs payday → day before next payday,
@@ -211,11 +211,18 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             {period.fallback ? "No paydays set, so this is the calendar month. Add an income source in Bills & Income for pay-period analytics." : "Pay period: payday to the day before the next payday"}
           </p>
         </div>
+      </div>
+
+      {/* Arrows row: period nav on the left, purchase entry on the right (BUG-078) */}
+      <div className="money-period-bar">
         <div className="money-period-nav">
           <button type="button" onClick={() => setPeriodOffset(o => o - 1)} className="bud-navbtn" aria-label="Previous pay period"><i className="fa-solid fa-chevron-left" aria-hidden="true" /></button>
           {periodOffset !== 0 && <button type="button" className="btn-sm btn-secondary-sm" onClick={() => setPeriodOffset(0)}>Current</button>}
           <button type="button" onClick={() => setPeriodOffset(o => o + 1)} className="bud-navbtn" aria-label="Next pay period"><i className="fa-solid fa-chevron-right" aria-hidden="true" /></button>
         </div>
+        {onAddPurchase && (
+          <button type="button" className="btn" onClick={onAddPurchase}><i className="fa-solid fa-plus" aria-hidden="true" /> Add purchase</button>
+        )}
       </div>
 
       {/* Key numbers — each opens the transactions behind it */}

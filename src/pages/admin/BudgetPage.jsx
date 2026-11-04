@@ -84,6 +84,9 @@ export default function BudgetPage() {
     }
   }, [urlTab]);
   const [periodOffset, setPeriodOffset] = useState(0);
+  // One-shot signal from the Overview's "Add purchase" button to the
+  // transaction form on the Transactions tab (BUG-078).
+  const [txFormNonce, setTxFormNonce] = useState(0);
 
   // Raw setters are for data that came FROM the server. The wrapped setters
   // below (handed to children) mark the config dirty, which is the only thing
@@ -270,6 +273,13 @@ export default function BudgetPage() {
 
   const switchTab = id => { setTab(id); sessionStorage.setItem("budgetTab", id); };
 
+  // BUG-078: the entry form lives on the Transactions tab, so the Overview's
+  // button bumps the nonce and switches tabs; BudgetTransactions opens its
+  // form for the fresh nonce and reports it used, which clears it here, so a
+  // later manual visit to the tab does not reopen the form.
+  const openPurchaseForm = () => { setTxFormNonce(n => n + 1); switchTab("transactions"); };
+  const clearTxFormNonce = () => setTxFormNonce(0);
+
   const handlePayBill = bill => {
     const tx = {
       id: genId(), description: `Bill: ${bill.name}`, amount: bill.amount,
@@ -362,6 +372,7 @@ export default function BudgetPage() {
               onUnpayBill={handleUnpayBill}
               onSetCategoryBudget={handleSetCategoryBudget}
               onSaveGoals={handleSaveGoals}
+              onAddPurchase={openPurchaseForm}
             />
           )}
           {tab === "dashboard" && (
@@ -384,6 +395,8 @@ export default function BudgetPage() {
               transactions={transactions}
               setTransactions={setTransactions}
               startingBalance={startingBalance}
+              formNonce={txFormNonce}
+              onFormNonceUsed={clearTxFormNonce}
               actions={
                 <StatementImport
                   transactions={transactions}

@@ -17,6 +17,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - Frodo can now add people to Orbit and edit existing people right in the chat (name, how you know them, notes, and saved facts), and confirms what it saved. It no longer sends you to People › Interview me to add someone. (BUG-075)
 - A new Ad Formats page (More › Ad Formats, or ⌘K) collects 32 short-form ad formats worth stealing, one card each: how the format works and an example written for the Lift Club, myBackyard, BONSAI, or the websites service. A filter box at the top narrows the cards as you type.
 - A new Client Finder page (More › Client Finder, or ⌘K) is the playbook for Harvey, the open-source AI sales agent: what it does in nine steps, an honest verdict on the reel it came from, your ideal customer profile for website clients filled in, the data it collects per prospect, a draft example outreach email, and the guardrails that keep its automatic sending and replies off until you approve a batch.
+- The Money Overview now has an Add purchase button on the same row as the period arrows, on the opposite side. Tapping it takes you to the Transactions tab with the usual Log transaction form already open, so a purchase can be logged from the screen you land on. (BUG-078)
 
 ### Fixed
 
