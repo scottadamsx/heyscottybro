@@ -86,6 +86,23 @@
 .day-amt { flex-shrink: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .day-amt.is-neg { color: var(--red); }
 .day-amt.is-pos { color: var(--green); }
+
+/* Compact event rows (BUG-080): the collapsed row is dot, time, one-line
+   title and one meta line; everything else lives in the detail region that
+   opens on click. */
+.day-event { display: block; }
+.day-event-head { display: flex; align-items: center; gap: var(--space-sm); width: 100%; cursor: pointer; border-radius: var(--radius-md); }
+.day-event-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.day-event-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.day-event-main .day-item-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.day-event-meta { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-sm); color: var(--text-secondary); }
+.day-event-chev { flex-shrink: 0; font-size: var(--text-xs); color: var(--text-muted); transition: transform 0.15s ease; }
+.day-event-chev.is-open { transform: rotate(180deg); }
+.day-event-detail { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-xs); padding: var(--space-sm); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-card); }
+.day-event-actions { display: flex; gap: var(--space-xs); }
+@media (prefers-reduced-motion: reduce) {
+  .day-event-chev { transition: none; }
+}
 .admin-shell .day-add-seg { display: flex; width: 100%; margin-bottom: var(--space-sm); }
 .admin-shell .day-add-seg .segmented-opt { flex: 1 1 0; }
 

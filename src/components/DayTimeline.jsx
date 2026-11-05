@@ -35,6 +35,7 @@ export default function DayTimeline({
   railRef,
   innerRef,
   onRailClick,
+  onBlockClick,
   autoScrollMinute,
   autoScrollKey,
   pxPerMinute = DEFAULT_PX_PER_MIN,
@@ -67,7 +68,14 @@ export default function DayTimeline({
     <div className="day-timeline">
       {blocks.allDay.length > 0 && (
         <div className="tl-allday" aria-label="All day and anytime">
-          {blocks.allDay.map((block) => (
+          {blocks.allDay.map((block) => onBlockClick ? (
+            <button
+              key={block.id}
+              type="button"
+              className={`tl-pill tl-pill-btn kind-${block.kind}`}
+              onClick={(ev) => { ev.stopPropagation(); onBlockClick(block); }}
+            >{block.title}</button>
+          ) : (
             <span key={block.id} className={`tl-pill kind-${block.kind}`}>{block.title}</span>
           ))}
         </div>
@@ -92,20 +100,42 @@ export default function DayTimeline({
             const visibleStart = Math.max(block.start, startMinute);
             const visibleEnd = Math.min(block.end, endMinute);
             const laneWidth = 100 / block.laneCount;
+            const blockClass = `tl-block kind-${block.kind}${clashIds.has(block.id) ? " is-clash" : ""}`;
+            const blockStyle = {
+              top: `${(visibleStart - startMinute) * pxPerMinute}px`,
+              height: `${Math.max((visibleEnd - visibleStart) * pxPerMinute, 18)}px`,
+              left: `calc(${block.lane * laneWidth}% + 4px)`,
+              width: `calc(${laneWidth}% - 6px)`,
+            };
+            const blockLabel = `${block.title}, ${timeLabel(block.start)} to ${timeLabel(block.end)}`;
+            const blockBody = (
+              <>
+                <span className="tl-block-title">{block.title}</span>
+                <span className="tl-block-time">{timeLabel(block.start)}–{timeLabel(block.end)}</span>
+              </>
+            );
+            if (onBlockClick) {
+              return (
+                <button
+                  key={block.id}
+                  type="button"
+                  className={`${blockClass} tl-block-btn`}
+                  style={blockStyle}
+                  aria-label={blockLabel}
+                  onClick={(ev) => { ev.stopPropagation(); onBlockClick(block); }}
+                >
+                  {blockBody}
+                </button>
+              );
+            }
             return (
               <div
                 key={block.id}
-                className={`tl-block kind-${block.kind}${clashIds.has(block.id) ? " is-clash" : ""}`}
-                style={{
-                  top: `${(visibleStart - startMinute) * pxPerMinute}px`,
-                  height: `${Math.max((visibleEnd - visibleStart) * pxPerMinute, 18)}px`,
-                  left: `calc(${block.lane * laneWidth}% + 4px)`,
-                  width: `calc(${laneWidth}% - 6px)`,
-                }}
-                aria-label={`${block.title}, ${timeLabel(block.start)} to ${timeLabel(block.end)}`}
+                className={blockClass}
+                style={blockStyle}
+                aria-label={blockLabel}
               >
-                <span className="tl-block-title">{block.title}</span>
-                <span className="tl-block-time">{timeLabel(block.start)}–{timeLabel(block.end)}</span>
+                {blockBody}
               </div>
             );
           })}

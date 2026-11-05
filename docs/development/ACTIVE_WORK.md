@@ -1,5 +1,13 @@
 # Active work
 
+## Schedule events open on click, compact event rows (BUG-080)
+
+- **Feature document:** `docs/features/schedule-event-open-and-compact-rows.md`
+- **Approval:** Scott's direct order on 2026-11-05 ("clicking an event doesnt go into it... theylre too long with the document shit showing... can you change this please") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-05. Compact clickable event rows with an in-place detail region (documents, description, Orbit prompt, Edit/Delete inside), Upcoming rows open the day with the event expanded, and the Schedule timeline opens events and tasks through a new optional `DayTimeline` `onBlockClick` prop (no-handler rendering unchanged, so Today is untouched). Five source tests added; lint clean, full suite green (exit 0), build pass; rendered harness passed click and geometry checks at desktop and 390px (collapsed row 55px vs the old 178px desktop / 368px phone), screenshots read (see the feature document's validation record). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, signed-in verification: tap an event in the live day view and a block on the live Schedule timeline.
+
+
 ## Money Overview consistency (BUG-079)
 
 - **Feature document:** `docs/features/money-overview-consistency.md`
