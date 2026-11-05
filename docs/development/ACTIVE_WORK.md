@@ -1,5 +1,13 @@
 # Active work
 
+## Linked documents open in the in-app viewer modal
+
+- **Feature document:** `docs/features/doclinks-viewer-modal.md`
+- **Approval:** Scott's direct order on 2026-11-05 ("can you link the documents so clicking on them brings up a modal with them with an x once youre done") authorises the change and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-05. `DocLinks` file rows open the existing `DocumentViewer`/`PdfViewer` modal in-app (no more new tab), file links mark read on open, note links still open in the reader. Four source tests added; lint clean, full suite green (exit 0), build pass; rendered harness of the real `PdfViewer` passed (sample PDF paged, X closed it, no phone overflow). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: open an event, expand Documents, click a PDF, confirm the modal opens and the X closes it.
+
+
 ## Schedule events open on click, compact event rows (BUG-080)
 
 - **Feature document:** `docs/features/schedule-event-open-and-compact-rows.md`

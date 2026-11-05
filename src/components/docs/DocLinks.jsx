@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loadDocLinks, attachDoc, attachFile, fileLinkUrl, detachDoc, setDocRead } from "../../api/docLinksApi";
+import { loadDocLinks, attachDoc, attachFile, detachDoc, setDocRead } from "../../api/docLinksApi";
+import DocumentViewer from "../documents/DocumentViewer";
 import { loadBrain } from "../../api/brainApi";
 import { useToast } from "../../contexts/ToastContext";
 import "./doclinks.css";
@@ -35,6 +36,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   const [nodes, setNodes] = useState(null); // brain nodes for the picker (lazy)
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [viewing, setViewing] = useState(null); // file doc open in the viewer modal
   const pickRef = useRef(null);
 
   const summarize = (ls) => onChange?.({ count: ls.length, unread: ls.filter((l) => !l.read).length });
@@ -108,8 +110,16 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
 
   async function open_(link) {
     if (link.document_id) {
-      try { window.open(await fileLinkUrl(link), "_blank", "noopener"); }
-      catch (e) { addToast(e.message, "error"); }
+      // Files open in the in-app viewer modal (PDFs in the full PdfViewer,
+      // images inline, anything else with a download fallback).
+      if (!link.document?.storage_path) { addToast("This link has no file behind it", "error"); return; }
+      setViewing({ ...link.document, name: link.document.name || link.node_title });
+      if (!link.read) {
+        try {
+          const updated = await setDocRead(link.id, true);
+          setLinks((ls) => { const next = ls.map((l) => (l.id === link.id ? { ...l, ...updated } : l)); summarize(next); return next; });
+        } catch { /* the viewer is already open; read state can still be toggled by hand */ }
+      }
       return;
     }
     // Open the note as a full-page article (reads far better on a phone than a
@@ -137,6 +147,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   return (
     <div className={`doclinks${dragOver ? " drag-over" : ""}`} onDrop={onDrop} onDragOver={onDragOver} onDragLeave={() => setDragOver(false)} onPaste={onPaste}>
       {dialog}
+      {viewing && <DocumentViewer doc={viewing} onClose={() => setViewing(null)} />}
       <button type="button" className="doclinks-head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} aria-hidden="true" />
         <i className="fa-solid fa-paperclip" aria-hidden="true" />

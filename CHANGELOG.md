@@ -27,6 +27,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - The search modal (⌘K) no longer jumps back to the top when you move the mouse after scrolling down: the results list now holds its place while you hover, and lower results are reachable again. Keyboard navigation is unchanged. (BUG-077)
 - The Money Overview no longer contradicts itself: the Bills card lists only the period's fixed bills (the old spending-envelope rows that always read $0 are gone; envelopes live in the Rings card now), a week that has not started shows its planned amount instead of a rollover that has not happened yet, and the category budget editor calls its amount what it is, per pay period. (BUG-079)
 - Planner events now open when you tap them, everywhere: in the Upcoming list, in a day's event list, and as blocks on the day's Schedule timeline (task blocks open the task, as before). Event rows in the day view are short and clean, just the time, title, place, and who is coming; the description, documents, and Edit and Delete sit inside the opened event instead of stretching every row. (BUG-080)
+- Linked documents now open inside the app: tapping a file in any Documents list (on an event, a task, a project) brings it up in the viewer modal, PDFs with paging and zoom, images full-size, with an X to close when you are done, instead of opening a new browser tab. Opening a file also marks it read.
 
 ### Added
 
