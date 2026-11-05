@@ -107,8 +107,10 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
   const goals = useMemo(() => savingsPlan(config, today), [config, today]);
 
   const { bills } = useMemo(() => getPeriodBills(transactions, config, period), [transactions, config, period]);
+  // Only fixed bills render on the Overview (BUG-079): variable bills are
+  // spending envelopes, and their tagged-only counts contradicted the Rings
+  // card. They stay managed in Bills & Income.
   const fixedBills = useMemo(() => bills.filter(b => !b.variable), [bills]);
-  const variableBills = useMemo(() => bills.filter(b => b.variable), [bills]);
   const paidCount = fixedBills.filter(b => b.paid).length;
 
   // billsPaid / billsObligation / saved / spentNonBill now come from the shared
@@ -137,7 +139,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
     const amt = parseFloat(budgetForm.val);
     if (budgetForm.mode === "edit") { onSetCategoryBudget?.(budgetForm.cat, amt); return; }
     if (!budgetForm.cat) throw new Error("Pick a category.");
-    if (!(amt > 0)) throw new Error("Enter a monthly amount greater than zero.");
+    if (!(amt > 0)) throw new Error("Enter an amount per pay period greater than zero.");
     onSetCategoryBudget?.(budgetForm.cat, amt);
   };
   const removeBudget = async () => {
@@ -177,8 +179,6 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
   const [openRow, setOpenRow] = useState(null);
   const toggleRow = (key) => setOpenRow(k => (k === key ? null : key));
   const catTx = (cat) => periodTx.filter(t => t.type === "expense" && t.category === cat).sort((a, b) => b.date.localeCompare(a.date));
-  // Variable bills track ONLY transactions explicitly tagged to them, so the drill matches.
-  const billTx = (billId) => periodTx.filter(t => t.type === "expense" && t.fulfills_recurring_id === billId).sort((a, b) => b.date.localeCompare(a.date));
 
   // Headline-stat drill-down: clicking a summary card opens a modal listing the
   // exact transactions behind that figure. Sets mirror how budgetSummary derives
@@ -372,31 +372,41 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             ({formatMoney(weekly.incomeForPlanning)} scheduled − {formatMoney(weekly.billsObligation)} bills − {formatMoney(weekly.savings)} savings)
           </p>
           {weekly.weeks.map(w => {
-            const over = w.remaining < 0;
-            const pct = w.allowance > 0 ? Math.min(Math.max(w.spent / w.allowance * 100, 0), 100) : (w.spent > 0 ? 100 : 0);
+            // A week that has not started shows its planned base, not a
+            // projected rollover: the current week's leftover is not
+            // final until the week ends (BUG-079).
+            const isFuture = !w.isPast && !w.isCurrent;
+            const over = !isFuture && w.remaining < 0;
+            const ofAmt = isFuture ? w.base : w.allowance;
+            const pct = ofAmt > 0 ? Math.min(Math.max(w.spent / ofAmt * 100, 0), 100) : (w.spent > 0 ? 100 : 0);
             const dr = `${preferredDisplayDate(w.start)} – ${preferredDisplayDate(w.end)}`;
             return (
               <div key={w.index} className={`money-meter${w.isPast ? " is-past" : ""}${w.isCurrent ? " is-current" : ""}`}>
                 <div className="money-meter-head">
                   <span className="money-meter-name">Week {w.index} <span className="bud-muted-12">{dr}</span></span>
-                  <span className={`money-meter-nums${over ? " is-over" : ""}`}>{over ? "−" : ""}{formatMoneyAbs(w.remaining)} left</span>
+                  {isFuture
+                    ? <span className="money-meter-nums">{formatMoney(w.base)} planned</span>
+                    : <span className={`money-meter-nums${over ? " is-over" : ""}`}>{over ? "−" : ""}{formatMoneyAbs(w.remaining)} left</span>}
                 </div>
                 <div className="bud-bar"><div className="bud-bar-fill" style={{ width: `${pct}%`, background: meterFill(pct, over) }} /></div>
                 <div className="money-meter-foot">
-                  <span>{formatMoney(w.spent)} spent of {formatMoney(w.allowance)}{w.carryIn ? ` · ${w.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(w.carryIn)} rolled over` : ""}</span>
+                  {isFuture
+                    ? <span>{formatMoney(w.spent)} spent · rollover is added when this week starts</span>
+                    : <span>{formatMoney(w.spent)} spent of {formatMoney(w.allowance)}{w.carryIn ? ` · ${w.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(w.carryIn)} rolled over` : ""}</span>}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Bills this pay period — fixed (paid/unpaid) + variable (progress) */}
+        {/* Bills this pay period — fixed bills only (BUG-079): spending
+            envelopes are the Rings card above, never rows in this card */}
         <div className="db-card">
           <div className="money-bills-head">
             <h3 className="db-card-title">Bills this period</h3>
             {fixedBills.length > 0 && <span className={`money-bills-count${paidCount === fixedBills.length ? " is-done" : ""}`}>{paidCount} of {fixedBills.length} paid</span>}
           </div>
-          {bills.length === 0 && <p className="money-card-note">No bills fall in this pay period.</p>}
+          {fixedBills.length === 0 && <p className="money-card-note">No bills fall in this pay period.</p>}
           {fixedBills.length > 0 && (
             <div className="bud-bar" role="progressbar" aria-valuemin={0} aria-valuemax={fixedBills.length} aria-valuenow={paidCount} aria-label="Bills paid">
               <div className="bud-bar-fill" style={{ width: `${paidCount / fixedBills.length * 100}%`, background: "var(--teal)" }} />
@@ -428,27 +438,6 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                       : <span>Not paid yet. Due {preferredDisplayDate(b.date)}.</span>}
                   </div>
                 )}
-              </div>
-            );
-          })}
-          {variableBills.map((b) => {
-            const pct = b.budget > 0 ? Math.min(b.spent / b.budget * 100, 100) : 0;
-            const over = b.spent > b.budget;
-            const key = `varbill:${b.billId}`;
-            const isOpen = openRow === key;
-            return (
-              <div key={key} className="money-bill">
-                <div className="money-meter">
-                  <div className="money-meter-head">
-                    <button type="button" className="money-meter-name is-link" aria-expanded={isOpen} onClick={() => toggleRow(key)}>
-                      <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} bud-chev`} aria-hidden="true" />{b.name} <span className="bud-tag">{b.category}</span>
-                    </button>
-                    <span className={`money-meter-nums${over ? " is-over" : ""}`}>{formatMoney(b.spent)} / {formatMoney(b.budget)} ({Math.round(b.budget > 0 ? b.spent / b.budget * 100 : 0)}%)</span>
-                  </div>
-                  <div className="bud-bar"><div className="bud-bar-fill" style={{ width: `${pct}%`, background: meterFill(pct, over) }} /></div>
-                  {over && <div className="bud-over-note">{formatMoney(b.spent - b.budget)} over</div>}
-                </div>
-                {isOpen && <TxDrill txs={billTx(b.billId)} empty="No transactions tagged to this bill yet. Tag them with “Pays a bill?” when logging." />}
               </div>
             );
           })}
@@ -581,8 +570,8 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             </select>
           </Field>
         )}
-        <Field label="Monthly budget" hint={budgetForm.mode === "edit" ? "Leave empty or 0 to remove this budget." : undefined}>
-          <input data-autofocus={budgetForm.mode === "edit" ? true : undefined} type="number" inputMode="decimal" step="0.01" placeholder="$ / month" value={budgetForm.val} onChange={e => setBudgetForm(f => ({ ...f, val: e.target.value }))} />
+        <Field label="Amount per pay period" hint={budgetForm.mode === "edit" ? "Leave empty or 0 to remove this budget." : undefined}>
+          <input data-autofocus={budgetForm.mode === "edit" ? true : undefined} type="number" inputMode="decimal" step="0.01" placeholder="$ / pay period" value={budgetForm.val} onChange={e => setBudgetForm(f => ({ ...f, val: e.target.value }))} />
         </Field>
       </FormModal>
     )}

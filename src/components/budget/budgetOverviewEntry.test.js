@@ -27,3 +27,21 @@ test("transactions tab opens its existing form once for a fresh nonce, then repo
   assert.match(transactions, /formNonce > 0 && formNonce !== consumedNonceRef\.current/);
   assert.match(transactions, /openNew\(\);\s*\n\s*onFormNonceUsed\?\.\(\);/);
 });
+
+test("bills card renders fixed bills only, no variable envelope rows (BUG-079)", () => {
+  assert.doesNotMatch(dashboard, /variableBills/);
+  assert.doesNotMatch(dashboard, /varbill:/);
+  // The empty state and the paid count describe the fixed rows shown.
+  assert.match(dashboard, /fixedBills\.length === 0 && <p className="money-card-note">No bills fall in this pay period\.<\/p>/);
+});
+
+test("weekly allowance shows a future week as planned base, not projected rollover (BUG-079)", () => {
+  assert.match(dashboard, /const isFuture = !w\.isPast && !w\.isCurrent;/);
+  assert.match(dashboard, /formatMoney\(w\.base\)\} planned/);
+  assert.match(dashboard, /rollover is added when this week starts/);
+});
+
+test("category budget modal labels the amount per pay period, not monthly (BUG-079)", () => {
+  assert.match(dashboard, /label="Amount per pay period"/);
+  assert.doesNotMatch(dashboard, /Monthly budget/);
+});

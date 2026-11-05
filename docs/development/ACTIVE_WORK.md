@@ -1,5 +1,12 @@
 # Active work
 
+## Money Overview consistency (BUG-079)
+
+- **Feature document:** `docs/features/money-overview-consistency.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("do you see the inconsistincenies... make it way better now", with a screenshot of the live Money Overview) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. The Bills card renders fixed bills only (variable bills remain managed in Bills & Income; the unused variable drill helper was removed); a week that has not started shows its planned base with a rollover note (the allowance calculation is unchanged); the budget modal field reads "Amount per pay period". Three regression source tests added; lint clean, full suite green (final group 343), build pass; rendered harness with Scott's exact live figures passed every check at desktop and 390px (see the feature document's validation record). The live data half is already done and verified through the UI: the Nov 4 Orangestore $20.00 entry moved from Transport to Gas, so the live Gas ring reads $20.00 of $70.00 and the rings sum ties to Week 1 spent ($128.49). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, signed-in verification of the Bills card and Week 2. The stale Google One $35 bill (verified Oct 22, 2026: subscription expired, charge should not occur) is flagged for Scott's decision, not deleted.
+
 ## Money rings: Groceries, Fun/Entertainment, Gas, and Bills buckets
 
 - **Feature document:** `docs/features/money-rings.md`
