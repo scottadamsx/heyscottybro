@@ -1,11 +1,18 @@
 # Active work
 
+## URLs in task Notes are clickable (BUG-082)
+
+- **Feature document:** `docs/features/task-notes-clickable-links.md`
+- **Approval:** Scott's direct order on 2026-11-06 ("when I go into topic 11 i can't click the fucking document link") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-06. Live investigation first proved the Concept 11 task has no linked document and its Notes' ChatGPT bundle URL rendered as dead plain text (same across the concept tasks). The fix linkifies URLs in task Notes (`linkifySegments` + `LinkifiedText`, accent-underlined via plan.css). Seven tests added; lint clean, full suite green (exit 0), build pass; rendered harness passed with the exact Concept 11 note at desktop and 390px. Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: open the live Concept 11 task and tap the bundle link in Notes. Separate follow-up, not part of this fix: attach the 111 lesson PDFs to their tasks (Mac zip when the Mac is back online, or the ChatGPT pull with Scott present) and remove the ChatGPT references from Notes.
+
 ## Log in Orbit starts from the event's people (BUG-081)
 
 - **Feature document:** `docs/features/orbit-log-prefills-event-people.md`
 - **Approval:** Scott's direct order on 2026-11-06 ("it should grab the person who is involved from the event and ask me 'what happened at the event'... fix this now", with a screenshot of the manual people picker) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
-- **Current state:** Built and verified locally on 2026-11-06. `CalendarPage.openOrbitLog` sends the event's attendee ids in the handoff; Orbit's `RoutedLayer` forwards them into the log prefill and strips them from the URL. `LogModal` and `InterviewDrawer` unchanged (they already consumed `prefill.people`). Three source tests added; lint clean, full suite green (exit 0), build pass; rendered harness of the real `LogModal` passed both modes (interview opening names the attendee and asks what happened; manual form opens with him already picked), screenshots read at desktop and 390px. Committed locally, on top of the unpushed viewer-modal commit; not pushed.
-- **Next gate:** Scott approves the push/deploy (note: origin/main carries the extra empty commit a918bdb, so fetch and merge first; the push also carries the viewer-modal commit). After deployment, the signed-in check: open an event with people attached, tap Log in Orbit, land in the prefilled log.
+- **Current state:** LIVE 2026-11-06. Scott approved the push; merged with origin/main (a918bdb) and pushed as d7b568d; the build check fired and the served bundles carry the change (marker-verified in both chunks). Signed-in check proved the prefill end to end on "Drinks with Lizwe" (Nov 5): the link carried Lizwe's id and the form opened with her selected and her update field present. Recorded limits: the prompt lists only events whose end has passed, and the live log opens the manual form because the Orbit assistant is not available on the live app.
+- **Next gate:** None for the fix itself. The DocLinks viewer modal shipped in the same push; its signed-in click-through is still unexercised because no event or task currently has a file attached.
 
 
 ## Linked documents open in the in-app viewer modal

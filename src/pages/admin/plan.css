@@ -191,6 +191,7 @@
 .task-detail-row dt { font-size: var(--text-sm); color: var(--text-secondary); }
 .task-detail-row dd { margin: 0; overflow-wrap: anywhere; }
 .task-detail-notes { margin: 0; line-height: var(--leading-relaxed); white-space: pre-wrap; overflow-wrap: anywhere; }
+.task-detail-notes a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
 
 .admin-shell .task-detail-danger { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md); }
 .task-detail-danger-note { margin: var(--space-2xs) 0 0; font-size: var(--text-sm); color: var(--text-secondary); }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
+import LinkifiedText from "../../components/LinkifiedText";
 import { formatDisplayDate, toDateStr, formatTime12, nextOccurrence } from "../../utils/plannerUtils";
 import TaskFormModal, { taskToForm } from "../../components/TaskFormModal";
 import { onDataChange } from "../../utils/dataEvents";
@@ -248,7 +249,7 @@ export default function TaskDetailPage() {
       <section className="db-card" aria-label="Notes">
         <div className="db-card-header"><h3 className="db-card-title">Notes</h3></div>
         {task.description
-          ? <p className="task-detail-notes">{task.description}</p>
+          ? <LinkifiedText text={task.description} className="task-detail-notes" />
           : <p className="no-entries">No description.</p>}
       </section>
 
