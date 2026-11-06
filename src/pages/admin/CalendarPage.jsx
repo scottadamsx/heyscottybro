@@ -8,7 +8,7 @@ import {
 } from "../../api/plannerApi";
 import { loadPeople } from "../../api/peopleApi";
 import AttendeeChips from "../../components/AttendeeChips";
-import { peopleById, resolveAttendees, attendeeNamesLabel } from "../../lib/attendees";
+import { peopleById, resolveAttendees, attendeeNamesLabel, normalizeAttendeeIds } from "../../lib/attendees";
 import { loadAccountability } from "../../api/accountabilityApi";
 import { formatTime12, expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
@@ -345,6 +345,10 @@ export default function CalendarPage() {
 
   const openOrbitLog = (event) => {
     const query = new URLSearchParams({ sourceHostEventId: String(event.id), title: event.title, date: event.date });
+    // The log starts from the event's people (BUG-081): Orbit names them
+    // and asks what happened instead of opening a blank manual picker.
+    const attendeeIds = normalizeAttendeeIds(eventPeople[event.id]);
+    if (attendeeIds.length) query.set("people", attendeeIds.join(","));
     navigate(`/admin/people?${query.toString()}`);
   };
   const setOrbitPromptStatus = async (event, status) => {

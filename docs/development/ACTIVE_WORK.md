@@ -1,5 +1,13 @@
 # Active work
 
+## Log in Orbit starts from the event's people (BUG-081)
+
+- **Feature document:** `docs/features/orbit-log-prefills-event-people.md`
+- **Approval:** Scott's direct order on 2026-11-06 ("it should grab the person who is involved from the event and ask me 'what happened at the event'... fix this now", with a screenshot of the manual people picker) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-06. `CalendarPage.openOrbitLog` sends the event's attendee ids in the handoff; Orbit's `RoutedLayer` forwards them into the log prefill and strips them from the URL. `LogModal` and `InterviewDrawer` unchanged (they already consumed `prefill.people`). Three source tests added; lint clean, full suite green (exit 0), build pass; rendered harness of the real `LogModal` passed both modes (interview opening names the attendee and asks what happened; manual form opens with him already picked), screenshots read at desktop and 390px. Committed locally, on top of the unpushed viewer-modal commit; not pushed.
+- **Next gate:** Scott approves the push/deploy (note: origin/main carries the extra empty commit a918bdb, so fetch and merge first; the push also carries the viewer-modal commit). After deployment, the signed-in check: open an event with people attached, tap Log in Orbit, land in the prefilled log.
+
+
 ## Linked documents open in the in-app viewer modal
 
 - **Feature document:** `docs/features/doclinks-viewer-modal.md`
