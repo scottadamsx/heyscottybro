@@ -1,5 +1,12 @@
 # Active work
 
+## Log in Orbit opens on the prompt, not the manual form (BUG-084)
+
+- **Feature document:** `docs/features/orbit-event-log-prompt-first.md`
+- **Approval:** Scott's follow-up on 2026-11-07 ("dude it still goes to manual log wtf is wrong with you I thought we had this fixed?", with a screenshot of the manual form for the Nov 4 NLHS Innovation Summit event, nobody picked) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-07. Diagnosis: BUG-081 shipped only the people prefill; the interview that was supposed to ask "what happened" needs a live AI backend (`ai.available` requires an `ANTHROPIC_API_KEY` in the hosted server plus the connector on), which the live app does not have, so every live log fell through to the manual form; and the NLHS event has no attendees attached, so its form opened with an empty picker. The fix adds a prompt-first entry mode to `LogModal` for Planner event handoffs that needs no AI: it names the event and its people, asks "What happened at the event?", files the one answer as Notes through the existing save path, shows the picker inside the prompt when nobody is attached, and keeps the full form one tap away. Four new source tests; lint clean, full suite green (exit 0), build pass; rendered harness at 390px proved both the with-people save and the no-people flow (including the empty-save refusal). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: tap Log in Orbit on a past event and confirm the prompt opens, names the event's people, and saves from the one answer. Note BUG-082 (below) is also committed locally and unpushed, so one push ships both.
+
 ## URLs in task Notes are clickable (BUG-082)
 
 - **Feature document:** `docs/features/task-notes-clickable-links.md`
@@ -12,7 +19,7 @@
 - **Feature document:** `docs/features/orbit-log-prefills-event-people.md`
 - **Approval:** Scott's direct order on 2026-11-06 ("it should grab the person who is involved from the event and ask me 'what happened at the event'... fix this now", with a screenshot of the manual people picker) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
 - **Current state:** LIVE 2026-11-06. Scott approved the push; merged with origin/main (a918bdb) and pushed as d7b568d; the build check fired and the served bundles carry the change (marker-verified in both chunks). Signed-in check proved the prefill end to end on "Drinks with Lizwe" (Nov 5): the link carried Lizwe's id and the form opened with her selected and her update field present. Recorded limits: the prompt lists only events whose end has passed, and the live log opens the manual form because the Orbit assistant is not available on the live app.
-- **Next gate:** None for the fix itself. The DocLinks viewer modal shipped in the same push; its signed-in click-through is still unexercised because no event or task currently has a file attached.
+- **Next gate:** None. The DocLinks viewer modal shipped in the same push, and its signed-in click-through was exercised later on 2026-11-06 on a real attachment (the Lizwe gym-plan screenshot on the Nov 11 planner event): the document opened in the viewer on the live site. See the WORKLOG follow-up note. The recorded manual-form limit is addressed locally by BUG-084 (see the top section); it reaches live only with that push.
 
 
 ## Linked documents open in the in-app viewer modal
