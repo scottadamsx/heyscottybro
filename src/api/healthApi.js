@@ -6,6 +6,7 @@ import { uid } from "./_base";
 import { emitDataChange } from "../utils/dataEvents";
 import { toDateStr } from "../utils/dates";
 import { kgToLb, lbToKg } from "../utils/healthInsights";
+import { sleepDurationMinutes } from "../utils/sleep";
 import { DEFAULT_TARGET } from "../utils/overload";
 import { DEFAULT_BAR_LB } from "../utils/plates";
 import { cleanExerciseGoal } from "../utils/exerciseLibrary";
@@ -94,6 +95,43 @@ export async function saveWeight(profileId, { date, weightLb, note = "" }) {
 export async function deleteWeight(id) {
   const { error } = await supabase.from("weight_logs").delete().eq("id", id);
   if (error) fail("delete that weigh-in", error);
+  changed();
+}
+
+// ── Sleep (sleep_logs; one row per night, keyed by the morning it ended) ──────
+
+const shapeSleep = (r) => ({ id: r.id, date: r.date, bedTime: r.bed_time, wakeTime: r.wake_time, durationMinutes: r.duration_minutes, note: r.note || "" });
+
+export async function loadSleep(profileId) {
+  const rows = await allRows(() => supabase.from("sleep_logs").select("id, date, bed_time, wake_time, duration_minutes, note").eq("profile_id", profileId).order("date", { ascending: false }), "load your sleep log");
+  return rows.map(shapeSleep);
+}
+
+const cleanSleep = ({ date, bedTime, wakeTime, note = "" }) => {
+  const durationMinutes = sleepDurationMinutes(bedTime, wakeTime);
+  if (durationMinutes === null) throw new Error("Enter a bedtime and a wake time.");
+  if (durationMinutes < 30 || durationMinutes > 1200) throw new Error("That night works out to under 30 minutes or over 20 hours; check the times.");
+  return { date: date || toDateStr(), bed_time: bedTime, wake_time: wakeTime, duration_minutes: durationMinutes, note: String(note || "").slice(0, 300) };
+};
+
+/** One entry per night: saving the same date replaces it. */
+export async function saveSleep(profileId, entry) {
+  const userId = await uid();
+  const { error } = await supabase.from("sleep_logs")
+    .upsert({ user_id: userId, profile_id: profileId, ...cleanSleep(entry), updated_at: new Date().toISOString() }, { onConflict: "profile_id,date" });
+  if (error) fail("save last night's sleep", error);
+  changed();
+}
+
+export async function updateSleep(id, entry) {
+  const { error } = await supabase.from("sleep_logs").update({ ...cleanSleep(entry), updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) fail("update that night", error);
+  changed();
+}
+
+export async function deleteSleep(id) {
+  const { error } = await supabase.from("sleep_logs").delete().eq("id", id);
+  if (error) fail("delete that night", error);
   changed();
 }
 

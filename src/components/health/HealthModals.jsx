@@ -4,6 +4,7 @@ import DatePicker from "../DatePicker";
 import { MEALS } from "../../api/healthApi";
 import { estimateFood } from "../../api/aiHealth";
 import { toDateStr } from "../../utils/dates";
+import { formatSleepDuration, sleepDurationMinutes } from "../../utils/sleep";
 
 const MEAL_LABEL = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snack: "Snack" };
 const num = (v) => (v === "" || v == null ? "" : String(v));
@@ -145,6 +146,38 @@ export function WeightModal({ latestLb, defaultDate, onClose, onSave }) {
       </div>
       <Field label="Note (optional)">
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Morning, after the gym…" />
+      </Field>
+    </FormModal>
+  );
+}
+
+/** Log or edit one night's sleep. initial: an existing sleep_logs entry (edit) or undefined (new). */
+export function SleepModal({ initial, onClose, onSave }) {
+  const [date, setDate] = useState(initial?.date || toDateStr());
+  const [bedTime, setBedTime] = useState(initial?.bedTime || "23:00");
+  const [wakeTime, setWakeTime] = useState(initial?.wakeTime || "07:00");
+  const [note, setNote] = useState(initial?.note || "");
+  const duration = sleepDurationMinutes(bedTime, wakeTime);
+  const valid = duration !== null && duration >= 30 && duration <= 1200;
+  return (
+    <FormModal title={initial ? "Edit sleep" : "Log sleep"} submitLabel="Save" onClose={onClose} submitDisabled={!valid}
+      onSubmit={() => onSave({ date, bedTime, wakeTime, note })}>
+      <div className="form-row">
+        <Field label="Bedtime">
+          <input type="time" value={bedTime} onChange={(e) => setBedTime(e.target.value)} data-autofocus required />
+        </Field>
+        <Field label="Wake time">
+          <input type="time" value={wakeTime} onChange={(e) => setWakeTime(e.target.value)} required />
+        </Field>
+      </div>
+      <p className="sleep-duration" aria-live="polite">
+        {duration === null ? "Enter a bedtime and a wake time." : valid ? `Duration: ${formatSleepDuration(duration)}` : "That works out to under 30 minutes or over 20 hours; check the times."}
+      </p>
+      <Field label="Date" hint="The morning the sleep ended. One entry per night; saving the same date replaces it.">
+        <DatePicker value={date} onChange={(v) => setDate(v || toDateStr())} />
+      </Field>
+      <Field label="Note (optional)">
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="From the watch, restless night…" />
       </Field>
     </FormModal>
   );

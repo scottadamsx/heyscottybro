@@ -30,10 +30,19 @@ export function useHealthData() {
       } catch (err) {
         exercisesError = err.message;
       }
+      // Sleep is non-critical too: until the sleep_logs migration is applied the
+      // table does not exist, and that must not take down the whole page.
+      let sleep = [];
+      let sleepError = null;
+      try {
+        sleep = await api.loadSleep(profile.id);
+      } catch (err) {
+        sleepError = err.message;
+      }
       setState({
         status: "ready",
         error: null,
-        profile, weights, food, plans, sessions, history, exercises, exercisesError,
+        profile, weights, food, plans, sessions, history, exercises, exercisesError, sleep, sleepError,
         openSession: sessions.find((s) => !s.endedAt) || null,
       });
     } catch (err) {
