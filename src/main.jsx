@@ -10,6 +10,7 @@ import "./pages/home.css"; // front-facing design system (loads after index.css 
 import "./styles/features.css"; // documents · share page
 import "./styles/system.css"; // the admin design system: shell + primitives (loads last among screens)
 import "./styles/print.css"; // print layer — @media print only
+import "./styles/astryx.css"; // Astryx redesign layer — loads last, recomposes public + auth surfaces
 import { applyTheme, getTheme, watchSystemTheme } from "./utils/theme.js";
 
 // Theme before first paint: <html data-theme> drives every token in globals.css.
