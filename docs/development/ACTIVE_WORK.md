@@ -2,6 +2,10 @@
 
 ## October 10 Journal–Orbit release
 
+- **Follow-up request:** Scott reported that **Speak entry** can freeze and that a saved spoken entry did not begin the Orbit step. The causes and fixes are recorded in `BUG-069` and `BUG-070`; recovery, automatic review startup, and regression coverage are implemented locally.
+- **Confirmed handoff behavior:** `Clean up writing` is the separately gated grammar/spelling action. Journal entities are handled after Save in Orbit. The handoff now auto-starts extraction and presents its actual review question/result; Scott still approves each profile change. The persistent `AdminShell` records Orbit's receipt and selected links in journal provenance. This distinction is documented; whether Scott wants one combined “clean entry” control is not yet settled.
+- **Follow-up state:** Speech startup recovery and automatic Orbit extraction are implemented locally and synchronized from canonical Orbit. Host tests/lint/build pass; Orbit tests/build/UI/AI checks pass; the ledger validator reports pre-existing stale compile stamps. No live microphone/provider request, commit, push, or deployment has occurred.
+
 - **Approval:** Scott explicitly said **“go”** on 2026-10-10 to deploy the current Journal–Orbit work. This authorizes committing and pushing the canonical Orbit source and synchronized heyScottyBro host source to their existing `main` branches, then verifying the resulting production deployment. No new database migration, production-record write, or live AI request is included.
 - **Release sequence:** Completed canonical Orbit/host validation, canonical-first synchronization, commits, Orbit-then-host pushes, remote SHA checks, GitHub's Vercel Production success check, and a read-only authenticated app-shell smoke reload.
 - **Limits:** The `journal_orbit_links` migration is already applied and verified. Real microphone, live-provider extraction, actual profile write/reload, and rendered desktop/mobile checks remain unverified and will be reported honestly.

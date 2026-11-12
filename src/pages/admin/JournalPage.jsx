@@ -711,27 +711,62 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
   const offline = typeof navigator !== "undefined" && !navigator.onLine;
   const cleanupDisabled = !body.trim() || counts.characters > JOURNAL_CLEANUP_LIMIT || offline || cleanupBusy;
   const [recording, setRecording] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [speechNotice, setSpeechNotice] = useState(null);
   const recognitionRef = useRef(null);
+  const speechPhaseRef = useRef("idle");
+  const speechStartTimerRef = useRef(null);
   const SpeechRecognition = typeof window !== "undefined"
     ? (window.SpeechRecognition || window.webkitSpeechRecognition)
     : null;
   useEffect(() => () => {
+    clearTimeout(speechStartTimerRef.current);
     if (recognitionRef.current) {
       recognitionRef.current.onresult = null;
+      recognitionRef.current.onstart = null;
       recognitionRef.current.onerror = null;
       recognitionRef.current.onend = null;
-      recognitionRef.current.stop();
+      try { recognitionRef.current.abort?.(); } catch { /* The browser may already have ended recognition. */ }
       recognitionRef.current = null;
+      speechPhaseRef.current = "idle";
       onRecordingChange(false);
     }
   }, [onRecordingChange]);
   const toggleSpeech = () => {
+    if (starting) {
+      clearTimeout(speechStartTimerRef.current);
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+      speechPhaseRef.current = "idle";
+      if (recognition) {
+        recognition.onresult = null;
+        recognition.onstart = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        try { recognition.abort?.(); } catch { /* A pending browser request may not be abortable. */ }
+      }
+      setStarting(false);
+      setRecording(false);
+      setStopping(false);
+      onRecordingChange(false);
+      setSpeechNotice({ type: "status", text: "Voice typing was cancelled before it started. Your draft is unchanged." });
+      return;
+    }
     if (recording) {
       setStopping(true);
+      speechPhaseRef.current = "stopping";
       setSpeechNotice({ type: "status", text: "Finishing your transcript…" });
-      recognitionRef.current?.stop();
+      try { recognitionRef.current?.stop(); }
+      catch {
+        clearTimeout(speechStartTimerRef.current);
+        recognitionRef.current = null;
+        speechPhaseRef.current = "idle";
+        setRecording(false);
+        setStopping(false);
+        onRecordingChange(false);
+        setSpeechNotice({ type: "error", text: "Voice typing stopped unexpectedly. Your draft is safe; you can try again." });
+      }
       return;
     }
     if (!SpeechRecognition) {
@@ -743,7 +778,16 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
       recognition.continuous = true;
       recognition.interimResults = false;
       recognition.lang = navigator.language || "en-US";
+      recognition.onstart = () => {
+        if (recognitionRef.current !== recognition) return;
+        clearTimeout(speechStartTimerRef.current);
+        speechPhaseRef.current = "recording";
+        setStarting(false);
+        setRecording(true);
+        setSpeechNotice({ type: "status", text: "Listening. Speak naturally; select Stop when you’re done." });
+      };
       recognition.onresult = (event) => {
+        if (recognitionRef.current !== recognition) return;
         const transcript = Array.from(event.results).slice(event.resultIndex)
           .filter((result) => result.isFinal)
           .map((result) => result[0]?.transcript?.trim())
@@ -755,6 +799,11 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
         }
       };
       recognition.onerror = (event) => {
+        if (recognitionRef.current !== recognition) return;
+        clearTimeout(speechStartTimerRef.current);
+        recognitionRef.current = null;
+        speechPhaseRef.current = "idle";
+        setStarting(false);
         setRecording(false);
         setStopping(false);
         onRecordingChange(false);
@@ -762,15 +811,48 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
           ? "Microphone access was blocked. Allow it in your browser settings and try again."
           : `Voice typing stopped (${event.error || "recognition error"}). Your existing draft is unchanged.` });
       };
-      recognition.onend = () => { setRecording(false); setStopping(false); onRecordingChange(false); recognitionRef.current = null; };
+      recognition.onend = () => {
+        if (recognitionRef.current !== recognition) return;
+        clearTimeout(speechStartTimerRef.current);
+        const endedBeforeStart = speechPhaseRef.current === "starting";
+        recognitionRef.current = null;
+        speechPhaseRef.current = "idle";
+        setStarting(false);
+        setRecording(false);
+        setStopping(false);
+        onRecordingChange(false);
+        setSpeechNotice(endedBeforeStart
+          ? { type: "error", text: "Voice typing ended before it started. Check microphone permission and browser support, then try again." }
+          : { type: "status", text: "Voice typing finished. Your transcript is in the editable draft." });
+      };
       recognitionRef.current = recognition;
-      setSpeechNotice({ type: "status", text: "Listening. Speak naturally; select Stop when you’re done." });
-      recognition.start();
-      setRecording(true);
+      speechPhaseRef.current = "starting";
+      setStarting(true);
+      setRecording(false);
       setStopping(false);
       onRecordingChange(true);
+      setSpeechNotice({ type: "status", text: "Starting microphone… You can cancel if it doesn’t connect." });
+      speechStartTimerRef.current = setTimeout(() => {
+        if (recognitionRef.current !== recognition) return;
+        recognitionRef.current = null;
+        speechPhaseRef.current = "idle";
+        recognition.onresult = null;
+        recognition.onstart = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        try { recognition.abort?.(); } catch { /* The browser may already have timed out. */ }
+        setStarting(false);
+        setRecording(false);
+        setStopping(false);
+        onRecordingChange(false);
+        setSpeechNotice({ type: "error", text: "Voice typing didn’t start. Check microphone permission and browser support, then try again. Your draft is unchanged." });
+      }, 12000);
+      recognition.start();
     } catch {
+      clearTimeout(speechStartTimerRef.current);
       recognitionRef.current = null;
+      speechPhaseRef.current = "idle";
+      setStarting(false);
       setRecording(false);
       setStopping(false);
       onRecordingChange(false);
@@ -787,8 +869,8 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
         <span className="journal-timer" aria-label={`Writing time ${formatWritingDuration(elapsed)}`}>{formatWritingDuration(elapsed)}</span>
       </div>
       <div className="journal-writing-actions">
-        <button type="button" className={`btn btn-sm ${recording ? "btn-primary" : "btn-secondary-sm"}`} onClick={toggleSpeech} aria-pressed={recording} disabled={stopping}>
-          <i className={`fa-solid ${recording ? "fa-stop" : "fa-microphone"}`} aria-hidden="true" /> {stopping ? "Finishing…" : recording ? "Stop speaking" : "Speak entry"}
+        <button type="button" className={`btn btn-sm ${recording ? "btn-primary" : "btn-secondary-sm"}`} onClick={toggleSpeech} aria-pressed={recording || starting} disabled={stopping}>
+          <i className={`fa-solid ${recording || starting ? "fa-stop" : "fa-microphone"}`} aria-hidden="true" /> {stopping ? "Finishing…" : starting ? "Cancel starting" : recording ? "Stop speaking" : "Speak entry"}
         </button>
         {timer.status === "running" ? (
           <button type="button" className="btn btn-sm btn-secondary-sm" onClick={() => onTimer("pause")}>Pause</button>

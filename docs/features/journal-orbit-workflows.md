@@ -1,6 +1,6 @@
 # Feature: Journal–Orbit workflows
 
-**Status:** Released to production 2026-10-10 — desktop/mobile feature flows and live-provider behavior remain unverified
+**Status:** Production baseline released 2026-10-10; local follow-up fixes for dictation startup and automatic Orbit review are not yet released
 **Owner:** Scott  
 **Started:** 2026-10-09
 
@@ -54,7 +54,7 @@ From a journal, Scott can review AI cleanup, link known people to their Orbit pr
 
 ## Experience contract
 
-- **Journal:** The existing optional Clean up with AI action remains disclosed, previewed, and undoable. New or edited journal text may also be spoken using a browser-supported speech-recognition API; only an explicit click starts the microphone flow. The browser may process audio. Final words append to the editable draft and are not saved until Scott chooses Save. A successful save opens Orbit's review. Orbit asks before linking any person or adding each proposed profile fact; unknown names remain unlinked, ambiguous matches require a specific existing profile, and declined changes stay journal-only. Orbit's transaction receipt is linked back to the host journal, the approved names render as safe profile links, and Orbit's Undo clears those links after the undo succeeds.
+- **Journal:** The optional **Clean up writing** action is separately gated in Settings and only cleans grammar/spelling; it is not the people/context review. New or edited journal text may also be spoken using a browser-supported speech-recognition API; the browser may process audio. Final words append to the editable draft and are not saved until Scott chooses Save. A successful save opens Orbit and automatically starts its people/context extraction when ready. Orbit asks before linking any person or adding each proposed profile fact; unknown names remain unlinked, ambiguous matches require a specific existing profile, and declined changes stay journal-only. Orbit's transaction receipt is linked back to the host journal, approved names render as safe profile links, and Orbit's Undo clears those links after the undo succeeds. The stored journal body remains Scott's original text; approved facts/context belong to Orbit and are summarized beside the entry rather than silently inserted into the body.
 - **Event entry:** On new events, offer a short description and **Fill form**, plus **Manual entry**. AI suggestions populate the ordinary fields for review. Nothing is saved until the normal Add event action. Existing edits remain manual. If the date cannot be resolved from the captured local date/timezone, leave it blank and identify the ambiguity rather than guessing.
 - **Past event:** Once a newly eligible event's end has passed in the owner's local timezone, surface a non-blocking prompt in Planner/Calendar with **Log in Orbit** and **Dismiss**. It remains available from the event until logged or dismissed; no modal appears unexpectedly. Logging opens Orbit's existing Interview flow with the exact title/date and source identity, plus an explicit manual-entry fallback. The normal Orbit save tools validate and persist the event; source linking makes retries idempotent.
 - **App-action reminders:** When due, a recognized reminder offers a named action such as **Log weight**. The destination stays usable on desktop/mobile; the reminder is completed only after the matching save succeeds. Unrecognized reminder text keeps the ordinary Done action.
@@ -91,12 +91,32 @@ From a journal, Scott can review AI cleanup, link known people to their Orbit pr
 
 ## Pseudocode
 
+### Follow-up: speech recognition must never leave the editor stuck
+
+```text
+1. A user click starts a visible pending state and disables journal Save while recognition startup is unresolved.
+2. Only the browser's onstart event changes the UI to Listening. Arm a bounded startup watchdog before calling start().
+3. On onstart, clear the watchdog and show Listening. On result, append final text to the existing draft.
+4. On permission/recognition error, synchronous start failure, timeout, stop, or end, clear timers and recognition references, restore Save, and show a useful status/error. A late event from an expired recognition instance must not alter the current editor.
+5. Keep cleanup grammar/spelling and Orbit entity/profile review as separate actions: cleanup remains opt-in; Orbit changes require the existing per-change review and explicit approval.
+```
+
+### Follow-up: saved host journals begin Orbit review automatically
+
+```text
+1. After an explicit Journal save or Review in Orbit action, use the stable in-memory source identity and the saved text already handed to Orbit.
+2. Wait until both Orbit's journal store and AI are ready; start extraction once, using the existing draft/retry path and stable Orbit ID.
+3. Show actual follow-up questions/results as soon as they are ready. If storage/AI is unavailable, say the host entry remains saved and no Orbit write occurred.
+4. Require an explicit answer for every proposed profile link/fact/support change. Only after Orbit confirms the atomic write, persist its receipt and selected links back to host Journal provenance.
+5. Do not change the original Journal body. The optional grammar/spelling cleanup remains a separate disclosed, previewed action.
+```
+
 ```text
 JOURNAL CLEANUP AND ORBIT REVIEW
 1. Scott writes or edits an entry and may explicitly choose the existing Clean up with AI action; its disclosure, preview, accept, undo, and separate Save behavior remain unchanged.
 2. Scott may choose Speak entry. Start browser speech recognition only after that action, disclose that the browser provider may process audio, append final results to the editable draft, and never save or run cleanup automatically. Disable Save while recognition is active and until the browser's stop/end event has delivered any final result; a surfaced recognition error returns the form to a savable state.
 3. Save through the existing owner-scoped Journal API. After success, queue an in-memory handoff to embedded Orbit using the stable host entry ID and content-derived Orbit ID; do not put journal text in the URL or browser storage.
-4. Orbit extracts evidence-grounded mentions, facts, and events using its existing authenticated processing; do not send the Orbit roster to the model.
+4. When Orbit's journal store and AI are ready, automatically begin evidence-grounded extraction for that explicit saved-entry handoff; do not require a second “Find people and updates” action. If unavailable, explain that the saved journal is safe and offer a retry when available. Do not send the Orbit roster to the model.
 5. Before any profile fact or journal-support relationship is written, ask a targeted review question for each proposed change. Ask which existing person a genuinely ambiguous mention refers to. Unknown host-journal mentions can be left unlinked; do not create people from a mention.
 6. Commit approved profile facts, support references, and any identified Orbit event through Orbit's atomic validated transaction. A declined fact stays only in the journal. A failed transaction is not reported as saved and can be retried with the same source identity.
 7. Return verified receipt and approved mention-to-profile IDs to the host. Persist them in the existing Journal provenance JSON, render links only to selected Orbit IDs, and show the action summary. Orbit's conflict-aware Undo removes only its recorded changes; clear host-side links only after Orbit confirms.
@@ -106,7 +126,7 @@ VOICE JOURNAL ENTRY
 1. On a new or edit Journal form, Scott explicitly chooses Speak entry; disclose that browser speech recognition may process audio through its provider.
 2. Request microphone access only after that user action. Append final recognized words to the current draft without overwriting typed text; keep the result editable and auto-saved as a local draft.
 3. Stop, unsupported browser, permission denial, and recognition errors remain visible and preserve existing text. Do not call the AI cleanup service automatically.
-4. Save only through the existing Journal Save action. Then use the same Orbit review as typed entries; entity links/profile changes remain individually reviewable before Orbit commits them.
+4. Save only through the existing Journal Save action. Then open the same Orbit review as typed entries and automatically begin extraction when ready; the first follow-up is the actual targeted review question or a clear no-change/status result. Entity links/profile changes remain individually reviewable before Orbit commits them.
 
 NATURAL-LANGUAGE EVENT ENTRY
 1. On a new shared EventForm, Scott enters a description and selects Fill form.

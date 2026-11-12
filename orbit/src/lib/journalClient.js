@@ -35,6 +35,10 @@ export function journalAnswersReady(entry, answers) {
   }))
 }
 
+export function shouldAutoStartHostJournalReview({ sourceHostJournalId, initialText, aiAvailable, journalAvailable, journalState, started }) {
+  return Boolean(sourceHostJournalId && String(initialText || '').trim() && aiAvailable && journalAvailable && journalState === 'ready' && !started)
+}
+
 export function sourceJournalId(record) {
   return record?.journalEntryId || record?.journalId || record?.source?.journalEntryId || record?.journalSources?.[0]?.journalEntryId || record?.source?.journalId || record?.source?.entryId || null
 }

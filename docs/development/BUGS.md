@@ -32,6 +32,32 @@ Every discovered software defect belongs here, including defects found while bui
 
 ## Entries
 
+### BUG-069 — Journal voice startup can leave the editor stuck
+
+- **Status:** Resolved locally; not released
+- **Discovered:** 2026-10-10
+- **Area:** Journal browser speech recognition
+- **Observed:** Pressing Speak entry can leave the editor appearing to record indefinitely when the browser never emits a recognition start/error/end event; Save stays disabled.
+- **Expected:** Show a pending state until recognition actually starts, then recover with a visible error if startup does not complete.
+- **Impact:** The user cannot save the current journal draft without closing/reopening the editor.
+- **Cause:** The client marked recording active immediately after `recognition.start()` and had no startup watchdog or `onstart` confirmation.
+- **Fix:** Pending/recording states are separated; a bounded startup watchdog aborts stale recognition and restores the editor, while start/error/end/stop and unmount clean up timers and state safely.
+- **Regression coverage:** Focused assertions cover onstart-confirmed recording, bounded startup recovery, timeout cleanup, and preservation of the existing transcript/error path. Live microphone behavior remains unverified because no real microphone session was initiated.
+- **Related work:** `docs/features/journal-orbit-workflows.md`; `src/pages/admin/JournalPage.jsx`.
+
+### BUG-070 — Saved journal-to-Orbit handoff waits for a hidden extra action
+
+- **Status:** Resolved locally; not released
+- **Discovered:** 2026-10-10
+- **Area:** Journal-to-Orbit review startup
+- **Observed:** Saving a host journal opens Orbit with the entry prefilled, but Orbit waits for a second **Find people and updates** click before extraction, so the expected follow-up question never appears automatically.
+- **Expected:** A successful explicit Journal save starts extraction when Orbit's journal store and AI are ready; only the resulting profile/link changes wait for Scott's individual approval.
+- **Impact:** The saved spoken or typed entry appears not to trigger the promised people/context review.
+- **Cause:** The handoff drawer initialized a pending host journal draft but did not automatically invoke its existing send/retry path.
+- **Fix:** The drawer now auto-starts the matching handoff once readiness conditions are met, guarded against duplicate starts. The first follow-up is the actual targeted review question or a visible no-change/unavailable/error state; writes remain individually approved.
+- **Regression coverage:** A guarded auto-start helper test covers readiness, missing AI/storage, duplicate prevention, and non-host Orbit drafts. Canonical Orbit and synchronized host tests pass; live-provider and rendered verification remain unrun.
+- **Related work:** `docs/features/journal-orbit-workflows.md`; `../orbit/src/components/JournalDrawer.jsx`.
+
 ### BUG-001 — Mobile day-view switch visible on desktop
 
 - **Status:** Resolved

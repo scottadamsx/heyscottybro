@@ -34,6 +34,12 @@ test("new and edited journal entries both support disclosed browser voice typing
   assert.match(source, /submitDisabled=\{!entry\.trim\(\) \|\| composeSpeaking\}/);
   assert.match(source, /submitDisabled=\{!editForm\.entry\.trim\(\) \|\| editSpeaking\}/);
   assert.match(source, /setStopping\(true\)[\s\S]*recognitionRef\.current\?\.stop\(\)[\s\S]*return;/);
-  assert.match(source, /recognition\.onend = \(\) => \{ setRecording\(false\); setStopping\(false\); onRecordingChange\(false\)/);
+  assert.match(source, /recognition\.onstart = \(\) => \{/);
+  assert.match(source, /speechStartTimerRef\.current = setTimeout\([\s\S]*?\}, 12000\)/);
+  assert.match(source, /onRecordingChange\(true\);[\s\S]*?recognition\.start\(\)/);
+  assert.match(source, /recognition\.onend = \(\) => \{[\s\S]*?setStarting\(false\)[\s\S]*?onRecordingChange\(false\)/);
+  assert.match(source, /Voice typing didn’t start\./);
+  assert.match(source, /recognition\.onstart = null/);
   assert.match(source, /disabled=\{stopping\}/);
+  assert.match(source, /starting \? "Cancel starting"/);
 });

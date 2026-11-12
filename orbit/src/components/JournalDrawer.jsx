@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useOrbit } from '../state/OrbitContext.jsx'
 import { useUI } from '../state/UIContext.jsx'
 import { formatDate, formatDateTime, formatReceiptDates } from '../lib/dates.js'
-import { journalAnswersReady, journalContext, journalCounts, pendingJournalDraft } from '../lib/journalClient.js'
+import { journalAnswersReady, journalContext, journalCounts, pendingJournalDraft, shouldAutoStartHostJournalReview } from '../lib/journalClient.js'
 import Modal from './ui/Modal.jsx'
 import Button from './ui/Button.jsx'
 import Badge from './ui/Badge.jsx'
@@ -55,6 +55,7 @@ export default function JournalDrawer({ entryId, onClose, onManual, initialText,
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const lock = useRef(false)
+  const autoStartRef = useRef(false)
   const persisted = useRef(false)
   const pendingDraft = useRef(initialText && sourceHostJournalId ? {
     id: orbitJournalId,
@@ -122,6 +123,10 @@ export default function JournalDrawer({ entryId, onClose, onManual, initialText,
     if (alreadySaved) {
       setText('')
       pendingDraft.current = null
+      if (alreadySaved.status === 'saved') {
+        reportHostJournal(alreadySaved)
+        return
+      }
       run(async () => reportHostJournal(await retryJournal(alreadySaved)))
       return
     }
@@ -134,6 +139,19 @@ export default function JournalDrawer({ entryId, onClose, onManual, initialText,
       reportHostJournal(entry)
     }, { needsPersist: true })
   }
+
+  useEffect(() => {
+    if (!shouldAutoStartHostJournalReview({
+      sourceHostJournalId,
+      initialText,
+      aiAvailable: ai.available,
+      journalAvailable: available,
+      journalState,
+      started: autoStartRef.current,
+    })) return
+    autoStartRef.current = true
+    send()
+  }, [sourceHostJournalId, initialText, ai.available, available, journalState, send])
 
   const submitAnswers = () => {
     if (!selected || !journalAnswersReady(selected, answers) || !ai.available) return
@@ -186,6 +204,7 @@ export default function JournalDrawer({ entryId, onClose, onManual, initialText,
 
         <section className="journal-detail" aria-label={selected ? 'Journal entry' : selectedId ? 'Journal entry unavailable' : 'New entry'}>
           {!ai.available && <p className="muted" role="status">AI is off. Journal entries remain available.</p>}
+          {sourceHostJournalId && (!ai.available || !available) && <p className="muted" role="status">Your journal entry is saved safely, but Orbit’s people-and-updates review is unavailable right now. No profile changes were made; reopen Review in Orbit when the service is available.</p>}
           {selected ? (
             <>
               <div className="journal-detail-head">

@@ -11,6 +11,11 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ## Unreleased
 
+### Fixed
+
+- Journal dictation now recovers visibly if the browser never starts microphone recognition, instead of leaving Save stuck disabled.
+- Saving a journal entry now starts the Orbit people/context review automatically when the service is ready; profile changes still require your explicit approval.
+
 ### Added
 
 - Frodo screenshots can be explicitly saved to the private Documents library with their chat context, then reopened from a safe in-app file link; temporary attachments remain temporary unless selected.
