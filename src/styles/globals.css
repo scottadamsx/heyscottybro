@@ -113,6 +113,12 @@
   --leading-tight: 1.25;
   --leading-normal: 1.43;  /* 20 on 14 */
   --leading-relaxed: 1.6;
+  /* AD-15: per-size display mechanics. Large text leads tight and tracks
+     slightly negative; body stays at --leading-normal with zero tracking. */
+  --leading-display: 1.08;
+  --leading-heading: 1.12;
+  --tracking-display: -0.02em;
+  --tracking-heading: -0.015em;
 
   /* ── Space (8-point grid) ── */
   --space-2xs: 0.25rem;    /* 4 */
@@ -266,6 +272,30 @@ html { background: var(--bg-base); }
 
 /* ── QF-9 · One visible focus indicator, everywhere ── */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── AD-14 · Reduced transparency: translucent chrome goes solid ────────────
+   Backdrop blur is dropped everywhere and the known translucent surfaces
+   (public navbar, glass cards, marquee band) fall back to the solid surface
+   token so text never sits on a see-through layer. */
+@media (prefers-reduced-transparency: reduce) {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .navbar, .glass-card, .marquee-band { background: var(--bg-surface); }
+}
+
+/* ── AD-14 · More contrast: hairlines become defined borders and muted text
+   steps up to the secondary text colour in both themes. ── */
+@media (prefers-contrast: more) {
+  :root {
+    --border-subtle: var(--border-strong);
+    --border-primary: var(--border-strong);
+    --text-muted: var(--text-secondary);
+  }
+}
 
 /* ── Load-failure state (QF-3) ────────────────────────────────────────────────
    A page that could not read its data shows THIS, never an empty state. Colour

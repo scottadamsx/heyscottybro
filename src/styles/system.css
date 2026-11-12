@@ -312,7 +312,7 @@
 .admin-shell .module-header h1,
 .admin-shell .combined-page-title {
   margin: 0; font-family: var(--font-display);
-  font-size: var(--text-2xl); line-height: 2.5rem; font-weight: 700; letter-spacing: -0.015em;
+  font-size: var(--text-2xl); line-height: 2.25rem; font-weight: 700; letter-spacing: -0.015em;
   white-space: nowrap;
 }
 /* Titles carry no icons — the nav already says where you are. */

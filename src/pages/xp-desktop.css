@@ -92,7 +92,9 @@
   background: linear-gradient(180deg, #FFFFFF 0%, #ECEBE5 86%, #D8D0C4 100%); color: var(--xp-ink); border: 1px solid #003C74; border-radius: 3px;
   box-shadow: inset -1px 1px #FFFFFF, inset 1px 1px #FFFFFF, inset -2px -2px #D8D0C4;
   font: inherit; font-size: 13px; text-decoration: none; cursor: pointer;
+  transition: transform 100ms ease-out;
 }
+.xpd-btn:active { transform: scale(0.97); }
 .xpd-btn.primary { box-shadow: inset -1px 1px #CEE7FF, inset 1px 2px #98B8EA, inset -2px 2px #BCD4F6, inset 2px -2px #89ADE4; }
 .xpd-btn:hover { box-shadow: inset -1px 1px #FFF0CF, inset 1px 2px #FDD889, inset -2px 2px #FBC761, inset 2px -2px #E5A01A; }
 .xpd-btn:focus-visible { outline: 1px dotted var(--xp-ink); outline-offset: -4px; }
@@ -122,6 +124,8 @@
   border: 1px solid #1941A5; border-radius: 3px; background: linear-gradient(180deg, #3C81F3, #2A6BE0); color: var(--xp-white);
   font: inherit; font-size: 13px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); cursor: pointer;
 }
+.xpd-task { transition: transform 100ms ease-out; }
+.xpd-task:active { transform: scale(0.97); }
 .xpd-task span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xpd-task.active { background: linear-gradient(180deg, #1B4FBF, #2A66D8); box-shadow: inset 1px 1px 2px rgba(0,0,0,0.45); font-weight: 700; }
 .xpd-task:focus-visible { outline: 2px solid var(--xp-gold); outline-offset: -2px; }
@@ -137,6 +141,7 @@
   position: absolute; left: 0; bottom: 100%; width: 400px; max-width: calc(100vw - 8px);
   background: var(--xp-white); border: 1px solid var(--xp-frame); border-radius: 6px 6px 0 0;
   box-shadow: 3px -3px 8px rgba(0,0,0,0.4); overflow: hidden; z-index: 10;
+  transform-origin: bottom left;
   animation: xpd-open 0.12s ease-out both;
 }
 .xpd-sm-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--xp-title); color: var(--xp-white); font-weight: 700; font-size: 14px; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); }

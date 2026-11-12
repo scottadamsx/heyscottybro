@@ -45,6 +45,13 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: -0.02em;
 }
 
+/* AD-15: leading and tracking are per size, not one global value. Display
+   sizes lead tight, small headings return to near-zero tracking. */
+h1, .hero-title, .project-page-hero h1 { line-height: var(--leading-display); }
+h2, .section-title { line-height: var(--leading-heading); }
+h3, h4 { line-height: 1.2; letter-spacing: var(--tracking-heading); }
+h5, h6 { line-height: 1.3; letter-spacing: 0; }
+
 img { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; font-family: inherit; }
@@ -89,7 +96,7 @@ input, textarea, select { font-family: inherit; }
   white-space: nowrap;
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 34px -12px var(--accent-glow); }
-.btn-primary:active { transform: translateY(0); }
+.btn-primary:active { transform: scale(0.97); }
 
 .btn-secondary {
   display: inline-flex;
@@ -102,13 +109,14 @@ input, textarea, select { font-family: inherit; }
   border-radius: 999px;
   font-size: 0.95rem;
   font-weight: 600;
-  transition: opacity 0.2s, background 0.2s;
+  transition: opacity 0.2s, background 0.2s, transform 100ms ease-out;
   white-space: nowrap;
 }
 .btn-secondary:hover {
   background: var(--bg-hover);
   opacity: 0.9;
 }
+.btn-secondary:active { transform: scale(0.97); }
 
 /* ── Navbar ───────────────────────────────── */
 .navbar {
@@ -518,6 +526,7 @@ input, textarea, select { font-family: inherit; }
   transform: translateY(-3px);
   box-shadow: var(--shadow-floating);
 }
+.project-card:active { transform: scale(0.98); }
 
 .project-card-img {
   height: 180px;
@@ -1464,6 +1473,7 @@ input, textarea, select { font-family: inherit; }
 
 .picker-pop {
   position: relative;
+  transform-origin: top center;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
