@@ -32,7 +32,7 @@
 
   /* ── Surfaces ── */
   --bg-base: #FFFFFF;            /* content canvas */
-  --bg-sidebar: #F5EEE7;         /* cream chrome */
+  --bg-sidebar: #EFE4D6;         /* cream chrome */
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
   --bg-raised: #F8F4F0;          /* insets, inputs, segmented tracks */
@@ -46,8 +46,8 @@
   --sidebar-hover: rgba(34, 30, 27, 0.05);
 
   /* ── Hairlines ── */
-  --border-subtle: #EFE7E0;
-  --border-primary: #E3D9D0;
+  --border-subtle: #E6D9C9;
+  --border-primary: #D6C6B4;
   --border-strong: #CFC3B8;
   --border-accent: rgba(210, 69, 45, 0.45);
   --line: var(--border-subtle);
@@ -91,9 +91,9 @@
 
   /* ── Elevation ── */
   --overlay: rgba(34, 30, 27, 0.36);
-  --shadow-card: 0 1px 2px rgba(34, 30, 27, 0.04);
-  --shadow-raised: 0 1px 2px rgba(34, 30, 27, 0.06), 0 2px 8px rgba(34, 30, 27, 0.05);
-  --shadow-floating: 0 12px 32px rgba(34, 30, 27, 0.10), 0 2px 6px rgba(34, 30, 27, 0.05);
+  --shadow-card: 0 2px 6px rgba(34, 30, 27, 0.07), 0 14px 30px -14px rgba(34, 30, 27, 0.16);
+  --shadow-raised: 0 2px 6px rgba(34, 30, 27, 0.08), 0 10px 24px -10px rgba(34, 30, 27, 0.14);
+  --shadow-floating: 0 20px 44px -12px rgba(34, 30, 27, 0.22), 0 4px 10px rgba(34, 30, 27, 0.08);
   --shadow-modal: 0 24px 64px rgba(34, 30, 27, 0.20), 0 4px 12px rgba(34, 30, 27, 0.06);
 
   /* ── Type (DR-032: DM Sans everywhere, DM Mono for numbers/labels) ── */

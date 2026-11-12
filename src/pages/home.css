@@ -9,13 +9,13 @@
 /* IBM Plex is loaded (non-blocking) from index.html. */
 
 :root {
-  --t-bg:       #0A0B0D;
-  --t-elev:     #111317;
-  --t-elev-2:   #15181E;
-  --t-line:     rgba(255,255,255,0.08);
-  --t-line-br:  rgba(255,255,255,0.16);
+  --t-bg:       #10141B;
+  --t-elev:     #1B212B;
+  --t-elev-2:   #242C38;
+  --t-line:     rgba(255,255,255,0.14);
+  --t-line-br:  rgba(255,255,255,0.28);
   --t-fg:       #E7E9EC;
-  --t-fg-soft:  #9AA1AC;
+  --t-fg-soft:  #ADB6C2;
   --t-fg-dim:   #6A7384;
 
   --t-green:      #4ADE80;
@@ -23,8 +23,8 @@
   --t-green-soft: rgba(74,222,128,0.12);
   --t-green-glow: rgba(74,222,128,0.28);
 
-  --t-r:   12px;
-  --t-r-sm: 8px;
+  --t-r:   16px;
+  --t-r-sm: 10px;
   --t-maxw: 1140px;
   --t-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -152,8 +152,8 @@
 /* ═══════════════ BUTTONS ═══════════════ */
 .pill {
   display: inline-flex; align-items: center; gap: 0.55rem;
-  font-family: var(--mono); font-size: 0.9rem; font-weight: 500;
-  padding: 0.8rem 1.25rem; border-radius: var(--t-r-sm);
+  font-family: var(--mono); font-size: 0.95rem; font-weight: 500;
+  min-height: 48px; padding: 0.95rem 1.5rem; border-radius: var(--t-r-sm);
   border: 1px solid transparent; text-decoration: none; cursor: pointer;
   transition: transform .18s var(--t-ease), box-shadow .25s, background .25s, color .25s, border-color .25s;
 }
@@ -265,7 +265,7 @@
 .lp-subhero .lp-kicker { margin-bottom: 1rem; }
 .lp-subhero-title {
   font-family: var(--mono); font-weight: 700; letter-spacing: -0.03em; line-height: 1.04;
-  font-size: clamp(2.4rem, 6vw, 4rem); margin-bottom: 1rem;
+  font-size: clamp(2.9rem, 6.8vw, 4.75rem); margin-bottom: 1.25rem;
 }
 .lp-subhero-title em { color: var(--t-green); font-style: normal; }
 .lp-subhero-sub { max-width: 60ch; color: var(--t-fg-soft); margin-bottom: 1.8rem; }
@@ -276,25 +276,26 @@
 /* ── Feature cards (icon + title + desc) ── */
 .lp-feature-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
-  gap: 1.1rem; margin-top: 2.4rem;
+  gap: 1.25rem; margin-top: 2.75rem;
 }
 .lp-feature {
   border: 1px solid var(--t-line); border-radius: var(--t-r);
-  background: var(--t-elev); padding: 1.4rem;
+  background: var(--t-elev); padding: 1.75rem;
+  box-shadow: 0 18px 36px -20px rgba(0,0,0,0.75);
   transition: transform .25s var(--t-ease), border-color .25s, box-shadow .25s;
 }
 .lp-feature:hover { transform: translateY(-4px); border-color: var(--t-green-dim); box-shadow: 0 0 30px -12px var(--t-green-glow); }
 .lp-feature-icon { font-size: 1.7rem; margin-bottom: 0.7rem; }
-.lp-feature-title { font-family: var(--mono); font-size: 1.02rem; font-weight: 600; margin-bottom: 0.35rem; }
+.lp-feature-title { font-family: var(--mono); font-size: 1.12rem; font-weight: 600; margin-bottom: 0.45rem; }
 .lp-feature-desc { color: var(--t-fg-soft); font-size: 0.9rem; line-height: 1.6; }
 
 /* ── Photo grid ── */
 .lp-photos {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 0.9rem; margin-top: 2.4rem;
+  gap: 1.1rem; margin-top: 2.75rem;
 }
 .lp-photos img {
-  width: 100%; height: 230px; object-fit: cover;
+  width: 100%; height: 248px; object-fit: cover;
   border-radius: var(--t-r); border: 1px solid var(--t-line);
   transition: transform .4s var(--t-ease), border-color .25s;
 }
@@ -329,9 +330,9 @@
 .lp-guide-body { min-width: 0; max-width: 70ch; }
 .lp-guide-section { scroll-margin-top: 90px; padding-block: clamp(1.6rem, 4vw, 2.4rem); border-bottom: 1px solid var(--t-line); }
 .lp-guide-section:last-child { border-bottom: none; }
-.lp-guide-section h2 { font-family: var(--mono); font-weight: 600; font-size: clamp(1.4rem, 3.2vw, 2rem); letter-spacing: -0.02em; margin-bottom: 0.9rem; }
+.lp-guide-section h2 { font-family: var(--mono); font-weight: 600; font-size: clamp(1.6rem, 3.6vw, 2.3rem); letter-spacing: -0.02em; margin-bottom: 1rem; }
 .lp-guide-section h3 { font-family: var(--mono); font-weight: 600; font-size: 1.1rem; margin: 1.6rem 0 0.6rem; color: var(--t-fg); }
-.lp-guide-section p { color: var(--t-fg-soft); margin-bottom: 1rem; }
+.lp-guide-section p { color: var(--t-fg-soft); margin-bottom: 1rem; font-size: 1.02rem; line-height: 1.65; }
 .lp-guide-section ul, .lp-guide-section ol { color: var(--t-fg-soft); margin: 0 0 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .lp-guide-section li { padding-left: 0.2rem; }
 .lp-guide-section strong { color: var(--t-fg); font-weight: 600; }
@@ -485,7 +486,7 @@
 .lp-faq details p { margin: 0.75rem 0 0; color: var(--t-fg-soft); font-size: 0.9rem; line-height: 1.65; }
 
 /* ═══════════════ SECTIONS ═══════════════ */
-.lp-section { padding-block: clamp(3.5rem, 9vh, 6rem); }
+.lp-section { padding-block: clamp(4.5rem, 10vh, 7rem); }
 .lp-kicker {
   display: inline-block; font-family: var(--mono);
   font-size: 0.8rem; color: var(--t-green); margin-bottom: 0.8rem;
@@ -493,7 +494,7 @@
 .lp-kicker::before { content: "$ "; color: var(--t-fg-dim); }
 .lp-h2 {
   font-family: var(--mono); font-weight: 600;
-  font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1.08; letter-spacing: -0.03em;
+  font-size: clamp(2rem, 4.4vw, 3rem); line-height: 1.08; letter-spacing: -0.03em;
   margin-bottom: 0.5rem;
 }
 .lp-section-sub, .lp-contact-sub, .lp-music-sub { max-width: 54ch; color: var(--t-fg-soft); }
@@ -501,13 +502,14 @@
 /* ── Work grid ── */
 .lp-work-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
-  gap: 1.1rem; margin-top: 2.4rem;
+  gap: 1.25rem; margin-top: 2.75rem;
 }
 .lp-card {
   display: flex; flex-direction: column;
   background: var(--t-elev); border: 1px solid var(--t-line);
   border-radius: var(--t-r); overflow: hidden;
   text-decoration: none; color: inherit;
+  box-shadow: 0 18px 36px -20px rgba(0,0,0,0.75);
   transition: transform .3s var(--t-ease), box-shadow .3s, border-color .3s;
 }
 .lp-card:hover {
@@ -526,13 +528,13 @@
 .lp-card-media.ph span { font-size: 3rem; filter: grayscale(.2); }
 .lp-card-media.ph i { font-size: 2.4rem; color: var(--t-green); opacity: .85; }
 .lp-card:hover .lp-card-media.ph i { opacity: 1; }
-.lp-card-body { padding: 1.3rem; display: flex; flex-direction: column; gap: 0.45rem; flex: 1; }
+.lp-card-body { padding: 1.6rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
 .lp-tag {
   align-self: flex-start; font-family: var(--mono);
   font-size: 0.7rem; letter-spacing: 0.04em; color: var(--t-green);
 }
 .lp-tag::before { content: "["; } .lp-tag::after { content: "]"; }
-.lp-card-title { font-family: var(--mono); font-size: 1.2rem; font-weight: 600; letter-spacing: -0.02em; }
+.lp-card-title { font-family: var(--mono); font-size: 1.32rem; font-weight: 600; letter-spacing: -0.02em; }
 .lp-card-desc { color: var(--t-fg-soft); font-size: 0.92rem; flex: 1; }
 .lp-card-link { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--mono); font-size: 0.86rem; color: var(--t-green); margin-top: 0.3rem; }
 .lp-card-link i { transition: transform .25s var(--t-ease); }
