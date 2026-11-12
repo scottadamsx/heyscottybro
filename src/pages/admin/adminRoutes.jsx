@@ -24,6 +24,9 @@ const BudgetPage      = lazyWithReload(() => import("./BudgetPage.jsx"));
 const VaultPage       = lazyWithReload(() => import("./VaultPage.jsx"));
 const SettingsPage    = lazyWithReload(() => import("./SettingsPage.jsx"));
 const BrainReaderPage = lazyWithReload(() => import("./BrainReaderPage.jsx"));
+const BinPage         = lazyWithReload(() => import("./BinPage.jsx"));
+const AdFormatsPage   = lazyWithReload(() => import("./AdFormatsPage.jsx"));
+const ClientFinderPage = lazyWithReload(() => import("./ClientFinderPage.jsx"));
 
 /** Each lazy page gets its own ErrorBoundary — navigating away resets it. */
 export const Lazy = (el) => (
@@ -52,6 +55,9 @@ export const ADMIN_PAGES = [
   { path: "mission",      title: "Mission Control", icon: "fa-satellite-dish",  element: <MissionPage /> },
   { path: "analytics",    title: "Analytics",       icon: "fa-chart-line",      element: <AnalyticsPage /> },
   { path: "vault",        title: "Vault",           icon: "fa-vault",           element: <VaultPage /> },
+  { path: "bin",          title: "Bin",             icon: "fa-box-open",        element: <BinPage /> },
+  { path: "ads",          title: "Ad Formats",      icon: "fa-rectangle-ad",    element: <AdFormatsPage /> },
+  { path: "client-finder", title: "Client Finder",  icon: "fa-magnifying-glass", element: <ClientFinderPage /> },
   { path: "settings",     title: "Settings",        icon: "fa-gear",            element: <SettingsPage /> },
   { path: "read/*",       title: "Brain",           icon: "fa-brain",           element: <BrainReaderPage /> },
 ];

@@ -41,14 +41,24 @@ export function OrbitProvider({ children }) {
   }, [])
 
   const reload = useCallback(async () => {
+    const boot = Promise.all([storage.listPeople(), storage.listEvents(), storage.getSettings()])
+    // Belt-and-braces: if boot never settles, force the error UI instead of hanging on
+    // "Loading your orbit…" forever. The 20s fetch timeout above is the primary guard.
+    let timer
+    const bootTimeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Orbit boot timed out')), 30000)
+    })
     try {
-      const [p, e, s] = await Promise.all([storage.listPeople(), storage.listEvents(), storage.getSettings()])
+      const [p, e, s] = await Promise.race([boot, bootTimeout])
+      clearTimeout(timer)
       setPeople(p)
       setEvents(e)
       setSettings(s)
       setLoadState('ready')
       refreshHealth()
     } catch (err) {
+      clearTimeout(timer)
+      boot.catch(() => {}) // swallow a late boot rejection after the timeout won the race
       console.error(err)
       setLoadState('error')
     }

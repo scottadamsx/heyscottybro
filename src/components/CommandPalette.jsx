@@ -30,6 +30,8 @@ const COMMANDS = [
   { label: "Arcade",          to: "/admin/life?tab=arcade",          icon: "fa-gamepad",          section: "Life" },
   { label: "Mission Control", to: "/admin/mission",                  icon: "fa-satellite-dish",   section: "Mission" },
   { label: "Brain",           to: "/admin/mission?tab=brain",        icon: "fa-brain",            section: "Mission" },
+  { label: "Ad Formats",      to: "/admin/ads",                      icon: "fa-rectangle-ad",     section: "Mission" },
+  { label: "Client Finder",   to: "/admin/client-finder",            icon: "fa-magnifying-glass", section: "Mission" },
   { label: "AI Inbox",        to: "/admin/mission?tab=inbox",        icon: "fa-inbox",            section: "Mission" },
   { label: "Vault",           to: "/admin/vault",                    icon: "fa-vault",            section: "Vault" },
   { label: "Secrets",         to: "/admin/vault",                    icon: "fa-key",              section: "Vault" },

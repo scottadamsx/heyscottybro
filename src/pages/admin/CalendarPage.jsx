@@ -4,8 +4,11 @@ import { useSearchParams , useNavigate } from "react-router-dom";
 import {
   loadReminders, loadEvents, loadTransactions, updateEvent, deleteEvent,
   loadProjects, loadEventTypes, newReminder, completeReminder, updateReminder, deleteReminder,
-  loadJournal,
+  loadJournal, loadEventPeople,
 } from "../../api/plannerApi";
+import { loadPeople } from "../../api/peopleApi";
+import AttendeeChips from "../../components/AttendeeChips";
+import { peopleById, resolveAttendees, attendeeNamesLabel, normalizeAttendeeIds } from "../../lib/attendees";
 import { loadAccountability } from "../../api/accountabilityApi";
 import { formatTime12, expandReminders, expandEvents, toDateStr, formatDisplayDate, formatMoney } from "../../utils/plannerUtils";
 import { onDataChange } from "../../utils/dataEvents";
@@ -37,6 +40,8 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getMonth());
   const [reminders, setReminders] = useState([]);
   const [events, setEvents] = useState([]);
+  const [eventPeople, setEventPeople] = useState({});
+  const [people, setPeople] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [projects, setProjects] = useState([]);
   const [eventTypes, setEventTypes] = useState([]);
@@ -53,8 +58,10 @@ export default function CalendarPage() {
   const [dropDate, setDropDate] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
+  const [openEventId, setOpenEventId] = useState(null);
   const saveEventEdit = async (id, values) => {
-    await updateEvent(id, eventRowFromForm(values));
+    const res = await updateEvent(id, eventRowFromForm(values));
+    if (res?.people_warning) addToast(res.people_warning, "error");
     setEditingEventId(null);
     await load();
   };
@@ -102,11 +109,13 @@ export default function CalendarPage() {
     ["event types", loadEventTypes, []],
     ["journal", loadJournal, []],
     ["habits", loadAccountability, { trackers: [], logs: [] }],
+    ["event people", loadEventPeople, {}],
+    ["people", loadPeople, []],
   ];
   const load = async () => {
     const results = await Promise.allSettled(LOAD_SOURCES.map(([, fn]) => fn()));
     const failed = [];
-    const [r, e, t, p, et, j, acc] = results.map((res, i) => {
+    const [r, e, t, p, et, j, acc, ep, ppl] = results.map((res, i) => {
       if (res.status === "fulfilled") return res.value;
       console.error(`[calendar] failed to load ${LOAD_SOURCES[i][0]}`, res.reason);
       failed.push(LOAD_SOURCES[i][0]);
@@ -120,6 +129,8 @@ export default function CalendarPage() {
     setEventTypes(et);
     setJournal(j);
     setHabits(acc?.trackers ? acc : { trackers: [], logs: [] });
+    setEventPeople(ep || {});
+    setPeople(ppl || []);
     setLoaded(true);
   };
 
@@ -226,13 +237,25 @@ export default function CalendarPage() {
     setTaskName(""); setTaskRecur("none");
   };
 
-  const openDay = (date) => {
+  const openDay = (date, eventId = null) => {
     setSelectedDate(date);
     setDayPane("details");
+    setOpenEventId(eventId);
     setShowAdd(false);
     setAddMode("event");
     resetForms();
   };
+
+  // Opening an event from the Schedule timeline or the Upcoming list lands on
+  // the Details pane with that event expanded; bring its row into view once
+  // the pane has rendered.
+  useEffect(() => {
+    if (openEventId == null || dayPane !== "details") return;
+    const t = setTimeout(() => {
+      document.querySelector(`[data-event-row="${String(openEventId)}"]`)?.scrollIntoView({ block: "nearest" });
+    }, 60);
+    return () => clearTimeout(t);
+  }, [openEventId, dayPane, selectedDate]);
 
   const goToDay = (offset) => {
     if (!selectedDate) return;
@@ -297,13 +320,15 @@ export default function CalendarPage() {
     : [];
 
   const projectColor = (id) => projects.find((p) => String(p.id) === String(id))?.color;
+  const byId = useMemo(() => peopleById(people), [people]);
 
   const saveEvent = async (values) => {
     const tempId = `temp-${Date.now()}`;
     const row = eventRowFromForm(values);
     setEvents((prev) => [...prev, { id: tempId, recurrence: "none", ...row }]);
     try {
-      await createEventWithAutoTasks(values, eventTypes);
+      const created = await createEventWithAutoTasks(values, eventTypes);
+      if (created?.people_warning) addToast(created.people_warning, "error");
       await load();
     } catch (err) {
       setEvents((prev) => prev.filter((e) => e.id !== tempId));
@@ -311,8 +336,19 @@ export default function CalendarPage() {
     }
   };
 
+  const onScheduleBlockClick = (block) => {
+    const rawId = String(block.id).slice(1);
+    if (block.kind === "task") { navigate(`/admin/tasks/${rawId}`); return; }
+    setDayPane("details");
+    setOpenEventId(rawId);
+  };
+
   const openOrbitLog = (event) => {
     const query = new URLSearchParams({ sourceHostEventId: String(event.id), title: event.title, date: event.date });
+    // The log starts from the event's people (BUG-081): Orbit names them
+    // and asks what happened instead of opening a blank manual picker.
+    const attendeeIds = normalizeAttendeeIds(eventPeople[event.id]);
+    if (attendeeIds.length) query.set("people", attendeeIds.join(","));
     navigate(`/admin/people?${query.toString()}`);
   };
   const setOrbitPromptStatus = async (event, status) => {
@@ -561,12 +597,13 @@ export default function CalendarPage() {
               {upEvents.length === 0 && <p className="no-entries">Nothing in the next 30 days.</p>}
               <div className="db-list plan-list">
                 {upEvents.map((e) => (
-                  <div className="db-list-item db-list-item--clickable" key={`${e.id}-${e.date}`} role="button" tabIndex={0} onClick={() => openDay(e.date)} onKeyDown={activate(() => openDay(e.date))}>
+                  <div className="db-list-item db-list-item--clickable" key={`${e.id}-${e.date}`} role="button" tabIndex={0} onClick={() => openDay(e.date, e.id)} onKeyDown={activate(() => openDay(e.date, e.id))}>
                     <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{e.title}{e.span_total ? ` (${e.span_day}/${e.span_total})` : ""}</div>
                       <div className="db-list-item-subtitle">{dayLabel(e.date)}{e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : ""}</div>
                     </div>
+                    <AttendeeChips personIds={eventPeople[e.id]} byId={byId} />
                     <RowChevron />
                   </div>
                 ))}
@@ -621,32 +658,71 @@ export default function CalendarPage() {
                   <span className="day-count">{dayEvents.length}</span>
                 </div>
                 {dayEvents.length === 0 && <p className="day-empty">Nothing scheduled.</p>}
-                {dayEvents.map((e) => editingEventId === e.id ? (
-                  <div className="day-item day-item--editing" key={`edit-${e.id}`}>
-                    <EventForm initial={events.find((x) => x.id === e.id) || e} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={(v) => saveEventEdit(e.id, v)} onCancel={() => setEditingEventId(null)} />
-                  </div>
-                ) : (
-                  <div className="day-item day-item--top" key={e.id}>
-                    <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
-                    <span className="day-item-time">{e.span_total ? "Day " + e.span_day + " of " + e.span_total : timeRange(e)}</span>
-                    <div className="day-item-body">
-                      <div className="day-item-title">{e.title}</div>
-                      {e.description && <div className="day-item-sub">{e.description}</div>}
-                      <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
-                  {eventNeedsOrbitPrompt(events.find((item) => String(item.id) === String(e.id)) || e) && (
-                    <div className="day-item-sub event-orbit-prompt">
-                      <span>Event finished — log what happened in Orbit?</span>
-                      <button type="button" className="btn-mini accent" onClick={() => openOrbitLog(events.find((item) => String(item.id) === String(e.id)) || e)}>Log in Orbit</button>
-                      <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "dismissed")}>Dismiss</button>
+                {dayEvents.map((e) => {
+                  if (editingEventId === e.id) {
+                    return (
+                      <div className="day-item day-item--editing" key={`edit-${e.id}`}>
+                        <EventForm initial={{ ...(events.find((x) => x.id === e.id) || e), attendees: eventPeople[e.id] || [] }} projects={projects} eventTypes={eventTypes} submitLabel="Save changes" onSubmit={(v) => saveEventEdit(e.id, v)} onCancel={() => setEditingEventId(null)} />
+                      </div>
+                    );
+                  }
+                  const fullEvent = events.find((item) => String(item.id) === String(e.id)) || e;
+                  const isOpen = openEventId != null && String(openEventId) === String(e.id);
+                  const attendeeLabel = attendeeNamesLabel(resolveAttendees(eventPeople[e.id], byId));
+                  const needsOrbit = eventNeedsOrbitPrompt(fullEvent);
+                  const toggleOpen = () => setOpenEventId(isOpen ? null : e.id);
+                  const deleteRow = async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } };
+                  return (
+                    <div className={`day-item day-event${isOpen ? " is-open" : ""}`} key={e.id} data-event-row={e.id}>
+                      <div
+                        className="day-event-head"
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isOpen}
+                        aria-label={`${e.title}, ${isOpen ? "close" : "open"} event details`}
+                        onClick={toggleOpen}
+                        onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggleOpen(); } }}
+                      >
+                        <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
+                        <span className="day-item-time">{e.span_total ? "Day " + e.span_day + " of " + e.span_total : timeRange(e)}</span>
+                        <span className="day-event-main">
+                          <span className="day-item-title">{e.title}</span>
+                          {(e.location || attendeeLabel) && (
+                            <span className="day-event-meta">
+                              {e.location && <><i className="fa-solid fa-location-dot" aria-hidden="true" /> {e.location}</>}
+                              {e.location && attendeeLabel ? " · " : ""}
+                              {attendeeLabel}
+                            </span>
+                          )}
+                        </span>
+                        {needsOrbit && (
+                          <button type="button" className="btn-mini accent" onClick={(ev) => { ev.stopPropagation(); openOrbitLog(fullEvent); }}>Log in Orbit</button>
+                        )}
+                        <i className={`fa-solid fa-chevron-down day-event-chev${isOpen ? " is-open" : ""}`} aria-hidden="true" />
+                      </div>
+                      {isOpen && (
+                        <div className="day-event-detail">
+                          {e.description && <div className="day-item-sub">{e.description}</div>}
+                          <AttendeeChips variant="names" personIds={eventPeople[e.id]} byId={byId} />
+                          <DocLinks entityType="event" entityId={e.id} title="Documents" compact />
+                          {needsOrbit && (
+                            <div className="day-item-sub event-orbit-prompt">
+                              <span>Event finished — log what happened in Orbit?</span>
+                              <button type="button" className="btn-mini accent" onClick={() => openOrbitLog(fullEvent)}>Log in Orbit</button>
+                              <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "dismissed")}>Dismiss</button>
+                            </div>
+                          )}
+                          {e.orbit_log_status === "dismissed" && <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "pending")}>Reopen Orbit log prompt</button>}
+                          {e.orbit_log_status === "logged" && <div className="day-item-sub">Logged in Orbit</div>}
+                          <div className="day-event-actions">
+                            <button type="button" className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event" aria-label={`Edit ${e.title}`}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+                            <button type="button" className="btn-mini" onClick={deleteRow} title="Delete event" aria-label={`Delete ${e.title}`}><i className="fa-solid fa-trash" aria-hidden="true" /> Delete</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {e.orbit_log_status === "dismissed" && <button type="button" className="btn-mini" onClick={() => setOrbitPromptStatus(e, "pending")}>Reopen Orbit log prompt</button>}
-                  {e.orbit_log_status === "logged" && <div className="day-item-sub">Logged in Orbit</div>}
-                    </div>
-                    <button type="button" className="btn-mini" onClick={() => setEditingEventId(e.id)} title="Edit event" aria-label={`Edit ${e.title}`}><i className="fa-solid fa-pen" aria-hidden="true" /></button>
-                    <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) { setEvents((prev) => prev.filter((x) => x.id !== e.id)); deleteEvent(e.id).catch(load); } }} aria-label="Delete event"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Tasks */}
@@ -798,6 +874,7 @@ export default function CalendarPage() {
                   autoScrollMinute={scheduleStartMinute}
                   autoScrollKey={dayPane}
                   pxPerMinute={0.4}
+                  onBlockClick={onScheduleBlockClick}
                 />
               )}
             </aside>

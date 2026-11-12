@@ -27,7 +27,9 @@ const TABS = [
 
 export default function PlannerPage() {
   const [params, setParams] = useSearchParams();
-  const tab = params.get("tab") || "overview";
+  // Validate like the other combined pages: an unknown ?tab= must fall
+  // back to Overview instead of rendering no panel at all.
+  const tab = TABS.some((t) => t.key === params.get("tab")) ? params.get("tab") : "overview";
   const [mobilePanel, setMobilePanel] = useState("cal");
   const { addToast } = useToast();
 
@@ -48,8 +50,9 @@ export default function PlannerPage() {
   }, [showEventModal]);
 
   const addEvent = async (values) => {
-    await createEventWithAutoTasks(values, eventTypes);
+    const created = await createEventWithAutoTasks(values, eventTypes);
     addToast("Event added.", "success");
+    if (created?.people_warning) addToast(created.people_warning, "error");
   };
 
   // Throws on failure: the modal stays open with the error and what was typed.

@@ -9,6 +9,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useHealthData } from "../../components/health/useHealthData";
 import { FoodModal, TargetsModal, WeightModal } from "../../components/health/HealthModals";
+import MealPlanPanel from "../../components/mealplan/MealPlanPanel";
 import { BuildWithAIModal, PlanEditorModal } from "../../components/health/WorkoutModals";
 import * as api from "../../api/healthApi";
 import { coachTake } from "../../api/aiHealth";
@@ -30,6 +31,7 @@ const TABS = [
   { key: "workouts", label: "Workouts", icon: "fa-dumbbell" },
   { key: "exercises", label: "Exercises", icon: "fa-chart-line" },
   { key: "food", label: "Food", icon: "fa-utensils" },
+  { key: "plan", label: "Meal Plan", icon: "fa-calendar-week" },
   { key: "body", label: "Body", icon: "fa-weight-scale" },
 ];
 
@@ -311,10 +313,20 @@ export default function HealthPage() {
           onLog={(date) => setModal({ type: "food", initial: null, date })}
           onEdit={openFood} onGoals={openTargets}
           onDelete={async (f) => {
-            if (await confirm(`Delete “${f.name}”?`, { title: "Delete food", confirmLabel: "Delete" })) run(() => api.deleteFood(f.id), "Deleted.");
+            if (await confirm(`Delete “${f.name}”?`, { title: "Delete food", confirmLabel: "Delete" })) run(async () => {
+              await api.deleteFood(f.id);
+              // Connected Pages 1D: deleting a linked food entry returns its
+              // meal plan item to planned with the removal visible.
+              if (f.meal_plan_item_id) {
+                const { patchWeekItem } = await import("../../api/mealPlanApi.js");
+                await patchWeekItem(f.meal_plan_item_id, { status: "planned", food_log_id: null }).catch(() => {});
+              }
+            }, "Deleted.");
           }}
         />
       )}
+
+      {tab === "plan" && <MealPlanPanel profileId={profile?.id} />}
 
       {tab === "body" && (
         <div className="health-stack">
@@ -365,8 +377,8 @@ export default function HealthPage() {
       )}
 
       {modal?.type === "food" && (
-        <FoodModal initial={modal.initial} defaultDate={modal.date} onClose={close}
-          onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFood(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
+        <FoodModal initial={modal.initial} defaultDate={modal.date} profileId={profile.id} onClose={close}
+          onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFoodItems(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
       )}
       {modal?.type === "weight" && (
         <WeightModal latestLb={derived.latestWeight?.weightLb} defaultDate={modal.date} onClose={close} onSave={async (w) => { await api.saveWeight(profile.id, w); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "weight log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />

@@ -23,6 +23,9 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const effectiveEventId = eventId || (prefill.sourceHostEventId ? `host_${prefill.sourceHostEventId}` : null)
   const existing = effectiveEventId ? events[effectiveEventId] : null
   const startInOrbit = ai.available && !eventId && !prefill.plan && (!effectiveEventId || (prefill.sourceHostEventId && !existing))
+  // A Planner event log prompt (BUG-084): prompt-first even when the AI interview is
+  // unavailable, because the interview needs a live backend the hosted app does not have.
+  const eventLogPrompt = Boolean(prefill.sourceHostEventId && !existing && !prefill.plan)
   const now = today()
 
   const [form, setForm] = useState(() => ({
@@ -38,7 +41,8 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const [errors, setErrors] = useState({})
   const [dup, setDup] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [entryMode, setEntryMode] = useState(() => mode || (startInOrbit ? 'orbit' : 'manual'))
+  const [entryMode, setEntryMode] = useState(() => mode || (startInOrbit ? 'orbit' : eventLogPrompt ? 'prompt' : 'manual'))
+  const [editPeople, setEditPeople] = useState(false)
   const set = (k) => (v) => {
     setForm((f) => ({ ...f, [k]: v }))
     setDup(null)
@@ -111,6 +115,70 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
     return <InterviewDrawer onClose={onClose} onManual={() => setEntryMode('manual')} goal="log_hangout" eventPeople={prefill.people || []} sourceHostEventId={prefill.sourceHostEventId} eventDate={prefill.date} eventTitle={prefill.title} reminderId={prefill.reminderId} occurrenceDate={prefill.occurrenceDate} />
   }
 
+  if (entryMode === 'prompt' && eventLogPrompt) {
+    const names = form.people.map((id) => people[id]?.name).filter(Boolean)
+    return (
+      <Modal
+        title="Log a hangout"
+        onClose={onClose}
+        footer={
+          <>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setEntryMode('manual')} disabled={busy}>
+              Full form
+            </Button>
+            <Button variant="primary" onClick={() => save(false)} disabled={busy}>
+              {busy ? 'Saving…' : label}
+            </Button>
+          </>
+        }
+      >
+        <div className="stack">
+          <p>
+            <strong>{form.title || form.kind}</strong>
+            {form.date && <> · {formatDate(form.date)}</>}
+          </p>
+          {dupEvent && (
+            <div className="notice notice-warn" role="alert">
+              <p>
+                <strong>Already logged:</strong> {dupEvent.title} on {formatDate(dupEvent.date)} with the same people.
+              </p>
+              <div className="row-actions">
+                <Button size="sm" variant="secondary" onClick={() => (onClose(), openEvent(dup))}>
+                  Open it
+                </Button>
+                <Button size="sm" onClick={() => save(true)}>
+                  Save anyway
+                </Button>
+              </div>
+            </div>
+          )}
+          {form.people.length > 0 && !editPeople ? (
+            <p className="muted">
+              With {names.length ? names.join(', ') : 'the people from the event'}.{' '}
+              <button type="button" className="chip" onClick={() => setEditPeople(true)}>
+                Edit people
+              </button>
+            </p>
+          ) : (
+            <PeoplePicker value={form.people} onChange={set('people')} />
+          )}
+          {errors.people && <p className="field-error" role="alert">{errors.people}</p>}
+          {errors.date && <p className="field-error" role="alert">{errors.date}</p>}
+          <TextArea
+            label="What happened at the event?"
+            value={form.notes}
+            onChange={set('notes')}
+            rows={4}
+            maxLength={4000}
+            placeholder="Type or dictate what happened…"
+            data-autofocus
+          />
+        </div>
+      </Modal>
+    )
+  }
+
   return (
     <Modal
       title={existing ? 'Edit event' : future ? 'Plan a hangout' : 'Log a hangout'}
@@ -127,6 +195,12 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
       {ai.available && !effectiveEventId && !prefill.plan && (
         <div className="journal-mode-switch segmented" role="group" aria-label="Entry method">
           <button type="button" className="seg" aria-pressed={false} onClick={() => setEntryMode('orbit')} disabled={busy}>Orbit</button>
+          <button type="button" className="seg" aria-pressed={true}>Manual entry</button>
+        </div>
+      )}
+      {eventLogPrompt && (
+        <div className="journal-mode-switch segmented" role="group" aria-label="Entry method">
+          <button type="button" className="seg" aria-pressed={false} onClick={() => setEntryMode('prompt')} disabled={busy}>Quick log</button>
           <button type="button" className="seg" aria-pressed={true}>Manual entry</button>
         </div>
       )}

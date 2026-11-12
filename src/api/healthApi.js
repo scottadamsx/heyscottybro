@@ -100,14 +100,27 @@ export async function deleteWeight(id) {
 // ── Food (food_logs) ─────────────────────────────────────────────────────────
 
 export const MEALS = ["breakfast", "lunch", "dinner", "snack"];
-const FOOD_FIELDS = ["date", "meal_type", "name", "description", "calories", "protein_g", "carbs_g", "fat_g", "quantity", "source", "items"];
+const FOOD_FIELDS = ["date", "meal_type", "name", "description", "calories", "protein_g", "carbs_g", "fat_g", "quantity", "source", "items", "recipe_id", "meal_plan_item_id"];
+
+const FOOD_COLS_FULL = "id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, quantity, source, items, recipe_id, meal_plan_item_id, created_at";
+const FOOD_COLS_LEGACY = "id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, source, items, created_at";
 
 export async function loadFood(profileId, { from } = {}) {
-  return allRows(() => {
-    let q = supabase.from("food_logs").select("id, date, meal_type, name, description, calories, protein_g, carbs_g, fat_g, source, items, created_at").eq("profile_id", profileId);
+  const build = (cols) => () => {
+    let q = supabase.from("food_logs").select(cols).eq("profile_id", profileId);
     if (from) q = q.gte("date", from);
     return q.order("date", { ascending: false }).order("created_at", { ascending: true });
-  }, "load your food log");
+  };
+  try {
+    return await allRows(build(FOOD_COLS_FULL), "load your food log");
+  } catch (e) {
+    // food_logs.meal_plan_item_id arrives with the Connected Pages Phase 1
+    // migration; until it is applied, load with the legacy column list
+    // instead of failing the whole Health space.
+    if (!/meal_plan_item_id|PGRST204|42703/.test(e.message || "")) throw e;
+    console.error("[health] food_logs.meal_plan_item_id missing (Connected Pages Phase 1 migration not applied); loading without it");
+    return allRows(build(FOOD_COLS_LEGACY), "load your food log");
+  }
 }
 
 const cleanFood = (f) => {
@@ -124,6 +137,49 @@ export async function addFood(profileId, food) {
   const row = { date: toDateStr(), meal_type: "snack", source: "manual", ...cleanFood(food), user_id: userId, profile_id: profileId };
   const { error } = await supabase.from("food_logs").insert(row);
   if (error) fail("log that food", error);
+  changed();
+}
+
+/**
+ * Connected Pages 1D: log a food entry and return the saved row, so the
+ * caller can link a meal plan item to it (food_logs.meal_plan_item_id is
+ * unique — a duplicate link fails loudly instead of double-logging).
+ */
+export async function addFoodReturning(profileId, food) {
+  const userId = await uid();
+  const row = { date: toDateStr(), meal_type: "snack", source: "manual", ...cleanFood(food), user_id: userId, profile_id: profileId };
+  const { data, error } = await supabase.from("food_logs").insert(row).select().single();
+  if (error) fail("log that food", error);
+  changed();
+  return data;
+}
+
+/**
+ * Save an AI estimate as one food_logs row per item (ungrouped).
+ * Each item's source is "ai-cache" when it came from the food database,
+ * "ai" when freshly estimated. Falls back to a single row when items is empty.
+ */
+export async function addFoodItems(profileId, form) {
+  const items = (form.items || []).filter((it) => it && String(it.name || "").trim());
+  if (items.length === 0) return addFood(profileId, form);
+  const userId = await uid();
+  const rows = items.map((it) => ({
+    date: form.date || toDateStr(),
+    meal_type: MEALS.includes(form.meal_type) ? form.meal_type : "snack",
+    name: String(it.name).trim().slice(0, 120),
+    description: it.quantity ? String(it.quantity).slice(0, 200) : "",
+    calories: Math.max(0, Math.round(Number(it.calories) || 0)),
+    protein_g: Math.max(0, Math.round(Number(it.protein_g) || 0)),
+    carbs_g: Math.max(0, Math.round(Number(it.carbs_g) || 0)),
+    fat_g: Math.max(0, Math.round(Number(it.fat_g) || 0)),
+    quantity: 1,
+    source: it.cached ? "ai-cache" : "ai",
+    items: [],
+    user_id: userId,
+    profile_id: profileId,
+  }));
+  const { error } = await supabase.from("food_logs").insert(rows);
+  if (error) fail("log those foods", error);
   changed();
 }
 

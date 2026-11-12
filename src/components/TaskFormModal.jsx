@@ -12,7 +12,7 @@ import DatePicker from "./DatePicker";
 import TimePicker from "./TimePicker";
 import { FormModal } from "./ui";
 
-export const emptyTaskForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true };
+export const emptyTaskForm = { name: "", date: "", time: "", description: "", recurrence: "none", project_id: "", recur_until: "", recur_times: "", show_on_calendar: true, priority: "medium" };
 
 export const taskToForm = (r) => ({
   name: r.name || "",
@@ -24,6 +24,7 @@ export const taskToForm = (r) => ({
   recur_until: r.recur_until || "",
   recur_times: r.recur_times != null ? String(r.recur_times) : "",
   show_on_calendar: r.show_on_calendar !== false,
+  priority: r.priority || "medium",
 });
 
 const fieldsFromForm = (form) => ({
@@ -36,6 +37,7 @@ const fieldsFromForm = (form) => ({
   recur_until: form.recurrence !== "none" ? (form.recur_until || null) : null,
   recur_times: form.recurrence !== "none" && form.recur_times ? Number(form.recur_times) : null,
   show_on_calendar: form.show_on_calendar,
+  priority: form.priority || "medium",
 });
 
 export default function TaskFormModal({ title, initial = emptyTaskForm, projects = [], submitLabel = "Save", collapsible = true, onSave, onClose }) {
@@ -84,6 +86,12 @@ export default function TaskFormModal({ title, initial = emptyTaskForm, projects
         <select value={form.project_id} onChange={(e) => set({ project_id: e.target.value })} aria-label="Project">
           <option value="">No project</option>
           {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+
+        <select value={form.priority} onChange={(e) => set({ priority: e.target.value })} aria-label="Priority">
+          <option value="low">Low priority</option>
+          <option value="medium">Medium priority</option>
+          <option value="high">High priority</option>
         </select>
       </div>
 

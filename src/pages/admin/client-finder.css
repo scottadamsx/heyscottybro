@@ -1,0 +1,71 @@
+/* Client Finder page (docs/features/client-finder-harvey.md). Scott's
+   standing type rules, scoped to this page: DM Sans for text and headings,
+   DM Mono for numbers and labels. Mirrors ad-formats.css. */
+.client-finder-page { font-family: "DM Sans", "IBM Plex Sans", system-ui, sans-serif; display: flex; flex-direction: column; gap: var(--space-lg); }
+.client-finder-page .module-header h1 { font-family: "DM Sans", "IBM Plex Sans", system-ui, sans-serif; font-weight: 500; letter-spacing: -0.015em; }
+.client-finder-page .client-finder-count,
+.client-finder-page .client-finder-stats,
+.client-finder-page .client-finder-step-number,
+.client-finder-page .client-finder-draft-label,
+.client-finder-page .client-finder-fields dt { font-family: "DM Mono", "IBM Plex Mono", ui-monospace, monospace; }
+.client-finder-page .client-finder-count {
+  font-size: var(--text-sm); color: var(--text-secondary); margin-left: var(--space-sm);
+}
+.client-finder-page h2 { margin: 0; font-size: var(--text-lg); font-weight: 500; letter-spacing: -0.015em; color: var(--text-primary); }
+.client-finder-page h3 { margin: 0; font-size: var(--text-md); font-weight: 500; letter-spacing: -0.015em; color: var(--text-primary); }
+
+.client-finder-stats { margin: 0; font-size: var(--text-xs); color: var(--text-secondary); }
+
+.client-finder-card {
+  display: flex; flex-direction: column; gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+}
+.client-finder-section-head { display: flex; align-items: baseline; gap: var(--space-sm); }
+.client-finder-section-head .client-finder-count { margin-left: 0; }
+.client-finder-note { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+
+.client-finder-list { margin: 0; padding-left: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-2xs); }
+.client-finder-list li { font-size: var(--text-sm); color: var(--text-primary); }
+
+.client-finder-grid {
+  display: grid; gap: var(--space-md); margin-top: var(--space-sm);
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+}
+.client-finder-step-card {
+  display: flex; flex-direction: column; gap: var(--space-2xs);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+}
+.client-finder-step-number { font-size: var(--text-lg); font-weight: 500; color: var(--accent); }
+.client-finder-step-title { margin: 0; font-size: var(--text-md); font-weight: 500; letter-spacing: -0.015em; color: var(--text-primary); }
+.client-finder-step-description { margin: 0; font-size: var(--text-sm); color: var(--text-secondary); }
+
+.client-finder-fields { margin: 0; display: flex; flex-direction: column; gap: var(--space-sm); }
+.client-finder-field { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.client-finder-fields dt { font-size: var(--text-xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.client-finder-fields dd { margin: 0; font-size: var(--text-sm); color: var(--text-primary); }
+
+.client-finder-checklist {
+  margin: 0; padding: 0; list-style: none;
+  display: grid; gap: var(--space-2xs) var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.client-finder-checklist li { font-size: var(--text-sm); color: var(--text-primary); }
+.client-finder-checklist li::before { content: "✓ "; color: var(--accent); }
+
+.client-finder-draft-label {
+  font-size: var(--text-xs); color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  padding: var(--space-2xs) var(--space-sm);
+}
+.client-finder-email-subject { margin: 0; font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); }
+.client-finder-email-body { margin: 0; font-size: var(--text-sm); color: var(--text-primary); white-space: pre-wrap; }
+
+@media (max-width: 640px) {
+  .client-finder-grid { grid-template-columns: 1fr; }
+  .client-finder-card { padding: var(--space-sm) var(--space-md); }
+}

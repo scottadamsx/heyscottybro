@@ -25,6 +25,12 @@
   border-radius: var(--radius-sm); font-size: var(--text-xs); line-height: 1.3;
 }
 .tl-block { border-left: 3px solid var(--sky); background: var(--info-bg); color: var(--text-primary); cursor: default; }
+button.tl-block-btn { font: inherit; text-align: left; border-top: none; border-right: none; border-bottom: none; cursor: pointer; }
+button.tl-block-btn:hover { filter: brightness(0.97); }
+button.tl-block-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.tl-pill-btn { border: none; font: inherit; cursor: pointer; }
+button.tl-pill-btn:hover { filter: brightness(0.97); }
+button.tl-pill-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tl-block.kind-task { border-left-color: var(--amber); background: var(--warn-bg); }
 .tl-block.is-clash { box-shadow: inset 0 0 0 1px var(--red); }
 .tl-block-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

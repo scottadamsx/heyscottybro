@@ -9,6 +9,7 @@ import OrbitApp from "../../../orbit/src/pages/App.jsx";
 import orbitCss from "../../../orbit/src/globals.css?inline";
 import hostCss from "./people-orbit.css?inline";
 import { getAuthHeaders } from "../../utils/supabase";
+import { removePersonPhoto, signPersonPhoto, uploadPersonPhoto } from "../../api/peoplePhotoStorage";
 import "./people.css";
 
 /**
@@ -35,7 +36,13 @@ export default function PeoplePage() {
     const mount = document.createElement("div");
     shadow.replaceChildren(style, mount);
 
-    configureOrbit({ apiBase: "/api/orbit", headers: getAuthHeaders, embedded: true, title: "People" });
+    configureOrbit({
+      apiBase: "/api/orbit",
+      headers: getAuthHeaders,
+      embedded: true,
+      title: "People",
+      media: { upload: uploadPersonPhoto, sign: signPersonPhoto, remove: removePersonPhoto },
+    });
     const root = createRoot(mount);
     root.render(
       <BrowserRouter basename="/admin/people" future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

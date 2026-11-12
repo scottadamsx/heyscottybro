@@ -33,10 +33,13 @@ import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./work
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
-import { loadPeople, loadPeopleEvents } from "./peopleApi";
+import { createPerson, loadPeople, loadPeopleEvents, updatePerson } from "./peopleApi";
 import { loadProfile as loadHealthProfile, loadFood as loadHealthFood, loadWeights as loadHealthWeights, loadHistory as loadLiftHistory } from "./healthApi";
 import { loadDocuments } from "./documentsApi";
 import { loadReceipts } from "./groceryApi";
+import { loadAllWatchers } from "./gapWatchersApi";
+import { loadPriceImports } from "./groceryPricesApi";
+import { loadAllPlans } from "./mealPlanApi";
 import { DEFAULT_CONFIG as UI_BUDGET_DEFAULTS } from "../components/budget/budgetSummary";
 import { planReminderRows, normalizeTime } from "../utils/recurrence";
 import { toDateStr } from "../utils/plannerUtils";
@@ -95,6 +98,12 @@ const COLLECTIONS = {
       course_id: { type: "string", description: "Link to a courses row — makes this a school deadline (shows in School + Plan)" },
       show_on_calendar: { type: "boolean" },
       completed: { type: "boolean", updateOnly: true },
+      priority: { type: "enum", values: ["low", "medium", "high"], description: "Task priority (needs the 2026-10-18 task-priority migration; saves drop it until then)" },
+      source_type: { type: "string", description: "Connected Pages provenance: what generated this task (event, meal_plan_item, meal_plan_week, watcher). Read-mostly — set by cascades, not by hand." },
+      source_id: { type: "string", description: "Connected Pages provenance: the owning record's id" },
+      source_key: { type: "string", description: "Connected Pages provenance: the task's role within its source (cook, prep, shopping, brief:…)" },
+      generator: { type: "string", description: "Connected Pages provenance: the rule that generated this task" },
+      managed_state: { type: "enum", values: ["manual", "generated", "detached"], description: "manual = Scott's own task; generated = cascade-managed; detached = was generated, Scott edited it by hand" },
     },
     load: loadReminders, create: createReminderPlanned, update: updateReminder, remove: deleteReminder,
     echoFields: ["id", "name", "date", "time", "recurrence", "recur_until", "recur_times", "project_id"],
@@ -336,21 +345,25 @@ const COLLECTIONS = {
     load: loadGrades,
   },
   // No `table`: the People space (Orbit) keeps each record as a jsonb doc and owns every
-  // write (validation, duplicate checks, cascades) through /api/orbit — so read-only here.
+  // write (validation, duplicate checks, cascades) through /api/orbit. Reads flatten the
+  // docs here; create/update call that same API from peopleApi (DR-034), never the rows.
   people: {
-    description: "People Scott knows (People space, the Orbit CRM) — read-only. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them; open_items = to-dos and gift ideas. To add or change someone, tell Scott to use People › Interview me (it saves as he talks).",
+    description: "People Scott knows (People space, the Orbit CRM) — you can add and edit people here; writes go through Orbit's own API, which validates and refuses exact-name duplicates. group is partner/family/friends/sjhc/sjlc/carrick/school/other; how = how he knows them; facts = what he's saved about them (on create/update, pass 'label: value' pairs separated by '; ' — they are appended as saved facts); photo = the person's picture: to set it from a screenshot attached in this conversation, pass the staged path the conversation gives you and it is saved permanently as their picture; an empty string clears it; open_items = to-dos and gift ideas (read-only summary — save follow-ups in notes instead). No delete: removing a person stays Scott's call in the People UI.",
     searchFields: ["name", "how", "notes", "facts", "open_items"],
-    defaultFields: ["id", "name", "group", "how", "birthday"],
+    defaultFields: ["id", "name", "group", "how", "birthday", "photo"],
     fields: {
-      name: { type: "string" },
+      name: { type: "string", required: true },
       group: { type: "enum", values: ["partner", "family", "friends", "sjhc", "sjlc", "carrick", "school", "other"] },
       how: { type: "string" },
       birthday: { type: "string", description: "YYYY-MM-DD, or MM-DD with no year" },
       notes: { type: "string", long: true },
+      photo: { type: "string", description: "The person's picture: a staged screenshot path from this conversation, an existing People picture path, or an empty string to clear it" },
       facts: { type: "string", long: true },
       open_items: { type: "string", long: true },
     },
     load: loadPeople,
+    create: createPerson,
+    update: updatePerson,
   },
   people_events: {
     description: "Time Scott spent with people (People space): hangouts, calls, texts, plans — read-only. people = names of who was there; status done, planned or skipped.",
@@ -366,6 +379,51 @@ const COLLECTIONS = {
       notes: { type: "string", long: true },
     },
     load: loadPeopleEvents,
+  },
+  gap_watchers: {
+    description: "Connected Pages gap watchers — read-only. One row per watcher episode: watcher_key (meals-week, grocery-budget-week), scope_id (the week start), status (active, resolved, suppressed, expired), and the reminder it raised. Watchers are driven by the app, not by hand.",
+    dateField: "scope_start",
+    searchFields: ["watcher_key", "scope_id", "status"],
+    defaultFields: ["id", "watcher_key", "scope_id", "scope_start", "status", "episode", "reminder_id"],
+    fields: {
+      watcher_key: { type: "string" },
+      scope_type: { type: "string" },
+      scope_id: { type: "string" },
+      scope_start: { type: "date" },
+      scope_end: { type: "date" },
+      status: { type: "enum", values: ["active", "resolved", "suppressed", "expired"] },
+      episode: { type: "number" },
+      reminder_id: { type: "string" },
+    },
+    load: loadAllWatchers,
+  },
+  grocery_price_imports: {
+    description: "Connected Pages grocery price snapshots — read-only. One row per imported dataset (source, capture date, row/rejected counts, status imported or superseded). Meal Plan costs come from the active import's items.",
+    dateField: "captured_at",
+    searchFields: ["source_name", "status"],
+    defaultFields: ["id", "source_name", "captured_at", "row_count", "rejected_count", "status"],
+    fields: {
+      source_name: { type: "string" },
+      captured_at: { type: "date" },
+      imported_at: { type: "date" },
+      row_count: { type: "number" },
+      rejected_count: { type: "number" },
+      status: { type: "enum", values: ["imported", "failed", "superseded"] },
+    },
+    load: loadPriceImports,
+  },
+  meal_plans: {
+    description: "Connected Pages week meal plans — read-only. One row per week (week_start, status draft/ready/completed/cancelled, chosen shopping store). Items, shopping, and costs live behind the Meal Plan tab in Health.",
+    dateField: "week_start",
+    searchFields: ["status", "shopping_store_name"],
+    defaultFields: ["id", "week_start", "status", "shopping_store_name"],
+    fields: {
+      week_start: { type: "date" },
+      status: { type: "enum", values: ["draft", "ready", "completed", "cancelled"] },
+      shopping_store_key: { type: "string" },
+      shopping_store_name: { type: "string" },
+    },
+    load: loadAllPlans,
   },
   // Health space (Achilles, DR-018) — read-only here; log_food / log_weight write.
   food_log: {

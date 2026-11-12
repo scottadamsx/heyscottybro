@@ -18,9 +18,45 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Money Overview now shows Scott's four buckets as rings: Groceries, Fun / Entertainment, Gas, and Bills, each with the amount left in the centre and its transactions one tap away. Groceries and Gas join the transaction category list.
+
+- People in Orbit can have a picture now. In Edit basics on any person, Add picture (or paste or drop an image) uploads it, and the picture replaces their initials on their profile and in the People list. Frodo can also set a person's picture from a screenshot you attach in the chat: just ask it to make the screenshot that person's picture. Pictures live in the same private storage as chat screenshots; the person's record keeps only the path. (DR-035)
+- Frodo can now add people to Orbit and edit existing people right in the chat (name, how you know them, notes, and saved facts), and confirms what it saved. It no longer sends you to People › Interview me to add someone. (BUG-075)
+- A new Ad Formats page (More › Ad Formats, or ⌘K) collects 32 short-form ad formats worth stealing, one card each: how the format works and an example written for the Lift Club, myBackyard, BONSAI, or the websites service. A filter box at the top narrows the cards as you type.
+- A new Client Finder page (More › Client Finder, or ⌘K) is the playbook for Harvey, the open-source AI sales agent: what it does in nine steps, an honest verdict on the reel it came from, your ideal customer profile for website clients filled in, the data it collects per prospect, a draft example outreach email, and the guardrails that keep its automatic sending and replies off until you approve a batch.
+- The Money Overview now has an Add purchase button on the same row as the period arrows, on the opposite side. Tapping it takes you to the Transactions tab with the usual Log transaction form already open, so a purchase can be logged from the screen you land on. (BUG-078)
+
+### Fixed
+
+- In the Frodo chat, an attached image's preview now clears from the composer as soon as the message is sent, instead of staying there until the reply finishes. If a send is refused before it starts, the attachment is put back so nothing is lost. (BUG-076)
+- The search modal (⌘K) no longer jumps back to the top when you move the mouse after scrolling down: the results list now holds its place while you hover, and lower results are reachable again. Keyboard navigation is unchanged. (BUG-077)
+- The Money Overview no longer contradicts itself: the Bills card lists only the period's fixed bills (the old spending-envelope rows that always read $0 are gone; envelopes live in the Rings card now), a week that has not started shows its planned amount instead of a rollover that has not happened yet, and the category budget editor calls its amount what it is, per pay period. (BUG-079)
+- Planner events now open when you tap them, everywhere: in the Upcoming list, in a day's event list, and as blocks on the day's Schedule timeline (task blocks open the task, as before). Event rows in the day view are short and clean, just the time, title, place, and who is coming; the description, documents, and Edit and Delete sit inside the opened event instead of stretching every row. (BUG-080)
+- Linked documents now open inside the app: tapping a file in any Documents list (on an event, a task, a project) brings it up in the viewer modal, PDFs with paging and zoom, images full-size, with an X to close when you are done, instead of opening a new browser tab. Opening a file also marks it read.
+
+### Added
+
+- Events can now carry people from Orbit: pick attendees in the event form (search, tap to add) and a who's-coming indicator shows on the calendar, name chips in the day view and initial dots in the upcoming list. Names always come from Orbit, so renaming someone updates every event at once. Events also gain a Location field, shown in the day view.
+
+### Changed
+
+- The desktop sidebar rail now expands with text labels when you hover or tab into it, and a pin toggle at the bottom of the rail keeps it open; the choice is remembered between visits. (BUG-074)
+
+### Added
+
+- Meal Plan (Health): plan a week of dinners and other meals from your recipes, see what each meal costs from a dated grocery price snapshot, get one aggregated shopping list, and mark the week ready to freeze the numbers. Planning a meal creates its cook task (and prep task when the recipe needs one) and a weekly shopping task; skipping a day on purpose is respected, and an unplanned week raises one reminder that clears itself once the week is filled. "Log as eaten" writes the meal into the Food Log. Money shows the same week with its grocery budget, planned grocery spend, and logged grocery spending kept separate. Its database migrations were applied on 2026-10-23.
+
+### Changed
+
+- The admin app has a new frame (Muse-UI rewrite, Phases 0 and 1, built locally and not yet deployed): a slim icon rail replaces the wide sidebar on desktop (Today in the brand mark, Plan, Tasks, Money, Health, People pinned, Search, and a More popover for the other sections), a bottom bar with a More sheet replaces the drawer on phones, Settings opens as a dialog from the rail menu, and a slide-in detail panel (starting with a Status view) is the shell's new detail surface. All type is now DM Sans with DM Mono for numbers and labels; the serif display face is gone. Every page keeps its interior, routes, and data.
+
+### Added
+
+- Bin: a new holding space at /admin/bin where you can drop text excerpts, documents, and links from any computer; Muse picks each space up and turns it into finished work, or saves it as life context when you mark it Context. Its database migration was applied on 2026-10-23.
+
 - Frodo screenshots can be explicitly saved to the private Documents library with their chat context, then reopened from a safe in-app file link; temporary attachments remain temporary unless selected.
 - Frodo can now search safe planner and Brain shelves in parallel with source-labelled results, use bounded rich data filters, and ask for the actual occurrences inside a reminder/event date range.
-- Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Release awaits its additive database migration.
+- Health now has a durable Exercises library with logged-set history, derived heaviest and estimated-strength personal records, exact weight-times-reps goals, and clearly labelled estimated goal progress. Its additive database migration was applied on 2026-10-23.
 - Live workouts now show the six completed sessions behind each weight recommendation, including confidence and a plain-language reason.
 - People / Orbit now has a locally implemented conversational journal with person/date clarification, source-backed memory updates, saved receipts, pending-entry history, and conflict-aware undo. Hosted release awaits its separate database migration and live-provider validation.
 - Journal create and edit now include Unicode-aware live character/word counts and a resumable active-writing timer with pause, reset, idle pause, and draft recovery.

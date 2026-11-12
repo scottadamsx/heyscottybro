@@ -390,9 +390,21 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
       stopVoiceInput();
       window.speechSynthesis?.cancel();
       setSpeakingMessage(null);
+      // Clear the sent shots from the composer at handoff, not after the
+      // turn: sendMessage runs the whole reply, and the preview used to sit
+      // in the composer for all of it (BUG-076). Only this send's shots go —
+      // rejected (undecodable) shots and anything staged later stay. Staged
+      // storage paths stay in stagedPathsRef on purpose: confirmed Clear
+      // still needs them to remove the staged copies.
+      const sentShotIds = new Set(readyShots.map((shot) => shot.id));
+      setShots((prev) => prev.filter((shot) => !sentShotIds.has(shot.id)));
       const sent = await sendMessage(attachments);
-      if (!sent) throw new Error("Frodo couldn't start that message. The saved screenshot is still in Documents; try sending again.");
-      setShots((prev) => prev.filter((shot) => shot.rejected));
+      if (!sent) {
+        // The send was refused before anything was posted: put the shots
+        // back so nothing Scott attached is lost.
+        setShots((prev) => [...readyShots.filter((shot) => !prev.some((item) => item.id === shot.id)), ...prev]);
+        throw new Error("Frodo couldn't start that message. The saved screenshot is still in Documents; try sending again.");
+      }
     } catch (error) {
       addToast(error?.message || "Couldn't save this screenshot for later. Your message wasn't sent; try again.", "error");
     } finally {

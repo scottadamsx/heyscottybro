@@ -38,11 +38,14 @@ function RoutedLayer() {
       ...(sourceHostEventId ? { sourceHostEventId } : {}),
       date: params.get('date') || undefined,
       title: params.get('title') || undefined,
+      // The event's people ride the same handoff (BUG-081), so the log
+      // opens with them attached instead of asking for a manual pick.
+      people: (params.get('people') || '').split(',').map((s) => s.trim()).filter(Boolean),
       reminderId: params.get('reminderId') || undefined,
       occurrenceDate: params.get('occurrenceDate') || undefined,
     })
     const next = new URLSearchParams(params)
-    next.delete('sourceHostEventId'); next.delete('title'); next.delete('date'); next.delete('openLog')
+    next.delete('sourceHostEventId'); next.delete('title'); next.delete('date'); next.delete('openLog'); next.delete('people')
     next.delete('sourceHostJournalId'); next.delete('openJournalReview')
     setParams(next, { replace: true })
   }, [params, setParams, open])

@@ -1,5 +1,5 @@
 import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatMoney, toDateStr, genId } from "../../utils/budgetCalc";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getLedgerRows } from "../../utils/budgetAnalytics";
@@ -10,7 +10,7 @@ import { usePaged } from "../../hooks/usePaged";
 
 const EMPTY_FORM = { description: "", amount: "", type: "expense", category: "", date: toDateStr(), notes: "", fulfills_recurring_id: "", is_bill: false };
 
-export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions", actions = null }) {
+export default function BudgetTransactions({ config, transactions, setTransactions, startingBalance = 0, defaultView = "transactions", actions = null, formNonce = 0, onFormNonceUsed = null }) {
   const categories = config.categories || [];
   const recurringBills = config.recurringBills || [];
   const billName = id => recurringBills.find(b => b.id === id)?.name || null;
@@ -46,6 +46,21 @@ export default function BudgetTransactions({ config, transactions, setTransactio
   const sortBy = col => { if (sortCol === col) setSortAsc(a => !a); else { setSortCol(col); setSortAsc(true); } };
 
   const openNew = () => { setEditId(null); setForm({ ...EMPTY_FORM, date: toDateStr(), category: categories[0] || "" }); setShowForm(true); };
+
+  // BUG-078: the Money Overview's "Add purchase" button asks for this form
+  // through a one-shot nonce owned by BudgetPage. A fresh nonce opens the
+  // same new-transaction form the tab's own button opens; reporting it used
+  // clears it in the parent, so a later manual visit here does not reopen it.
+  // The consumed-value guard keeps a repeated effect run (StrictMode) or a
+  // re-render with the same nonce from opening the form twice.
+  const consumedNonceRef = useRef(0);
+  useEffect(() => {
+    if (formNonce > 0 && formNonce !== consumedNonceRef.current) {
+      consumedNonceRef.current = formNonce;
+      openNew();
+      onFormNonceUsed?.();
+    }
+  }, [formNonce]);
   const openEdit = t => { setEditId(t.id); setForm({ description: t.description, amount: String(t.amount), type: t.type, category: t.category, date: t.date, notes: t.notes || "", fulfills_recurring_id: t.fulfills_recurring_id || "", is_bill: t.is_bill || false }); setShowForm(true); };
 
   // Tagging a transaction to a bill links it (so the dashboard marks that bill

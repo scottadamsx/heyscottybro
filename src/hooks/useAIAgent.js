@@ -290,6 +290,7 @@ export default function useAIAgent() {
             text: [
               text || "Here's an image — inspect it and tell me what you see.",
               ...attachments.filter((attachment) => attachment.document_id).map((attachment) => `This screenshot is saved in Documents as "${attachment.name}" (id ${attachment.document_id}). Open it at /admin/vault?tab=documents&open=${attachment.document_id} if you need to link to it.`),
+              ...attachments.filter((attachment) => attachment.path).map((attachment) => `This screenshot is stored at "${attachment.path}". If Scott asks to make it someone's picture in People, pass photo: "${attachment.path}" to create_item or update_item on "people" and it will be saved as that person's picture.`),
             ].join("\n\n"),
           },
         ]

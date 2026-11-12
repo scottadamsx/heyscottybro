@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 // Lightweight, reactive app settings backed by localStorage. Mirrors the
 // existing localStorage convention in AdminLayout (e.g. "adminRailCollapsed")
@@ -115,5 +115,9 @@ export function toggleHiddenPage(to, hidden) {
   setHiddenPages(hidden ? [...new Set([...cur, to])] : cur.filter((p) => p !== to));
 }
 export function useHiddenPages() {
-  return parseHiddenPages(useStringSetting(HIDDEN_PAGES, "[]"));
+  const raw = useStringSetting(HIDDEN_PAGES, "[]");
+  // Memoized on the raw string: a fresh parse per render changes the array's
+  // identity every render, which invalidates consumers' memos keyed on it
+  // (BUG-077: the command palette's result groups, and with them its cursor).
+  return useMemo(() => parseHiddenPages(raw), [raw]);
 }

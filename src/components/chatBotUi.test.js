@@ -101,6 +101,17 @@ test("bottom scrolling supports containers without scrollTo", () => {
   assert.equal(scroller.scrollTop, 720);
 });
 
+test("sent attachments leave the composer at handoff, not after the reply (BUG-076)", () => {
+  const doSendAt = chatBotSource.indexOf("const doSend");
+  assert.ok(doSendAt >= 0);
+  const doSend = chatBotSource.slice(doSendAt, doSendAt + 4000);
+  const clearAt = doSend.indexOf("setShots((prev) => prev.filter((shot) => !sentShotIds.has(shot.id)))");
+  const sendAt = doSend.indexOf("await sendMessage(attachments)");
+  assert.ok(clearAt >= 0, "doSend must remove exactly the sent shots by id");
+  assert.ok(sendAt > clearAt, "the composer must clear before sendMessage runs the turn");
+  assert.match(doSend, /if \(!sent\) \{\s*\n\s*\/\/ The send was refused[\s\S]*?setShots\(\(prev\) => \[\.\.\.readyShots/, "a refused send must restore the sent shots");
+});
+
 test("assembled Frodo rendering covers local and saved attachment previews", () => {
   assert.match(chatBotSource, /<img src=\{s\.dataUrl\} alt="screenshot"/, "pre-send attachments must render from local normalized bytes");
   assert.match(chatBotSource, /<SavedAttachmentPreview key=\{preview\.path \|\| j\}/, "hydrated messages must use the saved-preview boundary");

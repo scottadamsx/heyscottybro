@@ -29,6 +29,8 @@ async function request(method, path, body) {
       method,
       headers: { ...(await apiHeaders()), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       body: body === undefined ? undefined : JSON.stringify(body),
+      // A stalled request must reject instead of hanging forever (People page boot hang).
+      signal: AbortSignal.timeout(20000),
     })
   } catch (err) {
     throw new StorageError('network', `Can't reach the data server (${err.message})`)

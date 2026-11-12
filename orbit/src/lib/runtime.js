@@ -7,17 +7,25 @@ const runtime = {
   /** Inside a host app: the host owns the theme and the page title. */
   embedded: false,
   title: 'Orbit',
+  /**
+   * Optional host-supplied storage for person pictures:
+   * { upload(file, personId) -> path, sign(path) -> url, remove(path) }.
+   * Orbit itself stores no image bytes; without this, pictures stay initials.
+   */
+  media: null,
 }
 
-export function configureOrbit({ apiBase, headers, embedded, title } = {}) {
+export function configureOrbit({ apiBase, headers, embedded, title, media } = {}) {
   if (apiBase) runtime.apiBase = apiBase
   if (headers) runtime.headers = headers
   if (embedded !== undefined) runtime.embedded = embedded
   if (title) runtime.title = title
+  if (media !== undefined) runtime.media = media
 }
 
 export const isEmbedded = () => runtime.embedded
 export const appTitle = () => runtime.title
+export const mediaStore = () => runtime.media
 
 export const apiUrl = (path) => `${runtime.apiBase}${path}`
 export const apiHeaders = () => runtime.headers()

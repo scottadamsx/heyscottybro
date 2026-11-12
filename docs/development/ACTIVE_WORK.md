@@ -1,5 +1,120 @@
 # Active work
 
+## Log in Orbit opens on the prompt, not the manual form (BUG-084)
+
+- **Feature document:** `docs/features/orbit-event-log-prompt-first.md`
+- **Approval:** Scott's follow-up on 2026-11-07 ("dude it still goes to manual log wtf is wrong with you I thought we had this fixed?", with a screenshot of the manual form for the Nov 4 NLHS Innovation Summit event, nobody picked) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-07. Diagnosis: BUG-081 shipped only the people prefill; the interview that was supposed to ask "what happened" needs a live AI backend (`ai.available` requires an `ANTHROPIC_API_KEY` in the hosted server plus the connector on), which the live app does not have, so every live log fell through to the manual form; and the NLHS event has no attendees attached, so its form opened with an empty picker. The fix adds a prompt-first entry mode to `LogModal` for Planner event handoffs that needs no AI: it names the event and its people, asks "What happened at the event?", files the one answer as Notes through the existing save path, shows the picker inside the prompt when nobody is attached, and keeps the full form one tap away. Four new source tests; lint clean, full suite green (exit 0), build pass; rendered harness at 390px proved both the with-people save and the no-people flow (including the empty-save refusal). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: tap Log in Orbit on a past event and confirm the prompt opens, names the event's people, and saves from the one answer. Note BUG-082 (below) is also committed locally and unpushed, so one push ships both.
+
+## URLs in task Notes are clickable (BUG-082)
+
+- **Feature document:** `docs/features/task-notes-clickable-links.md`
+- **Approval:** Scott's direct order on 2026-11-06 ("when I go into topic 11 i can't click the fucking document link") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-06. Live investigation first proved the Concept 11 task has no linked document and its Notes' ChatGPT bundle URL rendered as dead plain text (same across the concept tasks). The fix linkifies URLs in task Notes (`linkifySegments` + `LinkifiedText`, accent-underlined via plan.css). Seven tests added; lint clean, full suite green (exit 0), build pass; rendered harness passed with the exact Concept 11 note at desktop and 390px. Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: open the live Concept 11 task and tap the bundle link in Notes. Separate follow-up, not part of this fix: attach the 111 lesson PDFs to their tasks (Mac zip when the Mac is back online, or the ChatGPT pull with Scott present) and remove the ChatGPT references from Notes.
+
+## Log in Orbit starts from the event's people (BUG-081)
+
+- **Feature document:** `docs/features/orbit-log-prefills-event-people.md`
+- **Approval:** Scott's direct order on 2026-11-06 ("it should grab the person who is involved from the event and ask me 'what happened at the event'... fix this now", with a screenshot of the manual people picker) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** LIVE 2026-11-06. Scott approved the push; merged with origin/main (a918bdb) and pushed as d7b568d; the build check fired and the served bundles carry the change (marker-verified in both chunks). Signed-in check proved the prefill end to end on "Drinks with Lizwe" (Nov 5): the link carried Lizwe's id and the form opened with her selected and her update field present. Recorded limits: the prompt lists only events whose end has passed, and the live log opens the manual form because the Orbit assistant is not available on the live app.
+- **Next gate:** None. The DocLinks viewer modal shipped in the same push, and its signed-in click-through was exercised later on 2026-11-06 on a real attachment (the Lizwe gym-plan screenshot on the Nov 11 planner event): the document opened in the viewer on the live site. See the WORKLOG follow-up note. The recorded manual-form limit is addressed locally by BUG-084 (see the top section); it reaches live only with that push.
+
+
+## Linked documents open in the in-app viewer modal
+
+- **Feature document:** `docs/features/doclinks-viewer-modal.md`
+- **Approval:** Scott's direct order on 2026-11-05 ("can you link the documents so clicking on them brings up a modal with them with an x once youre done") authorises the change and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-05. `DocLinks` file rows open the existing `DocumentViewer`/`PdfViewer` modal in-app (no more new tab), file links mark read on open, note links still open in the reader. Four source tests added; lint clean, full suite green (exit 0), build pass; rendered harness of the real `PdfViewer` passed (sample PDF paged, X closed it, no phone overflow). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the signed-in check: open an event, expand Documents, click a PDF, confirm the modal opens and the X closes it.
+
+
+## Schedule events open on click, compact event rows (BUG-080)
+
+- **Feature document:** `docs/features/schedule-event-open-and-compact-rows.md`
+- **Approval:** Scott's direct order on 2026-11-05 ("clicking an event doesnt go into it... theylre too long with the document shit showing... can you change this please") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-05. Compact clickable event rows with an in-place detail region (documents, description, Orbit prompt, Edit/Delete inside), Upcoming rows open the day with the event expanded, and the Schedule timeline opens events and tasks through a new optional `DayTimeline` `onBlockClick` prop (no-handler rendering unchanged, so Today is untouched). Five source tests added; lint clean, full suite green (exit 0), build pass; rendered harness passed click and geometry checks at desktop and 390px (collapsed row 55px vs the old 178px desktop / 368px phone), screenshots read (see the feature document's validation record). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, signed-in verification: tap an event in the live day view and a block on the live Schedule timeline.
+
+
+## Money Overview consistency (BUG-079)
+
+- **Feature document:** `docs/features/money-overview-consistency.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("do you see the inconsistincenies... make it way better now", with a screenshot of the live Money Overview) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. The Bills card renders fixed bills only (variable bills remain managed in Bills & Income; the unused variable drill helper was removed); a week that has not started shows its planned base with a rollover note (the allowance calculation is unchanged); the budget modal field reads "Amount per pay period". Three regression source tests added; lint clean, full suite green (final group 343), build pass; rendered harness with Scott's exact live figures passed every check at desktop and 390px (see the feature document's validation record). The live data half is already done and verified through the UI: the Nov 4 Orangestore $20.00 entry moved from Transport to Gas, so the live Gas ring reads $20.00 of $70.00 and the rings sum ties to Week 1 spent ($128.49). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, signed-in verification of the Bills card and Week 2. The stale Google One $35 bill (verified Oct 22, 2026: subscription expired, charge should not occur) is flagged for Scott's decision, not deleted.
+
+## Money rings: Groceries, Fun/Entertainment, Gas, and Bills buckets
+
+- **Feature document:** `docs/features/money-rings.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("make a groceries, I should have 3 rings in heyscottybro... groceries, fun/entertainment and gas, bills are another bucket but that's already logged, these buckets must be added") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. Pure ring builder in `src/lib/budgetRings.js` (6 unit tests, in the test chain); the Overview's Category budgets card is now a Rings card, first in the money grid, with SVG rings for Groceries, Fun / Entertainment, Gas, plus a display-only Bills ring from billsPaid/billsObligation, reusing the existing budget modals and transaction drill-down; plannerApi fallback categories gained Groceries and Gas. Lint clean, full test suite green, build pass; rendered harness passed all checks at desktop and 390px with screenshots read (see the feature document's validation record). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, the live setup runs through the UI: add Groceries and Gas categories, set budgets (Groceries $150, Entertainment $100, Gas $70, Scott's couples-budget ring amounts), move the four Nov 4, 2026 purchases logged as Other (Walmart $26.78, Dollarama $10.64, Tahitian vanilla $8.99, Sobeys $11.49) to Groceries, then signed-in verification.
+
+## Money Overview Add purchase (BUG-078)
+
+- **Feature document:** `docs/features/money-overview-add-purchase.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("there's poor ui because I can't input a purchase put a button near the top of the screen so it's easy or even on the same row as the two arrows on the other side", with a screenshot of the live Money Overview) authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. The Money Overview's period arrows now sit in a bar row under the period title with an "Add purchase" button on the right (standard pill, 44px minimum height). `BudgetPage` owns a one-shot nonce: the button bumps it and switches to the Transactions tab, where `BudgetTransactions` opens its existing, untouched "Log transaction" form once and clears the nonce, so a later manual visit does not reopen it. Lint clean, full test suite green (final group 340, including 3 new wiring tests), build pass; a rendered Playwright harness around the real dashboard and transactions components confirmed the row layout at desktop and 390px, the click-through to the open form, and the no-reopen behaviour (see the feature document's validation record). Committed locally; not pushed. This stacks on the same unpushed main as the Orbit pictures, Ad Formats, and Client Finder commits, so one push ships all four.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in check: open Money, confirm the Add purchase button on the arrows row, tap it, and confirm the Log transaction form opens on the Transactions tab.
+
+## Client Finder (Harvey playbook)
+
+- **Feature document:** `docs/features/client-finder-harvey.md`
+- **Approval:** Scott's direct order on 2026-11-04 ("get this in heyscottybro", about the Nick Saraev reel presenting Harvey, the open-source AI sales agent) authorises the feature and a local commit, per source-of-truth rule 1 and the Ad Formats precedent. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-04. A static `/admin/client-finder` page renders the playbook from `src/lib/clientFinder.js`: the Harvey header with the repo link and verified stats (MIT, Python, 4,361 stars, 912 forks, last push Nov 2, 2026, verified Nov 4, 2026), a verdict card (real tool, demo-only proof, no keyword engagement), the 9 workflow steps as numbered cards, Scott's ICP card on his approved websites terms (free build upfront, $300 if they love it, $50 per month care) with fit signals, the 9-field per-prospect checklist, one original draft example email for a fictional roofing company, and a guardrails card (automatic sending and replies OFF, Scott approves the kit and every batch, CASL, club outreach is a separate lane). Every list section shows its count from the data. Reachable from the More list, the phone sheet, the Settings hide list, and ⌘K. Lint clean, full test suite green (10 new data tests in the chain), build pass; a rendered Playwright run of the real page confirmed every section and the phone layout (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: open Client Finder from More and from ⌘K, and hide the page in Settings to confirm it disappears from nav and palette. Running Harvey itself is separate, unapproved work.
+
+## Ad Formats library
+
+- **Feature document:** `docs/features/ad-formats-library.md`
+- **Approval:** Scott's direct order on 2026-10-29 ("steal these and put them in heyscottybro", about the @byjoeym reel "35 S-Tier Ad Formats to Steal") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-29. A static `/admin/ads` page renders 32 format cards from `src/lib/adFormats.js` (reel numbers 1–31 and 34; 32, 33, and 35 were illegible in the reel and are omitted, not invented; all descriptions and examples are original, rotating across the Lift Club, myBackyard, BONSAI, and Websites at eight each), with a local text filter and the header count reading `N of 32` while filtering. Reachable from the More list, the phone sheet, the Settings hide list, and ⌘K. Lint clean, full test suite green (9 new data tests in the chain), build pass; a rendered Playwright run of the real page confirmed the 32-card grid, the filter narrowing/empty/restore behaviour, and the phone layout (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: open Ad Formats from More and from ⌘K, filter the grid, and hide the page in Settings to confirm it disappears from nav and palette.
+
+## Person pictures in Orbit
+
+- **Feature document:** `docs/features/person-pictures-in-orbit.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("i'm unable to add a picture to orbit, I wanna be able to send screenshots like I can for frodo") authorises the feature and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. `photo` storage path on the person doc (JSONB, no migration), bytes in the existing private `bug-screenshots` bucket under `<uid>/people/<personId>/`, a host-supplied `media` capability through `configureOrbit`, Avatar rendering with initials fallback, a Picture field in Edit basics (picker, paste, drop, remove), and a Frodo route that claims a chat-staged screenshot as a person's picture (DR-035). Lint clean, full test suite green (337 in the final group), build pass; the real Orbit server harness passes the photo validation matrix, and a rendered run of the real Orbit app (stub media store) covered add, change, and remove with screenshots, see the feature document's validation section. Committed locally; not pushed. Note: the Orbit-side edits land in the `orbit/` copy because the canonical Orbit repo is not present in this environment; they must be ported before the next sync (see the feature document).
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: add a picture to a person in People (real bucket upload and signed-URL display) and have Frodo set a picture from an attached screenshot.
+
+## Search modal scroll reset (BUG-077)
+
+- **Feature document:** `docs/features/search-modal-scroll-reset.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("there's a bug that if you move the cursor even just a bit when scrolled down on the search modal, it will jump back up to the top so you can never reach what you wanna reach, heyscottybro fix it") authorises the fix and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. Root cause: `useHiddenPages()` re-parsed on every render, so the palette's `groups` memo changed identity every render and its cursor-reset effect (plus the scroll-into-view effect) snapped the list to the top on the first mouse move after scrolling. Fix shipped in `src/utils/settings.js`: the parse is memoized on the raw stored string; `CommandPalette.jsx` is untouched. Lint clean, full test suite green (335 in the final group), build pass; rendered check of the real palette confirms the scroll position now holds under the mouse (and that reverting the one change reproduces the jump), see the feature document's validation section. Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, repeat the two-minute scroll-and-hover check in the signed-in palette.
+
+## Frodo–Orbit writes and chat attachment clearing (BUG-075, BUG-076)
+
+- **Feature document:** `docs/features/frodo-orbit-writes-and-chat-attachment-clear.md`
+- **Approval:** Scott's direct order on 2026-10-28 ("fix this", on Frodo refusing to add Aaron Burke to Orbit and on the sent image's preview sticking in the composer) authorises the fixes and a local commit. Push/deploy need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-10-28. Frodo's Library `people` collection now creates and updates people through Orbit's own API (`/api/orbit`, the People UI's exact path; DR-034); the composer clears sent attachments at handoff and restores them on a refused send. Lint clean, full test suite green, build pass; Bug 075 verified end to end against the real Orbit server on throwaway data (see the feature document's validation section). Committed locally; not pushed.
+- **Next gate:** Scott approves the push/deploy; after deployment, run the signed-in checks: ask Frodo to add a person and see them in People, and send a chat message with an image and watch the composer clear.
+
+## Muse-UI rewrite (heyScottyBro in the Muse app UI)
+
+- **Feature document:** `docs/features/muse-ui-rewrite.md`
+- **Approval:** Scott said "approval on both" on 2026-10-21, approving this rewrite's executive plan (with its SPEC-GAP recommendations) and Connected Pages. The approved visual reference is `~/workspace/your_files/heyscottybro-ui-before-after/before-after.html`.
+- **Current state:** Phase 0 (DM Sans/DM Mono fonts, shell tokens, DR-032) committed locally as `7954182` and Phase 1 (icon rail shell, More popover/sheet, phone bottom bar, detail-panel host with Status view shell, Settings dialog host, palette restyle) committed locally on 2026-10-21; not pushed. Every existing page keeps its interior, routes, data, and APIs. Lint, full tests (333/333), and build pass at both phase boundaries; a production-preview smoke pass returned HTTP 200 for all 15 main admin routes. Signed-in rendered desktop/phone checks were not run (preview is auth-gated). DR-032 and the WORKLOG entries sit in the working tree alongside the prior session's uncommitted DR-031 records.
+- **Next gate:** Scott reviews the result (rendered check), then approves the push/deploy. Phase 2 (Today, Planner, Finance interiors) is a separate per-phase approval. Connected Pages surfaces should be born in the new shell.
+
+## Connected Pages (heyscottybro interconnection)
+
+- **Feature document:** `docs/features/connected-pages.md`
+- **Approval:** Scott directed the interconnection on 2026-10-21 and approved the plan the same day ("approval on both", covering this plan and the Muse-UI rewrite). The interactive blueprint at `~/workspace/your_files/connected-pages-blueprint/connected-pages-blueprint.html` was delivered 2026-10-21. On 2026-10-22 Scott said "go on all items", approving the build: Phase 0 (cascade and gap-watcher foundations) and Phase 1 (Finance to Meal Plan, subphases 1A to 1D), using the plan's recommended SPEC-GAP defaults.
+- **Current state:** Phase 0 and Phase 1 BUILT and pushed 2026-10-22 (commits `357f95f`, `ce0f019`, `a722a36`; lint clean, full test suite green, build pass). Migrations verified APPLIED on 2026-10-23 (dashboard state check: task priority, Bin, foundations, and Phase 1 tables all present; exercise library and event people applied in the same session). Phase 2 slice 1 shipped 2026-10-23 (see below); the rest of Phase 2 is not part of this approval round.
+- **Next gate:** Apply `2026-10-18-task-priority.sql`, then `2026-10-22-connected-pages-foundations.sql` and `2026-10-22-connected-pages-phase1.sql` to project `mogoybejtmkoheqvfvuc`; set the Leo's Restaurant task to high priority; then verify the Meal Plan and Finance flows signed-in on desktop and phone.
+- **Phase 2 slice 1 (2026-10-23):** Scott directed on 2026-10-23: "I need calendar to allow for putting people in my orbit as attendees for an event, so a little indicator shows who's at an event", then "put this in to heyscottybro, make the migrations yourself and add anything else that you've noticed is interfering with productivity". Approved scope: `event_people` + EventForm People picker + attendee indicator + `events.location` (record and pseudocode at the end of `docs/features/connected-pages.md`), the BUG-074 sidebar fix (plan presented 2026-10-22), and applying the pending approved migrations above (plus Bin and exercise library) when a dashboard session confirms each is missing. Briefs, birthdays, and the profile read model remain unapproved Phase 2 work. **Status: BUILT and migrations applied 2026-10-23; implementation record at the end of the slice section in `docs/features/connected-pages.md`.
+
+## Bin (remote clipboard)
+
+- **Approval:** Scott said "make it live" on 2026-10-21, with the same-day addition that context items are saved, not worked.
+- **Current state:** `/admin/bin` is implemented, tested (full suite and lint pass), built, and pushed with the feature record at `docs/features/bin.md`.
+- **Next gate:** Apply `supabase/migrations/2026-10-21-bin-items.sql` to project `mogoybejtmkoheqvfvuc` (needs Scott's Supabase sign-in), then verify a signed-in round trip on desktop and phone.
+
 ## October 10 Journal–Orbit release
 
 - **Follow-up request:** Scott reported that **Speak entry** can freeze and that a saved spoken entry did not begin the Orbit step. The causes and fixes are recorded in `BUG-069` and `BUG-070`; recovery, automatic review startup, and regression coverage are implemented locally.

@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useOrbit } from '../../state/OrbitContext.jsx'
 import { useUI } from '../../state/UIContext.jsx'
 import { GROUPS } from '../../lib/constants.js'
 import { findDuplicatePerson } from '../../lib/dedupe.js'
 import { isBirthday } from '../../lib/validate.js'
 import { newId } from '../../lib/ids.js'
+import { mediaStore } from '../../lib/runtime.js'
 import Modal from '../ui/Modal.jsx'
 import Button, { IconButton } from '../ui/Button.jsx'
+import Avatar from '../ui/Avatar.jsx'
 import { X } from '../ui/icons.js'
-import { SelectField, TextArea, TextField } from '../ui/Field.jsx'
+import { Field, SelectField, TextArea, TextField } from '../ui/Field.jsx'
 
 const GROUP_OPTIONS = GROUPS.map((g) => ({ value: g.id, label: g.label }))
 const blankRow = (group = 'friends') => ({ key: newId('row'), name: '', group, birthday: '', allow: false })
@@ -134,18 +136,93 @@ export function AddPeopleModal({ onClose, name = '' }) {
   )
 }
 
+/**
+ * The person's picture: pick a file, paste one, or drop one on the field —
+ * the Frodo composer's gestures. Uploads go through the host's media store
+ * (runtime.js); without one the field does not render. The chosen path is
+ * saved with the form; replacing or removing only deletes the old stored
+ * file after the save succeeds (EditPersonModal owns that).
+ */
+function PictureField({ id, name, group, photo, onPhoto }) {
+  const media = mediaStore()
+  const fileRef = useRef(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [dragOver, setDragOver] = useState(false)
+  if (!media?.upload) return null
+
+  const takeFile = async (file) => {
+    if (!file || busy) return
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type || '')) {
+      setError('That file is not a picture I can use. Pick a PNG, JPEG, WebP or GIF.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      onPhoto(await media.upload(file, id))
+    } catch (err) {
+      setError(err.message || 'The picture could not be saved.')
+    }
+    setBusy(false)
+  }
+
+  return (
+    <Field label="Picture" error={error} hint={photo ? undefined : 'A photo or screenshot of them.'}>
+      {() => (
+        <div
+          className="batch-fields"
+          onDragOver={(e) => { if (e.dataTransfer?.types?.includes('Files')) { e.preventDefault(); setDragOver(true) } }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false); takeFile(e.dataTransfer?.files?.[0]) }}
+          onPaste={(e) => {
+            const img = [...(e.clipboardData?.items || [])].filter((i) => i.type.startsWith('image/')).map((i) => i.getAsFile()).filter(Boolean)[0]
+            if (img) { e.preventDefault(); takeFile(img) }
+          }}
+          style={dragOver ? { outline: '2px dashed var(--color-accent, #888)', outlineOffset: 4 } : undefined}
+        >
+          <Avatar person={{ name, group, photo }} size="lg" />
+          <Button type="button" size="sm" variant="secondary" onClick={() => fileRef.current?.click()} disabled={busy}>
+            {busy ? 'Uploading…' : photo ? 'Change picture' : 'Add picture'}
+          </Button>
+          {photo && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => onPhoto('')} disabled={busy}>
+              Remove
+            </Button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            hidden
+            onChange={(e) => { takeFile(e.target.files?.[0]); e.target.value = '' }}
+          />
+        </div>
+      )}
+    </Field>
+  )
+}
+
 /** Edit a person's basics. */
 export function EditPersonModal({ id, onClose }) {
   const { people, savePerson } = useOrbit()
   const { notify, openPerson } = useUI()
   const p = people[id]
   const [form, setForm] = useState({ name: p.name, group: p.group || 'other', birthday: p.birthday || '', how: p.how || '', notes: p.notes || '' })
+  const [photo, setPhoto] = useState(p.photo || '')
+  const replacedPhotos = useRef([])
   const [errors, setErrors] = useState({})
   const [dup, setDup] = useState(null)
   const [busy, setBusy] = useState(false)
   const set = (k) => (v) => {
     setForm((f) => ({ ...f, [k]: v }))
     if (k === 'name') setDup(null)
+  }
+
+  // A replaced or removed picture's file goes only once this value is saved.
+  const changePhoto = (next) => {
+    if (photo && photo !== next) replacedPhotos.current.push(photo)
+    setPhoto(next)
   }
 
   const save = async (allowDuplicate = false) => {
@@ -156,7 +233,10 @@ export function EditPersonModal({ id, onClose }) {
     if (Object.keys(e).length) return
     setBusy(true)
     try {
-      await savePerson(id, { ...p, ...form, name: form.name.trim(), birthday: form.birthday.trim(), how: form.how.trim(), notes: form.notes.trim() }, { allowDuplicate })
+      await savePerson(id, { ...p, ...form, photo, name: form.name.trim(), birthday: form.birthday.trim(), how: form.how.trim(), notes: form.notes.trim() }, { allowDuplicate })
+      const media = mediaStore()
+      if (media?.remove) for (const old of replacedPhotos.current) if (old !== photo) media.remove(old).catch(() => {})
+      replacedPhotos.current = []
       notify('Saved')
       onClose()
     } catch (err) {
@@ -191,6 +271,7 @@ export function EditPersonModal({ id, onClose }) {
           </div>
         )}
         <TextField label="Name" value={form.name} onChange={set('name')} error={errors.name} maxLength={80} data-autofocus />
+        <PictureField id={id} name={form.name} group={form.group} photo={photo} onPhoto={changePhoto} />
         <div className="grid-2">
           <SelectField label="Group" value={form.group} onChange={set('group')} options={GROUP_OPTIONS} />
           <TextField label="Birthday" hint="MM-DD, or YYYY-MM-DD if you know the year" value={form.birthday} onChange={set('birthday')} error={errors.birthday} maxLength={10} />

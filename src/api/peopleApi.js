@@ -1,8 +1,15 @@
-// src/api/peopleApi.js — read-only view of the People space (Orbit) for agents.
-// Orbit owns these rows; every write goes through Orbit's own API (/api/orbit), which
-// validates and de-duplicates. This file only flattens them for the Library.
-import { supabase } from "../utils/supabase";
+// src/api/peopleApi.js — the Library's view of the People space (Orbit).
+// Orbit owns these rows; reads flatten them for the Library. Writes go
+// through Orbit's own API (/api/orbit) with the signed-in session, exactly
+// like the People UI, so Orbit's validation and duplicate checks apply to
+// agent writes too (DR-034). Agents never write the orbit_people rows
+// directly.
+import { newId } from "../../orbit/src/lib/ids.js";
+import { supabase, getAuthHeaders } from "../utils/supabase";
+import { isChatStagingPath, isOwnedPersonPhotoPath } from "../utils/storageKeys";
 import { uid } from "./_base";
+import { buildNewPersonDoc, flattenPersonDoc, mergePersonUpdate } from "./peopleCore";
+import { claimPersonPhoto, removePersonPhoto } from "./peoplePhotoStorage";
 
 const PAGE = 1000;
 
@@ -22,22 +29,8 @@ async function allDocs(table) {
   }
 }
 
-const factText = (facts = []) => facts.map((f) => `${f.k}: ${f.v}`).join("; ");
-const intentText = (intents = []) =>
-  intents.filter((i) => !i.done).map((i) => `${i.kind === "gift" ? "gift idea" : "to-do"}: ${i.text}${i.due ? ` (due ${i.due})` : ""}`).join("; ");
-
 export async function loadPeople() {
-  return (await allDocs("orbit_people")).map(({ id, doc, updated_at }) => ({
-    id,
-    name: doc.name,
-    group: doc.group,
-    how: doc.how || "",
-    birthday: doc.birthday || "",
-    notes: doc.notes || "",
-    facts: factText(doc.facts),
-    open_items: intentText(doc.intents),
-    updated_at,
-  }));
+  return (await allDocs("orbit_people")).map(({ id, doc, updated_at }) => ({ ...flattenPersonDoc(id, doc), updated_at }));
 }
 
 export async function loadPeopleEvents() {
@@ -52,4 +45,68 @@ export async function loadPeopleEvents() {
     people: (doc.people || []).map((p) => names[p] || p).join(", "),
     notes: doc.notes || "",
   }));
+}
+
+/** One call to Orbit's API — the People UI's file adapter, same contract. */
+async function orbitRequest(method, path, body) {
+  let res;
+  try {
+    res = await fetch(`/api/orbit${path}`, {
+      method,
+      headers: {
+        ...(await getAuthHeaders()),
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      // The UI's request guard: a stalled call must surface, never hang.
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (err) {
+    throw new Error(`couldn't reach the People data server (${err.message})`, { cause: err });
+  }
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok || out.ok === false) {
+    throw new Error(out.message || `${method} ${path} failed with status ${res.status}`);
+  }
+  return out;
+}
+
+/**
+ * Turn a write's photo value into the path stored on the document. A chat
+ * screenshot is claimed by copy, so clearing the chat can never break the
+ * picture; an existing People picture path passes as-is; anything else is
+ * refused before anything is written.
+ */
+async function resolvePhotoPath(personId, photo) {
+  if (photo === "") return "";
+  if (isChatStagingPath(photo)) return claimPersonPhoto(personId, photo);
+  if (isOwnedPersonPhotoPath(photo, await uid())) return photo;
+  throw new Error("photo must be a screenshot attached in this conversation or an existing People picture path — nothing was saved");
+}
+
+/** Add a person to Orbit; Orbit's server validates and refuses duplicates. */
+export async function createPerson(data) {
+  const id = newId("p");
+  const photo = typeof data?.photo === "string" && data.photo ? await resolvePhotoPath(id, data.photo) : data?.photo;
+  const doc = buildNewPersonDoc({ ...data, photo }, new Date().toISOString());
+  const out = await orbitRequest("PUT", `/people/${encodeURIComponent(id)}`, doc);
+  return flattenPersonDoc(id, out.value || doc);
+}
+
+/** Edit a person in Orbit: merge onto the live document, then save it back. */
+export async function updatePerson(id, data) {
+  const people = await orbitRequest("GET", "/people");
+  const doc = people?.[id];
+  if (!doc) throw new Error(`no person with id ${id} in People — query for the real id first`);
+  let next = mergePersonUpdate(doc, data);
+  if (data.photo !== undefined && data.photo !== (doc.photo || "")) {
+    next = { ...next, photo: await resolvePhotoPath(id, data.photo) };
+  }
+  const out = await orbitRequest("PUT", `/people/${encodeURIComponent(id)}`, next);
+  const stored = out.value || next;
+  const oldPhoto = doc.photo || "";
+  if (oldPhoto && oldPhoto !== stored.photo) {
+    removePersonPhoto(oldPhoto).catch((e) => console.warn("[peopleApi] replaced picture cleanup failed:", e.message));
+  }
+  return flattenPersonDoc(id, stored);
 }

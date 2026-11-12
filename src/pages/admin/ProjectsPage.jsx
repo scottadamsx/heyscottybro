@@ -123,8 +123,16 @@ export default function ProjectsPage() {
     const time = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
     return range + time;
   };
-  const addEvent = async (values) => { await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes); await loadProjectDetail(selected); };
-  const saveEventEdit = async (values) => { await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id })); await loadProjectDetail(selected); };
+  const addEvent = async (values) => {
+    const created = await createEventWithAutoTasks({ ...values, project_id: selectedProject.id }, eventTypes);
+    if (created?.people_warning) addToast(created.people_warning, "error");
+    await loadProjectDetail(selected);
+  };
+  const saveEventEdit = async (values) => {
+    const res = await updateEvent(editingEvent.id, eventRowFromForm({ ...values, project_id: selectedProject.id }));
+    if (res?.people_warning) addToast(res.people_warning, "error");
+    await loadProjectDetail(selected);
+  };
   const removeEvent = async (e) => {
     if (!await confirm(`Delete "${e.title}"?`, { title: "Delete event", confirmLabel: "Delete" })) return;
     setProjectEvents((prev) => prev.filter((x) => x.id !== e.id));
