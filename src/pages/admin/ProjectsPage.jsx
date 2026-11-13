@@ -9,6 +9,7 @@ import {
 } from "../../api/plannerApi";
 import EventForm from "../../components/EventForm";
 import { createEventWithAutoTasks, eventRowFromForm } from "../../lib/events";
+import { removeProjectTree } from "../../lib/projectDelete";
 import { formatTime12, formatDisplayDate, toDateStr, nextOccurrence } from "../../utils/plannerUtils";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
@@ -419,12 +420,29 @@ export default function ProjectsPage() {
     const id = projectOrId?.id ?? projectOrId;
     const target = projects.find((p) => String(p.id) === String(id));
     if (!await confirm(`Delete "${target?.name || "this project"}" and all its tasks/initiatives?`, { title: "Delete project", confirmLabel: "Delete" })) return;
+    // Feedback first, the toggleArchive pattern: drop the tree from local
+    // state and leave the detail page the moment the delete is confirmed,
+    // instead of gating every visible step on deleteProject settling. Live
+    // verification (2026-11-13, BUG-087/BUG-094 follow-up) found the old
+    // order (await the API, then toast and navigate) left the deleted
+    // project's page on screen with no toast and no redirect until a
+    // manual reload, even though the delete had landed on the server.
+    const prevProjects = projects;
+    const prevTasks = allTasks;
+    const wasSelected = String(selected) === String(id);
+    const next = removeProjectTree(projects, allTasks, id);
+    setProjects(next.projects);
+    setAllTasks(next.tasks);
+    if (wasSelected) setSelected(null);
     try {
       await deleteProject(id);
       addToast("Project deleted.", "success");
-      if (String(selected) === String(id)) setSelected(null);
-      await loadAll();
+      loadAll().catch(() => {}); // background reconcile; feedback already given
     } catch (err) {
+      // No false success: restore the tree and put the user back on it.
+      setProjects(prevProjects);
+      setAllTasks(prevTasks);
+      if (wasSelected) setSelected(id);
       addToast(`Couldn't delete project: ${err?.message || "unknown error"}`, "error");
     }
   };

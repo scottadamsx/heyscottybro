@@ -1120,6 +1120,7 @@ Every discovered software defect belongs here, including defects found while bui
 - **Observed:** Delete a project and confirm: the dialog closes with no toast and no redirect, and the project is still in the list after a fresh load. A second identical attempt succeeds; the deleted project's detail page then keeps rendering from stale cache.
 - **Expected:** First-attempt delete works, confirms with a toast, redirects, and invalidates the cached list.
 - **Fix:** Project delete now verifies its result, toasts on success, redirects off the deleted project, and invalidates the list cache. Fixed in Projects 2.0 (2026-11-13).
+- **Follow-up (2026-11-13, live verification of the deployed Projects 2.0):** The data half held — the delete landed on the server on the first attempt — but the feedback half was still missing: no success toast and no redirect; the deleted project's page (project id still in the URL) kept rendering until a manual reload. Cause: `handleDeleteProject` gated every visible step (local state removal, toast, navigation) behind `await deleteProject(id)` settling, so the whole sequential server round-trip (select, cascade deletes, the new verify read) sat between the user's click and any feedback. **Fix:** the handler now follows the optimistic pattern used by toggleArchive/changeProjectStage — on confirm it removes the project tree from local state via the pure `removeProjectTree` helper (`src/lib/projectDelete.js`) and navigates off the detail page immediately, toasts on API success with a background reconcile, and on API failure restores the tree, navigates back and shows an error toast. The verify read in `deleteProject` also gained an 8s abort timeout so a stalled read surfaces as an error instead of holding feedback hostage. Regression coverage: `src/lib/projectDelete.test.js` (8 tests) in the `npm test` chain.
 
 ### BUG-088 — False empty states flash on every load
 
@@ -1170,6 +1171,7 @@ Every discovered software defect belongs here, including defects found while bui
 - **Area:** Delete flows.
 - **Observed:** Project and sub-project deletes close their dialog with no toast; the dialog copy is identical for both.
 - **Fix:** Delete actions verify and report their result (see BUG-087). Fixed in Projects 2.0 (2026-11-13).
+- **Follow-up (2026-11-13, live verification):** Project and sub-project deletes still gave no visible feedback on the live build (no toast, no redirect until reload), although the deletion itself succeeded server-side. Fixed through the shared `handleDeleteProject` path (sub-projects delete from their own detail view via the same handler): immediate local removal and navigation on confirm, success toast on API completion, rollback with an error toast on failure. See the BUG-087 follow-up for the full record.
 
 ### BUG-095 — Work tab shows raw internal IDs instead of labels
 

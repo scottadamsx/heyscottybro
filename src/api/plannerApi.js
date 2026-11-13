@@ -1082,8 +1082,14 @@ export async function deleteProject(id) {
       }
       // P0: a delete that reports success but leaves the row behind was
       // indistinguishable from a real delete (audit Bug 1). Verify the row
-      // is actually gone before anyone is told it worked.
-      const { data: remaining, error: vErr } = await supabase.from("projects").select("id").eq("id", id).maybeSingle();
+      // is actually gone before anyone is told it worked. The check gets an
+      // abort timeout: a stalled read must surface as an error, never hold
+      // the delete (and its UI feedback) hostage indefinitely.
+      let verifyQuery = supabase.from("projects").select("id").eq("id", id);
+      if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
+        verifyQuery = verifyQuery.abortSignal(AbortSignal.timeout(8000));
+      }
+      const { data: remaining, error: vErr } = await verifyQuery.maybeSingle();
       if (vErr) throw vErr;
       if (remaining) throw new Error(`Project delete did not take effect: project ${id} still exists after the delete. Refresh and try again; if it persists, check the projects table policies in Supabase.`);
     },
