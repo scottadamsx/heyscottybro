@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { newFollowUpReminder, newReminder, updateReminder } from "../../../api/plannerApi";
 import TaskFormModal, { taskToForm } from "../../../components/TaskFormModal";
+import CopyTaskButton from "../../../components/CopyTaskButton";
 import DatePicker from "../../../components/DatePicker";
 import TimePicker from "../../../components/TimePicker";
 import { formatDisplayDate, formatTime12 } from "../../../utils/plannerUtils";
@@ -110,6 +111,7 @@ export default function TaskPanelContent({
           ? <button type="button" className="btn-secondary-sm" onClick={async () => { setTask((t) => ({ ...t, completed: false, completed_date: null, status: "backlog" })); await onReopen?.(task); onReload?.(); }}><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Reopen</button>
           : <button type="button" className="btn-sm btn-complete" onClick={async () => { if (!(task.recurrence && task.recurrence !== "none")) setTask((t) => ({ ...t, completed: true, status: "done" })); await onComplete?.(task); onReload?.(); }}><i className="fa-solid fa-check" aria-hidden="true" /> Complete</button>}
         <button type="button" className="btn-secondary-sm" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
+        <CopyTaskButton task={task} projectName={project?.name || null} dueLabel={task.date ? formatDisplayDate(task.date) : null} />
         <Link className="btn-secondary-sm" to={`/admin/tasks/${task.id}`}>Open full task</Link>
         {onDelete && (
           <button type="button" className="btn-delete" onClick={() => onDelete(task)}><i className="fa-solid fa-trash" aria-hidden="true" /> Delete</button>

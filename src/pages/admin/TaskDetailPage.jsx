@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
+import CopyTaskButton from "../../components/CopyTaskButton";
 import LinkifiedText from "../../components/LinkifiedText";
 import { formatDisplayDate, toDateStr, formatTime12, nextOccurrence } from "../../utils/plannerUtils";
 import TaskFormModal, { taskToForm } from "../../components/TaskFormModal";
@@ -147,6 +148,10 @@ export default function TaskDetailPage() {
   const next = nextOccurrence(task, todayStr); // one-time: its date; recurring: pending occurrence
   const overdue = !task.completed && next && next < todayStr;
   const dueToday = !task.completed && next === todayStr;
+  // The due label exactly as the Details grid shows it, for the copy brief.
+  const dueLabel = !task.date ? null
+    : isRecurring ? (next ? formatDisplayDate(next) : "Series finished")
+    : formatDisplayDate(task.date);
 
   return (
     <div className="module-page">
@@ -186,6 +191,7 @@ export default function TaskDetailPage() {
           </div>
         </div>
         <div className="task-detail-actions">
+          <CopyTaskButton task={task} projectName={project?.name || null} dueLabel={dueLabel} />
           <button type="button" className="btn-secondary-sm" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
           {task.completed
             ? <button type="button" className="btn-secondary-sm" onClick={handleReopen}><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Reopen</button>

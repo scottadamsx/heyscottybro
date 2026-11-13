@@ -19,6 +19,8 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Added
 
+- Every task now has a Copy button (on the task page and in the Projects task panel) that copies a ready-to-paste brief (title, due date, project, description, and the names of any linked documents), made for handing bug tasks to an agent.
+
 - Health has a Sleep tab (BUG-086, built locally, not yet live): log each night with bedtime and wake time and the duration is worked out for you, see last night and your 7-night average at the top, and tap any night to fix or delete it. One entry per night. Goes live once the branch is pushed and the one-time sleep table setup is run.
 
 - Money Overview now shows Scott's four buckets as rings: Groceries, Fun / Entertainment, Gas, and Bills, each with the amount left in the centre and its transactions one tap away. Groceries and Gas join the transaction category list.
