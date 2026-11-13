@@ -1,9 +1,10 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
 import { logout } from "../../api/plannerApi";
 import { lazyWithReload as lazy } from "../../utils/lazyWithReload";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
+import PopoverPortal from "../../components/PopoverPortal";
 import DetailPanel from "../../components/DetailPanel";
 import StatusPanel from "../../components/StatusPanel";
 import { DetailPanelProvider, useDetailPanel } from "../../contexts/DetailPanelContext";
@@ -101,6 +102,13 @@ function AdminLayoutFrame() {
 
   const [moreOpen, setMoreOpen] = useState(false);     // desktop More popover
   const [menuOpen, setMenuOpen] = useState(false);     // rail bottom menu
+  // The rail popovers render through PopoverPortal (BUG-099): the rail's own
+  // overflow-y: auto clipped the absolutely-positioned .more-pop to the rail
+  // box, so More/Menu opened invisibly and read as dead buttons.
+  const moreWrapRef = useRef(null);
+  const morePopRef = useRef(null);
+  const menuWrapRef = useRef(null);
+  const menuPopRef = useRef(null);
   // BUG-074: the rail rests slim and expands on hover; the pin holds it open.
   const [railPinned, setRailPinned] = useState(() => { try { return localStorage.getItem("hsb:rail-pinned") === "1"; } catch { return false; } });
   useEffect(() => { try { localStorage.setItem("hsb:rail-pinned", railPinned ? "1" : "0"); } catch { /* storage unavailable */ } }, [railPinned]);
@@ -205,7 +213,7 @@ function AdminLayoutFrame() {
             <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
             <span className="rail-label">Search</span>
           </button>
-          <div className="rail-pop-wrap">
+          <div className="rail-pop-wrap" ref={moreWrapRef}>
             <button
               type="button"
               className={`rail-btn${moreActive ? " active" : ""}`}
@@ -217,11 +225,11 @@ function AdminLayoutFrame() {
               <i className="fa-solid fa-ellipsis" aria-hidden="true" />
               <span className="rail-label">More</span>
             </button>
-            {moreOpen && (
-              <div className="more-pop pop-down" role="menu" aria-label="More sections">
+            <PopoverPortal anchorRef={moreWrapRef} popRef={morePopRef} open={moreOpen} side="right" gap={12}>
+              <div className="more-pop" role="menu" aria-label="More sections">
                 {moreItems.map((item) => <NavRow key={item.to} item={item} />)}
               </div>
-            )}
+            </PopoverPortal>
           </div>
         </nav>
         <div className="rail-foot">
@@ -236,7 +244,7 @@ function AdminLayoutFrame() {
             <i className="fa-solid fa-thumbtack" aria-hidden="true" />
             <span className="rail-label">{railPinned ? "Unpin" : "Pin"}</span>
           </button>
-          <div className="rail-pop-wrap">
+          <div className="rail-pop-wrap" ref={menuWrapRef}>
             <button
               type="button"
               className="rail-btn"
@@ -248,8 +256,8 @@ function AdminLayoutFrame() {
               <i className="fa-solid fa-bars" aria-hidden="true" />
               <span className="rail-label">Menu</span>
             </button>
-            {menuOpen && (
-              <div className="more-pop pop-up" role="menu" aria-label="Menu">
+            <PopoverPortal anchorRef={menuWrapRef} popRef={menuPopRef} open={menuOpen} side="right" gap={12}>
+              <div className="more-pop" role="menu" aria-label="Menu">
                 <button type="button" className="nav-row" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
                   <i className="fa-solid fa-gear" aria-hidden="true" />
                   <span>Settings</span>
@@ -263,7 +271,7 @@ function AdminLayoutFrame() {
                   <span>Log out</span>
                 </button>
               </div>
-            )}
+            </PopoverPortal>
           </div>
         </div>
       </div>

@@ -116,16 +116,15 @@
 .admin-shell .rail-pop-wrap { position: relative; display: flex; }
 .admin-shell .pop-scrim { position: fixed; inset: 0; z-index: 118; }
 
-/* More popover + rail menu: labelled rows anchored to the rail */
-.admin-shell .more-pop {
-  position: absolute; left: calc(100% + var(--space-sm)); z-index: 130;
+/* More popover + rail menu: labelled rows beside the rail. The popovers
+   render through PopoverPortal into document.body (BUG-099), so these rules
+   scope to .popover-portal, not .admin-shell. */
+.popover-portal .more-pop {
   width: 232px; padding: var(--space-xs);
   display: flex; flex-direction: column; gap: 2px;
   background: var(--bg-card); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-floating);
 }
-.admin-shell .more-pop.pop-down { top: 0; }
-.admin-shell .more-pop.pop-up { bottom: 0; }
 
 /* Rail labels + expansion (BUG-074): labels exist in the markup always but
    only show when the rail is expanded; expansion is desktop-only (the rail
@@ -157,7 +156,8 @@
 @media (prefers-reduced-motion: reduce) {
   .admin-shell .rail { transition: none; }
 }
-.admin-shell .nav-row {
+.admin-shell .nav-row,
+.popover-portal .nav-row {
   display: flex; align-items: center; gap: var(--space-sm);
   width: 100%; min-height: var(--control-h); padding: 0 var(--space-sm);
   border: none; border-radius: var(--radius-md); background: none;
@@ -165,11 +165,12 @@
   text-decoration: none; white-space: nowrap; cursor: pointer;
   transition: background-color var(--dur-fast), color var(--dur-fast);
 }
-.admin-shell .nav-row i { flex-shrink: 0; width: 20px; text-align: center; font-size: 15px; color: var(--text-secondary); }
-.admin-shell .nav-row:hover { background: var(--bg-raised); }
-.admin-shell .nav-row.active { background: var(--shell-accent-soft); color: var(--shell-accent-hover); }
-.admin-shell .nav-row.active i { color: var(--shell-accent); }
-.admin-shell .nav-row-logout:hover, .admin-shell .nav-row-logout:hover i { color: var(--red); }
+.admin-shell .nav-row i, .popover-portal .nav-row i { flex-shrink: 0; width: 20px; text-align: center; font-size: 15px; color: var(--text-secondary); }
+.admin-shell .nav-row:hover, .popover-portal .nav-row:hover { background: var(--bg-raised); }
+.admin-shell .nav-row.active, .popover-portal .nav-row.active { background: var(--shell-accent-soft); color: var(--shell-accent-hover); }
+.admin-shell .nav-row.active i, .popover-portal .nav-row.active i { color: var(--shell-accent); }
+.admin-shell .nav-row-logout:hover, .admin-shell .nav-row-logout:hover i,
+.popover-portal .nav-row-logout:hover, .popover-portal .nav-row-logout:hover i { color: var(--red); }
 
 .admin-shell .brand { display: inline-flex; align-items: center; gap: var(--space-sm); min-width: 0; color: var(--text-primary); text-decoration: none; border-radius: var(--radius-sm); }
 .admin-shell .brand-word { font-size: var(--text-md); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
