@@ -1,9 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, useOutlet, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import { logout } from "../../api/plannerApi";
 import { lazyWithReload as lazy } from "../../utils/lazyWithReload";
-import PageTransition from "../../components/motion/PageTransition";
 import ErrorBoundary from "../../components/ErrorBoundary";
 import CommandPalette from "../../components/CommandPalette";
 import DetailPanel from "../../components/DetailPanel";
@@ -42,7 +40,7 @@ export const NAV_ITEMS = [
 // More. The hidden-pages setting filters both lists by route.
 const RAIL_PINNED = [
   { to: "/admin/planner",   icon: "fa-calendar-check", label: "Plan" },
-  { to: "/admin/reminders", icon: "fa-bell",           label: "Tasks" },
+  { to: "/admin/tasks",     icon: "fa-list-check",     label: "Tasks" },
   { to: "/admin/finance",   icon: "fa-wallet",         label: "Money" },
   { to: "/admin/health",    icon: "fa-dumbbell",       label: "Health" },
   { to: "/admin/people",    icon: "fa-user-group",     label: "People" },
@@ -279,9 +277,17 @@ function AdminLayoutFrame() {
 
       <main className="admin-main" id="main" tabIndex={-1}>
         <ErrorBoundary>
-          <AnimatePresence mode="wait" initial={false}>
-            <PageTransition key={location.pathname}>{outlet}</PageTransition>
-          </AnimatePresence>
+          {/* No AnimatePresence/PageTransition around the outlet: with
+              mode="wait" the outgoing page stayed mounted and re-rendered
+              against the INCOMING route's context (params/search) while the
+              incoming page waited for the exit to finish, so pages whose
+              rendering depends on the route (e.g. a task detail, which has
+              no :id on the new route) flashed their not-found branch on
+              every navigation. Rendering the outlet directly makes the
+              switch atomic: the old page unmounts, the new page mounts
+              with its own Suspense skeleton (adminRoutes' Lazy) while it
+              loads. */}
+          {outlet}
         </ErrorBoundary>
       </main>
 

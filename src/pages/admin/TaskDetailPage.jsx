@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
@@ -27,9 +27,16 @@ export default function TaskDetailPage() {
 
   const todayStr = toDateStr(new Date());
 
+  // Load sequence guard: overlapping loads (id change while a read is in
+  // flight, a data-change reload racing the first read) must not let the
+  // older read land last — it would set task=null / loading=false for a
+  // task that exists and flash the "Task not found" branch.
+  const loadSeq = useRef(0);
   const load = async () => {
+    const seq = ++loadSeq.current;
     setLoadError(null);
     const [remRes, projRes] = await Promise.allSettled([loadReminders(), loadProjects()]);
+    if (loadSeq.current !== seq) return; // superseded by a newer load
     if (remRes.status === "rejected") {
       console.error("[task] failed to load tasks", remRes.reason);
       setLoadError(remRes.reason?.message || String(remRes.reason));

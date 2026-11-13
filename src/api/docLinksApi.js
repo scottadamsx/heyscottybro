@@ -13,8 +13,32 @@ export const ENTITY_TYPES = ["reminder", "event", "project", "initiative", "agen
 
 const asId = (v) => String(v);
 
+// A doc-links read must always settle. It chains uid() (auth) plus up to
+// three Supabase queries with no retry and no deadline, so one stalled
+// request (network stall, auth-lock contention when a page mounts many
+// DocLinks panels at once) left the caller's promise pending forever and
+// the section sat on its "Loading linked documents" skeleton for good.
+// Race every load against a deadline so a stall becomes a visible,
+// retryable error instead.
+const LOAD_TIMEOUT_MS = 15_000;
+function withLoadTimeout(promise) {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Loading linked documents timed out — check your connection and retry.")),
+      LOAD_TIMEOUT_MS,
+    );
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
 /** Links for one host item, enriched with the linked node's title + type. */
-export async function loadDocLinks(entityType, entityId) {
+export function loadDocLinks(entityType, entityId) {
+  return withLoadTimeout(fetchDocLinks(entityType, entityId));
+}
+
+async function fetchDocLinks(entityType, entityId) {
+  if (!entityId) return [];
   const userId = await uid();
   const { data: links, error } = await supabase
     .from("doc_links")
@@ -71,24 +95,27 @@ export async function fileLinkUrl(link) {
 }
 
 // Join links to their brain nodes (title/type) by slug — and file links to
-// their documents — in one query each.
+// their documents — in one query each. The two queries are independent, so
+// they run together, and a failed query THROWS instead of being swallowed:
+// swallowing it made every link render as a "missing" file/note, a false
+// result the caller could not tell apart from a real empty list (QF-3).
 async function enrich(userId, links) {
   const docIds = [...new Set(links.map((l) => l.document_id).filter(Boolean))];
-  let docsById = {};
-  if (docIds.length) {
-    const { data: docs } = await supabase.from("documents").select("id, name, mime_type, storage_path, size_bytes").in("id", docIds);
-    for (const d of docs ?? []) docsById[d.id] = d;
-  }
   const slugs = [...new Set(links.map((l) => l.node_slug).filter(Boolean))];
-  let nodesBySlug = {};
-  if (slugs.length) {
-    const { data: nodes } = await supabase
-      .from("brain_nodes")
-      .select("slug, title, type")
-      .eq("user_id", userId)
-      .in("slug", slugs);
-    for (const n of nodes ?? []) nodesBySlug[n.slug] = n;
-  }
+  const [docsRes, nodesRes] = await Promise.all([
+    docIds.length
+      ? supabase.from("documents").select("id, name, mime_type, storage_path, size_bytes").in("id", docIds)
+      : Promise.resolve({ data: [], error: null }),
+    slugs.length
+      ? supabase.from("brain_nodes").select("slug, title, type").eq("user_id", userId).in("slug", slugs)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (docsRes.error) throw docsRes.error;
+  if (nodesRes.error) throw nodesRes.error;
+  const docsById = {};
+  for (const d of docsRes.data ?? []) docsById[d.id] = d;
+  const nodesBySlug = {};
+  for (const n of nodesRes.data ?? []) nodesBySlug[n.slug] = n;
   return links.map((l) => {
     if (l.document_id) {
       const d = docsById[l.document_id];

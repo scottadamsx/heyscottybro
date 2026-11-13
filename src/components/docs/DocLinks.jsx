@@ -31,6 +31,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   const navigate = useNavigate();
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [open, setOpen] = useState(!compact);
   const [picking, setPicking] = useState(false);
   const [nodes, setNodes] = useState(null); // brain nodes for the picker (lazy)
@@ -41,14 +42,28 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
 
   const summarize = (ls) => onChange?.({ count: ls.length, unread: ls.filter((l) => !l.read).length });
 
+  // Sequence guard: a superseded load (host id changed, Retry tapped while
+  // a read is in flight) must not land after the newer one and resurrect
+  // stale rows, a stale error, or clear the newer load's spinner.
+  const loadSeqRef = useRef(0);
   const refresh = () => {
+    const seq = ++loadSeqRef.current;
+    // No host id yet: settle to the empty state instead of spinning
+    // forever (the old `if (entityId)` effect guard left loading=true).
+    if (!entityId) { setLinks([]); setLoadError(null); setLoading(false); return; }
     setLoading(true);
+    setLoadError(null);
     loadDocLinks(entityType, entityId)
-      .then((ls) => { setLinks(ls); summarize(ls); })
-      .catch((err) => { console.warn("[doc-links] load failed", err); addToast(`Couldn't load linked docs: ${err?.message || err}`, "error"); })
-      .finally(() => setLoading(false));
+      .then((ls) => { if (loadSeqRef.current === seq) { setLinks(ls); summarize(ls); } })
+      .catch((err) => {
+        if (loadSeqRef.current !== seq) return;
+        console.warn("[doc-links] load failed", err);
+        setLoadError(err?.message || String(err));
+        addToast(`Couldn't load linked docs: ${err?.message || err}`, "error");
+      })
+      .finally(() => { if (loadSeqRef.current === seq) setLoading(false); });
   };
-  useEffect(() => { if (entityId) refresh(); }, [entityType, entityId]);
+  useEffect(() => { refresh(); }, [entityType, entityId]);
 
   // Close the picker on outside click.
   useEffect(() => {
@@ -158,7 +173,13 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       {open && (
         <div className="doclinks-body">
           {loading && <SkeletonList rows={2} label="Loading linked documents" />}
-          {!loading && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
+          {!loading && loadError && (
+            <div className="load-error" role="alert">
+              <p className="load-error-msg">Couldn't load linked documents: {loadError}</p>
+              <button type="button" className="btn-secondary-sm" onClick={refresh}>Retry</button>
+            </div>
+          )}
+          {!loading && !loadError && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
           {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
 
           {links.map((l) => (
