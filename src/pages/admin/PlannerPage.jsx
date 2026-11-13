@@ -16,7 +16,7 @@ import ProjectsPage from "./ProjectsPage";
 import WorkLogPage from "./WorkLogPage";
 import "./plan.css";
 
-const emptyQuickReminder = { name: "", date: toDateStr(new Date()), recurrence: "none" };
+const emptyQuickReminder = { name: "", date: toDateStr(new Date()), recurrence: "none", project_id: "" };
 
 // Journal lives in Life now (Scott: Plan is calendar/reminders/events/work).
 const TABS = [
@@ -44,10 +44,10 @@ export default function PlannerPage() {
   const [quickReminder, setQuickReminder] = useState(emptyQuickReminder);
 
   useEffect(() => {
-    if (!showEventModal) return;
+    if (!showEventModal && !showReminderModal) return;
     Promise.all([loadProjects().catch(() => []), loadEventTypes().catch(() => [])])
       .then(([p, et]) => { setProjects(p); setEventTypes(et); });
-  }, [showEventModal]);
+  }, [showEventModal, showReminderModal]);
 
   const addEvent = async (values) => {
     const created = await createEventWithAutoTasks(values, eventTypes);
@@ -59,7 +59,7 @@ export default function PlannerPage() {
   const addQuickReminder = async () => {
     if (!quickReminder.name.trim()) throw new Error("Give the reminder a name.");
     try {
-      await newReminder({ name: quickReminder.name.trim(), date: quickReminder.date || null, recurrence: quickReminder.recurrence });
+      await newReminder({ name: quickReminder.name.trim(), date: quickReminder.date || null, recurrence: quickReminder.recurrence, project_id: quickReminder.project_id || null });
     } catch (err) {
       throw new Error(`Couldn't add reminder: ${err?.message || "unknown error"}`, { cause: err });
     }
@@ -164,6 +164,12 @@ export default function PlannerPage() {
               </select>
             </Field>
           </div>
+          <Field label="Project (optional)">
+            <select value={quickReminder.project_id} onChange={(e) => setQuickReminder({ ...quickReminder, project_id: e.target.value })}>
+              <option value="">No project</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </Field>
         </FormModal>
       )}
     </div>
