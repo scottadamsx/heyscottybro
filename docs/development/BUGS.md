@@ -1195,3 +1195,12 @@ Every discovered software defect belongs here, including defects found while bui
 - **Cause:** `.acc-actions` was a non-wrapping flex row outside the ≤640px media query, and `.acc-actions .picker { flex: 1; min-width: 0 }` let the picker shrink to a sliver. `.picker-trigger` has a fixed height and `.picker-value { white-space: normal; overflow-wrap: break-word }`, so the squeezed label broke anywhere, including mid-word, and overflowed the trigger.
 - **Fix:** In life.css, `.acc-actions` wraps at every width; the habits picker is `flex: 1 1 10rem` so it keeps a readable minimum and wraps to its own full row in a narrow card; `.acc-actions .picker-value` is nowrap with ellipsis so the label can never stack again; `.acc-day-lbl` is nowrap. The ≤640px behaviour (picker on its own row) is unchanged.
 - **Regression coverage:** Reproduced before the fix and verified after with a harness rendering the real card markup and the app's real stylesheets (globals, index, system, life) in headless Chromium: desktop width showed the letter-stacked label before, and a clean one-line "Log a past day" row after, with all seven day columns clean; 390px was clean before and after. Screenshots in `~/workspace/hq-bug-fixes-shots/` (bug1-before/after). Full `npm test` chain and `npm run build` pass.
+
+### BUG-098 — Text cursor (I-beam) appears over uneditable, read-only text (Windows)
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task e4e7275c.
+- **Area:** Global (`src/styles/globals.css`).
+- **Observed:** Hovering ordinary read-only text shows the I-beam text cursor, which reads as "this is editable" where it is not.
+- **Cause:** No base cursor rule existed. `cursor` is inherited and the UA default (`auto`) resolves to the I-beam over any selectable text.
+- **Fix:** globals.css now sets `body { cursor: default; }` as the base and opts genuinely editable surfaces back into the text cursor (`input, textarea, select, [contenteditable]`). Buttons and links are untouched: components keep setting `cursor: pointer` and links keep the UA pointer. Text remains selectable and copyable; only the pointer shape changes. No `user-select` change (that would break copying, including the task copy button).
+- **Regression coverage:** Computed-style probe in headless Chromium against the real stylesheets: paragraph and span resolve to `default` (were `auto`), input/textarea/contenteditable resolve to `text`, a picker button and a link resolve to `pointer`. Full `npm test` chain and `npm run build` pass.

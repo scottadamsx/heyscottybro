@@ -652,3 +652,4 @@ Deployment note for BUG-081 (same day): Scott approved the push; local history w
 ## 2026-11-13 — HQ bug-fix sweep (Scott's open bug tasks)
 
 - BUG-097 (HQ task c1b45fdc): habit tracker cards garbled the "Log a past day" label at desktop widths — the non-wrapping `.acc-actions` row shrank the picker until its label stacked letter by letter over the week strip. life.css now wraps the actions row at every width, gives the habits picker a 10rem flex basis, and pins the picker label to one line with ellipsis; verified by before/after harness screenshots at desktop and 390px with the app's real stylesheets.
+- BUG-098 (HQ task e4e7275c): I-beam cursor over read-only text. globals.css sets the default cursor as the base and restores the text cursor on inputs, textareas, selects and contenteditable only; buttons and links keep pointer, text stays copyable. Verified by a computed-style probe against the real stylesheets.

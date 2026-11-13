@@ -273,6 +273,19 @@ html { background: var(--bg-base); }
 /* ── QF-9 · One visible focus indicator, everywhere ── */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* ── BUG-098 · Read-only text keeps the default cursor ───────────────────────
+   cursor is inherited, and with the UA default (auto) the pointer turns into
+   an I-beam over any selectable text, which reads as "editable" where it is
+   not (reported on Windows). The arrow is the base; genuinely editable
+   surfaces opt back into the text cursor here, and interactive components
+   keep setting cursor: pointer on their buttons and links as they already
+   do. Text stays selectable and copyable — only the pointer shape changes. */
+body { cursor: default; }
+input, textarea, select,
+[contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"] {
+  cursor: text;
+}
+
 /* ── AD-14 · Reduced transparency: translucent chrome goes solid ────────────
    Backdrop blur is dropped everywhere and the known translucent surfaces
    (public navbar, glass cards, marquee band) fall back to the solid surface
