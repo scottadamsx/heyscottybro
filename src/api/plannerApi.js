@@ -100,6 +100,46 @@ function isMissingTable(err, table) {
 
 const byDateAsc = (k = "date") => (a, b) => String(a[k] || "").localeCompare(String(b[k] || ""));
 
+/* ── Projects 2.0 vocabularies (migration 2026-11-13-projects-2.sql) ──
+   Values are duplicated in src/lib/projectRollups.js on purpose: the pure
+   lib must not import this api module. Keep the two lists identical. */
+export const TASK_STATUSES = ["backlog", "ready", "in_progress", "blocked", "review", "done"];
+export const TASK_STATUS_LABELS = {
+  backlog: "Backlog",
+  ready: "Ready",
+  in_progress: "In Progress",
+  blocked: "Blocked",
+  review: "Review",
+  done: "Done",
+};
+export const PROJECT_STAGES = ["idea", "discovery", "planning", "development", "testing", "launch", "maintenance", "completed"];
+export const PROJECT_STAGE_LABELS = {
+  idea: "Idea",
+  discovery: "Discovery",
+  planning: "Planning",
+  development: "Development",
+  testing: "Testing",
+  launch: "Launch",
+  maintenance: "Maintenance",
+  completed: "Completed",
+};
+
+const PROJECTS_2_MIGRATION = "supabase/migrations/2026-11-13-projects-2.sql";
+// Graceful degradation for the Projects 2.0 tables: warn once per table,
+// not once per call, so a missing migration doesn't flood the console.
+let _missingMilestonesWarned = false;
+function warnMissingMilestonesTable() {
+  if (_missingMilestonesWarned) return;
+  _missingMilestonesWarned = true;
+  console.warn(`[plannerApi] project_milestones table is missing — run ${PROJECTS_2_MIGRATION}. Milestones are unavailable until then.`);
+}
+let _missingUpdatesWarned = false;
+function warnMissingUpdatesTable() {
+  if (_missingUpdatesWarned) return;
+  _missingUpdatesWarned = true;
+  console.warn(`[plannerApi] project_updates table is missing — run ${PROJECTS_2_MIGRATION}. Project updates are unavailable until then.`);
+}
+
 /* ── Reminders ───────────────────────────────── */
 // Shared read: see api/_cache.js (dropped on any write to reminders).
 export function loadReminders() {
@@ -122,13 +162,20 @@ async function loadRemindersUncached() {
 const PRIORITIES = ["low", "medium", "high"];
 
 /** Normalise caller fields into a reminders row (no user_id). */
-function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id, priority, source_type, source_id, source_key, generator, generated_hash, managed_state }) {
+function reminderRow({ name, date, time, description, recurrence, project_id, recur_until, recur_times, show_on_calendar, course_id, event_id, priority, source_type, source_id, source_key, generator, generated_hash, managed_state, status, parent_id, linked_task_id }) {
   const base = {
     name,
     date: date || null,
     recurrence: recurrence || "none",
     completed: false,
     show_on_calendar: show_on_calendar !== false,
+    // Projects 2.0 (2026-11-13-projects-2.sql): workflow status, subtask
+    // parent, follow-up link. Always present (null when unset) so inserts
+    // carry them; newReminders/updateReminder strip them back out when the
+    // DB hasn't run the migration yet.
+    status: TASK_STATUSES.includes(status) ? status : null,
+    parent_id: parent_id ?? null,
+    linked_task_id: linked_task_id ?? null,
   };
   if (PRIORITIES.includes(priority)) base.priority = priority;
   // Connected Pages provenance (docs/features/connected-pages.md): carried
@@ -183,6 +230,16 @@ export async function newReminders(list) {
         });
         ({ data, error } = await supabase.from("reminders").insert(stripped).select());
       }
+      const projects2Cols = ["status", "parent_id", "linked_task_id"];
+      if (error && projects2Cols.some((c) => isMissingColumn(error, c)) && payload.some((r) => projects2Cols.some((c) => c in r))) {
+        console.warn(`[plannerApi] reminders Projects 2.0 columns (status, parent_id, linked_task_id) are missing — run ${PROJECTS_2_MIGRATION}. Inserting WITHOUT them:`, error.message);
+        const stripped = payload.map((r) => {
+          const c = { ...r };
+          for (const k of projects2Cols) delete c[k];
+          return c;
+        });
+        ({ data, error } = await supabase.from("reminders").insert(stripped).select());
+      }
       if (error) throw error;
       return data ?? [];
     },
@@ -196,6 +253,21 @@ export async function newReminders(list) {
 export async function newReminder(fields) {
   const [row] = await newReminders([fields]);
   return row;
+}
+
+/**
+ * Projects 2.0: schedule a follow-up for a task. Creates a SEPARATE reminder
+ * row linked back via linked_task_id (completing it does not complete the
+ * task), filed into the task's project. Returns the created row.
+ */
+export async function newFollowUpReminder(task, { name, date, time } = {}) {
+  return newReminder({
+    name: name || `Follow up: ${task.name}`,
+    date: date || null,
+    time: time || null,
+    project_id: task.project_id ?? null,
+    linked_task_id: task.id,
+  });
 }
 
 /**
@@ -240,7 +312,7 @@ export async function completeReminder(id, occurrenceDate) {
 export async function updateReminder(id, fields, opts = {}) {
   // Only persist keys that were actually provided (so partial edits don't wipe columns).
   let patch = {};
-  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min", "priority", "source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state"].forEach((k) => {
+  ["name", "date", "time", "description", "recurrence", "project_id", "course_id", "recur_until", "recur_times", "show_on_calendar", "completed", "completed_date", "event_id", "duration_min", "priority", "source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state", "status", "parent_id", "linked_task_id"].forEach((k) => {
     if (fields[k] !== undefined) patch[k] = fields[k];
   });
   if (patch.recur_times != null) patch.recur_times = Number(patch.recur_times);
@@ -278,6 +350,18 @@ export async function updateReminder(id, fields, opts = {}) {
         for (const c of provenanceCols) delete rest[c];
         dropped = [...dropped, "provenance"];
         ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
+      }
+      // Projects 2.0 columns are stripped as a group: the DB reports them
+      // one at a time, so dropping only the named one would fail again on
+      // the next. The rest of the edit still saves; caller sees the drop.
+      const projects2Cols = ["status", "parent_id", "linked_task_id"];
+      if (error && projects2Cols.some((c) => c in patch && isMissingColumn(error, c))) {
+        console.warn(`[plannerApi] reminders Projects 2.0 columns (status, parent_id, linked_task_id) are missing — run ${PROJECTS_2_MIGRATION}. Saving the rest of the edit WITHOUT them:`, error.message);
+        const rest = { ...patch };
+        for (const c of projects2Cols) delete rest[c];
+        dropped = [...dropped, ...projects2Cols.filter((c) => c in patch)];
+        if (Object.keys(rest).length) ({ error } = await supabase.from("reminders").update(rest).eq("id", id));
+        else error = null;
       }
       if (error) throw error;
     },
@@ -918,11 +1002,24 @@ async function loadProjectsUncached() {
   );
 }
 
-export async function newProject({ name, description, color, parent_id }) {
+export async function newProject({ name, description, color, parent_id, stage }) {
   const row = { name, description: description || "", color: color || "var(--accent)" };
   if (parent_id) row.parent_id = parent_id;
+  // Stage is only sent when the caller chose one; otherwise the DB default
+  // ('planning', 2026-11-13-projects-2.sql) applies.
+  if (stage) row.stage = stage;
   const result = await op(
-    async () => { const userId = await uid(); const { data, error } = await supabase.from("projects").insert({ user_id: userId, ...row }).select().single(); if (error) throw error; return data; },
+    async () => {
+      const userId = await uid();
+      let { data, error } = await supabase.from("projects").insert({ user_id: userId, ...row }).select().single();
+      if (error && "stage" in row && isMissingColumn(error, "stage")) {
+        console.warn(`[plannerApi] projects.stage column is missing — run ${PROJECTS_2_MIGRATION}. Creating the project WITHOUT a stage:`, error.message);
+        const { stage: _dropped, ...rest } = row;
+        ({ data, error } = await supabase.from("projects").insert({ user_id: userId, ...rest }).select().single());
+      }
+      if (error) throw error;
+      return data;
+    },
     () => local.insert("projects", row),
     "projects.insert",
   );
@@ -931,8 +1028,20 @@ export async function newProject({ name, description, color, parent_id }) {
 }
 
 export async function updateProject(id, updates) {
+  // Pass-through: stage, due_date, archived and sort_order all flow through
+  // unfiltered. Only the Projects 2.0 `stage` column gets the missing-column
+  // fallback (the other three already exist in the base schema).
   await op(
-    async () => { const { error } = await supabase.from("projects").update(updates).eq("id", id); if (error) throw error; },
+    async () => {
+      let { error } = await supabase.from("projects").update(updates).eq("id", id);
+      if (error && updates.stage !== undefined && isMissingColumn(error, "stage")) {
+        console.warn(`[plannerApi] projects.stage column is missing — run ${PROJECTS_2_MIGRATION}. Saving the rest of the edit WITHOUT the stage:`, error.message);
+        const { stage: _dropped, ...rest } = updates;
+        if (Object.keys(rest).length) ({ error } = await supabase.from("projects").update(rest).eq("id", id));
+        else error = null;
+      }
+      if (error) throw error;
+    },
     () => local.update("projects", id, updates),
     "projects.update",
   );
@@ -971,6 +1080,12 @@ export async function deleteProject(id) {
         const { error } = await supabase.from("projects").delete().eq("id", pid);
         if (error) throw error;
       }
+      // P0: a delete that reports success but leaves the row behind was
+      // indistinguishable from a real delete (audit Bug 1). Verify the row
+      // is actually gone before anyone is told it worked.
+      const { data: remaining, error: vErr } = await supabase.from("projects").select("id").eq("id", id).maybeSingle();
+      if (vErr) throw vErr;
+      if (remaining) throw new Error(`Project delete did not take effect: project ${id} still exists after the delete. Refresh and try again; if it persists, check the projects table policies in Supabase.`);
     },
     () => {
       const ids = descendantIds(local.list("projects"), id);
@@ -982,6 +1097,183 @@ export async function deleteProject(id) {
     "projects.delete",
   );
   ["reminders", "events", "initiatives", "projects"].forEach((c) => emitDataChange(c));
+}
+
+/* ── Project Milestones (Projects 2.0) ─────────
+   Table: project_milestones (2026-11-13-projects-2.sql). GRACEFUL
+   DEGRADATION: until that migration runs, loads return [] and writes
+   return null WITHOUT throwing (one console.warn per table, above). */
+// Shared read: see api/_cache.js (dropped on any write to project_milestones).
+export function loadProjectMilestones(projectId) {
+  return cachedRead(`loadProjectMilestones:${projectId ?? "all"}`, "project_milestones", () => loadProjectMilestonesUncached(projectId));
+}
+
+async function loadProjectMilestonesUncached(projectId) {
+  return op(
+    async () => {
+      const userId = await uid();
+      let query = supabase.from("project_milestones").select("*").eq("user_id", userId);
+      if (projectId) query = query.eq("project_id", projectId);
+      const { data, error } = await query.order("target_date", { ascending: true }).order("created_at", { ascending: true });
+      if (error) {
+        if (isMissingTable(error, "project_milestones")) { warnMissingMilestonesTable(); return []; }
+        throw error;
+      }
+      return data ?? [];
+    },
+    () => local.list("project_milestones")
+      .filter((m) => !projectId || String(m.project_id) === String(projectId))
+      .slice()
+      .sort((a, b) => String(a.target_date || "9999-12-31").localeCompare(String(b.target_date || "9999-12-31")) || String(a.created_at || "").localeCompare(String(b.created_at || ""))),
+    "project_milestones.select",
+  );
+}
+
+export async function newMilestone({ project_id, name, target_date, criteria }) {
+  const row = { project_id: project_id || null, name, target_date: target_date || null, criteria: criteria || "" };
+  const result = await op(
+    async () => {
+      const userId = await uid();
+      const { data, error } = await supabase.from("project_milestones").insert({ user_id: userId, ...row }).select().single();
+      if (error) {
+        if (isMissingTable(error, "project_milestones")) { warnMissingMilestonesTable(); return null; }
+        throw error;
+      }
+      return data;
+    },
+    () => local.insert("project_milestones", row),
+    "project_milestones.insert",
+  );
+  if (result === null) return null;
+  emitDataChange("project_milestones");
+  return result;
+}
+
+export async function updateMilestone(id, updates) {
+  const patch = {};
+  ["name", "target_date", "criteria", "completed", "completed_date", "project_id"].forEach((k) => {
+    if (updates[k] !== undefined) patch[k] = updates[k];
+  });
+  const outcome = await op(
+    async () => {
+      const { error } = await supabase.from("project_milestones").update(patch).eq("id", id);
+      if (error) {
+        if (isMissingTable(error, "project_milestones")) { warnMissingMilestonesTable(); return "missing"; }
+        throw error;
+      }
+      return "saved";
+    },
+    () => { local.update("project_milestones", id, patch); return "saved"; },
+    "project_milestones.update",
+  );
+  if (outcome === "missing") return null;
+  emitDataChange("project_milestones");
+  return true;
+}
+
+export async function deleteMilestone(id) {
+  const outcome = await op(
+    async () => {
+      const { error } = await supabase.from("project_milestones").delete().eq("id", id);
+      if (error) {
+        if (isMissingTable(error, "project_milestones")) { warnMissingMilestonesTable(); return "missing"; }
+        throw error;
+      }
+      return "saved";
+    },
+    () => { local.remove("project_milestones", id); return "saved"; },
+    "project_milestones.delete",
+  );
+  if (outcome === "missing") return null;
+  emitDataChange("project_milestones");
+  return true;
+}
+
+/* ── Project Updates (Projects 2.0) ────────────
+   Table: project_updates (2026-11-13-projects-2.sql). Same graceful
+   degradation as milestones: [] / null, never a throw, one warn. */
+export const PROJECT_UPDATE_KINDS = ["note", "decision", "problem", "next_step", "auto"];
+
+// Shared read: see api/_cache.js (dropped on any write to project_updates).
+export function loadProjectUpdates(projectId) {
+  return cachedRead(`loadProjectUpdates:${projectId ?? "all"}`, "project_updates", () => loadProjectUpdatesUncached(projectId));
+}
+
+async function loadProjectUpdatesUncached(projectId) {
+  return op(
+    async () => {
+      const userId = await uid();
+      let query = supabase.from("project_updates").select("*").eq("user_id", userId);
+      if (projectId) query = query.eq("project_id", projectId);
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) {
+        if (isMissingTable(error, "project_updates")) { warnMissingUpdatesTable(); return []; }
+        throw error;
+      }
+      return data ?? [];
+    },
+    () => local.list("project_updates")
+      .filter((u) => !projectId || String(u.project_id) === String(projectId))
+      .slice()
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || ""))),
+    "project_updates.select",
+  );
+}
+
+export async function newProjectUpdate({ project_id, kind, body }) {
+  const row = {
+    project_id: project_id || null,
+    kind: PROJECT_UPDATE_KINDS.includes(kind) ? kind : "note",
+    body: body || "",
+  };
+  const result = await op(
+    async () => {
+      const userId = await uid();
+      const { data, error } = await supabase.from("project_updates").insert({ user_id: userId, ...row }).select().single();
+      if (error) {
+        if (isMissingTable(error, "project_updates")) { warnMissingUpdatesTable(); return null; }
+        throw error;
+      }
+      return data;
+    },
+    () => local.insert("project_updates", row),
+    "project_updates.insert",
+  );
+  if (result === null) return null;
+  emitDataChange("project_updates");
+  return result;
+}
+
+export async function deleteProjectUpdate(id) {
+  const outcome = await op(
+    async () => {
+      const { error } = await supabase.from("project_updates").delete().eq("id", id);
+      if (error) {
+        if (isMissingTable(error, "project_updates")) { warnMissingUpdatesTable(); return "missing"; }
+        throw error;
+      }
+      return "saved";
+    },
+    () => { local.remove("project_updates", id); return "saved"; },
+    "project_updates.delete",
+  );
+  if (outcome === "missing") return null;
+  emitDataChange("project_updates");
+  return true;
+}
+
+/**
+ * Best-effort automatic feed entry (stage changes, milestone completions,
+ * blocked raises, follow-ups). NEVER throws: an auto-log failure must not
+ * fail the action it was logging.
+ */
+export async function logProjectUpdate(projectId, body) {
+  try {
+    return await newProjectUpdate({ project_id: projectId, kind: "auto", body });
+  } catch (err) {
+    console.warn("[plannerApi] logProjectUpdate failed (ignored):", err?.message || err);
+    return null;
+  }
 }
 
 /* ── Event Types ─────────────────────────────── */
