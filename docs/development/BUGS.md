@@ -1186,3 +1186,12 @@ Every discovered software defect belongs here, including defects found while bui
 - **Area:** Project cards.
 - **Observed:** Card descriptions cut to one line. Projects 2.0 cards add counts, progress and stage, and the full description is on the project Overview; the card itself still shows one line.
 - **Status:** Deferred; card anatomy unchanged in 2.0.
+
+### BUG-097 — Habit tracker card: "Log a past day" text stacks vertically and clips over the week strip
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task c1b45fdc.
+- **Area:** Life > Habits tracker cards (`src/pages/admin/AccountabilityPage.jsx`, styles in `src/pages/admin/life.css`).
+- **Observed:** In tracker cards at desktop widths, the text at the right of the card garbled and overlapped: "Log a past day" stacked letter by letter, spilling over the last columns of the Last 7 days strip and below the card. Affects cards whose action row carries two buttons (Mark done + Missed it) worst; a one-button card wrapped the label to two clipped lines.
+- **Cause:** `.acc-actions` was a non-wrapping flex row outside the ≤640px media query, and `.acc-actions .picker { flex: 1; min-width: 0 }` let the picker shrink to a sliver. `.picker-trigger` has a fixed height and `.picker-value { white-space: normal; overflow-wrap: break-word }`, so the squeezed label broke anywhere, including mid-word, and overflowed the trigger.
+- **Fix:** In life.css, `.acc-actions` wraps at every width; the habits picker is `flex: 1 1 10rem` so it keeps a readable minimum and wraps to its own full row in a narrow card; `.acc-actions .picker-value` is nowrap with ellipsis so the label can never stack again; `.acc-day-lbl` is nowrap. The ≤640px behaviour (picker on its own row) is unchanged.
+- **Regression coverage:** Reproduced before the fix and verified after with a harness rendering the real card markup and the app's real stylesheets (globals, index, system, life) in headless Chromium: desktop width showed the letter-stacked label before, and a clean one-line "Log a past day" row after, with all seven day columns clean; 390px was clean before and after. Screenshots in `~/workspace/hq-bug-fixes-shots/` (bug1-before/after). Full `npm test` chain and `npm run build` pass.
