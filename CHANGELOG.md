@@ -9,6 +9,12 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - Journal entries can be dictated in new/edit forms with an explicit microphone action; saved entries open a review in Orbit for person links and proposed profile notes, and approved references appear as clickable people links with an action receipt. The browser speech provider may process audio; the transcript remains an editable draft until saved.
 - Optional AI event-form drafting, source-linked post-event Orbit logging, and action-aware reminder handoffs are released. Event drafting stays separately gated; the event-link migration was applied and verified on 2026-10-10. Real-provider and feature-specific desktop/mobile verification remain open.
 
+## 2026-11-13 Production release
+
+### Added
+
+- Projects 2.0: an attention dashboard (due today, overdue, blocked, stalled, recently completed), a six-lane Kanban board with drag, Move-to and quick add, project lifecycle stages with a pipeline view, subtasks, milestones, a project updates feed, and follow-up reminders created from any task. Project delete is verified with feedback, new reminders appear immediately, completed tasks keep a count and a Completed section, and the false empty states on load are gone. Feature record: `docs/features/projects-2.md`.
+
 ## Unreleased
 
 ### Added
