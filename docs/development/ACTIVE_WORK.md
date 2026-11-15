@@ -1,5 +1,12 @@
 # Active work
 
+## Local main reconciled with origin/main · 2026-11-15
+
+- **Approval:** Scott said exact “go” after reviewing the read-only divergence audit and combined-tree validation. Scope was a local merge and verification only.
+- **Current state:** Local `main` merged `origin/main` at `0697431` into the previous local `a2f7011` as `edd6ada`. The unique local patch `49dcd79` contains unfinished Journal/Orbit follow-up work; the remote side added Projects 2.0, sleep tracking, task copy, and later UI fixes. Git merged three overlapping documentation files without text conflicts and no application-code paths overlapped. This closeout record is local only.
+- **Validation:** The merged tree exactly matched the isolated preview tree. `npm test`, `npm run lint`, and `npm run build` passed in the real checkout; `git diff --check` passed. A signed-in UI, real provider, microphone, live Supabase, and production deployment were not checked.
+- **Next gate:** Scott separately decides whether to push or deploy. Before release, review the combined Journal/Orbit and Projects flows and reconcile any stale dated handoff statements. Do not treat the local Journal/Orbit follow-up as live.
+
 ## Sleep tracking in Health (BUG-086)
 
 - **Feature document:** `docs/features/sleep-tracking.md`
