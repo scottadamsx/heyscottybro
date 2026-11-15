@@ -7,7 +7,7 @@ const PREVIEW_CHARS = 140;
 // Spoken prefix so screen-reader users hear the toast kind, not just the colour/icon.
 const TYPE_PREFIX = { error: "Error: ", success: "Success: ", warning: "Warning: ", info: "Notice: " };
 
-function copyToClipboard(text) {
+export function copyToClipboard(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
   // Fallback for insecure contexts / older browsers.
   return new Promise((resolve, reject) => {

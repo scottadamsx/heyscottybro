@@ -43,6 +43,11 @@ export const ADMIN_PAGES = [
   { path: "planner",      title: "Plan",            icon: "fa-calendar-check",  element: <PlannerPage /> },
   { path: "reminders",    title: "Reminders",       icon: "fa-bell",            element: <RemindersPage /> },
   { path: "work",         title: "Work log",        icon: "fa-briefcase",       element: <WorkLogPage /> },
+  // "/admin/tasks" is the Tasks list itself (the same Tasks & reminders page
+  // as /admin/reminders, which stays live for existing links/bookmarks);
+  // without this entry the index path fell through to the admin 404 while
+  // /admin/tasks/:id worked.
+  { path: "tasks",        title: "Tasks",           icon: "fa-list-check",      element: <RemindersPage /> },
   { path: "tasks/:id",    title: "Task",            icon: "fa-list-check",      element: <TaskDetailPage /> },
   { path: "finance",      title: "Money",           icon: "fa-wallet",          element: <BudgetPage /> },
   { path: "school",       title: "School",          icon: "fa-graduation-cap",  element: <SchoolPage /> },

@@ -24,6 +24,7 @@ import {
   getFocusWrapIndex,
   getInitialChatFocusTarget,
   shouldActivateChatLog,
+  shouldRefocusComposerAfterSend,
   scrollChatToBottom,
 } from "./chatBotUi";
 import { FRODO_CLEAR_CONFIRMATION, FRODO_CLEAR_SUCCESS } from "../utils/chatSessionPolicy";
@@ -410,6 +411,13 @@ export default function ChatBot({ onOpenChange, onUnreadChange, initialOpen = fa
     } finally {
       savingForLaterRef.current = false;
       setSavingForLater(false);
+      // BUG-100: the composer spent the whole turn disabled (savingForLater),
+      // which dropped its focus to <body>. Once it re-enables, give it the
+      // cursor back (fine pointers only; if the panel was closed mid-turn
+      // the textarea has unmounted and the ref is null, so this is a no-op).
+      if (shouldRefocusComposerAfterSend({ touch: isTouch, panelOpen: scrollStateRef.current.open })) {
+        requestAnimationFrame(() => textareaRef.current?.focus({ preventScroll: true }));
+      }
     }
   };
 

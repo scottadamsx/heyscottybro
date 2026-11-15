@@ -38,13 +38,13 @@ main:focus { outline: none; } /* programmatic focus target of the skip link */
   pointer-events: none;
 }
 .pub-dock > * { pointer-events: auto; }
-.pub-dock-xp { bottom: calc(34px + 12px + env(safe-area-inset-bottom)); } /* clear the XP taskbar */
+.pub-dock-xp { bottom: calc(40px + 12px + env(safe-area-inset-bottom)); } /* clear the XP taskbar */
 .pub-fabs { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; margin-left: auto; }
 
 .pub-fab {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-width: 48px; height: 48px; padding: 0 18px; border-radius: 999px; cursor: pointer;
-  font: 500 14px var(--mono);
+  min-width: 48px; height: 52px; padding: 0 22px; border-radius: 999px; cursor: pointer;
+  font: 500 15px var(--mono);
   background: var(--t-elev); color: var(--t-fg); border: 1px solid var(--t-line-br);
   box-shadow: 0 10px 30px -12px rgba(0,0,0,0.8);
   transition: transform .2s var(--t-ease), border-color .2s, color .2s;
@@ -70,7 +70,7 @@ main:focus { outline: none; } /* programmatic focus target of the skip link */
 /* ── Storage notice ────────────────────────────────────────────────────── */
 .pub-notice {
   max-width: 460px; display: flex; align-items: center; gap: 16px;
-  padding: 12px 16px; border-radius: 12px;
+  padding: 16px 20px; border-radius: 16px;
   background: rgba(17,19,23,0.96); color: var(--t-fg-soft); border: 1px solid var(--t-line-br);
   box-shadow: 0 16px 40px -16px rgba(0,0,0,0.9);
   font: 13px/1.5 var(--sans);
@@ -210,9 +210,9 @@ main:focus { outline: none; } /* programmatic focus target of the skip link */
 /* ── 404 ───────────────────────────────────────────────────────────────── */
 .pub-404 { display: flex; flex-direction: column; justify-content: center; }
 .pub-404-term {
-  margin: 24px auto 8px; max-width: 520px; padding: 16px 20px; text-align: left;
+  margin: 28px auto 10px; max-width: 520px; padding: 22px 26px; text-align: left;
   border: 1px solid var(--t-line-br); border-radius: var(--t-r); background: var(--t-elev);
-  font: 14px/1.7 var(--mono); color: var(--t-fg-soft); overflow-wrap: anywhere;
+  font: 15px/1.75 var(--mono); color: var(--t-fg-soft); overflow-wrap: anywhere;
 }
 .pub-404-prompt { color: var(--t-green); }
 .pub-404-path { color: var(--t-fg); }
@@ -225,7 +225,7 @@ main:focus { outline: none; } /* programmatic focus target of the skip link */
 /* ── Phones ────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .pub-dock { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); flex-direction: column-reverse; align-items: stretch; gap: 8px; }
-  .pub-dock-xp { bottom: calc(34px + 8px + env(safe-area-inset-bottom)); }
+  .pub-dock-xp { bottom: calc(40px + 8px + env(safe-area-inset-bottom)); }
   .pub-fabs { flex-direction: row-reverse; align-self: flex-end; gap: 8px; }
   .pub-fab { height: 44px; min-width: 44px; }
   .pub-fab-top { width: 44px; }

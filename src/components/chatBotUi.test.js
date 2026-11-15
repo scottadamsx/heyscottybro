@@ -9,6 +9,7 @@ import {
   getInitialChatFocusTarget,
   isChatModalViewport,
   shouldActivateChatLog,
+  shouldRefocusComposerAfterSend,
   scrollChatToBottom,
 } from "./chatBotUi.js";
 
@@ -27,6 +28,14 @@ test("touch and modal openings focus Close instead of the composer", () => {
   assert.equal(getInitialChatFocusTarget({ modal: true, touch: false }), "close");
   assert.equal(getInitialChatFocusTarget({ modal: false, touch: true }), "close");
   assert.equal(getInitialChatFocusTarget({ modal: false, touch: false }), "composer");
+});
+
+test("the composer regains focus after a send on fine pointers only (BUG-100)", () => {
+  assert.equal(shouldRefocusComposerAfterSend({ touch: false, panelOpen: true }), true);
+  assert.equal(shouldRefocusComposerAfterSend({ touch: true, panelOpen: true }), false);
+  assert.equal(shouldRefocusComposerAfterSend({ touch: false, panelOpen: false }), false);
+  assert.equal(shouldRefocusComposerAfterSend({}), false);
+  assert.match(chatBotSource, /shouldRefocusComposerAfterSend\(\{ touch: isTouch/, "doSend must restore composer focus when the turn ends");
 });
 
 test("the conversation log stays quiet through hydration and activates only after opening settles", () => {

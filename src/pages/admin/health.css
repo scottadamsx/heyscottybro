@@ -182,3 +182,6 @@
   .rest-bar { bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+/* Sleep (BUG-086) */
+.sleep-duration { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }

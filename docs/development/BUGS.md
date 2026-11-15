@@ -1138,3 +1138,112 @@ Every discovered software defect belongs here, including defects found while bui
 - **Cause:** Two parts. (1) `LogModal` starts in the interview only when `ai.available` is true; that flag comes from `GET /api/orbit/health`, whose `aiStatus` (`orbit/server/ai/config.js`) requires an `ANTHROPIC_API_KEY` in the server process plus the connector enabled in settings. The hosted Vercel app has no key configured for Orbit, so on live the adapter is the null adapter and every log falls through to manual. `InterviewDrawer` cannot run without that backend (every turn is a live `ai.interview` call), and no new live AI backend is in scope. (2) `CalendarPage.openOrbitLog` sends the `people` param only when the event has attendees linked in `eventPeople`; the NLHS Innovation Summit event has none, so nothing travels and the picker opens empty.
 - **Fix:** A prompt-first entry mode in `LogModal` for Planner event handoffs (source host event, not yet logged, not a plan) that does not depend on AI availability: it names the event and its people, asks "What happened at the event?", takes one free-text answer filed as Notes through the existing save path (duplicate check, host-event-saved event, and notifications unchanged), shows the people picker inside the prompt when nobody is attached (or behind an Edit people toggle when people are prefilled), and keeps the full manual form one tap away (with a way back). When the AI interview is available it still opens first, unchanged.
 - **Regression coverage:** Four new source tests in `src/pages/admin/orbitLogPrefill.test.js`, in the `npm test` chain (prompt mode is the initial mode for a source-host handoff with the interview still winning when AI is available; the prompt names the event and its people and asks the question; the answer binds to the existing notes/save path; the picker renders inside the prompt for the no-people case with the Edit people toggle otherwise; the Full form escape hatch and the way back). Full suite green (exit 0), lint clean, build pass. Rendered harness (scratch Vite config stubbing only Orbit's two context modules, `ai.available` false to match live; the real `LogModal`, `PeoplePicker`, and save path otherwise) at 390px: with a person prefilled the prompt opened naming the event and Lizwe with exactly one answer area, and saving filed date, title, people, and the typed answer as notes under the host event id; with no people (the NLHS shape) the prompt opened with the picker inside it, an empty save was refused with the existing "Pick at least one person." error, and picking a person then saving filed the same shape. Zero page errors, no horizontal overflow at 390px in either case; screenshots read (`verification/bug084-prompt-people-390.png`, `verification/bug084-prompt-nopeople-390.png`, not committed); scratch files deleted after the run. The signed-in production tap-through remains the post-deploy gate.
+
+### BUG-087 — Deleting a project silently fails on the first attempt
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Projects (`src/pages/admin/ProjectsPage.jsx`, plannerApi deleteProject).
+- **Observed:** Delete a project and confirm: the dialog closes with no toast and no redirect, and the project is still in the list after a fresh load. A second identical attempt succeeds; the deleted project's detail page then keeps rendering from stale cache.
+- **Expected:** First-attempt delete works, confirms with a toast, redirects, and invalidates the cached list.
+- **Fix:** Project delete now verifies its result, toasts on success, redirects off the deleted project, and invalidates the list cache. Fixed in Projects 2.0 (2026-11-13).
+- **Follow-up (2026-11-13, live verification of the deployed Projects 2.0):** The data half held — the delete landed on the server on the first attempt — but the feedback half was still missing: no success toast and no redirect; the deleted project's page (project id still in the URL) kept rendering until a manual reload. Cause: `handleDeleteProject` gated every visible step (local state removal, toast, navigation) behind `await deleteProject(id)` settling, so the whole sequential server round-trip (select, cascade deletes, the new verify read) sat between the user's click and any feedback. **Fix:** the handler now follows the optimistic pattern used by toggleArchive/changeProjectStage — on confirm it removes the project tree from local state via the pure `removeProjectTree` helper (`src/lib/projectDelete.js`) and navigates off the detail page immediately, toasts on API success with a background reconcile, and on API failure restores the tree, navigates back and shows an error toast. The verify read in `deleteProject` also gained an 8s abort timeout so a stalled read surfaces as an error instead of holding feedback hostage. Regression coverage: `src/lib/projectDelete.test.js` (8 tests) in the `npm test` chain.
+
+### BUG-088 — False empty states flash on every load
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Admin shell and Planner/Tasks pages.
+- **Observed:** The Projects tab shows "No projects yet" for about a second before the real cards render; Tasks and Reminders pages briefly flash a full "Page not found" screen. The UI states false facts on every visit.
+- **Cause:** The AdminLayout AnimatePresence mode="wait" outlet combined with a TaskDetailPage load race rendered not-found and empty shells before data arrived.
+- **Fix:** Loading states render skeletons, never false content; the admin page transition was removed app-wide as the root cause. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-089 — A new reminder does not appear until a full page reload
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit (matches Scott's older reports of dated reminders vanishing).
+- **Area:** Reminder creation and list refresh (plannerApi data-change events).
+- **Observed:** Create a reminder from Plan Overview: the toast says "Reminder added", but the item is absent from Upcoming reminders, Active tasks and the calendar until reload.
+- **Fix:** The reminder create path now emits the data-change event consistently so every affected list refreshes immediately. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-090 — /admin/tasks is a dead 404 while task pages live under it
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Routing and sidebar.
+- **Observed:** Typing /admin/tasks returns the 404 page although task detail pages live at /admin/tasks/<id>; the sidebar item labelled Tasks points at /admin/reminders.
+- **Fix:** /admin/tasks renders the Tasks & reminders page and the sidebar label and route agree. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-091 — No way to create a reminder from a project or a task; reminders are born unlinked
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Reminders and Tasks.
+- **Observed:** The only reminder entry point was Plan Overview, New Reminder, whose form has no project or task field; linking required a later edit.
+- **Fix:** Tasks gained Schedule follow-up (a linked reminder, linked both ways), and the New Reminder form has an optional project selector. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-092 — Documents sections never finish loading
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** DocLinks on project and task pages.
+- **Observed:** "Loading linked documents" skeletons never resolve.
+- **Fix:** The linked-documents load now settles with content, a true empty state, or an error with Retry. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-093 — Completed tasks vanish from a project with no trace
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Project detail.
+- **Observed:** Completing a task removes it from its project entirely: no completed view, no count, no history.
+- **Fix:** Every project shows a completed count and a Completed section. Fixed in Projects 2.0 (2026-11-13).
+
+### BUG-094 — Deletes give no confirmation feedback
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Delete flows.
+- **Observed:** Project and sub-project deletes close their dialog with no toast; the dialog copy is identical for both.
+- **Fix:** Delete actions verify and report their result (see BUG-087). Fixed in Projects 2.0 (2026-11-13).
+- **Follow-up (2026-11-13, live verification):** Project and sub-project deletes still gave no visible feedback on the live build (no toast, no redirect until reload), although the deletion itself succeeded server-side. Fixed through the shared `handleDeleteProject` path (sub-projects delete from their own detail view via the same handler): immediate local removal and navigation on confirm, success toast on API completion, rollback with an error toast on failure. See the BUG-087 follow-up for the full record.
+
+### BUG-095 — Work tab shows raw internal IDs instead of labels
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Plan, Work tab.
+- **Observed:** Rows show raw identifiers such as habit:<uuid> instead of human labels.
+- **Status:** Deferred; outside the Projects 2.0 scope.
+
+### BUG-096 — Project card descriptions truncate with no way to expand
+
+- **Discovered:** 2026-11-13, Projects 2.0 live audit.
+- **Area:** Project cards.
+- **Observed:** Card descriptions cut to one line. Projects 2.0 cards add counts, progress and stage, and the full description is on the project Overview; the card itself still shows one line.
+- **Status:** Deferred; card anatomy unchanged in 2.0.
+
+### BUG-097 — Habit tracker card: "Log a past day" text stacks vertically and clips over the week strip
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task c1b45fdc.
+- **Area:** Life > Habits tracker cards (`src/pages/admin/AccountabilityPage.jsx`, styles in `src/pages/admin/life.css`).
+- **Observed:** In tracker cards at desktop widths, the text at the right of the card garbled and overlapped: "Log a past day" stacked letter by letter, spilling over the last columns of the Last 7 days strip and below the card. Affects cards whose action row carries two buttons (Mark done + Missed it) worst; a one-button card wrapped the label to two clipped lines.
+- **Cause:** `.acc-actions` was a non-wrapping flex row outside the ≤640px media query, and `.acc-actions .picker { flex: 1; min-width: 0 }` let the picker shrink to a sliver. `.picker-trigger` has a fixed height and `.picker-value { white-space: normal; overflow-wrap: break-word }`, so the squeezed label broke anywhere, including mid-word, and overflowed the trigger.
+- **Fix:** In life.css, `.acc-actions` wraps at every width; the habits picker is `flex: 1 1 10rem` so it keeps a readable minimum and wraps to its own full row in a narrow card; `.acc-actions .picker-value` is nowrap with ellipsis so the label can never stack again; `.acc-day-lbl` is nowrap. The ≤640px behaviour (picker on its own row) is unchanged.
+- **Regression coverage:** Reproduced before the fix and verified after with a harness rendering the real card markup and the app's real stylesheets (globals, index, system, life) in headless Chromium: desktop width showed the letter-stacked label before, and a clean one-line "Log a past day" row after, with all seven day columns clean; 390px was clean before and after. Screenshots in `~/workspace/hq-bug-fixes-shots/` (bug1-before/after). Full `npm test` chain and `npm run build` pass.
+
+### BUG-098 — Text cursor (I-beam) appears over uneditable, read-only text (Windows)
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task e4e7275c.
+- **Area:** Global (`src/styles/globals.css`).
+- **Observed:** Hovering ordinary read-only text shows the I-beam text cursor, which reads as "this is editable" where it is not.
+- **Cause:** No base cursor rule existed. `cursor` is inherited and the UA default (`auto`) resolves to the I-beam over any selectable text.
+- **Fix:** globals.css now sets `body { cursor: default; }` as the base and opts genuinely editable surfaces back into the text cursor (`input, textarea, select, [contenteditable]`). Buttons and links are untouched: components keep setting `cursor: pointer` and links keep the UA pointer. Text remains selectable and copyable; only the pointer shape changes. No `user-select` change (that would break copying, including the task copy button).
+- **Regression coverage:** Computed-style probe in headless Chromium against the real stylesheets: paragraph and span resolve to `default` (were `auto`), input/textarea/contenteditable resolve to `text`, a picker button and a link resolve to `pointer`. Full `npm test` chain and `npm run build` pass.
+
+### BUG-099 — Rail "More" and "Menu" buttons open popovers that are clipped invisible
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task e039a8cf ("Mobile nav 'More' and 'Menu' buttons do nothing").
+- **Area:** Admin shell (`src/pages/admin/AdminLayout.jsx`, `src/components/PopoverPortal.jsx`, `src/styles/system.css`).
+- **Observed:** Clicking the rail's More or Menu button appeared to do nothing at all: no menu ever became visible.
+- **Cause:** Both popovers were absolutely positioned children of the rail (`left: calc(100% + …)`, i.e. entirely outside the rail's box), and `.rail` has `overflow-y: auto`, which makes overflow-x clip too. The popovers opened in the DOM but were clipped to the rail's box, fully invisible and unclickable. The phone bottom-bar More sheet is separate markup outside the rail and already worked (verified: opens, lists every section, tapping a row navigates and closes).
+- **Fix:** The two rail popovers now render through the existing `PopoverPortal` into document.body beside their anchor. `PopoverPortal` gained an opt-in `side="right"` placement (top-aligned, flips left when the right side has no room; the default below-anchor placement used by the date/time pickers is unchanged). The existing pop-scrim still handles outside clicks. In system.css, `.more-pop` and the `.nav-row` rules gained `.popover-portal` scoping (portal content lives outside `.admin-shell`); the pop-down/pop-up positioning rules are gone.
+- **Regression coverage:** Local build (VITE_LOCAL_DATA=1) driven in headless Chromium: before the fix, clicking desktop More produced a DOM popover that elementFromPoint could not hit (fully clipped) and screenshots showed no menu; after the fix the More popover is hit-testable, clicking its School row navigates to /admin/school and closes it, the Menu popover opens and its Settings row opens the Settings dialog, and the 390px More sheet still opens and navigates. Screenshots in `~/workspace/hq-bug-fixes-shots/` (bug3-before/after). Full `npm test` chain, ESLint and `npm run build` pass.
+
+### BUG-100 — Chat composer loses focus after sending; cursor never returns after Frodo replies
+
+- **Discovered:** 2026-11-13, Scott's HQ bug task dd86e32b.
+- **Area:** Frodo chat (`src/components/ChatBot.jsx`, policy helper in `src/components/chatBotUi.js`).
+- **Cause:** `doSend` sets `savingForLater` for the whole turn, and the composer textarea is `disabled` while that flag is set. Disabling the focused element drops focus to `<body>`; when the turn ended and the composer re-enabled, nothing restored focus, so typing the next message meant clicking back into the box first. Sending via the Send button had the same end state (the button disables once the input clears).
+- **Fix:** When `doSend` settles, the composer is refocused (`preventScroll`) once it re-enables, gated by a new pure helper `shouldRefocusComposerAfterSend({ touch, panelOpen })`: fine pointers only, mirroring the existing open-focus policy (`getInitialChatFocusTarget`) — on touch, refocusing would pop the keyboard open after every reply. If the panel was closed mid-turn the textarea has unmounted and the refocus is a no-op.
+- **Regression coverage:** `chatBotUi.test.js` gains a test for the helper's four cases plus a source assertion that `doSend` wires the restore (11/11 in that suite; full `npm test` chain, ESLint and `npm run build` pass). Runtime note: the local-data build cannot complete a send (chat history never becomes ready without the Supabase backend, so the composer stays disabled there), so the end-to-end focus check needs one pass on the deployed build: send a message on desktop, wait for the reply, and confirm the cursor is back in the composer without clicking.

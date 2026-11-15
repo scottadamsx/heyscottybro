@@ -34,11 +34,15 @@ export default function AdminLogin() {
     <a className="pub-skip auth-skip" href="#main">Skip to sign in</a>
     <main className="auth-wrap" id="main" tabIndex={-1}>
       <div className="auth-card">
-        <span className="auth-mark" aria-hidden="true"><i /><i /><i /><i /></span>
-        <h2>
-          Sign in
-        </h2>
-        <p>Your personal command centre.</p>
+        <div className="auth-head">
+          <span className="auth-mark" aria-hidden="true"><i /><i /><i /><i /></span>
+          <div>
+            <h2>
+              Sign in
+            </h2>
+            <p>Your personal command centre.</p>
+          </div>
+        </div>
 
         <button type="button" className="google-btn" onClick={async () => {
           try {

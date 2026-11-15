@@ -1,0 +1,548 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   astryx.css — Astryx redesign pass (AD sweep, Nov 2026).
+
+   Route: faithful implementation of the Astryx design language, not the
+   @astryxdesign/core package. The package (v0.7.11, as used by
+   scott-website) requires React 19 and a StyleX compiler step; this app is
+   React 18.3 + Vite 6 with no StyleX, and a React major upgrade across the
+   whole admin surface was out of scope and high risk. Instead this file
+   ports the Astryx token system and component shapes directly:
+
+   · Tokens: --color-* surfaces/text/borders, --spacing-0..12 (4px base),
+     --radius-inner/element/container/page, --shadow-low/med/high, and the
+     1.25 type scale (base 16: 13 / 16 / 20 / 25 / 31 / 39 / 49 / 61).
+   · Shapes: TopNav bar (solid surface, segmented nav pills, primary
+     action), Section panels (muted bands, page radius, Stack gap),
+     Card construction (inset rounded media, spacing-6 body, mono label,
+     heading, secondary text, accent link), Stack rhythm everywhere.
+   · Type: DM Sans for headings and body, DM Mono for labels and numbers,
+     per Scott's spec and the scott theme (defineTheme over neutral).
+   · Accents are NOT imported from the personal site: public pages keep
+     their phosphor green, the app keeps its coral. Neutrals are tinted,
+     never pure black or white.
+
+   Loaded LAST in main.jsx so it recomposes the earlier sheets. All first
+   and second pass floors (focus-visible, :active scale, reduced motion
+   and transparency) are preserved; nothing here removes them.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Astryx token port ──────────────────────────────────────────────────── */
+:root {
+  /* spacing: 4px base, Astryx --spacing-N scale */
+  --spacing-0: 0rem;    --spacing-0-5: 0.125rem; --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem; --spacing-2: 0.5rem;  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;    --spacing-5: 1.25rem;    --spacing-6: 1.5rem;
+  --spacing-7: 1.75rem; --spacing-8: 2rem;       --spacing-9: 2.25rem;
+  --spacing-10: 2.5rem; --spacing-11: 2.75rem;   --spacing-12: 3rem;
+
+  /* radius: Astryx roles */
+  --radius-inner: 0.375rem;     /* 6: nested elements */
+  --radius-element: 0.625rem;   /* 10: buttons, tiles, rows */
+  --radius-container: 0.75rem;  /* 12: popovers, media */
+  --radius-card: 1.25rem;       /* 20: cards */
+  --radius-page: 1.75rem;       /* 28: section panels */
+
+  /* elevation: Astryx low / med / high */
+  --shadow-low: 0 2px 4px rgba(4, 12, 8, 0.18), 0 4px 8px rgba(4, 12, 8, 0.22);
+  --shadow-med: 0 2px 4px rgba(4, 12, 8, 0.22), 0 8px 20px rgba(4, 12, 8, 0.32);
+  --shadow-high: 0 4px 6px rgba(4, 12, 8, 0.25), 0 16px 36px rgba(4, 12, 8, 0.42);
+
+  /* public (dark) colour roles, tinted neutrals behind the phosphor accent */
+  --color-background-body: #0B0F16;
+  --color-background-surface: #151C26;
+  --color-background-card: #1B2431;
+  --color-background-muted: #202A39;
+  --color-background-popover: #1E2836;
+  --color-text-primary: #EDF1F5;
+  --color-text-secondary: #B3BECB;
+  --color-border: rgba(255, 255, 255, 0.10);
+  --color-border-emphasized: rgba(255, 255, 255, 0.24);
+  --color-accent: #4ADE80;
+  --color-accent-muted: rgba(74, 222, 128, 0.13);
+
+  /* type families (Astryx names) */
+  --font-family-body: "DM Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-family-heading: "DM Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-family-code: "DM Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  /* public theme remap: DM type, Astryx geometry, Astryx content width */
+  --sans: var(--font-family-body);
+  --mono: var(--font-family-code);
+  --t-bg: var(--color-background-body);
+  --t-elev: var(--color-background-surface);
+  --t-elev-2: var(--color-background-muted);
+  --t-line: var(--color-border);
+  --t-line-br: var(--color-border-emphasized);
+  --t-fg: var(--color-text-primary);
+  --t-fg-soft: var(--color-text-secondary);
+  --t-r: var(--radius-card);
+  --t-r-sm: var(--radius-element);
+  --t-maxw: 68.75rem; /* 1100px, the Astryx content column */
+}
+
+/* ═══════════════ PUBLIC FOUNDATION ═══════════════ */
+.lp {
+  background:
+    radial-gradient(900px 520px at 82% -6%, rgba(74, 222, 128, 0.07), transparent 60%),
+    var(--color-background-body);
+  padding-top: var(--spacing-6);
+  padding-bottom: var(--spacing-10);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+/* Sections stack like an Astryx VStack of Section bands: each content
+   section is now a tinted panel with page radius and a spacing-5 gap,
+   instead of open text on the page background. */
+.lp-section {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-page);
+  padding: var(--spacing-10) var(--spacing-8);
+  padding-top: var(--spacing-10) !important;
+  padding-bottom: var(--spacing-10) !important;
+  margin-top: var(--spacing-5);
+  box-shadow: var(--shadow-low);
+}
+/* The guide section hosts its own card stack, so its panel flattens. */
+.lp-section:has(.lp-guide-layout) {
+  background: transparent; border: none; box-shadow: none;
+  padding-inline: 0; margin-top: var(--spacing-2);
+}
+@media (max-width: 640px) {
+  .lp-section { padding: var(--spacing-8) var(--spacing-5); padding-top: var(--spacing-8) !important; padding-bottom: var(--spacing-8) !important; }
+}
+
+/* ═══════════════ TOPNAV (Astryx TopNav shape) ═══════════════ */
+.navbar {
+  height: 72px;
+  padding-top: 0;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+  background: color-mix(in srgb, var(--color-background-surface) 88%, transparent);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
+  backdrop-filter: saturate(160%) blur(16px);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 12px 28px -18px rgba(0, 0, 0, 0.7);
+  display: flex; align-items: center;
+}
+.nav-inner { max-width: 68.75rem; gap: var(--spacing-6); }
+/* TopNavHeading: plain DM Sans wordmark, terminal decorations retired. */
+.nav-logo {
+  font-family: var(--font-family-heading);
+  font-size: 1.25rem; font-weight: 700; letter-spacing: -0.015em;
+  color: var(--color-text-primary);
+}
+.nav-logo::before, .nav-logo::after { content: none; display: none; }
+.nav-logo span { color: var(--color-accent); }
+/* Nav items sit in one segmented pill bar (TopNav start content). */
+.navbar .nav-links {
+  background: var(--color-background-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: var(--spacing-1);
+  gap: var(--spacing-0-5);
+}
+.nav-trigger {
+  font-family: var(--font-family-body);
+  font-size: 1rem; font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-full);
+  min-height: 40px;
+}
+.nav-trigger:hover, .nav-trigger.open {
+  color: var(--color-text-primary);
+  background: var(--color-background-card);
+}
+/* Primary action, Astryx Button shape. */
+.nav-right .nav-cta {
+  font-family: var(--font-family-body);
+  font-size: 1rem; font-weight: 600;
+  padding: var(--spacing-2) var(--spacing-5) !important;
+  min-height: 44px;
+  display: inline-flex; align-items: center; gap: var(--spacing-2);
+  border-radius: var(--radius-full) !important;
+}
+/* Mega menu becomes a Card popover. */
+.nav-mega {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-6);
+  gap: var(--spacing-6);
+  background: var(--color-background-popover);
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-high);
+}
+.nav-mega-heading {
+  font-family: var(--font-family-code);
+  letter-spacing: 0.12em;
+  color: var(--color-text-secondary);
+}
+.nav-mega-item { border-radius: var(--radius-element); padding: var(--spacing-3); }
+.nav-mega-item:hover { background: var(--color-background-muted); }
+.nav-mega-ico {
+  width: 40px; height: 40px; border-radius: var(--radius-element);
+  background: var(--color-accent-muted); color: var(--color-accent);
+}
+.nav-mega-item:hover .nav-mega-ico { background: var(--color-accent-muted); }
+.nav-mega-t { font-family: var(--font-family-body); font-size: 1rem; color: var(--color-text-primary); }
+.nav-mega-d { font-size: 0.8125rem; color: var(--color-text-secondary); }
+.nav-mega-aside { border-left-color: var(--color-border); padding-left: var(--spacing-6); }
+.nav-mega-aside a { font-family: var(--font-family-body); color: var(--color-text-secondary); }
+.nav-mega-aside a:hover { color: var(--color-accent); }
+.nav-hamburger { border-radius: var(--radius-element); background: var(--color-background-muted); border: 1px solid var(--color-border); }
+.nav-hamburger span { background: var(--color-accent); }
+.nav-mobile {
+  top: 80px;
+  background: var(--color-background-popover);
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-high);
+  padding: var(--spacing-3);
+}
+.nav-mobile a, .nav-mobile button {
+  font-family: var(--font-family-body);
+  border-radius: var(--radius-element);
+  color: var(--color-text-secondary);
+}
+.nav-mobile a i, .nav-mobile button i { color: var(--color-accent); }
+.nav-mobile-heading {
+  font-family: var(--font-family-code);
+  letter-spacing: 0.12em; color: var(--color-text-secondary);
+}
+
+/* ═══════════════ HERO / SUBHERO (left-aligned panel) ═══════════════ */
+/* Was a centred hero on open background. Now an Astryx hero block:
+   left-aligned, in a muted Section panel under the TopNav, display
+   type at the top of the 1.25 scale, large supporting text. */
+.lp-subhero {
+  text-align: left; align-items: flex-start;
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-page);
+  box-shadow: var(--shadow-low);
+  margin-top: calc(var(--spacing-12) + var(--spacing-4));
+  padding: var(--spacing-12) var(--spacing-10) var(--spacing-10);
+}
+.lp-subhero .lp-kicker { margin-bottom: var(--spacing-5); }
+.lp-subhero-title {
+  font-family: var(--font-family-heading);
+  font-size: clamp(2.4375rem, 6vw, 3.8125rem); /* 39 to 61, 1.25 scale */
+  font-weight: 700; line-height: 1.12; letter-spacing: -0.02em;
+  margin-bottom: var(--spacing-5);
+}
+.lp-subhero-sub {
+  font-size: 1.25rem; line-height: 1.5;
+  color: var(--color-text-secondary);
+  max-width: 62ch; margin-bottom: var(--spacing-8);
+}
+.lp-subhero-cta { justify-content: flex-start; gap: var(--spacing-3); }
+@media (max-width: 640px) {
+  .lp-subhero { padding: var(--spacing-8) var(--spacing-5); }
+}
+/* Mono micro-labels become chips (the scott site's MonoLabel, pill form). */
+.lp-kicker, .lp-eyebrow {
+  font-family: var(--font-family-code);
+  font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--color-accent-muted); color: var(--color-accent);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+}
+.lp-kicker::before, .lp-eyebrow::before { content: none; }
+
+/* ═══════════════ HEADINGS + BUTTONS ═══════════════ */
+.lp-h2 {
+  font-family: var(--font-family-heading);
+  font-size: 2.4375rem; /* 39 */
+  font-weight: 700; line-height: 1.12; letter-spacing: -0.02em;
+  margin-bottom: var(--spacing-3);
+}
+@media (max-width: 640px) { .lp-h2 { font-size: 1.9375rem; } }
+.lp-section-sub, .lp-contact-sub, .lp-music-sub { font-size: 1.0625rem; line-height: 1.6; }
+.pill {
+  font-family: var(--font-family-body);
+  font-size: 1rem; font-weight: 600;
+  min-height: 48px; padding: 0 var(--spacing-6);
+  border-radius: var(--radius-full);
+  gap: var(--spacing-2);
+}
+.pill-ghost { background: var(--color-background-card); border-color: var(--color-border-emphasized); }
+
+/* ═══════════════ CARDS (Astryx Card construction) ═══════════════ */
+/* Media is now inset inside the card with container radius instead of
+   running edge to edge; body is a spacing-6 stack: label, heading,
+   secondary text, accent link. */
+.lp-work-grid { gap: var(--spacing-5); margin-top: var(--spacing-8); }
+.lp-card {
+  background: var(--color-background-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-low);
+}
+.lp-card:hover { border-color: var(--t-green-dim); box-shadow: var(--shadow-med); }
+.lp-card-media {
+  margin: var(--spacing-3) var(--spacing-3) 0;
+  border: none; border-radius: var(--radius-container);
+  aspect-ratio: 16 / 9;
+}
+.lp-card-body { padding: var(--spacing-6); gap: var(--spacing-2); }
+.lp-tag {
+  font-family: var(--font-family-code);
+  font-size: 0.75rem; letter-spacing: 0.08em;
+  background: var(--color-accent-muted); color: var(--color-accent);
+  padding: var(--spacing-0-5) var(--spacing-2);
+  border-radius: var(--radius-full);
+}
+.lp-tag::before, .lp-tag::after { content: none; }
+.lp-card-title {
+  font-family: var(--font-family-heading);
+  font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2;
+}
+.lp-card-desc { font-size: 1rem; line-height: 1.55; color: var(--color-text-secondary); }
+.lp-card-link { font-family: var(--font-family-body); font-weight: 600; font-size: 0.9375rem; }
+
+/* Feature cards: icon becomes an Astryx-style element tile. */
+.lp-feature-grid { gap: var(--spacing-5); margin-top: var(--spacing-8); }
+.lp-feature {
+  background: var(--color-background-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-low);
+}
+.lp-feature-icon {
+  width: 48px; height: 48px; display: grid; place-items: center;
+  background: var(--color-accent-muted); color: var(--color-accent);
+  border-radius: var(--radius-element);
+  font-size: 1.25rem; margin-bottom: var(--spacing-4);
+}
+.lp-feature-title {
+  font-family: var(--font-family-heading);
+  font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em;
+  margin-bottom: var(--spacing-2);
+}
+.lp-feature-desc { font-size: 0.9375rem; line-height: 1.55; }
+
+/* Photos, CTA panel, music band */
+.lp-photos { gap: var(--spacing-5); margin-top: var(--spacing-2); }
+.lp-photos img { border-radius: var(--radius-card); border-color: var(--color-border); height: 260px; }
+.lp-cta-box {
+  text-align: left;
+  background: radial-gradient(700px 320px at 18% 0%, var(--color-accent-muted), transparent 60%), var(--color-background-muted);
+  border: 1px solid var(--color-border-emphasized);
+  border-radius: var(--radius-page);
+  padding: var(--spacing-10);
+  margin: 0;
+  box-shadow: none;
+}
+.lp-cta-box h3 {
+  font-family: var(--font-family-heading);
+  font-size: 1.9375rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.12;
+  margin-bottom: var(--spacing-2);
+}
+.lp-cta-box p { margin-inline: 0; font-size: 1.0625rem; margin-bottom: var(--spacing-6); }
+.lp-music { border-radius: var(--radius-page); background: var(--color-background-surface); border-color: var(--color-border); }
+.lp-marquee { border-block-color: var(--color-border); }
+.lp-skill { border-radius: var(--radius-element); background: var(--color-background-card); font-family: var(--font-family-code); }
+
+/* Guide tool, setup, prompt, figure blocks follow the card shape. */
+.lp-tool, .lp-setup-card, .lp-figure, .lp-faq details {
+  background: var(--color-background-card);
+  border-color: var(--color-border);
+  border-radius: var(--radius-card);
+}
+.lp-tool { padding: var(--spacing-5); }
+.lp-setup-card { padding: var(--spacing-6); }
+.lp-prompt { border-radius: var(--radius-card); background: var(--color-background-muted); border-color: var(--color-border); }
+.lp-faq summary { font-family: var(--font-family-body); font-weight: 600; font-size: 1rem; }
+.lp-faq details { padding: var(--spacing-4) var(--spacing-5); }
+
+/* ═══════════════ GUIDE (TOC card + stacked section cards) ═══════════════ */
+.lp-guide-layout { gap: var(--spacing-8); }
+.lp-guide-toc {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-low);
+  padding: var(--spacing-5);
+  top: 96px; gap: var(--spacing-1);
+}
+.lp-guide-toc-title {
+  font-family: var(--font-family-code);
+  letter-spacing: 0.12em; margin-bottom: var(--spacing-2); padding-inline: var(--spacing-2);
+}
+.lp-guide-toc a {
+  font-family: var(--font-family-body);
+  font-size: 0.9375rem; font-weight: 500;
+  border-left: none; border-radius: var(--radius-element);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+.lp-guide-toc a.active { background: var(--color-accent-muted); }
+.lp-guide-toc-num { border-radius: var(--radius-inner); }
+.lp-guide-body { max-width: none; display: flex; flex-direction: column; gap: var(--spacing-4); }
+.lp-guide-section {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-low);
+  padding: var(--spacing-8);
+}
+.lp-guide-section:last-child { border-bottom: 1px solid var(--color-border); }
+.lp-guide-section h2 {
+  font-family: var(--font-family-heading);
+  font-size: 1.9375rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.12;
+}
+.lp-guide-section h3 { font-family: var(--font-family-heading); font-size: 1.25rem; }
+.lp-guide-section p { font-size: 1.0625rem; line-height: 1.6; }
+.lp-guide-callout { border-radius: var(--radius-element); padding: var(--spacing-4) var(--spacing-5); }
+.lp-step-meta { font-family: var(--font-family-code); letter-spacing: 0.12em; }
+@media (max-width: 640px) { .lp-guide-section { padding: var(--spacing-6) var(--spacing-5); } }
+
+/* ═══════════════ 404 ═══════════════ */
+.pub-404-term {
+  border-radius: var(--radius-card);
+  background: var(--color-background-muted);
+  border-color: var(--color-border-emphasized);
+  padding: var(--spacing-6) var(--spacing-8);
+  font-family: var(--font-family-code);
+  font-size: 1rem; line-height: 1.7;
+  margin: 0 0 var(--spacing-6);
+  width: 100%; max-width: 560px;
+}
+
+/* ═══════════════ FOOTER (panel on the body background) ═══════════════ */
+.footer {
+  background: var(--color-background-body);
+  border-top: none;
+  padding: var(--spacing-2) clamp(1rem, 4vw, 2.5rem) var(--spacing-8);
+  box-shadow: 0 100vh 0 100vh var(--color-background-body);
+}
+.footer .container {
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-page);
+  box-shadow: var(--shadow-low);
+  padding: var(--spacing-10);
+  max-width: 68.75rem;
+}
+.footer-grid { gap: var(--spacing-10); margin-bottom: 0; }
+.footer-brand { font-family: var(--font-family-heading); font-size: 1.25rem; font-weight: 700; }
+.footer-brand span { color: var(--color-accent); }
+.footer-tagline { font-size: 0.9375rem; line-height: 1.6; }
+.footer-col-title { font-family: var(--font-family-code); letter-spacing: 0.12em; }
+.footer-col-title::before { content: none; }
+.footer-links { gap: var(--spacing-2); }
+.footer-links a, .footer-links span { font-family: var(--font-family-body); font-size: 0.9375rem; }
+.footer-socials a { border-radius: var(--radius-element); background: var(--color-background-muted); border-color: var(--color-border); }
+.footer-bottom { margin-top: var(--spacing-8); padding-top: var(--spacing-6); border-top-color: var(--color-border); font-family: var(--font-family-body); }
+@media (max-width: 640px) { .footer .container { padding: var(--spacing-8) var(--spacing-5); } }
+
+/* ═══════════════ PUBLIC CHROME (dock, notice, contact) ═══════════════ */
+.pub-fab {
+  font-family: var(--font-family-body); font-weight: 600; font-size: 0.9375rem;
+  height: 48px; border-radius: var(--radius-full);
+  background: var(--color-background-card); border-color: var(--color-border-emphasized);
+}
+.pub-notice {
+  border-radius: var(--radius-card);
+  padding: var(--spacing-5) var(--spacing-6);
+  background: var(--color-background-popover);
+  border-color: var(--color-border-emphasized);
+  font-family: var(--font-family-body); font-size: 0.875rem;
+}
+.pub-contact { border-radius: var(--radius-card); background: var(--color-background-popover); }
+.pub-contact-head h2 { font-family: var(--font-family-heading); }
+.pub-contact-list a { border-radius: var(--radius-element); }
+.pub-news input { border-radius: var(--radius-element); background: var(--color-background-body); font-family: var(--font-family-body); }
+.pub-news button { font-family: var(--font-family-body); }
+.pub-news-title { font-family: var(--font-family-heading); }
+.scroll-progress { background: var(--color-accent); }
+
+/* ═══════════════ XP HOME (identity kept, composition rebuilt) ═══════════════ */
+/* The desktop recomposes from a left icon column plus window area into
+   an Astryx-style stack: a horizontal icon rail in a tinted strip on
+   top, then the window area at full width below it. */
+.xpd .xpd-desktop {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--spacing-5);
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
+}
+.xpd .xpd-icons {
+  display: flex; flex-wrap: nowrap; overflow-x: auto;
+  gap: var(--spacing-2); align-content: start;
+  background: rgba(7, 30, 84, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 16px;
+  padding: var(--spacing-3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px -14px rgba(0, 20, 60, 0.6);
+}
+.xpd .xpd-icon { flex: 0 0 92px; width: 92px; border-radius: var(--radius-element); }
+.xpd .xpd-icon-img { width: 56px; height: 56px; border-radius: 16px; }
+.xpd .xpd-windows { gap: var(--spacing-5); grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); }
+.xpd .xpd-win { border-radius: 16px 16px 12px 12px; }
+.xpd .xpd-title { height: 44px; font-size: 17px; padding-left: 14px; }
+.xpd .xpd-body { padding: var(--spacing-5); }
+.xpd .xpd-body p { font-size: 14px; line-height: 1.6; }
+.xpd .xpd-shot { height: 200px; border-radius: var(--radius-container); margin-bottom: var(--spacing-3); }
+.xpd .xpd-kicker { font-size: 13.5px; margin-bottom: var(--spacing-2); }
+/* Facts become Astryx dense rows: label left, value right, hairlines. */
+.xpd .xpd-facts { grid-template-columns: 1fr; gap: 0; margin: var(--spacing-3) 0 var(--spacing-4); }
+.xpd .xpd-facts div {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--spacing-4);
+  background: transparent; border: none; border-bottom: 1px solid #D8D2BE; border-radius: 0;
+  padding: var(--spacing-2) 2px;
+}
+.xpd .xpd-facts div:last-child { border-bottom: none; }
+.xpd .xpd-facts dt { font-size: 12.5px; }
+.xpd .xpd-facts dd { font-size: 14.5px; text-align: right; }
+.xpd .xpd-btn { height: 36px; border-radius: var(--radius-element); padding: 0 var(--spacing-5); }
+.xpd .xpd-taskbar { height: 48px; }
+.xpd .xpd-start { border-radius: 0 16px 16px 0; font-size: 17px; }
+.xpd .xpd-startmenu { width: 440px; border-radius: 12px 12px 0 0; }
+.xpd .xpd-badge { border-radius: var(--radius-full); height: 26px; }
+.pub-dock.pub-dock-xp { bottom: calc(48px + 12px + env(safe-area-inset-bottom)); }
+@media (max-width: 720px) {
+  .xpd .xpd-desktop { padding: var(--spacing-3); gap: var(--spacing-3); }
+  .xpd .xpd-icons { min-height: 0; padding: var(--spacing-2); }
+  .xpd .xpd-icon { flex-basis: 76px; width: 76px; }
+  .pub-dock.pub-dock-xp { bottom: calc(48px + 8px + env(safe-area-inset-bottom)); }
+}
+
+/* ═══════════════ LOGIN (split composition) ═══════════════ */
+/* Was a centred card on flat cream. Now a split screen: a dark brand
+   panel on the left (inverse surface, coral glow), the sign-in card
+   floating on the cream side at Astryx card geometry. */
+.auth-wrap {
+  background:
+    radial-gradient(640px 420px at 16% 28%, rgba(210, 69, 45, 0.28), transparent 62%),
+    linear-gradient(90deg, #211D19 0, #211D19 40%, var(--bg-sidebar) 40%, var(--bg-sidebar) 100%);
+  justify-content: flex-end;
+  padding: var(--spacing-10) clamp(1.5rem, 7vw, 6rem);
+}
+.auth-card {
+  max-width: 440px;
+  border: none;
+  border-radius: var(--radius-card);
+  padding: var(--spacing-10) var(--spacing-8);
+  box-shadow: 0 24px 48px -16px rgba(34, 30, 27, 0.35), 0 4px 10px rgba(34, 30, 27, 0.10);
+}
+.auth-head { display: flex; align-items: flex-start; gap: var(--spacing-4); margin-bottom: var(--spacing-8); }
+.auth-head .auth-mark { margin-bottom: 0; margin-top: var(--spacing-1); }
+.auth-head h2 { font-size: 1.9375rem; /* 31, heading 1 on the 1.25 scale */ }
+.auth-head p { margin-bottom: 0; }
+.auth-card input { border-radius: var(--radius-container); }
+.auth-card label { font-family: var(--font-family-code); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+@media (max-width: 768px) {
+  .auth-wrap {
+    background:
+      radial-gradient(480px 300px at 50% 0%, rgba(210, 69, 45, 0.25), transparent 62%),
+      linear-gradient(180deg, #211D19 0, #211D19 136px, var(--bg-sidebar) 136px, var(--bg-sidebar) 100%);
+    justify-content: center; align-items: flex-start;
+    padding: 72px var(--spacing-4) var(--spacing-8);
+  }
+}
+
+/* ── Reduced motion: new transitions settle as fades ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lp-card, .lp-feature, .lp-tool, .nav-trigger, .xpd .xpd-icons { transition: none; }
+}

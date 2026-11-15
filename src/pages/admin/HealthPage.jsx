@@ -8,13 +8,14 @@ import { Field, FormModal, Modal } from "../../components/ui";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useHealthData } from "../../components/health/useHealthData";
-import { FoodModal, TargetsModal, WeightModal } from "../../components/health/HealthModals";
+import { FoodModal, SleepModal, TargetsModal, WeightModal } from "../../components/health/HealthModals";
 import MealPlanPanel from "../../components/mealplan/MealPlanPanel";
 import { BuildWithAIModal, PlanEditorModal } from "../../components/health/WorkoutModals";
 import * as api from "../../api/healthApi";
 import { coachTake } from "../../api/aiHealth";
 import { buildInsights, dailyCalories, exerciseLibraryStats, exerciseProgress, weekStart, weeklyVolume } from "../../utils/healthInsights";
 import { e1rm, suggestNext } from "../../utils/overload";
+import { formatClock, formatSleepDuration, sleepSummary } from "../../utils/sleep";
 import { toDateStr } from "../../utils/dates";
 import { addDaysStr, formatDisplayDate } from "../../utils/plannerUtils";
 import "./health.css";
@@ -33,6 +34,7 @@ const TABS = [
   { key: "food", label: "Food", icon: "fa-utensils" },
   { key: "plan", label: "Meal Plan", icon: "fa-calendar-week" },
   { key: "body", label: "Body", icon: "fa-weight-scale" },
+  { key: "sleep", label: "Sleep", icon: "fa-moon" },
 ];
 
 const MEAL_ORDER = ["breakfast", "lunch", "dinner", "snack"];
@@ -77,7 +79,7 @@ export default function HealthPage() {
     };
   }, [data, today]);
 
-  const { profile, plans, sessions, weights, food, openSession } = data;
+  const { profile, plans, sessions, weights, food, sleep, sleepError, openSession } = data;
 
   const run = async (fn, okMessage) => {
     try {
@@ -376,12 +378,27 @@ export default function HealthPage() {
         </div>
       )}
 
+      {tab === "sleep" && (
+        <SleepTab
+          sleep={sleep} sleepError={sleepError}
+          onLog={() => setModal({ type: "sleep" })}
+          onEdit={(entry) => setModal({ type: "sleep", initial: entry })}
+          onDelete={async (entry) => {
+            if (await confirm(`Delete the sleep entry for ${formatDisplayDate(entry.date)}?`, { title: "Delete sleep entry", confirmLabel: "Delete" })) run(() => api.deleteSleep(entry.id), "Deleted.");
+          }}
+        />
+      )}
+
       {modal?.type === "food" && (
         <FoodModal initial={modal.initial} defaultDate={modal.date} profileId={profile.id} onClose={close}
           onSave={async (f) => { await (modal.initial ? api.updateFood(modal.initial.id, f) : api.addFoodItems(profile.id, f)); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "food log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
       )}
       {modal?.type === "weight" && (
         <WeightModal latestLb={derived.latestWeight?.weightLb} defaultDate={modal.date} onClose={close} onSave={async (w) => { await api.saveWeight(profile.id, w); if (modal.reminder) { notifyReminderDestinationSaved(modal.reminder.id, modal.reminder.date, "weight log"); const next = new URLSearchParams(params); next.delete("action"); next.delete("reminderId"); next.delete("occurrenceDate"); setParams(next, { replace: true }); } }} />
+      )}
+      {modal?.type === "sleep" && (
+        <SleepModal initial={modal.initial} onClose={close}
+          onSave={async (s) => { await (modal.initial ? api.updateSleep(modal.initial.id, s) : api.saveSleep(profile.id, s)); }} />
       )}
       {modal?.type === "targets" && (
         <TargetsModal profile={profile} onClose={close} onSave={(t) => api.updateTargets(profile.id, t)} />
@@ -610,6 +627,66 @@ function FoodTab({ food, profile, today, d, onLog, onEdit, onDelete, onGoals }) 
           </section>
         );
       })}
+    </div>
+  );
+}
+
+export function SleepTab({ sleep, sleepError, onLog, onEdit, onDelete }) {
+  const summary = sleepSummary(sleep);
+  return (
+    <div className="health-stack">
+      <div className="health-actions">
+        <button type="button" className="btn btn-primary" onClick={onLog}><i className="fa-solid fa-plus" aria-hidden="true" /> Log sleep</button>
+      </div>
+      {sleepError ? (
+        <section className="db-card">
+          <div className="db-card-header"><h3 className="db-card-title">Sleep</h3></div>
+          <p className="no-entries">Sleep entries could not be loaded. If the sleep table has not been set up yet, it starts working once the sleep migration is applied.</p>
+        </section>
+      ) : (
+        <>
+          <section className="db-card">
+            <div className="db-card-header"><h3 className="db-card-title">Summary</h3></div>
+            {summary.lastNight ? (
+              <div className="db-list">
+                <div className="db-list-item health-row">
+                  <div className="db-list-item-content">
+                    <span className="db-list-item-title">Last night</span>
+                    <span className="db-list-item-subtitle">{formatDisplayDate(summary.lastNight.date)} · {formatClock(summary.lastNight.bedTime)} to {formatClock(summary.lastNight.wakeTime)}</span>
+                  </div>
+                  <span className="health-row-num">{formatSleepDuration(summary.lastNight.durationMinutes)}</span>
+                </div>
+                <div className="db-list-item health-row">
+                  <div className="db-list-item-content">
+                    <span className="db-list-item-title">Average</span>
+                    <span className="db-list-item-subtitle">last {summary.recentCount} night{summary.recentCount === 1 ? "" : "s"}</span>
+                  </div>
+                  <span className="health-row-num">{formatSleepDuration(summary.recentAverage)}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="no-entries">Log a night to see your summary.</p>
+            )}
+          </section>
+          <section className="db-card">
+            <div className="db-card-header"><h3 className="db-card-title">Nights</h3><span className="db-card-count">{sleep.length}</span></div>
+            {sleep.length === 0 ? <p className="no-entries">No sleep logged yet.</p> : (
+              <div className="db-list">
+                {sleep.map((entry) => (
+                  <div key={entry.id} className="db-list-item health-row">
+                    <button type="button" className="health-row-main" onClick={() => onEdit(entry)}>
+                      <span className="db-list-item-title">{formatDisplayDate(entry.date)}</span>
+                      <span className="db-list-item-subtitle">{formatClock(entry.bedTime)} to {formatClock(entry.wakeTime)}{entry.note ? ` · ${entry.note}` : ""}</span>
+                    </button>
+                    <span className="health-row-num">{formatSleepDuration(entry.durationMinutes)}</span>
+                    <button type="button" className="icon-btn" aria-label={`Delete sleep entry on ${entry.date}`} onClick={() => onDelete(entry)}><i className="fa-solid fa-trash" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }

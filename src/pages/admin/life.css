@@ -146,12 +146,16 @@
 .acc-actions .acc-missed { color: var(--text-secondary); }
 .acc-dot.on.is-count { background: color-mix(in srgb, var(--acc-color, var(--accent)) 30%, var(--bg-card)); }
 .acc-dot.today { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--accent); }
-.acc-day-lbl { font-size: var(--text-xs); color: var(--text-secondary); }
+.acc-day-lbl { font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
 .acc-day.is-today .acc-day-lbl { font-weight: 700; color: var(--text-primary); }
 
-.acc-actions { display: flex; align-items: center; gap: var(--space-xs); }
+.acc-actions { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
 .acc-actions .btn { flex-shrink: 0; }
-.acc-actions .picker { flex: 1; min-width: 0; }
+/* The picker keeps a readable minimum: in a narrow card it wraps to its own
+   row instead of shrinking until "Log a past day" stacks letter by letter
+   inside the fixed-height trigger (BUG-097). */
+.acc-actions .picker { flex: 1 1 10rem; min-width: 0; }
+.acc-actions .picker-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .admin-shell .acc-actions .btn.acc-done { background: var(--success-bg); border-color: transparent; color: var(--green); }
 .admin-shell .acc-actions .btn.acc-done:hover { border-color: var(--green); }
 

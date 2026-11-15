@@ -9,6 +9,12 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - Journal entries can be dictated in new/edit forms with an explicit microphone action; saved entries open a review in Orbit for person links and proposed profile notes, and approved references appear as clickable people links with an action receipt. The browser speech provider may process audio; the transcript remains an editable draft until saved.
 - Optional AI event-form drafting, source-linked post-event Orbit logging, and action-aware reminder handoffs are released. Event drafting stays separately gated; the event-link migration was applied and verified on 2026-10-10. Real-provider and feature-specific desktop/mobile verification remain open.
 
+## 2026-11-13 Production release
+
+### Added
+
+- Projects 2.0: an attention dashboard (due today, overdue, blocked, stalled, recently completed), a six-lane Kanban board with drag, Move-to and quick add, project lifecycle stages with a pipeline view, subtasks, milestones, a project updates feed, and follow-up reminders created from any task. Project delete is verified with feedback, new reminders appear immediately, completed tasks keep a count and a Completed section, and the false empty states on load are gone. Feature record: `docs/features/projects-2.md`.
+
 ## Unreleased
 
 ### Fixed
@@ -17,6 +23,10 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - Saving a journal entry now starts the Orbit people/context review automatically when the service is ready; profile changes still require your explicit approval.
 
 ### Added
+
+- Every task now has a Copy button (on the task page and in the Projects task panel) that copies a ready-to-paste brief (title, due date, project, description, and the names of any linked documents), made for handing bug tasks to an agent.
+
+- Health has a Sleep tab (BUG-086, built locally, not yet live): log each night with bedtime and wake time and the duration is worked out for you, see last night and your 7-night average at the top, and tap any night to fix or delete it. One entry per night. Goes live once the branch is pushed and the one-time sleep table setup is run.
 
 - Money Overview now shows Scott's four buckets as rings: Groceries, Fun / Entertainment, Gas, and Bills, each with the amount left in the centre and its transactions one tap away. Groceries and Gas join the transaction category list.
 

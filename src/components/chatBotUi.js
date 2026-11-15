@@ -10,6 +10,14 @@ export function getInitialChatFocusTarget({ modal = false, touch = false } = {})
   return modal || touch ? "close" : "composer";
 }
 
+// After a send, the composer is disabled for the whole turn, which drops
+// focus to <body>; when the turn ends it gets its cursor back (BUG-100).
+// Fine pointers only: on touch, refocusing would reopen the keyboard after
+// every reply — the same reason opening Frodo focuses Close there.
+export function shouldRefocusComposerAfterSend({ touch = false, panelOpen = false } = {}) {
+  return panelOpen && !touch;
+}
+
 export function shouldActivateChatLog({ open = false, hydrating = true, historyReady = false } = {}) {
   return open && !hydrating && historyReady;
 }

@@ -1,5 +1,12 @@
 # Active work
 
+## Sleep tracking in Health (BUG-086)
+
+- **Feature document:** `docs/features/sleep-tracking.md`
+- **Approval:** Scott's direction on 2026-11-09 ("start tracking sleep in heyscottybro", "sleep could be in health") authorises the feature and a local commit on its own branch. Push/deploy and the database migration need Scott's separate explicit approval.
+- **Current state:** Built and verified locally on 2026-11-09 on branch `feature/sleep-tracking` (from origin/main 95041fc, independent of the unpushed BUG-085 on local main). Sleep tab in Health with a WeightModal-style log/edit form (live duration preview), Summary card (last night, 7-night average), and a Nights list with edit/delete. Data lives in a new `sleep_logs` table; the migration file `supabase/migrations/2026-11-09-sleep-logs.sql` is written but NOT applied, and the tab degrades to a plain notice until it is. Five new util tests; lint clean, full suite green (exit 0), build pass; rendered harness passed at desktop and 390px with screenshots read (see the feature document's validation record).
+- **Next gate:** Scott approves (1) running the migration once in the Supabase SQL Editor for project mogoybejtmkoheqvfvuc, and (2) pushing `feature/sleep-tracking`. After deployment, the signed-in check: open Health, Sleep tab, log the Nov 8 to 9 night (10:55 PM to 6:23 AM) and confirm the entry, summary, edit, and delete. Note the app duration is bedtime to wake time (7h 28m for that night); the watch's 6h 52m is its asleep-only figure.
+
 ## Log in Orbit opens on the prompt, not the manual form (BUG-084)
 
 - **Feature document:** `docs/features/orbit-event-log-prompt-first.md`

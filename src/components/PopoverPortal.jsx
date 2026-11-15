@@ -10,7 +10,7 @@
 import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-export default function PopoverPortal({ anchorRef, popRef, open, children, align = "left", gap = 6 }) {
+export default function PopoverPortal({ anchorRef, popRef, open, children, align = "left", gap = 6, side = "below" }) {
   const [pos, setPos] = useState(null);
 
   useLayoutEffect(() => {
@@ -21,6 +21,16 @@ export default function PopoverPortal({ anchorRef, popRef, open, children, align
       if (!a || !p) return;
       const pw = p.offsetWidth, ph = p.offsetHeight;
       const vw = window.innerWidth, vh = window.innerHeight;
+      if (side === "right") {
+        // Beside the anchor, top-aligned (the rail menus, BUG-099): flips to
+        // the anchor's left when there is no room on the right.
+        let left = a.right + gap;
+        if (left + pw > vw - 8 && a.left - gap - pw > 8) left = a.left - gap - pw;
+        left = Math.max(8, Math.min(left, vw - pw - 8));
+        const top = Math.max(8, Math.min(a.top, vh - ph - 8));
+        setPos({ top, left });
+        return;
+      }
       let top = a.bottom + gap;
       if (top + ph > vh - 8 && a.top - gap - ph > 8) top = a.top - gap - ph; // flip up
       top = Math.max(8, Math.min(top, vh - ph - 8));
@@ -33,7 +43,7 @@ export default function PopoverPortal({ anchorRef, popRef, open, children, align
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
     return () => { cancelAnimationFrame(raf); window.removeEventListener("scroll", place, true); window.removeEventListener("resize", place); };
-  }, [open, anchorRef, popRef, align, gap]);
+  }, [open, anchorRef, popRef, align, gap, side]);
 
   if (!open) return null;
   return createPortal(
