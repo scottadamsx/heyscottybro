@@ -663,3 +663,10 @@ Deployment note for BUG-081 (same day): Scott approved the push; local history w
 - Simulated the combined tree first: Git reported no text conflicts; the only overlapping paths were `CHANGELOG.md`, `ACTIVE_WORK.md`, and `BUGS.md`. The isolated combined snapshot passed the full test command, zero-warning lint, and production build.
 - Merged `origin/main` into local `main` as `edd6ada`. The real checkout's tree matched the preview exactly. Re-ran `npm test`, `npm run lint`, `npm run build`, and `git diff --check`; all passed. The build retained the existing large-chunk advisory.
 - The working tree was clean immediately after the merge; no push, deployment, migration, production-data write, signed-in UI check, real-provider call, or live Supabase check occurred. Release remains a separate decision, and the local Journal/Orbit follow-up must not be described as live.
+
+## 2026-11-15 — Local Journal/Orbit and Projects verification
+
+- Started the local Vite app at `http://127.0.0.1:5173/` and opened it in the in-app browser.
+- Signed-in local UI check passed: Journal loaded with 54 entries; People/Orbit rendered the relationship graph with 87 people, 25 inner + close, 17 hangouts / 30d, 8 clusters, and 5 drifting; Projects 2.0 loaded its dashboard with 10 active projects and the needs-attention/suggested sections.
+- Repository gates passed: `npm test` (356 tests), `npm run lint`, and `npm run build`. The build retained the existing large-chunk advisory; no new defect was identified.
+- No application code, database, production data, deployment, push, or commit changed. Real-provider behavior, microphone permissions, live Supabase semantics, and production remain unverified.
