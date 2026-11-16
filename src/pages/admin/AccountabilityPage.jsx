@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
-import { habitScheduleForm, scheduleFromForm, habitScheduleLabel } from "../../utils/habitSchedule";
+import { habitScheduleForm, scheduleFromForm, habitScheduleLabel, habitStreak, nextHabitDueDate } from "../../utils/habitSchedule";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
@@ -255,14 +255,13 @@ export default function AccountabilityPage() {
     return map;
   }, [logs]);
 
-  const stats = (tid) => {
+  const stats = (t) => {
+    const tid = t.id;
     const tl = (logsByTracker[tid] || []).slice().sort((a, b) => b.date.localeCompare(a.date) || b.at - a.at);
     const dateSet = new Set(tl.map((l) => l.date));
-    // streak
-    let s = 0;
-    let d = todayStr;
-    if (!dateSet.has(d)) { const y = addDays(todayStr, -1); if (dateSet.has(y)) d = y; else d = null; }
-    while (d && dateSet.has(d)) { s++; d = addDays(d, -1); }
+    // Streak counts scheduled occurrences (BUG-101): days the habit was not
+    // due can neither build nor break it.
+    const s = habitStreak(data, t, todayStr);
     // per-day counts + last 7 days strip
     const counts = {};
     tl.forEach((l) => { counts[l.date] = (counts[l.date] || 0) + 1; });
@@ -276,6 +275,15 @@ export default function AccountabilityPage() {
   const todayActions = (t) => {
     const n = countOn(t, todayStr);
     const done = t.mode === "check" && n > 0;
+    // BUG-101: a scheduled habit has no today controls on days it is not due —
+    // it shows when it is next due instead. (Handling it today, above, or an
+    // unscheduled tracker keeps the normal controls.)
+    if (!isMissed(t, todayStr) && n === 0) {
+      const next = nextHabitDueDate(data, t, todayStr);
+      if (next && next !== todayStr) {
+        return <p className="acc-next-due">Next due {formatDisplayDate(next)}</p>;
+      }
+    }
     if (isMissed(t, todayStr)) {
       return (
         <button type="button" className="btn btn-secondary-sm acc-missed" onClick={() => setMissed(t, false)} aria-label={`Undo missed for ${t.name}`}>
@@ -301,7 +309,7 @@ export default function AccountabilityPage() {
 
   // Detail view for a single tracker
   const renderDetail = (t) => {
-    const st = stats(t.id);
+    const st = stats(t);
     const tl = (logsByTracker[t.id] || []);
     const dateSet = new Set(tl.map((l) => l.date));
     const counts = {};
@@ -345,7 +353,7 @@ export default function AccountabilityPage() {
         <div className="acc-kpis">
           <div className="acc-kpi"><span className="acc-kpi-label">Total</span><span className="acc-kpi-value">{st.total}</span></div>
           <div className="acc-kpi"><span className="acc-kpi-label">This week</span><span className="acc-kpi-value">{st.weekCount}</span></div>
-          <div className="acc-kpi"><span className="acc-kpi-label">Day streak</span><span className="acc-kpi-value">{st.streak}</span></div>
+          <div className="acc-kpi"><span className="acc-kpi-label">Streak</span><span className="acc-kpi-value">{st.streak}</span></div>
         </div>
 
         <div className="acc-detail-grid">
@@ -465,7 +473,7 @@ export default function AccountabilityPage() {
 
       <div className="acc-grid">
         {trackers.map((t) => {
-          const st = stats(t.id);
+          const st = stats(t);
           return (
             // --acc-color is the tracker's own (user-chosen) colour.
             <article className="db-card acc-card" id={`acc-${t.id}`} key={t.id} style={{ "--acc-color": t.color }}>
@@ -483,7 +491,7 @@ export default function AccountabilityPage() {
               <div className="acc-stats">
                 <div className="acc-stat"><span className="acc-stat-label">Total</span><span className="acc-stat-value">{st.total}</span></div>
                 <div className="acc-stat"><span className="acc-stat-label">This week</span><span className="acc-stat-value">{st.weekCount}</span></div>
-                <div className="acc-stat"><span className="acc-stat-label">Day streak</span><span className="acc-stat-value">{st.streak}</span></div>
+                <div className="acc-stat"><span className="acc-stat-label">Streak</span><span className="acc-stat-value">{st.streak}</span></div>
               </div>
 
               <div className="acc-week" aria-label="Last 7 days">

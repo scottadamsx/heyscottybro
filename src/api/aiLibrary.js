@@ -31,6 +31,7 @@ import { loadBrain, createNode as createBrainNode, updateNode as updateBrainNode
 import { loadCourses, createCourse, updateCourse, deleteCourse } from "./coursesApi";
 import { loadWorkLog, createWorkLog, updateWorkLog, deleteWorkLog } from "./workLogApi";
 import { loadAccountability, saveAccountability } from "./accountabilityApi";
+import { validateHabitSchedule } from "../utils/habitSchedule";
 import { getConnectionStatus, loadAgentActions } from "./plannerApi";
 import { loadGrades } from "./gradesApi";
 import { createPerson, loadPeople, loadPeopleEvents, updatePerson } from "./peopleApi";
@@ -116,20 +117,24 @@ const COLLECTIONS = {
     load: async () => (await loadAccountability()).trackers,
     create: async (data) => {
       const state = await loadAccountability();
-      const tracker = { id: crypto.randomUUID(), name: data.name, emoji: data.emoji || "", color: "var(--accent)", mode: data.mode || "check", created: toDateStr(new Date()) };
+      // BUG-101: carry the schedule the caller asked for — dropping it made
+      // every agent-created check tracker silently daily.
+      if (data.schedule !== undefined) validateHabitSchedule(data.schedule);
+      const tracker = { id: crypto.randomUUID(), name: data.name, emoji: data.emoji || "", color: "var(--accent)", mode: data.mode || "check", created: toDateStr(new Date()), ...(data.schedule !== undefined ? { schedule: data.schedule } : {}) };
       await saveAccountability({ ...state, trackers: [...state.trackers, tracker] });
       return tracker;
     },
     update: async (id, data) => {
       const state = await loadAccountability();
       if (!state.trackers.some((t) => t.id === id)) throw new Error(`no habit tracker with id ${id}`);
+      if (data.schedule !== undefined) validateHabitSchedule(data.schedule);
       await saveAccountability({ ...state, trackers: state.trackers.map((t) => (t.id === id ? { ...t, ...data } : t)) });
     },
     remove: async (id) => {
       const state = await loadAccountability();
       await saveAccountability({ ...state, trackers: state.trackers.filter((t) => t.id !== id), logs: state.logs.filter((l) => l.trackerId !== id), misses: state.misses.filter((m) => m.trackerId !== id) });
     },
-    echoFields: ["id", "name", "emoji", "mode"],
+    echoFields: ["id", "name", "emoji", "mode", "schedule"],
   },
   events: {
     table: "events",

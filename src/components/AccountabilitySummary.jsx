@@ -2,11 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toDateStr } from "../utils/plannerUtils";
 import { loadAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../api/accountabilityApi";
+import { dueHabits, habitSchedule, habitStreak } from "../utils/habitSchedule";
 import { onDataChange } from "../utils/dataEvents";
 import { useToast } from "../contexts/ToastContext";
 import { SkeletonList } from "./Skeleton";
-
-function addDays(str, n) { const d = new Date(str + "T00:00:00"); d.setDate(d.getDate() + n); return toDateStr(d); }
 
 export default function AccountabilitySummary({ title = "Accountability" }) {
   const navigate = useNavigate();
@@ -36,12 +35,16 @@ export default function AccountabilitySummary({ title = "Accountability" }) {
   const missedToday = new Set((data.misses || []).filter((m) => m.date === todayStr).map((m) => m.trackerId));
 
   const countOn = (tid, date) => logs.filter((l) => l.trackerId === tid && l.date === date).length;
-  const streakOf = (tid) => {
-    const set = new Set(logs.filter((l) => l.trackerId === tid).map((l) => l.date));
-    let s = 0, d = todayStr;
-    if (!set.has(d)) { const y = addDays(todayStr, -1); d = set.has(y) ? y : null; }
-    while (d && set.has(d)) { s++; d = addDays(d, -1); }
-    return s;
+  // BUG-101: this card is a today list, not the tracker catalogue. A scheduled
+  // habit shows only on its cadence day (or when already handled today, so it
+  // can be seen and undone); unscheduled tallies have no "wrong day" and stay.
+  const dueIds = new Set(dueHabits(data, todayStr).map((r) => r.tracker.id));
+  const visible = trackers.filter((t) =>
+    dueIds.has(t.id) || countOn(t.id, todayStr) > 0 || missedToday.has(t.id) || habitSchedule(t, todayStr).kind === "none");
+  const streakOf = (t) => habitStreak(data, t, todayStr);
+  const streakUnit = (t) => {
+    const s = habitSchedule(t, todayStr);
+    return s.kind === "none" || (s.every === 1 && s.unit === "days") ? "day streak" : "streak";
   };
   // Check trackers toggle: turning OFF removes every same-day log. Decided
   // against the fresh blob inside the mutator, not this card's snapshot.
@@ -68,7 +71,7 @@ export default function AccountabilitySummary({ title = "Accountability" }) {
   return (
     <div className="db-card col-6">
       <div className="db-card-header">
-        <h3 className="db-card-title">{title}</h3>
+        <h3 className="db-card-title">{title}{ready && trackers.length > 0 ? ` (${visible.length})` : ""}</h3>
         <Link to="/admin/life?tab=habits" className="link-more">All habits <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>
       </div>
 
@@ -81,9 +84,11 @@ export default function AccountabilitySummary({ title = "Accountability" }) {
         </div>
       ) : trackers.length === 0 ? (
         <p className="no-entries">No trackers yet. <Link to="/admin/life?tab=habits">Add one</Link> to track gym days, habits or tallies.</p>
+      ) : visible.length === 0 ? (
+        <p className="no-entries">No habits due today.</p>
       ) : (
         <div className="db-list">
-          {trackers.map((t) => {
+          {visible.map((t) => {
             const c = countOn(t.id, todayStr);
             const done = t.mode === "check" && c > 0;
             const missed = missedToday.has(t.id);
@@ -92,7 +97,7 @@ export default function AccountabilitySummary({ title = "Accountability" }) {
                 <div className="db-list-item--clickable habit-row-main" role="button" tabIndex={0} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
                                     <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
-                    <div className="db-list-item-subtitle">{missed ? <><span className="missed-tag">Missed</span> · today</> : <>{streakOf(t.id)} day streak{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</>}</div>
+                    <div className="db-list-item-subtitle">{missed ? <><span className="missed-tag">Missed</span> · today</> : <>{streakOf(t)} {streakUnit(t)}{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</>}</div>
                   </div>
                 </div>
                 <div className="habit-row-actions">

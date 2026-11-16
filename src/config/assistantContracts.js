@@ -24,14 +24,15 @@ export const PRODUCT_SPACES = Object.freeze([
 ]);
 
 export const HABITS_COLLECTION_CONTRACT = Object.freeze({
-  description: "Habit / accountability trackers (Life › Habits). Each tracker is a habit Scott logs daily (checkbox) or tallies (count). Use log_habit to record a day.",
+  description: "Habit / accountability trackers (Life › Habits). Each tracker is a habit Scott logs (checkbox) or tallies (count), on a schedule: daily unless its schedule says otherwise. Use log_habit to record a day.",
   searchFields: Object.freeze(["name"]),
-  defaultFields: Object.freeze(["id", "name", "emoji", "mode", "created"]),
+  defaultFields: Object.freeze(["id", "name", "emoji", "mode", "created", "schedule"]),
   fields: Object.freeze({
     name: Object.freeze({ type: "string", required: true }),
     emoji: Object.freeze({ type: "string" }),
     mode: Object.freeze({ type: "enum", values: Object.freeze(["check", "count"]), description: "check = once a day, count = tally taps" }),
     created: Object.freeze({ type: "date", updateOnly: true }),
+    schedule: Object.freeze({ type: "object", description: "When the habit is due: { schema: 1, kind: \"none\" } for no set days, or { schema: 1, kind: \"interval\", every: N, unit: \"days\"|\"weeks\", startDate: \"YYYY-MM-DD\" } — daily is every 1 days; Sundays-only is every 1 weeks with a Sunday startDate; every 4 days is every 4 days. Omit it and a check tracker is treated as daily." }),
   }),
 });
 

@@ -26,25 +26,77 @@ export function habitSchedule(tracker, today) {
   return { schema: 1, kind: 'interval', every: 1, unit: 'days', startDate: validHabitDate(tracker.created) ? tracker.created : today };
 }
 /**
- * Habits due on `today`. The next due date counts from the latest day the habit
- * was handled — done (a log) or crossed out ("Missed it", state.misses) — so a
- * skipped habit leaves today's list and comes round again on schedule instead
- * of sitting overdue forever. A miss never counts as done anywhere else.
+ * The cadence of one scheduled tracker up to `today`: every day the habit was
+ * due, and what happened on it. Occurrences start at the schedule's startDate
+ * and step by the interval; handling the habit (a log = 'done', a "Missed it"
+ * mark = 'missed') re-anchors the cadence to the handled day, as before. The
+ * difference from the old model (BUG-101): an occurrence that passes with no
+ * log and no miss is 'skipped' and the cadence simply moves on — the habit is
+ * due ONLY on its cadence days, never carried over as "overdue" onto days it
+ * was never scheduled for. A log dated before its occurrence counts as doing
+ * that occurrence early (handledOn). `next` is the first cadence day after
+ * `today` (null when the tracker has no schedule).
+ */
+export function habitOccurrences(state, tracker, today) {
+  if (!validHabitDate(today)) throw new Error('Choose a valid day to find due habits.');
+  const schedule = habitSchedule(tracker, today);
+  if (schedule.kind === 'none') return { occurrences: [], next: null };
+  const step = schedule.every * (schedule.unit === 'weeks' ? 7 : 1);
+  const handled = new Map();
+  for (const log of state.logs || []) {
+    if (log.trackerId === tracker.id && validHabitDate(log.date) && log.date >= schedule.startDate && log.date <= today) handled.set(log.date, 'done');
+  }
+  for (const miss of state.misses || []) {
+    if (miss.trackerId === tracker.id && validHabitDate(miss.date) && miss.date >= schedule.startDate && miss.date <= today && !handled.has(miss.date)) handled.set(miss.date, 'missed');
+  }
+  const occurrences = [];
+  let next = schedule.startDate;
+  for (const date of [...handled.keys()].sort()) {
+    while (next < date) { occurrences.push({ date: next, status: 'skipped' }); next = addHabitDays(next, step); }
+    if (next === date) { occurrences.push({ date, status: handled.get(date) }); next = addHabitDays(date, step); }
+    else { occurrences.push({ date: next, status: handled.get(date), handledOn: date }); next = addHabitDays(date, step); }
+  }
+  while (next < today) { occurrences.push({ date: next, status: 'skipped' }); next = addHabitDays(next, step); }
+  if (next === today) { occurrences.push({ date: today, status: 'due' }); next = addHabitDays(today, step); }
+  return { occurrences, next };
+}
+/**
+ * Habits due on `today` — cadence days only (see habitOccurrences). A habit
+ * whose day passed unhandled does not appear again until its next cadence
+ * day, and never shows as overdue on a day it was not scheduled.
  */
 export function dueHabits(state, today) {
   if (!validHabitDate(today)) throw new Error('Choose a valid day to find due habits.');
-  const latest = new Map();
-  for (const log of [...(state.logs || []), ...(state.misses || [])]) {
-    if (validHabitDate(log.date) && log.date <= today && (!latest.has(log.trackerId) || log.date > latest.get(log.trackerId))) latest.set(log.trackerId, log.date);
-  }
   return (state.trackers || []).flatMap(tracker => {
-    const schedule = habitSchedule(tracker, today);
-    if (schedule.kind === 'none') return [];
-    const last = latest.get(tracker.id);
-    const next = last ? addHabitDays(last, schedule.every * (schedule.unit === 'weeks' ? 7 : 1)) : schedule.startDate;
-    const dueDate = next > schedule.startDate ? next : schedule.startDate;
-    return dueDate <= today ? [{ tracker, dueDate, overdue: dueDate < today }] : [];
-  }).sort((a, b) => a.dueDate.localeCompare(b.dueDate) || (a.tracker.name || '').localeCompare(b.tracker.name || ''));
+    const { occurrences } = habitOccurrences(state, tracker, today);
+    return occurrences.some(o => o.date === today && o.status === 'due') ? [{ tracker, dueDate: today, overdue: false }] : [];
+  }).sort((a, b) => (a.tracker.name || '').localeCompare(b.tracker.name || ''));
+}
+/**
+ * Consecutive handled occurrences, most recent first. Only cadence days can
+ * break a streak: days the habit was never scheduled are invisible to it, and
+ * today still in progress (due, not yet handled) does not break it either.
+ * Trackers with no schedule keep the plain calendar-day streak.
+ */
+export function habitStreak(state, tracker, today) {
+  if (!validHabitDate(today)) throw new Error('Choose a valid day to find a habit streak.');
+  if (habitSchedule(tracker, today).kind === 'none') {
+    const days = new Set((state.logs || []).filter(l => l.trackerId === tracker.id).map(l => l.date));
+    let s = 0, d = days.has(today) ? today : null;
+    if (!d) { const y = addHabitDays(today, -1); d = days.has(y) ? y : null; }
+    while (d && days.has(d)) { s++; d = addHabitDays(d, -1); }
+    return s;
+  }
+  const { occurrences } = habitOccurrences(state, tracker, today);
+  const past = occurrences.filter(o => o.status !== 'due');
+  let s = 0;
+  for (let i = past.length - 1; i >= 0 && past[i].status === 'done'; i--) s++;
+  return s;
+}
+/** The next day this tracker is due: today if it is due today, else its next cadence day, else null (no schedule). */
+export function nextHabitDueDate(state, tracker, today) {
+  const { occurrences, next } = habitOccurrences(state, tracker, today);
+  return occurrences.some(o => o.date === today && o.status === 'due') ? today : next;
 }
 /** Scheduled habits crossed out ("Missed it") on `day`, for the struck-through rows. */
 export function missedHabits(state, day) {

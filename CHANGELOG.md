@@ -19,6 +19,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Habits now keep to their schedules (BUG-101): a habit set for Sundays only, or every few days, appears on the Today page and in Reminders only on its days, no longer nags as "overdue" on the days in between, and its streak counts the days it was actually due, so off days cannot break it. Habits created by asking Frodo now keep the schedule you asked for instead of silently becoming daily.
 - Journal dictation now recovers visibly if the browser never starts microphone recognition, instead of leaving Save stuck disabled.
 - Saving a journal entry now starts the Orbit people/context review automatically when the service is ready; profile changes still require your explicit approval.
 

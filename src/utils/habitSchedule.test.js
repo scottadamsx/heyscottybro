@@ -1,22 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dueHabits, addHabitDays, habitScheduleLabel, habitScheduleForm, scheduleFromForm, validateHabitSchedule } from './habitSchedule.js';
+import { dueHabits, addHabitDays, habitScheduleLabel, habitScheduleForm, scheduleFromForm, validateHabitSchedule, habitStreak, nextHabitDueDate } from './habitSchedule.js';
 const tracker = (every, unit = 'days') => ({ id: 'habit', name: 'Laundry', mode: 'check', schedule: { schema: 1, kind: 'interval', every, unit, startDate: '2026-09-01' } });
 const log = date => ({ id: date, trackerId: 'habit', date });
-for (const [every, unit, due] of [[5, 'days', '2026-09-06'], [1, 'weeks', '2026-09-08'], [2, 'weeks', '2026-09-15']]) {
+for (const [every, unit, due, afterOct30] of [[5, 'days', '2026-09-06', '2026-10-31'], [1, 'weeks', '2026-09-08', '2026-11-03'], [2, 'weeks', '2026-09-15', '2026-11-10']]) {
   test(`completion rolls every ${every} ${unit}`, () => {
     const state = { trackers: [tracker(every, unit)], logs: [log('2026-09-01')] };
     assert.equal(dueHabits(state, '2026-09-02').length, 0);
     assert.equal(dueHabits(state, due)[0].dueDate, due);
     assert.equal(dueHabits(state, due)[0].overdue, false);
-    const overdue = dueHabits(state, '2026-10-30');
-    assert.equal(overdue.length, 1); assert.equal(overdue[0].dueDate, due); assert.equal(overdue[0].overdue, true);
-    state.logs.push(log('2026-10-30'));
+    // BUG-101: an unhandled due day does NOT carry over. Far-future days that
+    // are not cadence days show nothing; the habit returns on its cadence day.
     assert.equal(dueHabits(state, '2026-10-30').length, 0);
-    state.logs.pop();
-    assert.equal(dueHabits(state, '2026-10-30')[0].dueDate, due);
+    assert.equal(dueHabits(state, afterOct30)[0].dueDate, afterOct30);
+    state.logs.push(log(afterOct30));
+    assert.equal(dueHabits(state, afterOct30).length, 0);
   });
 }
+test('BUG-101: a Sunday-only habit skipped on Sunday stays silent until next Sunday', () => {
+  const sunday = { id: 'clean', name: 'Clean The Apartment', mode: 'check', schedule: { schema: 1, kind: 'interval', every: 1, unit: 'weeks', startDate: '2026-11-01' } };
+  const state = { trackers: [sunday], logs: [log('2026-11-08')].map(l => ({ ...l, trackerId: 'clean' })) };
+  assert.equal(dueHabits(state, '2026-11-16').length, 0); // Monday after the skipped Sunday
+  assert.equal(dueHabits(state, '2026-11-21').length, 0); // Saturday
+  assert.equal(dueHabits(state, '2026-11-22')[0].tracker.id, 'clean'); // next Sunday
+  assert.equal(nextHabitDueDate(state, sunday, '2026-11-16'), '2026-11-22');
+});
+test('BUG-101: streaks count scheduled occurrences, not calendar days', () => {
+  const every4 = { id: 'habit', name: 'Laundry', mode: 'check', schedule: { schema: 1, kind: 'interval', every: 4, unit: 'days', startDate: '2026-11-03' } };
+  const done = { trackers: [every4], logs: ['2026-11-03', '2026-11-07', '2026-11-11', '2026-11-15'].map(log) };
+  assert.equal(habitStreak(done, every4, '2026-11-16'), 4); // perfect adherence, mostly non-due days
+  assert.equal(habitStreak(done, every4, '2026-11-19'), 4); // due today, not yet done: not broken
+  const skipped = { trackers: [every4], logs: ['2026-11-03', '2026-11-07', '2026-11-11'].map(log) };
+  assert.equal(habitStreak(skipped, every4, '2026-11-16'), 0); // the Nov 15 occurrence was skipped
+  const daily = { id: 'habit', name: 'Daily', mode: 'check', created: '2026-11-01' };
+  assert.equal(habitStreak({ trackers: [daily], logs: [log('2026-11-14'), log('2026-11-15')] }, daily, '2026-11-16'), 2);
+});
 test('calendar arithmetic crosses DST, month, leap day and year boundaries', () => {
   assert.equal(addHabitDays('2026-03-07', 5), '2026-03-12');
   assert.equal(addHabitDays('2026-10-31', 7), '2026-11-07');
@@ -30,7 +48,7 @@ test('legacy checks are daily; counters default to no reminders; undo restores d
   assert.equal(dueHabits(state, '2026-09-02').length, 0);
   assert.equal(dueHabits(state, '2026-09-03')[0].dueDate, '2026-09-03');
   state.logs = [];
-  assert.equal(dueHabits(state, '2026-09-02')[0].dueDate, '2026-09-01');
+  assert.equal(dueHabits(state, '2026-09-02')[0].dueDate, '2026-09-02'); // daily: due today, dated today (BUG-101, no overdue carryover)
   assert.equal(habitScheduleLabel(state.trackers[1]), 'No reminder');
 });
 test('future logs do not hide due work; future first date stays respected', () => {

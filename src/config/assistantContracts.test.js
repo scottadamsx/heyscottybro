@@ -32,7 +32,7 @@ test("Life exposes Habits from the shared product-map contract", () => {
 
 test("the Library's shared habits catalog contract names its real product home", () => {
   assert.match(HABITS_COLLECTION_CONTRACT.description, /Life › Habits/);
-  assert.deepEqual(HABITS_COLLECTION_CONTRACT.defaultFields, ["id", "name", "emoji", "mode", "created"]);
+  assert.deepEqual(HABITS_COLLECTION_CONTRACT.defaultFields, ["id", "name", "emoji", "mode", "created", "schedule"]);
   assert.equal(HABITS_COLLECTION_CONTRACT.fields.name.required, true);
   assert.deepEqual(HABITS_COLLECTION_CONTRACT.fields.mode.values, ["check", "count"]);
 });
