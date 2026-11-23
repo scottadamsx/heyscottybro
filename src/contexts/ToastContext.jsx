@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { copyText } from "../utils/clipboard";
 
 // Errors (and the odd verbose info toast) can carry a wall of text — a stack
 // trace, a Supabase constraint message, a full API error. We show the start so
@@ -7,22 +8,10 @@ const PREVIEW_CHARS = 140;
 // Spoken prefix so screen-reader users hear the toast kind, not just the colour/icon.
 const TYPE_PREFIX = { error: "Error: ", success: "Success: ", warning: "Warning: ", info: "Notice: " };
 
+// Kept as a named export for existing importers; the real work lives in
+// utils/clipboard (async API, then the legacy execCommand fallback).
 export function copyToClipboard(text) {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  // Fallback for insecure contexts / older browsers.
-  return new Promise((resolve, reject) => {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-      resolve();
-    } catch (err) { reject(err); }
-  });
+  return copyText(text);
 }
 
 const ToastContext = createContext(null);

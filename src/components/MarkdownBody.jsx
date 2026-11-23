@@ -48,9 +48,9 @@ export default function MarkdownBody({ html, className = "", ...rest }) {
       await copyText(code.replace(/\n$/, ""));
       setLabel(btn, "copied");
       say("Code copied to clipboard");
-    } catch (err) {
+    } catch {
       setLabel(btn, "failed");
-      say(`Couldn't copy the code: ${err?.message || err}`);
+      say("Couldn't copy the code automatically.");
     }
     clearTimeout(btn._reset);
     btn._reset = setTimeout(() => btn.isConnected && setLabel(btn, "idle"), RESET_MS);

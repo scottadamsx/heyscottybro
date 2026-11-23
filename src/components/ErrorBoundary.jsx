@@ -1,18 +1,7 @@
 import { Component } from "react";
+import { copyText } from "../utils/clipboard";
 
 const PREVIEW_CHARS = 200;
-
-function copyToClipboard(text) {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  return new Promise((resolve, reject) => {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
-      resolve();
-    } catch (err) { reject(err); }
-  });
-}
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -40,7 +29,7 @@ export default class ErrorBoundary extends Component {
       e?.stack ? `\n${e.stack}` : "",
       this.state.stack ? `\nComponent stack:${this.state.stack}` : "",
     ].join("");
-    copyToClipboard(full)
+    copyText(full)
       .then(() => { this.setState({ copied: true }); setTimeout(() => this.setState({ copied: false }), 1600); })
       .catch(() => {});
   }

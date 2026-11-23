@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "../../contexts/ToastContext";
+import { copyText } from "../../utils/clipboard";
 import {
   slugify, downloadCSV, downloadMarkdown, markdownToPdfDownload, printMarkdown, emailToMe,
 } from "../../lib/exporter";
@@ -45,7 +46,7 @@ export default function ExportKit({ exporter }) {
     { key: "print", icon: "fa-print", label: "Print", fn: async () => printMarkdown(await md(), exporter.title) },
     { key: "pdf", icon: "fa-file-pdf", label: "PDF", fn: async () => markdownToPdfDownload(await md(), { title: exporter.title, filename: `${base}.pdf` }) },
     ...(exporter.toRows ? [{ key: "csv", icon: "fa-file-csv", label: "CSV", fn: async () => downloadCSV(await exporter.toRows(), base, exporter.csvColumns) }] : []),
-    { key: "md", icon: "fa-copy", label: "Copy Markdown", fn: async () => { await navigator.clipboard.writeText(await md()); addToast("Markdown copied.", "success"); } },
+    { key: "md", icon: "fa-copy", label: "Copy Markdown", fn: async () => { await copyText(await md()); addToast("Markdown copied.", "success"); } },
     { key: "mdfile", icon: "fa-file-lines", label: "Download .md", fn: async () => downloadMarkdown(await md(), base) },
     { key: "email", icon: "fa-paper-plane", label: "Email me", fn: async () => { const r = await emailToMe({ subject: exporter.title, markdown: await md() }); addToast(`Sent to ${r.to || "your inbox"}.`, "success"); } },
   ];

@@ -6,6 +6,7 @@ import { loadBinItems, createBinItem, uploadBinFile, updateBinItem, deleteBinIte
 import { formatBytes } from "../../components/documents/DocumentCard";
 import { formatDisplayDate } from "../../utils/dates.js";
 import { nextStatus, nextStatusLabel, statusLabel, kindLabel, excerpt, titleFromText } from "../../utils/binHelpers";
+import { copyText as copyToClipboardText } from "../../utils/clipboard";
 import "./bin.css";
 
 const KIND_ICON = { text: "fa-align-left", file: "fa-file", link: "fa-link" };
@@ -28,7 +29,7 @@ function BinCard({ item, onUpdate, onDelete }) {
 
   const copyText = async () => {
     try {
-      await navigator.clipboard.writeText(item.body || "");
+      await copyToClipboardText(item.body || "");
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch { /* clipboard unavailable; the text is visible in the preview */ }
