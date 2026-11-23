@@ -147,7 +147,9 @@ export default function CalendarPage() {
     return () => unsubs.forEach((u) => u());
   }, []);
 
-  // Sidebar "jump to date" — navigate the grid to that month and open the day
+  // Sidebar "jump to date" — navigate the grid to that month and open the day.
+  // An optional ?event= opens that event expanded, the same landing the
+  // Upcoming list gets from openDay(date, eventId).
   useEffect(() => {
     const d = params.get("date");
     if (!d) return;
@@ -155,7 +157,7 @@ export default function CalendarPage() {
     if (y && m) {
       setYear(y);
       setMonth(m - 1);
-      openDay(d);
+      openDay(d, params.get("event"));
     }
 
   }, [params]);

@@ -166,6 +166,14 @@ export default function DashboardPage() {
   const todayEvents = expandEvents(data.events, todayStr, todayStr);
   const todaySchedule = dayBlocks(todayStr, todayItems, todayEvents);
   const todayScheduleStart = plannerTimelineStartMinute(todayStr, todayStr, nowMin);
+  // Timeline blocks open what the rows elsewhere on this page open: a task
+  // goes to its task page; an event opens in the planner with that event
+  // expanded (the planner's own openDay behaviour, reached via ?event=).
+  const onScheduleBlockClick = (block) => {
+    const rawId = String(block.id).slice(1);
+    if (block.kind === "task") { openTask(rawId); return; }
+    navigate(`/admin/planner?date=${todayStr}&event=${rawId}`);
+  };
   // Overdue = earlier days, plus anything today whose time slot has already passed.
   const overdue = [...overdueReminders(activeReminders, todayStr), ...missedToday(todayItems, todayStr, nowMin)];
   const upcomingAll = expandReminders(activeReminders, addDaysStr(todayStr, 1), addDaysStr(todayStr, 30)).sort((a, b) => a.date.localeCompare(b.date));
@@ -278,6 +286,7 @@ export default function DashboardPage() {
             emptyLabel="Your day is open. Nothing has a time yet."
             autoScrollMinute={todayScheduleStart}
             pxPerMinute={0.55}
+            onBlockClick={onScheduleBlockClick}
           />
         )}
       </Item>

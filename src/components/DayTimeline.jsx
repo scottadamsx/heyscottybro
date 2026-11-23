@@ -4,11 +4,23 @@ import { fromMinutes, layoutTimelineBlocks } from "../utils/reschedule";
 import "./day-timeline.css";
 
 const DEFAULT_PX_PER_MIN = 1;
+// A block whose natural height is under this cannot stack title over time,
+// so it renders compact: title and time on one line. Every block also gets a
+// minimum height so the title is never clipped out of a short block.
+const COMPACT_BELOW_PX = 48;
+const MIN_BLOCK_PX = 36;
 const nowMinutes = () => {
   const now = new Date();
   return now.getHours() * 60 + now.getMinutes();
 };
 const timeLabel = (minutes) => formatTime12(fromMinutes(minutes));
+// Compact blocks share one line with the title, so the time drops its ":00"s
+// and a repeated AM/PM: "8:30–9 AM" instead of "8:30 AM–9:00 AM".
+const compactTimeLabel = (start, end) => {
+  const s = timeLabel(start).replace(":00", "");
+  const e = timeLabel(end).replace(":00", "");
+  return s.slice(-2) === e.slice(-2) ? `${s.slice(0, -2).trimEnd()}–${e}` : `${s}–${e}`;
+};
 
 function setRef(ref, value) {
   if (typeof ref === "function") ref(value);
@@ -100,10 +112,12 @@ export default function DayTimeline({
             const visibleStart = Math.max(block.start, startMinute);
             const visibleEnd = Math.min(block.end, endMinute);
             const laneWidth = 100 / block.laneCount;
-            const blockClass = `tl-block kind-${block.kind}${clashIds.has(block.id) ? " is-clash" : ""}`;
+            const naturalHeight = (visibleEnd - visibleStart) * pxPerMinute;
+            const isCompact = naturalHeight < COMPACT_BELOW_PX;
+            const blockClass = `tl-block kind-${block.kind}${isCompact ? " is-compact" : ""}${clashIds.has(block.id) ? " is-clash" : ""}`;
             const blockStyle = {
               top: `${(visibleStart - startMinute) * pxPerMinute}px`,
-              height: `${Math.max((visibleEnd - visibleStart) * pxPerMinute, 18)}px`,
+              height: `${Math.max(naturalHeight, MIN_BLOCK_PX)}px`,
               left: `calc(${block.lane * laneWidth}% + 4px)`,
               width: `calc(${laneWidth}% - 6px)`,
             };
@@ -111,7 +125,7 @@ export default function DayTimeline({
             const blockBody = (
               <>
                 <span className="tl-block-title">{block.title}</span>
-                <span className="tl-block-time">{timeLabel(block.start)}–{timeLabel(block.end)}</span>
+                <span className="tl-block-time">{isCompact ? compactTimeLabel(block.start, block.end) : `${timeLabel(block.start)}–${timeLabel(block.end)}`}</span>
               </>
             );
             if (onBlockClick) {
