@@ -167,9 +167,9 @@ export default function SnippetsPage() {
       setCopiedId(item.id);
       setAnnounce(`${item.title} copied to clipboard`);
       setTimeout(() => setCopiedId((c) => (c === item.id ? null : c)), 1500);
-    } catch (err) {
+    } catch {
       setAnnounce(`Couldn't copy ${item.title}`);
-      addToast(`Couldn't copy ${item.title}: ${err?.message || err}`, "error");
+      addToast(`Couldn't copy ${item.title}.`, "error");
     }
   };
 

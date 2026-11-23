@@ -551,7 +551,7 @@ export default function CommandCenterPage() {
                 <button type="button" className="btn-mini" title="View as PDF" aria-label="View as PDF" onClick={() => { openAsPdf(viewerDoc.title || viewerDoc.slug, viewerDoc.body); setViewerDoc(null); }}>
                   <i className="fa-solid fa-file-pdf" aria-hidden="true" />
                 </button>
-                <button type="button" className="btn-mini" title="Copy markdown" aria-label="Copy markdown" onClick={() => copyText(viewerDoc.body || "").then(() => addToast("Markdown copied.", "success")).catch((err) => addToast(`Couldn't copy: ${err?.message || err}`, "error"))}>
+                <button type="button" className="btn-mini" title="Copy markdown" aria-label="Copy markdown" onClick={() => copyText(viewerDoc.body || "").then(() => addToast("Markdown copied.", "success")).catch(() => addToast("Couldn't copy.", "error"))}>
                   <i className="fa-solid fa-copy" aria-hidden="true" />
                 </button>
                 {viewerDoc.slug && <a className="btn-mini" href="/admin/mission?tab=brain" title="Open in Brain" aria-label="Open in Brain"><i className="fa-solid fa-diagram-project" aria-hidden="true" /></a>}

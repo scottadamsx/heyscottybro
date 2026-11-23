@@ -55,9 +55,9 @@ export default function ShareModal({ doc, onClose }) {
       setCopiedId(share.id);
       setAnnounce("Share link copied to clipboard");
       setTimeout(() => setCopiedId((c) => (c === share.id ? null : c)), 1500);
-    } catch (err) {
+    } catch {
       setAnnounce("Couldn't copy the share link");
-      addToast(`Couldn't copy the link: ${err?.message || err}`, "error");
+      addToast("Couldn't copy the link.", "error");
     }
   };
 

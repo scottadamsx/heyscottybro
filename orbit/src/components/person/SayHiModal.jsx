@@ -11,6 +11,27 @@ import { firstName } from '../ui/PersonChip.jsx'
 import LastSeen from './LastSeen.jsx'
 import { Sparkles } from '../ui/icons.js'
 
+function legacyCopy(value) {
+  if (typeof document === 'undefined' || typeof document.execCommand !== 'function') return false
+  const ta = document.createElement('textarea')
+  ta.value = value
+  ta.setAttribute('readonly', '')
+  ta.style.position = 'fixed'
+  ta.style.top = '0'
+  ta.style.left = '0'
+  ta.style.width = '1px'
+  ta.style.height = '1px'
+  ta.style.opacity = '0'
+  document.body.appendChild(ta)
+  ta.focus()
+  ta.select()
+  ta.setSelectionRange(0, value.length)
+  let ok
+  try { ok = document.execCommand('copy') } catch { ok = false }
+  ta.remove()
+  return ok
+}
+
 export default function SayHiModal({ id, onClose }) {
   const { people, saveEvent, ai } = useOrbit()
   const { notify, open } = useUI()
@@ -25,6 +46,9 @@ export default function SayHiModal({ id, onClose }) {
       await navigator.clipboard.writeText(text)
       notify('Copied')
     } catch {
+      // The async Clipboard API is denied in some contexts (unfocused
+      // document, in-app browser); the legacy execCommand path often works.
+      if (legacyCopy(text)) { notify('Copied'); return }
       setError("Couldn't copy. Select the text and copy it yourself.")
     }
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadMessages, createMessage, updateMessage, deleteMessage, syncGmail, sendReply, markRead } from "../../api/messagesApi";
 import { generateDraft } from "../../api/aiDraft";
 import { useToast } from "../../contexts/ToastContext";
+import { copyText } from "../../utils/clipboard";
 import { useConfirm } from "../../hooks/useConfirm";
 import { FormModal, Field } from "../ui";
 import "./tools.css";
@@ -20,8 +21,7 @@ const STATUS_LABEL = { needs_reply: "Needs reply", drafted: "Drafted", replied: 
 const EMPTY = { channel: "manual", sender: "", subject: "", body: "" };
 
 function copy(text) {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
-  return Promise.reject();
+  return copyText(text);
 }
 
 export default function Inbox() {

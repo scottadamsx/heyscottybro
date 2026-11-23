@@ -8,6 +8,7 @@ import DatePicker from "../../components/DatePicker";
 import "./mission.css";
 import { RowChevron, FormModal, Field, ShowMore } from "../../components/ui";
 import { usePaged } from "../../hooks/usePaged";
+import { copyText } from "../../utils/clipboard";
 
 export default function HikerPage() {
   const [params] = useSearchParams();
@@ -120,10 +121,10 @@ export default function HikerPage() {
 
   const copyEmails = () => {
     const emails = hikeAttendees.filter(m => m.email).map(m => m.email).join(", ");
-    navigator.clipboard.writeText(emails).then(() => {
+    copyText(emails).then(() => {
       setCopyAnim(true);
       setTimeout(() => setCopyAnim(false), 2000);
-    });
+    }).catch(() => { /* clipboard blocked — no success animation, nothing copied */ });
   };
 
   const sorted = [...members].sort((a, b) => {

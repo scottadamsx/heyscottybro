@@ -2,6 +2,7 @@ import { formatDisplayDate as preferredDisplayDate } from "../../utils/dates.js"
 import { useEffect, useRef, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
+import { copyText } from "../../utils/clipboard";
 import {
   loadBugs, createBug, updateBug, deleteBug,
   addScreenshot, removeScreenshot, screenshotUrl, exportBugsZip, buildFixPrompt,
@@ -132,7 +133,7 @@ export default function BugsPage() {
 
   const handleCopyPrompt = async (bug) => {
     try {
-      await navigator.clipboard.writeText(buildFixPrompt(bug));
+      await copyText(buildFixPrompt(bug));
       addToast("Claude fix-prompt copied.", "success");
     } catch {
       addToast("Couldn't copy — reveal the prompt and copy it by hand.", "error");

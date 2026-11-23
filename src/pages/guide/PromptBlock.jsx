@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyText } from "../../utils/clipboard";
 
 /* A copy-to-clipboard prompt block in the terminal aesthetic.
    The button's visible text changes ("Copied!") and a polite live region
@@ -31,8 +32,7 @@ export default function PromptBlock({ title = "Prompt — paste into your AI", t
 
   const copy = async () => {
     try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       settle("copied", "Prompt copied to clipboard.");
     } catch {
       selectText();

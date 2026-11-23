@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { copyText } from "../utils/clipboard";
 import "./CopyId.css";
 
 /**
@@ -24,7 +25,7 @@ export default function CopyId({ id, className = "" }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard?.writeText(id);
+      await copyText(id);
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
     } catch {
