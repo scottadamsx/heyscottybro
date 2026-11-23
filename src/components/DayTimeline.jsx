@@ -5,10 +5,11 @@ import "./day-timeline.css";
 
 const DEFAULT_PX_PER_MIN = 1;
 // A block whose natural height is under this cannot stack title over time,
-// so it renders compact: title and time on one line. Every block also gets a
-// minimum height so the title is never clipped out of a short block.
+// so it renders compact: title and time on one line. Block height is always
+// the true duration times the scale, never floored up: a minimum height
+// makes back-to-back blocks overlap each other, so short blocks get their
+// room from the scale the caller passes, not from a floor.
 const COMPACT_BELOW_PX = 48;
-const MIN_BLOCK_PX = 36;
 const nowMinutes = () => {
   const now = new Date();
   return now.getHours() * 60 + now.getMinutes();
@@ -117,7 +118,7 @@ export default function DayTimeline({
             const blockClass = `tl-block kind-${block.kind}${isCompact ? " is-compact" : ""}${clashIds.has(block.id) ? " is-clash" : ""}`;
             const blockStyle = {
               top: `${(visibleStart - startMinute) * pxPerMinute}px`,
-              height: `${Math.max(naturalHeight, MIN_BLOCK_PX)}px`,
+              height: `${naturalHeight}px`,
               left: `calc(${block.lane * laneWidth}% + 4px)`,
               width: `calc(${laneWidth}% - 6px)`,
             };

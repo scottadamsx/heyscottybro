@@ -285,7 +285,7 @@ export default function DashboardPage() {
             endMinute={24 * 60}
             emptyLabel="Your day is open. Nothing has a time yet."
             autoScrollMinute={todayScheduleStart}
-            pxPerMinute={0.55}
+            pxPerMinute={1}
             onBlockClick={onScheduleBlockClick}
           />
         )}
