@@ -29,7 +29,11 @@ export function habitSchedule(tracker, today) {
  * The cadence of one scheduled tracker up to `today`: every day the habit was
  * due, and what happened on it. Occurrences start at the schedule's startDate
  * and step by the interval; handling the habit (a log = 'done', a "Missed it"
- * mark = 'missed') re-anchors the cadence to the handled day, as before. The
+ * mark = 'missed') before its occurrence counts as doing that occurrence
+ * early. For day intervals the cadence then re-anchors to the handled day, as
+ * before (the timer restarts from the day it was done); weekly schedules keep
+ * their weekday instead — the cadence steps on from the occurrence itself, so
+ * a Sunday habit done early stays a Sunday habit. The
  * difference from the old model (BUG-101): an occurrence that passes with no
  * log and no miss is 'skipped' and the cadence simply moves on — the habit is
  * due ONLY on its cadence days, never carried over as "overdue" onto days it
@@ -54,7 +58,12 @@ export function habitOccurrences(state, tracker, today) {
   for (const date of [...handled.keys()].sort()) {
     while (next < date) { occurrences.push({ date: next, status: 'skipped' }); next = addHabitDays(next, step); }
     if (next === date) { occurrences.push({ date, status: handled.get(date) }); next = addHabitDays(date, step); }
-    else { occurrences.push({ date: next, status: handled.get(date), handledOn: date }); next = addHabitDays(date, step); }
+    else {
+      occurrences.push({ date: next, status: handled.get(date), handledOn: date });
+      // Handled early: day intervals restart from the handled day; weekly
+      // schedules step on from the occurrence so the weekday never drifts.
+      next = addHabitDays(schedule.unit === 'weeks' ? next : date, step);
+    }
   }
   while (next < today) { occurrences.push({ date: next, status: 'skipped' }); next = addHabitDays(next, step); }
   if (next === today) { occurrences.push({ date: today, status: 'due' }); next = addHabitDays(today, step); }

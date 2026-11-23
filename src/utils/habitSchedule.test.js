@@ -69,6 +69,28 @@ test('form roundtrip and invalid schedules fail explicitly', () => {
   assert.throws(() => scheduleFromForm({ reminder: 'interval', every: '', unit: 'days', startDate: '2026-09-01' }));
 });
 
+test('doing a day-interval habit early resets the timer from the day it was done', () => {
+  const every4 = { id: 'habit', name: 'Laundry', mode: 'check', schedule: { schema: 1, kind: 'interval', every: 4, unit: 'days', startDate: '2026-11-21' } };
+  const before = { trackers: [every4], logs: [log('2026-11-21')] };
+  assert.equal(nextHabitDueDate(before, every4, '2026-11-23'), '2026-11-25'); // due in 2 days
+  const after = { trackers: [every4], logs: [log('2026-11-21'), log('2026-11-23')] }; // done Mon Nov 23, 2 days early
+  assert.equal(nextHabitDueDate(after, every4, '2026-11-23'), '2026-11-27'); // today + 4, not the old Nov 25
+  assert.equal(dueHabits(after, '2026-11-25').length, 0); // the Nov 25 occurrence was covered early
+  assert.equal(dueHabits(after, '2026-11-27')[0].dueDate, '2026-11-27');
+  // Removing the early log (undo) restores the previous next due exactly.
+  assert.equal(nextHabitDueDate(before, every4, '2026-11-23'), '2026-11-25');
+});
+test('doing a weekly habit early keeps its weekday and rolls to the following occurrence', () => {
+  const sundays = { id: 'clean', name: 'Clean The Apartment', mode: 'check', schedule: { schema: 1, kind: 'interval', every: 1, unit: 'weeks', startDate: '2026-11-01' } };
+  const sundayLogs = ['2026-11-01', '2026-11-08', '2026-11-15', '2026-11-22'].map(d => ({ ...log(d), trackerId: 'clean' }));
+  const before = { trackers: [sundays], logs: sundayLogs };
+  assert.equal(nextHabitDueDate(before, sundays, '2026-11-23'), '2026-11-29'); // next Sunday
+  const after = { trackers: [sundays], logs: [...sundayLogs, { ...log('2026-11-23'), trackerId: 'clean' }] }; // done Mon Nov 23, early
+  assert.equal(nextHabitDueDate(after, sundays, '2026-11-23'), '2026-12-06'); // the FOLLOWING Sunday, not Mon Nov 30
+  assert.equal(dueHabits(after, '2026-11-29').length, 0); // the Nov 29 occurrence was covered early
+  assert.equal(dueHabits(after, '2026-12-06')[0].tracker.id, 'clean'); // due again the Sunday after
+});
+
 import { missedHabits } from './habitSchedule.js';
 const miss = (date, trackerId = 'habit') => ({ id: `m-${date}`, trackerId, date });
 

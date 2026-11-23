@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toDateStr, formatDisplayDate } from "../../utils/plannerUtils";
 import { loadAccountability, updateAccountability, logHabitDone, unlogHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
-import { habitScheduleForm, scheduleFromForm, habitScheduleLabel, habitStreak, nextHabitDueDate } from "../../utils/habitSchedule";
+import { habitScheduleForm, scheduleFromForm, habitScheduleLabel, habitSchedule, habitStreak, nextHabitDueDate } from "../../utils/habitSchedule";
 import { onDataChange } from "../../utils/dataEvents";
 import DatePicker from "../../components/DatePicker";
 import { FormModal, Field } from "../../components/ui";
@@ -234,6 +234,20 @@ export default function AccountabilityPage() {
       setData(next);
     } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
   };
+  // "Do early": the deliberate way to complete a habit before its due day.
+  // It writes the same kind of log as a normal completion (so it shows in
+  // the recent logs, mirrors to the work log, and undoing it — the Done
+  // today toggle or removing the log — restores the previous due date).
+  // habitSchedule does the timer maths: day intervals restart from today,
+  // weekly habits keep their weekday and roll to the following occurrence.
+  const logEarly = async (t) => {
+    try {
+      const next = await logHabitDone(t, todayStr);
+      setData(next);
+      const nd = nextHabitDueDate(next, t, todayStr);
+      addToast(nd ? `${t.name} done early. Next due ${formatDisplayDate(nd)}.` : `${t.name} done early.`);
+    } catch (err) { addToast(err?.message || "Couldn't save habits", "error"); }
+  };
 
   // "Missed it" days, per tracker (DR-014): crossed out, never counted as done.
   const missedDays = useMemo(() => {
@@ -275,13 +289,25 @@ export default function AccountabilityPage() {
   const todayActions = (t) => {
     const n = countOn(t, todayStr);
     const done = t.mode === "check" && n > 0;
-    // BUG-101: a scheduled habit has no today controls on days it is not due —
-    // it shows when it is next due instead. (Handling it today, above, or an
-    // unscheduled tracker keeps the normal controls.)
+    // BUG-101: a scheduled habit is never due on days outside its cadence —
+    // on those days it shows when it is next due, plus the deliberate
+    // "Do early" action (never the main Done button) once its schedule has
+    // started. (Handling it today, above, or an unscheduled tracker keeps
+    // the normal controls.)
     if (!isMissed(t, todayStr) && n === 0) {
       const next = nextHabitDueDate(data, t, todayStr);
       if (next && next !== todayStr) {
-        return <p className="acc-next-due">Next due {formatDisplayDate(next)}</p>;
+        const started = habitSchedule(t, todayStr).startDate <= todayStr;
+        return (
+          <>
+            <p className="acc-next-due">Next due {formatDisplayDate(next)}</p>
+            {started && (
+              <button type="button" className="btn btn-secondary-sm" onClick={() => logEarly(t)} aria-label={`Mark ${t.name} done early today`}>
+                <i className="fa-solid fa-forward" aria-hidden="true" /> Do early
+              </button>
+            )}
+          </>
+        );
       }
     }
     if (isMissed(t, todayStr)) {
