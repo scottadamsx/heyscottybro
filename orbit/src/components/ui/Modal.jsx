@@ -38,10 +38,22 @@ export default function Modal({ title, eyebrow, onClose, children, footer, varia
         a.focus()
       }
     }
+    // Keep the focused field visible above the on-screen keyboard: once the
+    // keyboard has had time to open, centre the field inside the sheet body
+    // instead of leaving it wherever the layout happened to land.
+    const onFocusIn = (e) => {
+      const el = e.target
+      if (!el.matches('input, select, textarea')) return
+      setTimeout(() => {
+        if (el.isConnected) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }, 350)
+    }
     node.addEventListener('keydown', onKey)
+    node.addEventListener('focusin', onFocusIn)
     document.body.classList.add('no-scroll')
     return () => {
       node.removeEventListener('keydown', onKey)
+      node.removeEventListener('focusin', onFocusIn)
       if (!root.querySelector('.dialog')) document.body.classList.remove('no-scroll')
       if (previous?.isConnected) previous.focus()
     }

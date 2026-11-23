@@ -574,7 +574,9 @@ body.no-scroll { overflow: hidden; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 32px;
+  height: auto;
+  min-height: 32px;
+  max-width: 100%;
   padding: 0 12px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-line);
@@ -660,6 +662,7 @@ body.no-scroll { overflow: hidden; }
   background: rgb(27 26 36 / 0.5);
   backdrop-filter: blur(3px);
   animation: fade-in 180ms ease-out;
+  overscroll-behavior: none;
 }
 .backdrop-modal { align-items: center; justify-content: center; padding: 16px; }
 .backdrop-drawer { justify-content: flex-end; }
@@ -672,7 +675,7 @@ body.no-scroll { overflow: hidden; }
   max-height: 100%;
   min-width: 0;
 }
-.dialog-modal { border-radius: var(--radius-xl); width: 100%; max-height: calc(100vh - 32px); animation: rise 180ms ease-out; }
+.dialog-modal { border-radius: var(--radius-xl); width: 100%; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); animation: rise 180ms ease-out; }
 .dialog-modal.dialog-sm { max-width: 420px; }
 .dialog-modal.dialog-md { max-width: 560px; }
 .dialog-modal.dialog-lg { max-width: 720px; }
@@ -680,7 +683,7 @@ body.no-scroll { overflow: hidden; }
 .dialog-drawer.dialog-lg { width: min(640px, 100%); }
 .dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 0; }
 .dialog-title h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
-.dialog-body { padding: 16px 20px 20px; overflow-y: auto; flex: 1; min-height: 0; }
+.dialog-body { padding: 16px 20px 20px; overflow-y: auto; overflow-x: clip; flex: 1; min-height: 0; }
 .dialog-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--color-line); }
 .journal-mode-switch { margin: 0 20px; align-self: flex-start; }
 .journal-layout { display: grid; grid-template-columns: minmax(176px, 210px) minmax(0, 1fr); gap: 0; min-height: 340px; }
@@ -707,7 +710,7 @@ body.no-scroll { overflow: hidden; }
 .journal-fact-source { flex: none; font-size: 11px; }
 @media (max-width: 620px) {
   .backdrop-modal { align-items: flex-end; padding: 0; }
-  .dialog-modal { max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .dialog-modal { max-height: 92vh; max-height: 92dvh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
   .dialog-drawer { border-radius: 0; }
   .dialog-head { padding: 16px 16px 0; }
   .dialog-body { padding: 12px 16px 16px; }
@@ -843,4 +846,21 @@ body.no-scroll { overflow: hidden; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---------- mobile forms (keyboard behaviour) ----------
+   iOS Safari zooms the page when a focused control renders under 16px, which
+   reads as the screen jumping and clipping sideways. Touch devices therefore
+   get 16px controls at every width, and fields inside a sheet keep a scroll
+   margin so focus scrolling never parks them under the keyboard. */
+@media (pointer: coarse) {
+  .input,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+.dialog-body :is(input, select, textarea) {
+  scroll-margin-block: 72px 24px;
 }

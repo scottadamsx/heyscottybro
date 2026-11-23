@@ -71,10 +71,19 @@ export function Modal({ title, onClose, footer, width = 560, children, className
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
+    // Keep the focused field visible above the on-screen keyboard: once the
+    // keyboard has had time to open, centre the field inside the modal body.
+    const onFocusIn = (e) => {
+      const el = e.target;
+      if (!el.matches("input, select, textarea")) return;
+      setTimeout(() => { if (el.isConnected) el.scrollIntoView({ block: "center", behavior: "smooth" }); }, 350);
+    };
     node.addEventListener("keydown", onKey);
+    node.addEventListener("focusin", onFocusIn);
     document.body.classList.add("uik-modal-open");
     return () => {
       node.removeEventListener("keydown", onKey);
+      node.removeEventListener("focusin", onFocusIn);
       if (!document.querySelector(".uik-modal")) document.body.classList.remove("uik-modal-open");
       if (previous?.isConnected) previous.focus();
     };
