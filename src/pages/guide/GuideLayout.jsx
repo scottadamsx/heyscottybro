@@ -17,9 +17,9 @@ export default function GuideLayout() {
 
       <header className="lp-subhero">
         <span className="lp-kicker">cat vibrant-software.md</span>
-        <h1 className="lp-subhero-title">Scotty&apos;s Guide to<br /><em>Vibrant Software</em></h1>
+        <h1 className="lp-subhero-title">Scotty&apos;s Guide to<br />Vibrant Software</h1>
         <p className="lp-subhero-sub">
-          A plain-English guide to how I turn an idea into real, working software — planned carefully
+          A plain-English guide to how I turn an idea into working software — planned carefully
           with you in the loop the whole way, so it&apos;s seamless the first time.
         </p>
         <div className="lp-subhero-cta">

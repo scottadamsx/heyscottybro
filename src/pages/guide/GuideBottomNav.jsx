@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { GUIDE_NAV } from "./guideNav";
 
-/* Mobile-only floating bottom nav: Prev · Contents · Next.
+/* Mobile-only floating bottom nav: Prev, Contents, Next.
    "Contents" opens a slide-up sheet listing every guide page. */
 export default function GuideBottomNav() {
   const { pathname } = useLocation();

@@ -171,7 +171,7 @@ export default function WorkLogPage() {
         <section className="db-card" key={date} aria-label={formatDisplayDate(date)}>
           <div className="db-card-header">
             <h3 className="db-card-title">{formatDisplayDate(date)}</h3>
-            <span className="db-count">{list.length} {list.length === 1 ? "item" : "items"}{minutesFor(list) ? ` · ${minutesFor(list)} min` : ""}</span>
+            <span className="db-count">{list.length} {list.length === 1 ? "item" : "items"}{minutesFor(list) ? `, ${minutesFor(list)} min` : ""}</span>
           </div>
           <div className="db-list plan-list">
             {list.map((r) => (
@@ -180,7 +180,7 @@ export default function WorkLogPage() {
                   <div className="db-list-item-title">{r.task}</div>
                   <div className="db-list-item-subtitle">
                     {projectName(r.project_id) && <span className="worklog-project">{projectName(r.project_id)}</span>}
-                    {r.minutes ? <span> · {r.minutes} min</span> : null}
+                    {r.minutes ? <span>, {r.minutes} min</span> : null}
                     {r.notes && <div className="worklog-notes">{r.notes}</div>}
                   </div>
                 </div>

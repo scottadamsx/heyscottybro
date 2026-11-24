@@ -179,7 +179,7 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
             <span className="rs-chip-main">
               <span className="rs-chip-title">{title}</span>
               <span className={`rs-chip-sub${overdue ? " is-overdue" : ""}`}>
-                {overdue ? "Overdue · was " : "Now "}{item.date ? longDay(item.date) : "no date"}{origStart != null ? ` · ${hm(origStart)}` : ""}
+                {overdue ? "Overdue, was " : "Now "}{item.date ? longDay(item.date) : "no date"}{origStart != null ? `, ${hm(origStart)}` : ""}
               </span>
             </span>
           </div>
@@ -258,7 +258,7 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
                   title,
                   start,
                   duration,
-                  subtitle: `${hm(start)}–${hm(start + duration)} · ${durLabel(duration)}`,
+                  subtitle: `${hm(start)}–${hm(start + duration)}, ${durLabel(duration)}`,
                   ariaLabel: `${title} time slot`,
                   hasClash: clashes.length > 0,
                   onPointerDown: onBlockDown,
@@ -288,7 +288,7 @@ export default function RescheduleSheet({ item, kind, reminders = [], events = [
         <div className="uik-modal-foot">
           <button type="button" className="btn-sm btn-secondary-sm" onClick={onClose}>Cancel</button>
           <button type="button" className="btn btn-sm" disabled={!target || saving} aria-busy={saving || undefined} onClick={save}>
-            {saving ? "Saving…" : !target ? "Pick a day" : `Schedule ${target === today ? "today" : `${dow(target)} ${dayNum(target)}`}${!noTime && start != null ? ` · ${hm(start)}` : ""}`}
+            {saving ? "Saving…" : !target ? "Pick a day" : `Schedule ${target === today ? "today" : `${dow(target)} ${dayNum(target)}`}${!noTime && start != null ? `, ${hm(start)}` : ""}`}
           </button>
         </div>
       </div>

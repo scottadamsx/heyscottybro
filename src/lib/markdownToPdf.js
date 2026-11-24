@@ -39,7 +39,7 @@ function sanitize(s) {
     .replace(/[‘’‚‹›]/g, "'")
     .replace(/[“”„«»]/g, '"')
     .replace(/[–—−]/g, "-")
-    .replace(/[•·●▪]/g, "*")
+    .replace(/[•, ●▪]/g, "*")
     .replace(/…/g, "...")
     .replace(/\u00a0/g, " ")
     .replace(/\t/g, "    ")
@@ -135,16 +135,16 @@ const PAGE_W = 612, PAGE_H = 792;
 const ML = 56, MR = 56, MT = 70, MB = 58;
 const CONTENT_W = PAGE_W - ML - MR;
 const TYPE = {
-  title:   { font: "bold", size: 20, lead: 26, before: 0,  after: 4 },
-  sub:     { font: "reg",  size: 10, lead: 14, before: 0,  after: 10 },
+  title:   { font: "bold", size: 20, lead: 26, before: 0, after: 4 },
+  sub:     { font: "reg", size: 10, lead: 14, before: 0, after: 10 },
   h1:      { font: "bold", size: 16, lead: 22, before: 14, after: 4 },
   h2:      { font: "bold", size: 13, lead: 18, before: 12, after: 3 },
   h3:      { font: "bold", size: 11, lead: 15, before: 10, after: 2 },
-  p:       { font: "reg",  size: 10.5, lead: 15, before: 0, after: 6 },
-  li:      { font: "reg",  size: 10.5, lead: 15, before: 0, after: 2 },
+  p:       { font: "reg", size: 10.5, lead: 15, before: 0, after: 6 },
+  li:      { font: "reg", size: 10.5, lead: 15, before: 0, after: 2 },
   code:    { font: "courier", size: 9, lead: 12.5, before: 4, after: 6 },
   table:   { font: "courier", size: 8.5, lead: 12, before: 6, after: 8 },
-  footer:  { font: "reg",  size: 8, lead: 10 },
+  footer:  { font: "reg", size: 8, lead: 10 },
 };
 const FONT_KEY = { reg: "F1", bold: "F2", courier: "F3" };
 

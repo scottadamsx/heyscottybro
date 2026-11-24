@@ -23,10 +23,10 @@ const PULSES = [
 
 const AREA_META = {
   psychology: { label: "Psychology", icon: "fa-brain" },
-  health:     { label: "Health",     icon: "fa-heart-pulse" },
-  nutrition:  { label: "Nutrition",  icon: "fa-apple-whole" },
-  fitness:    { label: "Fitness",    icon: "fa-dumbbell" },
-  finance:    { label: "Finance",    icon: "fa-wallet" },
+  health:     { label: "Health",    icon: "fa-heart-pulse" },
+  nutrition:  { label: "Nutrition", icon: "fa-apple-whole" },
+  fitness:    { label: "Fitness",   icon: "fa-dumbbell" },
+  finance:    { label: "Finance",   icon: "fa-wallet" },
 };
 
 export default function ArcadePage() {
@@ -72,7 +72,7 @@ export default function ArcadePage() {
     if (won === true) bits.push("won");
     if (score != null) bits.push(`score ${score}`);
     if (bonus > 0) bits.push(`+${bonus} bonus`);
-    addToast(`${playing.title}: ${bits.join(" · ") || "done"} — back to it!`, "success");
+    addToast(`${playing.title}: ${bits.join(", ") || "done"} — back to it!`, "success");
   };
 
   const Tile = ({ g }) => (
@@ -115,7 +115,7 @@ export default function ArcadePage() {
           {PULSES.map((p) => (
             <button key={p.id} type="button" className="arcade-tile arcade-tile-pulse" onClick={() => playPulse(p)}>
               <span className="arcade-tile-title"><i className="fa-solid fa-bolt" aria-hidden="true" /> {p.label}</span>
-              <span className="arcade-tile-rule">Quick Pulse · 20 seconds</span>
+              <span className="arcade-tile-rule">Quick Pulse, 20 seconds</span>
             </button>
           ))}
         </div>

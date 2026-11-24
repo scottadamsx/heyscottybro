@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { ease } from "../lib/motion";
 
 /* Thin top scroll-progress bar — shared by the long public pages (guide, sjhc,
  * never86, games). Decorative (aria-hidden): the scrollbar already tells
@@ -30,17 +28,7 @@ export function ScrollProgress() {
   return <div className="scroll-progress" aria-hidden="true" style={{ transform: `scaleX(${p})` }} />;
 }
 
-/* Scroll-reveal wrapper (respects reduced-motion via MotionConfig in main.jsx). */
-export function Reveal({ children, className = "", delay = 0 }) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.6, ease: ease.out, delay }}
-    >
-      {children}
-    </motion.div>
-  );
+/* Static wrapper (was a scroll-reveal; sections no longer fade in on scroll). */
+export function Reveal({ children, className = "" }) {
+  return <div className={className}>{children}</div>;
 }

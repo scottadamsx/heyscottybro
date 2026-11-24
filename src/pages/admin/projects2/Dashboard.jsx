@@ -72,8 +72,8 @@ export default function Dashboard({
                     <span className="db-list-item-title">{t.name}</span>
                     <span className="db-list-item-subtitle">
                       {project ? project.name : "No project"}
-                      {t.date ? ` · ${formatDisplayDate(t.date)}` : ""}
-                      {isOverdue(t) && !blocked ? " · Overdue" : ""}
+                      {t.date ? `, ${formatDisplayDate(t.date)}` : ""}
+                      {isOverdue(t) && !blocked ? ", Overdue" : ""}
                     </span>
                   </span>
                   <i className="fa-solid fa-chevron-right project-tile-chevron" aria-hidden="true" />
@@ -95,8 +95,8 @@ export default function Dashboard({
                 <div className="db-list-item-content">
                   <div className="db-list-item-title">{s.text}</div>
                   <div className="db-list-item-subtitle">
-                    Suggested · {s.type.replace(/_/g, " ")}
-                    {s.project ? ` · ${s.project.name}` : ""}
+                    Suggested, {s.type.replace(/_/g, " ")}
+                    {s.project ? `, ${s.project.name}` : ""}
                   </div>
                 </div>
                 <button type="button" className="btn-mini" onClick={() => accept(s)}>Accept</button>
@@ -126,7 +126,7 @@ export default function Dashboard({
                   {p.description && <p className="p2-project-desc">{p.description}</p>}
                   <ProgressBar value={stats.progress} label={`${p.name} progress`} />
                   <div className="p2-project-meta">
-                    <span className="p2-mono">{stats.done} of {stats.total} done · {stats.open} open</span>
+                    <span className="p2-mono">{stats.done} of {stats.total} done, {stats.open} open</span>
                     <StageDot stage={p.stage || "idea"} label={stageLabel(p)} />
                     {p.due_date && <span>{formatDisplayDate(p.due_date)}</span>}
                     {p.archived && <StatusDot status="backlog" label="Archived" />}

@@ -18,7 +18,7 @@ export default function DueHabitReminders({ rows, missedRows = [], busyId, onDon
               <div className="db-list-item-content">
                 <span className="db-list-item-title task-row-title">{tracker.emoji ? `${tracker.emoji} ` : ""}{tracker.name}</span>
                 <span className="db-list-item-subtitle">
-                  <span className={overdue ? "task-overdue" : undefined}>{overdue ? "Overdue" : "Due today"}</span> · {dueDate}
+                  <span className={overdue ? "task-overdue" : undefined}>{overdue ? "Overdue" : "Due today"}</span>, {dueDate}
                 </span>
               </div>
               <div className="task-row-actions">
@@ -40,7 +40,7 @@ export default function DueHabitReminders({ rows, missedRows = [], busyId, onDon
             <div className="db-list-item task-row is-missed" key={`missed-${tracker.id}`}>
               <div className="db-list-item-content">
                 <span className="db-list-item-title task-row-title">{tracker.emoji ? `${tracker.emoji} ` : ""}{tracker.name}</span>
-                <span className="db-list-item-subtitle"><span className="missed-tag">Missed</span> · today</span>
+                <span className="db-list-item-subtitle"><span className="missed-tag">Missed</span>, today</span>
               </div>
               <div className="task-row-actions">
                 {onUnmiss && (

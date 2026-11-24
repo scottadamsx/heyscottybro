@@ -9,7 +9,6 @@ import Button from '../ui/Button.jsx'
 import { TextArea } from '../ui/Field.jsx'
 import { firstName } from '../ui/PersonChip.jsx'
 import LastSeen from './LastSeen.jsx'
-import { Sparkles } from '../ui/icons.js'
 
 function legacyCopy(value) {
   if (typeof document === 'undefined' || typeof document.execCommand !== 'function') return false
@@ -110,7 +109,6 @@ export default function SayHiModal({ id, onClose }) {
         {ai.available && (
           <div>
             <Button size="sm" variant="ghost" onClick={personal} disabled={!!busy}>
-              <Sparkles size={14} aria-hidden />
               {busy === 'ai' ? 'Writing…' : 'Make it personal'}
             </Button>
           </div>

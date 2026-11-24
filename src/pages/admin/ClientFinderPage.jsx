@@ -14,7 +14,7 @@ import "./client-finder.css";
  */
 export default function ClientFinderPage() {
   const s = HARVEY.stats;
-  const statsLine = `${s.license} · ${s.language} · ${s.stars} stars · ${s.forks} forks · Created ${s.created} · Last push ${s.lastPush} · Verified ${s.verifiedOn}`;
+  const statsLine = `${s.license}, ${s.language}, ${s.stars} stars, ${s.forks} forks, Created ${s.created}, Last push ${s.lastPush}, Verified ${s.verifiedOn}`;
 
   return (
     <div className="module-page client-finder-page">

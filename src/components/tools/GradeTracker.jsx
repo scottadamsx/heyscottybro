@@ -144,7 +144,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
       {/* Add / edit modal */}
       {showForm && (
         <FormModal
-          title={editId ? "Edit assessment" : `Add assessment${courseCode ? ` · ${courseCode}` : ""}`}
+          title={editId ? "Edit assessment" : `Add assessment${courseCode ? `, ${courseCode}` : ""}`}
           submitLabel={editId ? "Save" : "Add"}
           submitDisabled={!form.name.trim()}
           onClose={closeForm}
@@ -178,7 +178,7 @@ export default function GradeTracker({ courseId = null, courseCode = "", rows: r
                 <div className="gt-item-main">
                   <div className="gt-item-title">{g.course && <span className="gt-course">{g.course}</span>}{g.name}</div>
                   <div className="gt-item-sub">
-                    {g.earned != null ? `${g.earned}/${g.max}` : `— /${g.max}`} · {w > 0 ? `weight ${w}%` : "unweighted"}{g.feedback ? " · has feedback" : ""}
+                    {g.earned != null ? `${g.earned}/${g.max}` : `— /${g.max}`}, {w > 0 ? `weight ${w}%` : "unweighted"}{g.feedback ? ", has feedback" : ""}
                   </div>
                 </div>
                 <div className={`gt-item-pct ${p != null && p < 60 ? "low" : p != null && p >= 80 ? "high" : ""}`}>{p == null ? "—" : `${p}%`}</div>

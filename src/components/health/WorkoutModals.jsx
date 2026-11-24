@@ -185,7 +185,7 @@ export function LogSetModal({ exercise, prefill, reason, editing, bar, onClose, 
   const hint = loadHint(w, bar);
   return (
     <FormModal
-      title={`${exercise} · set ${prefill?.setNumber ?? 1}`}
+      title={`${exercise}, set ${prefill?.setNumber ?? 1}`}
       submitLabel={editing ? "Save set" : "Log set"}
       submitDisabled={reps === "" || weight === ""}
       onClose={onClose}

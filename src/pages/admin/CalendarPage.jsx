@@ -445,7 +445,7 @@ export default function CalendarPage() {
 
       {!loaded ? <PageSkeleton variant="calendar" label="Loading calendar" header={false} page={false} /> : (
       <div className="db-card cal-card">
-        {/* One header: month · Today · prev/next */}
+        {/* One header: month, Today, prev/next */}
         <div className="cal-head">
           <h2 className="cal-month" aria-live="polite">{monthLabel(year, month)}</h2>
           <div className="cal-nav">
@@ -505,7 +505,7 @@ export default function CalendarPage() {
           if (!overdue.length) return null;
           return (
             <div className="cal-overdue" role="group" aria-label="Overdue tasks">
-              <span className="cal-overdue-label"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Overdue · drag onto a day, or tap to schedule</span>
+              <span className="cal-overdue-label"><i className="fa-solid fa-clock-rotate-left" aria-hidden="true" /> Overdue, drag onto a day, or tap to schedule</span>
               <div className="cal-overdue-chips">
                 {overdue.map((r) => (
                   <button
@@ -603,7 +603,7 @@ export default function CalendarPage() {
                     <span className="day-item-dot" style={{ background: projectColor(e.project_id) || "var(--accent)" }} aria-hidden="true" />
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{e.title}{e.span_total ? ` (${e.span_day}/${e.span_total})` : ""}</div>
-                      <div className="db-list-item-subtitle">{dayLabel(e.date)}{e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : ""}</div>
+                      <div className="db-list-item-subtitle">{dayLabel(e.date)}{e.start_time ? `, ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : ""}</div>
                     </div>
                     <AttendeeChips personIds={eventPeople[e.id]} byId={byId} />
                     <RowChevron />
@@ -620,7 +620,7 @@ export default function CalendarPage() {
                     <span className="day-item-dot" style={{ background: projectColor(t.project_id) || "var(--text-muted)" }} aria-hidden="true" />
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{t.name}</div>
-                      <div className="db-list-item-subtitle">{dayLabel(t.date)}{t.time ? ` · ${formatTime12(t.time)}` : ""}{t.recurrence && t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}</div>
+                      <div className="db-list-item-subtitle">{dayLabel(t.date)}{t.time ? `, ${formatTime12(t.time)}` : ""}{t.recurrence && t.recurrence !== "none" ? `, ${t.recurrence}` : ""}</div>
                     </div>
                     <RowChevron />
                   </div>
@@ -692,7 +692,7 @@ export default function CalendarPage() {
                           {(e.location || attendeeLabel) && (
                             <span className="day-event-meta">
                               {e.location && <><i className="fa-solid fa-location-dot" aria-hidden="true" /> {e.location}</>}
-                              {e.location && attendeeLabel ? " · " : ""}
+                              {e.location && attendeeLabel ? ", " : ""}
                               {attendeeLabel}
                             </span>
                           )}
@@ -732,7 +732,7 @@ export default function CalendarPage() {
                 <div className="day-section-head">
                   <span>Tasks</span>
                   <span className="day-count">
-                    {dayTasks.length} active{dayDone.length > 0 ? ` · ${dayDone.length} done` : ""}
+                    {dayTasks.length} active{dayDone.length > 0 ? `, ${dayDone.length} done` : ""}
                   </span>
                 </div>
                 {dayTasks.length === 0 && dayDone.length === 0 && <p className="day-empty">No tasks due.</p>}
@@ -756,7 +756,7 @@ export default function CalendarPage() {
                     <div className="day-item-body">
                       <button type="button" className="day-item-title day-item-link" onClick={() => navigate(`/admin/tasks/${t.id}`)} title="Open task">{t.name}</button>
                       {(t.time || (t.recurrence && t.recurrence !== "none")) && (
-                        <div className="day-item-sub">{[t.time ? formatTime12(t.time) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(" · ")}</div>
+                        <div className="day-item-sub">{[t.time ? formatTime12(t.time) : null, t.recurrence && t.recurrence !== "none" ? t.recurrence : null].filter(Boolean).join(", ")}</div>
                       )}
                     </div>
                     <button type="button" className="icon-x sm" onClick={async () => { if (await confirm(`Delete "${t.name}"?`, { title: "Delete task", confirmLabel: "Delete" })) { setReminders((prev) => prev.filter((r) => r.id !== t.id)); deleteReminder(t.id).catch(load); } }} aria-label="Delete task"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
@@ -771,7 +771,7 @@ export default function CalendarPage() {
                     <span className="day-check done" title="Completed"><i className="fa-solid fa-circle-check" aria-hidden="true" /><span className="visually-hidden">Completed</span></span>
                     <div className="day-item-body">
                       <div className="day-item-title">{t.name}</div>
-                      <div className="day-item-sub">Completed{t.completed_date ? ` · ${formatDisplayDate(t.completed_date)}` : ""}</div>
+                      <div className="day-item-sub">Completed{t.completed_date ? `, ${formatDisplayDate(t.completed_date)}` : ""}</div>
                     </div>
                     <span className="day-item-actions">
                       <button type="button" className="btn-mini" onClick={() => handleUncomplete(t.id)} title="Undo completion"><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Undo</button>
@@ -807,7 +807,7 @@ export default function CalendarPage() {
                     <span>Money</span>
                     <span className="day-count">
                       {daySpent > 0 ? `${formatMoney(daySpent)} spent` : ""}
-                      {daySpent > 0 && dayIncome > 0 ? " · " : ""}
+                      {daySpent > 0 && dayIncome > 0 ? ", " : ""}
                       {dayIncome > 0 ? `${formatMoney(dayIncome)} in` : ""}
                     </span>
                   </div>

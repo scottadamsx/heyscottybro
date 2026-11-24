@@ -162,9 +162,9 @@ export default function ProjectDetail({
             <button type="button" className="p2-row-title" onClick={() => onOpenTask?.(t)}>{t.name}</button>
             <div className="db-list-item-subtitle">
               {t.date ? formatDisplayDate(t.date) : "No due date"}
-              {t.time ? ` · ${formatTime12(String(t.time).slice(0, 5))}` : ""}
-              {t.recurrence && t.recurrence !== "none" ? ` · ${t.recurrence}` : ""}
-              {kids.length ? ` · ${kids.length} subtask${kids.length === 1 ? "" : "s"}` : ""}
+              {t.time ? `, ${formatTime12(String(t.time).slice(0, 5))}` : ""}
+              {t.recurrence && t.recurrence !== "none" ? `, ${t.recurrence}` : ""}
+              {kids.length ? `, ${kids.length} subtask${kids.length === 1 ? "" : "s"}` : ""}
             </div>
           </div>
           <StatusDot status={getStatus(t)} />
@@ -254,7 +254,7 @@ export default function ProjectDetail({
                   <div className="db-list-item" key={u.id}>
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{u.body}</div>
-                      <div className="db-list-item-subtitle">{kindLabel(u.kind)}{u.created_at ? ` · ${formatDisplayDate(String(u.created_at).slice(0, 10))}` : ""}</div>
+                      <div className="db-list-item-subtitle">{kindLabel(u.kind)}{u.created_at ? `, ${formatDisplayDate(String(u.created_at).slice(0, 10))}` : ""}</div>
                     </div>
                   </div>
                 ))}
@@ -294,7 +294,7 @@ export default function ProjectDetail({
                     <ProgressBar value={stats.progress} label="Task progress" />
                   </dd>
                 </div>
-                <div className="task-detail-row"><dt>Next milestone</dt><dd>{nextMilestone ? `${nextMilestone.name}${nextMilestone.target_date ? ` · ${formatDisplayDate(nextMilestone.target_date)}` : ""}` : "None"}</dd></div>
+                <div className="task-detail-row"><dt>Next milestone</dt><dd>{nextMilestone ? `${nextMilestone.name}${nextMilestone.target_date ? `, ${formatDisplayDate(nextMilestone.target_date)}` : ""}` : "None"}</dd></div>
                 <div className="task-detail-row"><dt>Overdue</dt><dd><span className="p2-mono">{stats.overdue}</span></dd></div>
                 <div className="task-detail-row"><dt>Blocked</dt><dd><span className="p2-mono">{stats.blocked}</span></dd></div>
                 <div className="task-detail-row"><dt>Completed</dt><dd><span className="p2-mono">{stats.done}</span></dd></div>
@@ -361,7 +361,7 @@ export default function ProjectDetail({
                 <div className="db-list-item" key={i.id}>
                   <div className="db-list-item-content">
                     <div className="db-list-item-title">{i.name}</div>
-                    <div className="db-list-item-subtitle">{i.recurrence} · {i.description || "no description"}</div>
+                    <div className="db-list-item-subtitle">{i.recurrence}, {i.description || "no description"}</div>
                     <DocLinks entityType="initiative" entityId={i.id} title="Documents" compact />
                   </div>
                   <button type="button" className="btn-mini" onClick={() => onEditInitiative(i)} title="Edit"><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
@@ -421,7 +421,7 @@ export default function ProjectDetail({
                           <div className="db-list-item-content">
                             <button type="button" className="p2-row-title" onClick={() => onOpenTask?.(t)}>{t.name}</button>
                             <div className="db-list-item-subtitle">
-                              Completed{t.completed_date ? ` · ${formatDisplayDate(t.completed_date)}` : ""}
+                              Completed{t.completed_date ? `, ${formatDisplayDate(t.completed_date)}` : ""}
                             </div>
                           </div>
                           <button type="button" className="btn-mini" onClick={() => onReopenTask?.(t)} title="Reopen"><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Reopen</button>
@@ -457,8 +457,8 @@ export default function ProjectDetail({
                   <div className="db-list-item-title">{m.name}</div>
                   <div className="db-list-item-subtitle">
                     {m.target_date ? formatDisplayDate(m.target_date) : "No target date"}
-                    {m.criteria ? ` · ${m.criteria}` : ""}
-                    {m.completed && m.completed_date ? ` · Completed ${formatDisplayDate(m.completed_date)}` : ""}
+                    {m.criteria ? `, ${m.criteria}` : ""}
+                    {m.completed && m.completed_date ? `, Completed ${formatDisplayDate(m.completed_date)}` : ""}
                   </div>
                 </div>
                 <StatusDot status={m.completed ? "done" : "backlog"} label={m.completed ? "Completed" : "Open"} />
@@ -496,7 +496,7 @@ export default function ProjectDetail({
                     <span className="p2-update-kicker">{kindLabel(u.kind)}</span>
                     {u.kind === "auto" && <StatusDot status="backlog" label="Automatic" />}
                     <span className="p2-update-time">
-                      {u.created_at ? `${formatDisplayDate(String(u.created_at).slice(0, 10))} · ${new Date(u.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
+                      {u.created_at ? `${formatDisplayDate(String(u.created_at).slice(0, 10))}, ${new Date(u.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}
                     </span>
                     <button type="button" className="icon-x sm" onClick={() => removeUpdate(u)} aria-label="Delete update"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
                   </div>

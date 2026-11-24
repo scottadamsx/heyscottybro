@@ -50,7 +50,7 @@ export function searchAll(people, events, query, { limit = 20 } = {}) {
     const text = [e.title, e.kind, e.place, e.notes, ...Object.values(e.updates || {}), ...names, e.date].join(' ')
     const hay = normText(text)
     if (!words.every((w) => hay.includes(w))) continue
-    eventHits.push({ id, date: e.date, title: e.title || e.kind, snippet: snippet([e.place, e.notes, ...Object.values(e.updates || {})].filter(Boolean).join(' · '), words) })
+    eventHits.push({ id, date: e.date, title: e.title || e.kind, snippet: snippet([e.place, e.notes, ...Object.values(e.updates || {})].filter(Boolean).join(', '), words) })
   }
 
   return {

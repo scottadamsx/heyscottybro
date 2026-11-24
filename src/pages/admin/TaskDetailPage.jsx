@@ -168,7 +168,7 @@ export default function TaskDetailPage() {
         <button type="button" className="btn-secondary-sm" onClick={() => navigate(-1)}><i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back</button>
       </div>
 
-      {/* ── Summary: project · title · status ── */}
+      {/* ── Summary: project, title, status ── */}
       <section className="db-card task-hero" aria-label="Task summary">
         <div className="task-hero-main">
           {project && (
@@ -220,14 +220,14 @@ export default function TaskDetailPage() {
               {!task.date ? "No due date"
                 : isRecurring ? (next ? formatDisplayDate(next) : "Series finished")
                 : formatDisplayDate(task.date)}
-              {task.time ? ` · ${formatTime12(task.time)}` : ""}
-              {overdue ? " · overdue" : ""}
+              {task.time ? `, ${formatTime12(task.time)}` : ""}
+              {overdue ? ", overdue" : ""}
             </dd>
           </div>
           {isRecurring && (
             <div className="task-detail-row">
               <dt>Started</dt>
-              <dd>{formatDisplayDate(task.date)}{task.completed_date ? ` · last done ${formatDisplayDate(task.completed_date)}` : ""}</dd>
+              <dd>{formatDisplayDate(task.date)}{task.completed_date ? `, last done ${formatDisplayDate(task.completed_date)}` : ""}</dd>
             </div>
           )}
 
@@ -235,8 +235,8 @@ export default function TaskDetailPage() {
             <dt>Repeats</dt>
             <dd>
               {RECUR_LABEL[task.recurrence] || "One-time"}
-              {task.recur_until ? ` · until ${formatDisplayDate(task.recur_until)}` : ""}
-              {task.recur_times ? ` · ${task.recur_times}×` : ""}
+              {task.recur_until ? `, until ${formatDisplayDate(task.recur_until)}` : ""}
+              {task.recur_times ? `, ${task.recur_times}×` : ""}
             </dd>
           </div>
 

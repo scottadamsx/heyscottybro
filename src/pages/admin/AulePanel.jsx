@@ -71,9 +71,9 @@ export default function AulePanel({ agent, onOpenDoc }) {
           if (m.role === "result") {
             return (
               <div key={i} className={`cmd-msg ${m.isError ? "error" : "assistant"}`}>
-                <button type="button" className="cmd-msg-expand" title="Open in viewer" aria-label="Open result in viewer" onClick={() => onOpenDoc?.({ title: `${agent.name} · result`, body: m.text || "" })}><i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" /></button>
+                <button type="button" className="cmd-msg-expand" title="Open in viewer" aria-label="Open result in viewer" onClick={() => onOpenDoc?.({ title: `${agent.name}, result`, body: m.text || "" })}><i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" /></button>
                 <MarkdownBody className="chat-md" html={renderMarkdown(m.text || "_(done)_")} />
-                {typeof m.cost === "number" && <div className="aule-cost">Max plan · ~${m.cost.toFixed(3)} equivalent</div>}
+                {typeof m.cost === "number" && <div className="aule-cost">Max plan, ~${m.cost.toFixed(3)} equivalent</div>}
               </div>
             );
           }

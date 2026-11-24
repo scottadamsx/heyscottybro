@@ -188,7 +188,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
           <p className="si-note is-lead">Announcements, syllabi, grade releases — deadlines land in School <em>and</em> Plan, grades update the tracker, and a summary is filed to the Brain so your agents know too.</p>
           <label className="si-drop">
             <input type="file" accept=".pdf,.txt,.md,image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-            <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a document (PDF · image · text)
+            <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a document (PDF, image, text)
           </label>
           <div className="si-or">or paste it</div>
           <textarea rows={5} aria-label="Paste the document" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the announcement / syllabus section…" />
@@ -211,19 +211,19 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
             <div className="si-group-title"><i className="fa-solid fa-graduation-cap" aria-hidden="true" /> Course</div>
             <select aria-label="Course" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
               <option value="">— pick the course —</option>
-              {courses.map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
+              {courses.map((c) => <option key={c.id} value={c.id}>{c.code}, {c.name}</option>)}
             </select>
           </div>
 
           {(out.deadlines || []).length > 0 && (
             <div className="si-group">
-              <div className="si-group-title"><i className="fa-solid fa-flag-checkered" aria-hidden="true" /> Deadlines → School + Plan</div>
+              <div className="si-group-title"><i className="fa-solid fa-flag-checkered" aria-hidden="true" /> Deadlines: School + Plan</div>
               {(out.deadlines || []).map((d, i) => (
                 <label key={i} className="si-row">
                   <input type="checkbox" checked={!!checks[`d${i}`]} onChange={() => setChecks((c) => ({ ...c, [`d${i}`]: !c[`d${i}`] }))} />
                   <span className="si-row-main">
                     <span className="si-row-title">{d.name}</span>
-                    <span className="si-diff">{preferredDisplayDate(d.date)}{d.detail ? ` · ${d.detail}` : ""}</span>
+                    <span className="si-diff">{preferredDisplayDate(d.date)}{d.detail ? `, ${d.detail}` : ""}</span>
                     {d.already_tracked && <span className="si-warn"><i className="fa-solid fa-circle-info" aria-hidden="true" /> looks already tracked — left unchecked</span>}
                   </span>
                 </label>
@@ -240,7 +240,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
                   <span className="si-row-main">
                     <span className="si-row-title">{g.match_name ? `Update: ${g.match_name}` : `New: ${g.name}`}</span>
                     <span className="si-diff">
-                      {g.earned != null && <>score <strong>{g.earned}{g.max ? `/${g.max}` : ""}</strong> · </>}
+                      {g.earned != null && <>score <strong>{g.earned}{g.max ? `/${g.max}` : ""}</strong>, </>}
                       {g.weight != null && <>weight <strong>{g.weight}%</strong></>}
                     </span>
                     {g.feedback && <span className="si-reason">{g.feedback}</span>}
@@ -256,7 +256,7 @@ export default function SchoolImport({ courses, grades, deadlines, onClose, onAp
                 <input type="checkbox" checked={!!checks.course} onChange={() => setChecks((c) => ({ ...c, course: !c.course }))} />
                 <span className="si-row-main">
                   <span className="si-row-title">Course details</span>
-                  <span className="si-diff">{Object.entries(out.course_updates).map(([k, v]) => `${k}: ${v}`).join(" · ")}</span>
+                  <span className="si-diff">{Object.entries(out.course_updates).map(([k, v]) => `${k}: ${v}`).join(", ")}</span>
                 </span>
               </label>
             </div>

@@ -167,7 +167,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
         <i className={`fa-solid fa-chevron-${open ? "down" : "right"} doclinks-caret`} aria-hidden="true" />
         <i className="fa-solid fa-paperclip" aria-hidden="true" />
         <span>{title}</span>
-        <span className="doclinks-count">{links.length}{unread > 0 && <em className="doclinks-unread"> · {unread} unread</em>}</span>
+        <span className="doclinks-count">{links.length}{unread > 0 && <em className="doclinks-unread">, {unread} unread</em>}</span>
       </button>
 
       {open && (

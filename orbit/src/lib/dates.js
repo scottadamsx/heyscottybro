@@ -52,5 +52,5 @@ export function formatDateTime(value) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  return `${formatDate(toYMD(date))} · ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+  return `${formatDate(toYMD(date))}, ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
 }

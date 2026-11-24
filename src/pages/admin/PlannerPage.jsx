@@ -20,9 +20,9 @@ const emptyQuickReminder = { name: "", date: toDateStr(new Date()), recurrence: 
 
 // Journal lives in Life now (Scott: Plan is calendar/reminders/events/work).
 const TABS = [
-  { key: "overview",  label: "Overview",  icon: "fa-calendar-days" },
-  { key: "projects",  label: "Projects",  icon: "fa-folder-open" },
-  { key: "work",      label: "Work",      icon: "fa-briefcase" },
+  { key: "overview", label: "Overview", icon: "fa-calendar-days" },
+  { key: "projects", label: "Projects", icon: "fa-folder-open" },
+  { key: "work",     label: "Work",     icon: "fa-briefcase" },
 ];
 
 export default function PlannerPage() {
@@ -101,7 +101,7 @@ export default function PlannerPage() {
                 L.push(`## ${preferredDisplayDate(d)}`);
                 if (!day.length && !evs.length) L.push("_free_");
                 evs.forEach((e) => L.push(`- ${e.title}`));
-                day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? ` · ${formatTime12(r.time)}` : ""}`));
+                day.forEach((r) => L.push(`- [ ] ${r.name}${r.time ? `, ${formatTime12(r.time)}` : ""}`));
                 L.push("");
               }
               return L.join("\n");

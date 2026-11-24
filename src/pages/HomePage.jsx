@@ -19,7 +19,7 @@ const FEATURED = [
     icon: "fa-person-hiking",
     href: "https://stjohnshikeclub.com",
     img: "/images/hikeclub.JPG",
-    kicker: "Community · Non-profit · Founded by Scott",
+    kicker: "Community, Non-profit, Founded by Scott",
     body: [
       "More than a walking group — a community movement exploring Newfoundland's most stunning trails, together.",
       "4,400+ followers on Instagram, 80+ people showing up per hike, and an 18-hike free season in 2026 with sponsors like Quidi Vidi and The Oat Company behind it.",
@@ -33,7 +33,7 @@ const FEATURED = [
     icon: "fa-dumbbell",
     href: "https://stjohnsliftclub.com",
     img: null,
-    kicker: "Fitness club · Launching September 2026",
+    kicker: "Fitness club, Launching September 2026",
     body: [
       "The Hike Club playbook applied to the gym: bi-weekly group lifts, trainer-led sessions and a crew of local creators — built for beginners who want a reason to show up.",
       "$9.99/month membership. First meet Saturday, September 19, 2026.",
@@ -47,10 +47,10 @@ const FEATURED = [
     icon: "fa-tree",
     href: "https://mybackyard.space",
     img: null,
-    kicker: "Locals-only social platform · Live in St. John's",
+    kicker: "Locals-only social platform, Live in St. John's",
     body: [
       "myBackyard is a social network for one place at a time. One account for everything local: a feed for your city, events with RSVPs and paid tickets, club and business pages, friends and group chats, and a places directory.",
-      "Built and owned by me. Clubs build community → members join myBackyard → local businesses follow. St. John's first, then Mount Pearl, then the rest of Newfoundland.",
+      "Built and owned by me. Clubs build community, members join myBackyard, and local businesses follow. St. John's first, then Mount Pearl, then the rest of Newfoundland.",
     ],
     facts: [["Status", "Live"], ["Seed audience", "4,400 hikers"], ["Stack", "Next.js + Supabase"]],
     cta: "Open mybackyard.space",
@@ -60,8 +60,8 @@ const FEATURED = [
 /* ── Everything else — desktop icons ─────────────────────── */
 const ICONS = [
   { id: "never86", title: "NEVER86", icon: "fa-utensils", href: "https://never86.ca", tag: "Live product", desc: "A restaurant management platform built for independents — communication, customization and efficiency, front and centre.", img: "/images/never86_website_concept.jpg" },
-  { id: "clubhouse", title: "Clubhouse", icon: "fa-store", href: "https://clubhouse-management.vercel.app", tag: "SaaS · Live", desc: "The CRM behind myBackyard — clubs and local businesses manage their members, their myBackyard page and their sales in one place." },
-  { id: "kiwi-ide", title: "Kiwi IDE", icon: "fa-kiwi-bird", href: null, tag: "Flagship · Private beta", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with agents. Agent, live preview, ambient code stream, and “earn while you wait”." },
+  { id: "clubhouse", title: "Clubhouse", icon: "fa-store", href: "https://clubhouse-management.vercel.app", tag: "SaaS, Live", desc: "The CRM behind myBackyard — clubs and local businesses manage their members, their myBackyard page and their sales in one place." },
+  { id: "kiwi-ide", title: "Kiwi IDE", icon: "fa-kiwi-bird", href: null, tag: "Flagship, Private beta", desc: "My biggest build — an AI coding IDE (a fork of VS Code) for people who build with agents. Agent, live preview, ambient code stream, and “earn while you wait”." },
   { id: "kiwi-games", title: "Kiwi Games", icon: "fa-gamepad", href: "https://scottadamsx.github.io/kiwiGames/", tag: "50 browser games", desc: "Snake, 2048, Minesweeper, solitaire, word games and more. No sign-up, no install, works offline." },
   { id: "planner", title: "heyScottyBro", icon: "fa-list-check", to: "/admin/login", tag: "Personal command centre", desc: "The app behind this site — reminders, calendar, money, school, and a fellowship of AI agents. Password protected." },
   { id: "eliquinn", title: "eliquinn.space", icon: "fa-compass-drafting", href: "https://eliquinn.space", tag: "Client site", desc: "A cinematic personal site for architecture student Eli Quinn — brutalist-minimal, intro film, pinned work gallery." },
@@ -153,7 +153,7 @@ function XpWindow({ w, active, onFocus, onClose, onMin, geom, onGeom, floating, 
           </dl>
         )}
         <div className="xpd-actions">
-          {(w.href || w.to) && <LinkOut href={w.href} to={w.to} className="xpd-btn primary">{w.cta || (w.to ? "Open" : "Visit site")} <i className="fa-solid fa-arrow-up-right-from-square" /></LinkOut>}
+          {(w.href || w.to) && <LinkOut href={w.href} to={w.to} className="xpd-btn primary">{w.cta || (w.to ? "Open" : "Visit site")}</LinkOut>}
           {!w.href && !w.to && <span className="xpd-badge">Private beta</span>}
           {w.extra?.map(([label, href]) => <a key={label} className="xpd-btn" href={href} target="_blank" rel="noreferrer">{label}</a>)}
         </div>
@@ -259,7 +259,7 @@ export default function HomePage() {
                   <Link to="/admin/login" role="menuitem" className="admin"><i className="fa-solid fa-lock" /> Admin</Link>
                 </div>
               </div>
-              <div className="xpd-sm-foot">St. John's, NL · available for work</div>
+              <div className="xpd-sm-foot">St. John's, NL, available for work</div>
             </div>
           )}
         </div>

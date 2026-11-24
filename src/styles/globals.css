@@ -32,13 +32,13 @@
 
   /* ── Surfaces ── */
   --bg-base: #FFFFFF;            /* content canvas */
-  --bg-sidebar: #EFE4D6;         /* cream chrome */
+  --bg-sidebar: #F4F4F4;         /* neutral chrome */
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
   --bg-raised: #F8F4F0;          /* insets, inputs, segmented tracks */
   --bg-hover: #F2EBE4;
   --bg-active: #EAE0D6;          /* a row, tab or chip while it is pressed */
-  --bg-selected: #FFFFFF;        /* selected row on cream */
+  --bg-selected: #FFFFFF;        /* selected row on the sidebar */
   --bg-inverse: #221E1B;         /* primary button, strong chips */
   --bg-inverse-hover: #3A342F;
   --tint-mint: #EAF4F2;          /* feature panel (reference "Channels") */

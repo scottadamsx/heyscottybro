@@ -6,11 +6,11 @@ import "./mission.css";
 
 /**
  * MISSION CONTROL — retained AI knowledge and review tools.
- * Brain (knowledge + memory) · Inbox (flagged messages).
+ * Brain (knowledge + memory), Inbox (flagged messages).
  */
 const TABS = [
-  { key: "brain",    label: "Brain",    icon: "fa-brain" },
-  { key: "inbox",    label: "Inbox",    icon: "fa-inbox" },
+  { key: "brain",   label: "Brain",   icon: "fa-brain" },
+  { key: "inbox",   label: "Inbox",   icon: "fa-inbox" },
 ];
 
 const DEFAULT_TAB = "brain";

@@ -52,8 +52,8 @@ export default function GiftsView() {
                 id={id}
                 sub={
                   <>
-                    {RINGS[r]} · {formatCents(giftBudget(settings, 'xmas', r))} Xmas · {formatCents(giftBudget(settings, 'bday', r))} bday
-                    {people[id].birthday && ` · ${formatDate(nextBirthday(people[id].birthday, asOf)?.date)}`}
+                    {RINGS[r]}, {formatCents(giftBudget(settings, 'xmas', r))} Xmas, {formatCents(giftBudget(settings, 'bday', r))} bday
+                    {people[id].birthday && `, ${formatDate(nextBirthday(people[id].birthday, asOf)?.date)}`}
                   </>
                 }
                 badge={idea ? <Badge tone="success"><Gift size={12} aria-label="Gift idea:" /> {idea.text}</Badge> : <Badge>no idea yet</Badge>}

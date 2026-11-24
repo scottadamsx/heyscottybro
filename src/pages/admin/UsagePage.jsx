@@ -19,9 +19,9 @@ function tokens(n) {
 // Series colours come from the chart tokens (globals.css), so they follow the theme.
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
 const TIER = { /* theme-fixed: user colour (per-agent palette) */
-  frodo:   { label: "Frodo",    color: "#22c55e", icon: "fa-ring" },
-  sam:     { label: "Sam",      color: "#84cc16", icon: "fa-seedling" },
-  gandalf: { label: "Gandalf",  color: "#a78bfa", icon: "fa-hat-wizard" },
+  frodo:   { label: "Frodo",   color: "#22c55e", icon: "fa-ring" },
+  sam:     { label: "Sam",     color: "#84cc16", icon: "fa-seedling" },
+  gandalf: { label: "Gandalf", color: "#a78bfa", icon: "fa-hat-wizard" },
   banker:  { label: "Banker", color: "#f59e0b", icon: "fa-sack-dollar" },
 };
 // Agents not in the legacy TIER map fall back to the registry (real name,
@@ -175,8 +175,8 @@ export default function UsagePage({ embedded = false, range = "30d" }) {
           {cost ? (
             <>
               <div className="usage-stats is-pair">
-                <StatTile label="API cost · 30 days" value={dollars(cost.totalCents)} />
-                <StatTile label="API tokens · 30 days" value={tokens(cost.tokTotal)} />
+                <StatTile label="API cost, 30 days" value={dollars(cost.totalCents)} />
+                <StatTile label="API tokens, 30 days" value={tokens(cost.tokTotal)} />
               </div>
               <section className="db-card">
                 <div className="db-card-header">
@@ -219,7 +219,7 @@ export default function UsagePage({ embedded = false, range = "30d" }) {
                     <div key={r.id} className="usage-recent-row">
                       <span className="usage-recent-agent"><span className="usage-dot" style={{ background: t.color }} aria-hidden="true" />{t.label}</span>
                       <span className="usage-recent-tool">
-                        {r.tool}{r.collection ? ` · ${r.collection}` : ""}{r.error ? <span className="usage-err"> · error</span> : ""}
+                        {r.tool}{r.collection ? `, ${r.collection}` : ""}{r.error ? <span className="usage-err">, error</span> : ""}
                       </span>
                       <span className="usage-recent-time">{preferredDisplayDateTime(new Date(r.created_at))}</span>
                     </div>

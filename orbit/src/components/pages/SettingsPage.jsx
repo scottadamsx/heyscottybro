@@ -43,7 +43,7 @@ export default function SettingsPage() {
           <dd className="mono break">{health?.dataDir ?? 'Unknown (server not reachable)'}</dd>
           <dt>Records</dt>
           <dd>
-            {Object.keys(people).length} people · {Object.keys(events).length} events
+            {Object.keys(people).length} people, {Object.keys(events).length} events
           </dd>
           <dt>Backups</dt>
           <dd>
@@ -83,7 +83,7 @@ export default function SettingsPage() {
             <div key={r} className="contents">
               <dt>{r}</dt>
               <dd>
-                {formatCents(settings.budget.xmas[i])} Christmas · {formatCents(settings.budget.bday[i])} birthday
+                {formatCents(settings.budget.xmas[i])} Christmas, {formatCents(settings.budget.bday[i])} birthday
               </dd>
             </div>
           ))}

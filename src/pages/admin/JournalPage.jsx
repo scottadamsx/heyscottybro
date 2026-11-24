@@ -513,7 +513,7 @@ export default function JournalPage() {
                   <p className="journal-ai-provenance">
                     <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
                     <strong>Cleaned with AI</strong>
-                    <span> · {selectedEntry.ai_provenance.model} · {selectedEntry.ai_provenance.prompt} v{selectedEntry.ai_provenance.promptVersion} · {savedTime(selectedEntry.ai_provenance.generatedAt)}</span>
+                    <span>, {selectedEntry.ai_provenance.model}, {selectedEntry.ai_provenance.prompt} v{selectedEntry.ai_provenance.promptVersion}, {savedTime(selectedEntry.ai_provenance.generatedAt)}</span>
                   </p>
                 )}
                 {selectedEntry.ai_provenance?.orbit?.status === "saved" && (
@@ -642,7 +642,7 @@ export default function JournalPage() {
           ) : hasDraft ? (
             <p className="draft-status" role="status">
               <i className="fa-solid fa-floppy-disk" aria-hidden="true" /> Draft auto-saved on this device
-              {restoredDraft?.savedAt ? ` · restored from ${savedTime(restoredDraft.savedAt)}` : ""}
+              {restoredDraft?.savedAt ? `, restored from ${savedTime(restoredDraft.savedAt)}` : ""}
             </p>
           ) : null}
         </FormModal>
@@ -863,9 +863,9 @@ function WritingTools({ body, onTranscript, onRecordingChange, timer, clock, onT
     <div className="journal-writing-tools" aria-label="Writing tools">
       <div className="journal-writing-stats">
         <span>{counts.characters} {counts.characters === 1 ? "character" : "characters"}</span>
-        <span aria-hidden="true">·</span>
+        <span aria-hidden="true">, </span>
         <span>{counts.words} {counts.words === 1 ? "word" : "words"}</span>
-        <span aria-hidden="true">·</span>
+        <span aria-hidden="true">, </span>
         <span className="journal-timer" aria-label={`Writing time ${formatWritingDuration(elapsed)}`}>{formatWritingDuration(elapsed)}</span>
       </div>
       <div className="journal-writing-actions">

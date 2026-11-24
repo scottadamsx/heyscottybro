@@ -10,7 +10,6 @@ import Empty from '../ui/Empty.jsx'
 import { DaysBadge } from '../ui/Badge.jsx'
 import LastSeen from './LastSeen.jsx'
 import Avatar from '../ui/Avatar.jsx'
-import { Sparkles } from '../ui/icons.js'
 import ProfileTab from './ProfileTab.jsx'
 import InfoTab from './InfoTab.jsx'
 import AskTab from './AskTab.jsx'
@@ -56,8 +55,8 @@ export default function PersonDrawer({ id }) {
           <h2 id="person-name">{p.name}</h2>
           <p className="row-sub">
             <span className={`dot group-${groupOf(p.group).id}`} aria-hidden />
-            {groupOf(p.group).label} · {RINGS[a.ring]}
-            {cluster && ` · ${cluster.name}`}
+            {groupOf(p.group).label}, {RINGS[a.ring]}
+            {cluster && `, ${cluster.name}`}
           </p>
         </div>
         <DaysBadge a={a} />
@@ -75,7 +74,7 @@ export default function PersonDrawer({ id }) {
         </Button>
         {ai.available && (
           <Button size="sm" onClick={() => open('interview', { about: id })}>
-            <Sparkles size={14} aria-hidden /> Orbit
+            Orbit
           </Button>
         )}
         <Button size="sm" variant="ghost" className="push-right" onClick={() => open('removePerson', { id })}>

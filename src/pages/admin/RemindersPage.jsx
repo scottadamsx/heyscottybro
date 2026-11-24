@@ -203,13 +203,13 @@ export default function RemindersPage() {
             <span className="db-list-item-subtitle task-row-meta">
               {r.date && (
                 <span className={overdue ? "task-overdue" : undefined}>
-                  {overdue ? "Overdue · " : ""}{formatDisplayDate(r.next || r.date)}
+                  {overdue ? "Overdue, " : ""}{formatDisplayDate(r.next || r.date)}
                 </span>
               )}
-              {meta.map((m, i) => <span key={i}>{(r.date || i > 0) ? " · " : ""}{m}</span>)}
+              {meta.map((m, i) => <span key={i}>{(r.date || i > 0) ? ", " : ""}{m}</span>)}
               {r.project_id && (
                 <span className="task-row-project">
-                  {(r.date || meta.length > 0) ? " · " : ""}
+                  {(r.date || meta.length > 0) ? ", " : ""}
                   <span className="task-row-dot" style={{ background: projectColor(r.project_id) }} aria-hidden="true" />
                   {projectName(r.project_id)}
                 </span>

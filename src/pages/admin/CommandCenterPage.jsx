@@ -149,7 +149,7 @@ export default function CommandCenterPage() {
       const blob = markdownToPdfBlob(body || "", {
         title: title || "Agent reply",
         subtitle: subtitle || "",
-        footer: `heyscottybro · Command Center · ${preferredDisplayDateTime(new Date())}`,
+        footer: `heyscottybro, Command Center, ${preferredDisplayDateTime(new Date())}`,
       });
       const filename = `${(title || "agent-reply").replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "agent-reply"}.pdf`;
       setPdfDoc({ blob, title: title || "Agent reply", filename });
@@ -369,7 +369,7 @@ export default function CommandCenterPage() {
                 <span className="cmd-avatar sm" style={{ background: selected.color }} aria-hidden="true"><i className={`fa-solid ${selected.icon}`} /></span>
                 <div className="cmd-chat-id">
                   <h3 className="db-card-title">{selected.name}</h3>
-                  <div className="cmd-chat-sub">{selected.title} · <span className="cmd-model">{selected.model}</span></div>
+                  <div className="cmd-chat-sub">{selected.title}, <span className="cmd-model">{selected.model}</span></div>
                 </div>
                 {((selected.kind === "api" && thread.display.length > 0) || selBusy || selClearing) && (
                   <div className="cmd-chat-actions">
@@ -431,7 +431,7 @@ export default function CommandCenterPage() {
                               className="cmd-msg-expand is-pdf"
                               title="View as PDF"
                               aria-label="View reply as PDF"
-                              onClick={() => openAsPdf(`${selected.name} · ${selected.title}`, m.text, selected.tagline)}
+                              onClick={() => openAsPdf(`${selected.name}, ${selected.title}`, m.text, selected.tagline)}
                             >
                               <i className="fa-solid fa-file-pdf" aria-hidden="true" />
                             </button>
@@ -440,7 +440,7 @@ export default function CommandCenterPage() {
                               className="cmd-msg-expand"
                               title="Open in viewer"
                               aria-label="Open reply in viewer"
-                              onClick={() => setViewerDoc({ title: `${selected.name} · ${selected.title}`, body: m.text })}
+                              onClick={() => setViewerDoc({ title: `${selected.name}, ${selected.title}`, body: m.text })}
                             >
                               <i className="fa-solid fa-up-right-and-down-left-from-center" aria-hidden="true" />
                             </button>
@@ -530,8 +530,8 @@ export default function CommandCenterPage() {
                   <div className="cmd-feed-body">
                     <div className="cmd-feed-title">{describeAction(a)}</div>
                     <div className="cmd-feed-meta">
-                      {agent?.name || a.agent_id} · {actionTime(a.created_at)}
-                      {isErr && <> · <span className="cmd-feed-err">failed</span></>}
+                      {agent?.name || a.agent_id}, {actionTime(a.created_at)}
+                      {isErr && <>, <span className="cmd-feed-err">failed</span></>}
                     </div>
                   </div>
                 </div>
@@ -639,7 +639,7 @@ function AgentProfile({ agent, docs, onOpenDoc }) {
               <button key={d.id || d.slug} type="button" className="cmd-doc" title={`Open “${d.title || d.slug}”`} onClick={() => onOpenDoc(d)}>
                 <span className="cmd-doc-title"><i className="fa-solid fa-note-sticky" aria-hidden="true" /> {d.title || d.slug}</span>
                 <span className="cmd-doc-meta">
-                  {(d.type || "note")}{d.updated_at ? ` · ${preferredDisplayDate(new Date(d.updated_at))}` : ""}
+                  {(d.type || "note")}{d.updated_at ? `, ${preferredDisplayDate(new Date(d.updated_at))}` : ""}
                 </span>
               </button>
             ))}

@@ -101,7 +101,7 @@ export function LayoutFigure() {
             </div>
             <div className="lp-wire-bottombar"><span /><span /><span /></div>
           </div>
-          <div className="lp-wire-label">phone · bottom nav</div>
+          <div className="lp-wire-label">phone, bottom nav</div>
         </div>
         <div>
           <div className="lp-wire lp-wire-desk">
@@ -114,7 +114,7 @@ export function LayoutFigure() {
               </div>
             </div>
           </div>
-          <div className="lp-wire-label">desktop · sidebar</div>
+          <div className="lp-wire-label">desktop, sidebar</div>
         </div>
       </div>
     </Figure>

@@ -21,7 +21,7 @@ export const overseerAgent = {
   color: "#a78bfa",
   kind: "api",
   model: AI_MODELS.smart,
-  tagline: "Watches the whole system · daily summary → Brain",
+  tagline: "Watches the whole system, daily summary to the Brain",
   schedule: "daily",
   thinking: "Galadriel gazes into the Mirror…",
   maxToolTurns: 12,

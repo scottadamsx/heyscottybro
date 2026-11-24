@@ -258,7 +258,7 @@ export default function GroceryPage() {
                 <p className="grocery-linesum">
                   Items add up to {money(lineSum)}
                   {Number(draft.total) > 0 && Math.abs(lineSum - Number(draft.total)) > 0.02 && (
-                    <span className="grocery-linesum-diff"> · total entered is {money(draft.total)}</span>
+                    <span className="grocery-linesum-diff">, total entered is {money(draft.total)}</span>
                   )}
                 </p>
               )}
@@ -301,7 +301,7 @@ export default function GroceryPage() {
               <button type="button" className="grocery-receipt-row" aria-expanded={openId === r.id} onClick={() => toggleOpen(r)}>
                 <span className="grocery-receipt-main">
                   <span className="grocery-receipt-name">{r.store_name || "Store"}</span>
-                  <span className="grocery-receipt-sub">{fmtDate(r.purchase_date)} · {r.item_count} item{r.item_count === 1 ? "" : "s"}</span>
+                  <span className="grocery-receipt-sub">{fmtDate(r.purchase_date)}, {r.item_count} item{r.item_count === 1 ? "" : "s"}</span>
                 </span>
                 <span className="grocery-receipt-total">{money(r.total)}</span>
                 <i className={`fa-solid fa-chevron-${openId === r.id ? "up" : "down"} grocery-chev`} aria-hidden="true" />

@@ -62,7 +62,7 @@ export default function PlanView() {
         {worth.length ? (
           <ul className="rows">
             {worth.map((id) => (
-              <PersonRow key={id} id={id} sub={byPerson[id].ring === 4 ? 'Never logged' : `Overdue · ${RINGS[byPerson[id].ring]}`} badge={<DaysBadge a={byPerson[id]} />}>
+              <PersonRow key={id} id={id} sub={byPerson[id].ring === 4 ? 'Never logged' : `Overdue, ${RINGS[byPerson[id].ring]}`} badge={<DaysBadge a={byPerson[id]} />}>
                 <Button size="sm" variant="secondary" onClick={() => open('log', { people: [id], plan: true })}>
                   Plan
                 </Button>

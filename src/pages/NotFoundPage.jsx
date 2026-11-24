@@ -15,7 +15,7 @@ export default function NotFoundPage() {
     <main className="lp pub-404" id="main" tabIndex={-1}>
       <header className="lp-subhero">
         <span className="lp-kicker">exit 404</span>
-        <h1 className="lp-subhero-title">404 · <em>page not found</em></h1>
+        <h1 className="lp-subhero-title">404, page not found</h1>
         <div className="pub-404-term" role="presentation">
           <span className="pub-404-prompt">$</span> cd <span className="pub-404-path">{pathname}</span>
           <br />

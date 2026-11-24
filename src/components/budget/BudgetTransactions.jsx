@@ -167,7 +167,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                             <td className="is-date">{preferredDisplayDate(t.date)}</td>
                             <td className="is-desc">
                               {t.description}
-                              {t.notes && <span className="is-note">· {t.notes}</span>}
+                              {t.notes && <span className="is-note">, {t.notes}</span>}
                             </td>
                             <td className="is-cat">{t.category}</td>
                             <td className="is-amt is-plain">{!isIncome ? formatMoney(t.amount) : ""}</td>
@@ -232,7 +232,7 @@ export default function BudgetTransactions({ config, transactions, setTransactio
                         <td className="is-date">{preferredDisplayDate(t.date)}</td>
                         <td className="is-desc">
                           {t.description}
-                          {t.notes && <span className="is-note">· {t.notes}</span>}
+                          {t.notes && <span className="is-note">, {t.notes}</span>}
                         </td>
                         <td className="is-cat">{t.category}</td>
                         <td className={`is-amt money-tx-amt t-${t.type}`}>

@@ -70,8 +70,8 @@ export default function EventModal({ id }) {
     >
       <div className="stack">
         <p className="meta-line">
-          {formatDate(e.date)} · {e.kind}
-          {e.place && ` · ${e.place}`} · <Badge tone={STATUS_TONE[e.status || 'done']}>{e.status || 'done'}</Badge>
+          {formatDate(e.date)}, {e.kind}
+          {e.place && `, ${e.place}`}, <Badge tone={STATUS_TONE[e.status || 'done']}>{e.status || 'done'}</Badge>
         </p>
         {journalId && health?.journal?.available && <Button size="sm" variant="ghost" onClick={() => open('journal', { entryId: journalId })}>View journal entry</Button>}
         <section>

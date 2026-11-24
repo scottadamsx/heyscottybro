@@ -117,8 +117,8 @@ function generateInsights(periodHistory, trends, projection, lastIncome) {
 const INSIGHT_META = {
   success: { cls: "bud-insight-success", icon: <i className="fa-solid fa-check" aria-hidden="true" /> },
   warning: { cls: "bud-insight-warning", icon: "!" },
-  danger:  { cls: "bud-insight-danger",  icon: "!" },
-  info:    { cls: "bud-insight-info",    icon: "i" },
+  danger:  { cls: "bud-insight-danger", icon: "!" },
+  info:    { cls: "bud-insight-info",   icon: "i" },
 };
 
 // ── Main component ────────────────────────────────────────
@@ -176,7 +176,7 @@ export default function BudgetAnalytics({ config, transactions }) {
           <div className="db-card-header"><h3 className="db-card-title">Next period</h3><span className="bud-muted-12">projection</span></div>
           <div className="bud-proj">
             <div>
-              <div className="bud-proj-label">Assumed income{lastIncome > 0 && <span className="bud-proj-hint"> · last paycheque</span>}</div>
+              <div className="bud-proj-label">Assumed income{lastIncome > 0 && <span className="bud-proj-hint">, last paycheque</span>}</div>
               <div className="bud-proj-value is-pos">{formatMoney(assumed)}</div>
             </div>
             <div>
@@ -195,7 +195,7 @@ export default function BudgetAnalytics({ config, transactions }) {
               <div key={cat} className="money-cat">
                 <div className="money-meter-head">
                   <span className="money-meter-name">{cat} {trend && <TrendBadge trend={trend.trend} pctChange={trend.pctChange} />}</span>
-                  <span className="money-meter-nums">{formatMoney(amt)} · {pct.toFixed(0)}%</span>
+                  <span className="money-meter-nums">{formatMoney(amt)}, {pct.toFixed(0)}%</span>
                 </div>
                 <div className="bud-bar-an"><div className="bud-bar-fill-an" style={{ width: `${Math.min(100, pct)}%`, background: `var(--chart-${(i % 5) + 1})` }} /></div>
               </div>

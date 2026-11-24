@@ -6,7 +6,7 @@ test('all shared date labels use the preferred format and keep stored years', ()
   assert.equal(formatDisplayDate('2026-01-15'), 'Thursday, Jan 15th');
   assert.equal(formatShortDate('2026-01-15'), 'Thursday, Jan 15th');
   assert.equal(toDateStr(new Date(2026, 0, 15)), '2026-01-15');
-  assert.match(formatDisplayDateTime(new Date(2026, 0, 15, 13, 5)), /^Thursday, Jan 15th · 1:05 PM$/);
+  assert.match(formatDisplayDateTime(new Date(2026, 0, 15, 13, 5)), /^Thursday, Jan 15th, 1:05 PM$/);
   assert.equal(formatDisplayDate(''), '');
 });
 test('ordinals include the teen exceptions', () => {

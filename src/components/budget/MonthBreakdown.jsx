@@ -70,7 +70,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
                     {tx.description}
                     {linked && <span className="bud-tx-link" title="Linked to a recurring source"><i className="fa-solid fa-link" aria-hidden="true" /><span className="visually-hidden">Linked to a recurring source</span></span>}
                   </div>
-                  <div className="bud-tx-meta">{tx.category} · {preferredDisplayDate(tx.date)}</div>
+                  <div className="bud-tx-meta">{tx.category}, {preferredDisplayDate(tx.date)}</div>
                 </div>
                 <div className="bud-tx-amount">{signed >= 0 ? "+" : "-"}{formatMoney(signed)}</div>
                 <div className="bud-tx-actions">
@@ -97,7 +97,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
             <div className="bud-src-row income" key={s.id}>
               <div className="bud-tx-main">
                 <div className="bud-tx-desc">{s.name}</div>
-                <div className="bud-tx-meta">Income · monthly</div>
+                <div className="bud-tx-meta">Income, monthly</div>
               </div>
               <div className="bud-tx-amount">+{formatMoney(s.amount)}</div>
               <button type="button" className="btn-mini accent" onClick={() => onLogFromSource(s, "income", month.key)}>
@@ -109,7 +109,7 @@ export default function MonthBreakdown({ month, categories, onUpdateTx, onDelete
             <div className="bud-src-row expense" key={b.id}>
               <div className="bud-tx-main">
                 <div className="bud-tx-desc">{b.name}</div>
-                <div className="bud-tx-meta">{b.category} · monthly</div>
+                <div className="bud-tx-meta">{b.category}, monthly</div>
               </div>
               <div className="bud-tx-amount">-{formatMoney(b.amount)}</div>
               <button type="button" className="btn-mini accent" onClick={() => onLogFromSource(b, "recurring", month.key)}>

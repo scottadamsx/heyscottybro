@@ -10,7 +10,7 @@ const entries = [
 
 test('exports every entry, oldest first, with a header', () => {
   const md = journalToMarkdown(entries, new Date(2026, 8, 14));
-  assert.match(md, /^# Journal\n\nExported Monday, Sep 14th · 2 entries\n/);
+  assert.match(md, /^# Journal\n\nExported Monday, Sep 14th, 2 entries\n/);
   assert.ok(md.indexOf('First.') < md.indexOf('Second.'));
   assert.match(md, /Two paragraphs\./);
   assert.equal((md.match(/^---$/gm) || []).length, 2);
@@ -27,7 +27,7 @@ test('default (date) titles become one full-date heading, not a duplicate', () =
 });
 
 test('an empty journal still produces a valid document', () => {
-  assert.equal(journalToMarkdown([], new Date(2026, 8, 14)), '# Journal\n\nExported Monday, Sep 14th · 0 entries\n');
+  assert.equal(journalToMarkdown([], new Date(2026, 8, 14)), '# Journal\n\nExported Monday, Sep 14th, 0 entries\n');
 });
 
 test('filename is dated', () => {

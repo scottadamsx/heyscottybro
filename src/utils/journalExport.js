@@ -17,7 +17,7 @@ export function journalToMarkdown(entries, exportedAt = new Date()) {
     String(a.date).localeCompare(String(b.date)) || String(a.created_at || "").localeCompare(String(b.created_at || "")));
   const count = `${sorted.length} ${sorted.length === 1 ? "entry" : "entries"}`;
   const exported = preferredDisplayDate(exportedAt);
-  const out = ["# Journal", "", `Exported ${exported} · ${count}`];
+  const out = ["# Journal", "", `Exported ${exported}, ${count}`];
   for (const e of sorted) {
     const date = fullDate(e.date);
     const title = (e.title || "").trim();

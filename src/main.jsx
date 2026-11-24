@@ -7,7 +7,7 @@ import { reloadOnceForStaleChunk } from "./utils/lazyWithReload.js";
 import "./styles/globals.css"; // design tokens FIRST — QF-7, one styling source of truth
 import "./index.css"; // public site + feature-module rules
 import "./pages/home.css"; // front-facing design system (loads after index.css to override)
-import "./styles/features.css"; // documents · share page
+import "./styles/features.css"; // documents, share page
 import "./styles/system.css"; // the admin design system: shell + primitives (loads last among screens)
 import "./styles/print.css"; // print layer — @media print only
 import "./styles/astryx.css"; // Astryx redesign layer — loads last, recomposes public + auth surfaces

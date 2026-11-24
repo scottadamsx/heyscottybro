@@ -155,7 +155,7 @@ export default function BudgetBanker({ onChanged }) {
         <span className="banker-avatar" aria-hidden="true"><i className={`fa-solid ${BANKER.icon}`} /></span>
         <div className="banker-id">
           <span className="banker-name">{BANKER.name}</span>
-          <span className="banker-tag">{BANKER.tagline} · guards your gold</span>
+          <span className="banker-tag">{BANKER.tagline}, guards your gold</span>
         </div>
         {display.length > 0 && (
           <button type="button" className="btn-sm btn-secondary-sm" onClick={clear} disabled={loading} title="Clear conversation">

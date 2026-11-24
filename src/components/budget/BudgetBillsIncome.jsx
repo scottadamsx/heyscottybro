@@ -138,7 +138,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, sta
                             <span className={`bud-status ${isPast ? "is-ended" : isFuture ? "is-upcoming" : "is-active"}`}>{isPast ? "Ended" : isFuture ? "Upcoming" : "Active"}</span>
                           </div>
                           <div className="bi-row-sub">
-                            {inc.frequency} · {from ? `from ${from}` : "no start"}{to ? ` → ${to}` : " → ongoing"}
+                            {inc.frequency}, {from ? `from ${from}` : "no start"}{to ? ` → ${to}` : " → ongoing"}
                           </div>
                         </div>
                         <span className="bi-row-amt">{formatMoney(inc.amount)}</span>
@@ -168,7 +168,7 @@ export default function BudgetBillsIncome({ config, setConfig, transactions, sta
                     <div key={b.id} className="bi-row">
                       <div className="bi-row-main">
                         <div className="bi-row-name"><span className="bud-ellipsis">{b.name}</span></div>
-                        <div className="bi-row-sub">{(() => { const nd = nextDueOf(b); return [b.category, b.frequency, `from ${b.startDate}`, nd && `next ${shortDate(nd)}`, b.variable ? "variable" : b.autoPay ? "auto" : ""].filter(Boolean).join(" · "); })()}</div>
+                        <div className="bi-row-sub">{(() => { const nd = nextDueOf(b); return [b.category, b.frequency, `from ${b.startDate}`, nd && `next ${shortDate(nd)}`, b.variable ? "variable" : b.autoPay ? "auto" : ""].filter(Boolean).join(", "); })()}</div>
                       </div>
                       <span className="bi-row-amt">{formatMoney(b.amount)}</span>
                       <div className="bud-actions">

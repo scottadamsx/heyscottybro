@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ease } from "../lib/motion";
 import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const GAMES = [
@@ -41,7 +40,7 @@ export default function GamesPage() {
       {/* Hero */}
       <header className="lp-subhero">
         <span className="lp-kicker">ls ~/games</span>
-        <h1 className="lp-subhero-title"><em>Games</em></h1>
+        <h1 className="lp-subhero-title">Games</h1>
         <p className="lp-subhero-sub">
           Built for fun. These are small projects I made to sharpen my skills — and because
           building things you&apos;d actually use is the best way to learn.
@@ -54,10 +53,8 @@ export default function GamesPage() {
       {/* Games grid */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-work-grid" style={{ marginTop: 0 }}>
-          {GAMES.map((g, i) => (
-            <motion.div key={g.id}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: (i % 3) * 0.06 }}>
+          {GAMES.map((g) => (
+            <motion.div key={g.id}>
               <Link className="lp-card" to={g.to}>
                 <div className="lp-card-media ph" style={{ background: g.bg }}>
                   <i className={`fa-solid ${g.icon}`} style={{ fontSize: "2.6rem", color: "var(--green)", opacity: 0.9 }} />

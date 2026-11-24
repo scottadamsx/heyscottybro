@@ -119,12 +119,12 @@ export default function SchoolPage() {
     filename: "semester-report",
     toMarkdown: () => {
       const L = [`# Semester report${term ? ` — ${term}` : ""}`, "", `_${preferredDisplayDate(new Date())}_`, ""];
-      L.push(`**Semester average:** ${fmtPct(semesterAvg)} · **Courses:** ${courses.length} · **Open deadlines:** ${deadlines.length}`, "");
+      L.push(`**Semester average:** ${fmtPct(semesterAvg)}, **Courses:** ${courses.length}, **Open deadlines:** ${deadlines.length}`, "");
       for (const c of courses) {
         const st = courseStats[c.id] || {};
         L.push(`## ${c.code} — ${c.name}`);
         if (c.instructor) L.push(`- Instructor: ${c.instructor}`);
-        L.push(`- Current: ${fmtPct(st.currentPct)} · Projected final: ${fmtPct(st.projectedFinal)}${c.target_grade ? ` · Target: ${c.target_grade}%` : ""}`);
+        L.push(`- Current: ${fmtPct(st.currentPct)}, Projected final: ${fmtPct(st.projectedFinal)}${c.target_grade ? `, Target: ${c.target_grade}%` : ""}`);
         const cg = gradesByCourse[c.id] || [];
         if (cg.length) {
           L.push("", "| Assessment | Score | Weight |", "|---|---|---|");
@@ -160,7 +160,7 @@ export default function SchoolPage() {
       {dialog}
       <PageHeader
         icon="fa-graduation-cap"
-        title={`School${term ? ` · ${term}` : ""}`}
+        title={`School${term ? `, ${term}` : ""}`}
         exporter={exporter}
         actions={
           <>
@@ -202,10 +202,10 @@ export default function SchoolPage() {
               <span className="school-course-main">
                 <span className="school-course-name">{c.name}</span>
                 <span className="school-course-meta">
-                  {c.instructor && <>{c.instructor} · </>}
-                  Current {fmtPct(st.currentPct)} · Projected {fmtPct(st.projectedFinal)}{st.projectionClamped ? "*" : ""}
-                  {c.target_grade != null && <> · Target {c.target_grade}%</>}
-                  {st.notes?.length > 0 && <> · <span title={st.notes.join("; ")}>{st.notes.length} note{st.notes.length === 1 ? "" : "s"}</span></>}
+                  {c.instructor && <>{c.instructor}, </>}
+                  Current {fmtPct(st.currentPct)}, Projected {fmtPct(st.projectedFinal)}{st.projectionClamped ? "*" : ""}
+                  {c.target_grade != null && <>, Target {c.target_grade}%</>}
+                  {st.notes?.length > 0 && <>, <span title={st.notes.join("; ")}>{st.notes.length} note{st.notes.length === 1 ? "" : "s"}</span></>}
                 </span>
               </span>
               <span className="school-course-side">

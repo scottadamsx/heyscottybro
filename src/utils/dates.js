@@ -36,7 +36,7 @@ export function formatDisplayDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return `${formatDisplayDate(date)} · ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+  return `${formatDisplayDate(date)}, ${date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 }
 
 export function isToday(isoDate) {

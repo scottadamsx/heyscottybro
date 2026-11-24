@@ -23,7 +23,7 @@ export default function EventRow({ event: e, onOpen, showStatus = false, childre
           <span className="row-title">{e.title || e.kind}</span>
           <span className="row-sub">
             {formatDate(e.date)}
-            {e.place && ` · ${e.place}`} · {who.slice(0, 4).join(', ')}
+            {e.place && `, ${e.place}`}, {who.slice(0, 4).join(', ')}
             {who.length > 4 && ` +${who.length - 4}`}
           </span>
         </span>

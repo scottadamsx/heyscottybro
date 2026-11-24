@@ -6,10 +6,10 @@
 import { TOOLS } from "../api/aiTools";
 
 const MODEL_LABELS = [
-  [/haiku/i,  "Haiku 4.5"],
+  [/haiku/i, "Haiku 4.5"],
   [/sonnet/i, "Sonnet 4.6"],
-  [/opus/i,   "Opus 4.8"],
-  [/fable/i,  "Fable 5.1"],
+  [/opus/i,  "Opus 4.8"],
+  [/fable/i, "Fable 5.1"],
 ];
 
 /** Friendly model name (falls back to the raw string, e.g. "Claude Code (Max plan)"). */
@@ -39,7 +39,7 @@ export function agentConnector(agent) {
   return {
     modelLabel: modelLabel(agent.model),
     model: agent.model,
-    transport: "Anthropic API · /api/chat",
+    transport: "Anthropic API, /api/chat",
     note: "Runs on your Anthropic API key through the app's serverless chat proxy.",
   };
 }
@@ -49,17 +49,17 @@ export function agentProtocol(agent) {
   if (agent.kind === "local") {
     return [
       { label: "Run mode", value: "Local Claude Code session" },
-      { label: "Tools",    value: "Full file-system & shell (not the app toolbelt)" },
-      { label: "Status",   value: "Requires the local agent server" },
+      { label: "Tools",   value: "Full file-system & shell (not the app toolbelt)" },
+      { label: "Status",  value: "Requires the local agent server" },
     ];
   }
   const facts = [
-    { label: "Run mode",      value: "Agentic tool-use loop" },
+    { label: "Run mode",     value: "Agentic tool-use loop" },
     { label: "Max tool turns", value: String(agent.maxToolTurns || 16) },
-    { label: "Retries",       value: "429/500/503/529 · ×3 backoff" },
-    { label: "Safety",        value: "Stops after 3 tool errors in a row, then summarises" },
-    { label: "Prompt cache",  value: "Ephemeral system-prompt caching" },
-    { label: "Audit",         value: "Write actions logged to agent_actions" },
+    { label: "Retries",      value: "429/500/503/529, ×3 backoff" },
+    { label: "Safety",       value: "Stops after 3 tool errors in a row, then summarises" },
+    { label: "Prompt cache", value: "Ephemeral system-prompt caching" },
+    { label: "Audit",        value: "Write actions logged to agent_actions" },
   ];
   if (agent.schedule) {
     facts.splice(1, 0, { label: "Schedule", value: `Runs ${agent.schedule} (cron) + on demand` });

@@ -208,7 +208,7 @@ export default function StatementImport({ transactions, setTransactions, categor
   const conf = (c) => <span className={`si-conf ${c}`}>{c}</span>;
 
   // One modal, four phases. The primary button does the phase's job:
-  // idle → Analyze pasted text · busy → locked · review → Apply · done → Import another.
+  // idle → Analyze pasted text, busy → locked, review → Apply, done → Import another.
   // Analyze runs in the background (its own spinner), so the modal stays open.
   const close = () => { setOpen(false); if (phase === "done") resetNow(); };
   const submit = () => {
@@ -253,7 +253,7 @@ export default function StatementImport({ transactions, setTransactions, categor
               <p className="si-note">Drop a bank statement — it reconciles against your ledger and you approve every line. Nothing is written until you apply.</p>
               <label className="si-drop">
                 <input type="file" accept=".pdf,.csv,.txt,image/*" className="visually-hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-                <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a statement (PDF · image · CSV)
+                <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true" /> Drop or choose a statement (PDF, image, CSV)
               </label>
               <div className="si-or">or paste the statement text</div>
               <Field label="Statement text">
@@ -278,7 +278,7 @@ export default function StatementImport({ transactions, setTransactions, categor
                         <span className="si-row-title">{r.tx.description}</span>
                         <span className="si-diff">
                           {formatMoney(r.tx.amount)} → <strong>{formatMoney(r.amount)}</strong>
-                          {r.tx.date !== r.date && <> · {preferredDisplayDate(r.tx.date)} → <strong>{preferredDisplayDate(r.date)}</strong></>}
+                          {r.tx.date !== r.date && <>, {preferredDisplayDate(r.tx.date)} → <strong>{preferredDisplayDate(r.date)}</strong></>}
                         </span>
                         {r.match_reason && <span className="si-reason">{r.match_reason}</span>}
                       </span>
@@ -296,7 +296,7 @@ export default function StatementImport({ transactions, setTransactions, categor
                       <input type="checkbox" checked={r.checked} onChange={() => toggle(r.key)} />
                       <span className="si-row-main">
                         <span className="si-row-title">{r.description} <em className="si-cat">{r.category_guess}</em></span>
-                        <span className="si-diff"><strong>{r.direction === "credit" ? "+" : "−"}{formatMoney(r.amount)}</strong> · {preferredDisplayDate(r.date)}</span>
+                        <span className="si-diff"><strong>{r.direction === "credit" ? "+" : "−"}{formatMoney(r.amount)}</strong>, {preferredDisplayDate(r.date)}</span>
                         {r.warn && <span className="si-warn"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {r.warn}</span>}
                       </span>
                       {conf(r.confidence)}

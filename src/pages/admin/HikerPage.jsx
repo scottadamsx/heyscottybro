@@ -346,8 +346,8 @@ export default function HikerPage() {
                   <span className="hiker-hike-name">{h.hike_name || h.filename}</span>
                   <span className="hiker-hike-meta">
                     {h.hike_date ? preferredDisplayDate(new Date(h.hike_date + "T00:00:00")) : h.imported_at}
-                    {" · "}{h.total} hiker{h.total !== 1 ? "s" : ""}
-                    {h.first_timers > 0 && ` · ${h.first_timers} new`}
+                    {", "}{h.total} hiker{h.total !== 1 ? "s" : ""}
+                    {h.first_timers > 0 && `, ${h.first_timers} new`}
                   </span>
                 </span>
                 <RowChevron />
@@ -373,7 +373,7 @@ export default function HikerPage() {
                 </div>
                 <div className="hiker-detail-meta">
                   {hikeAttendees.length} attendee{hikeAttendees.length !== 1 ? "s" : ""}
-                  {" · "}{hikeAttendees.filter(m => m.email).length} with email
+                  {", "}{hikeAttendees.filter(m => m.email).length} with email
                 </div>
               </div>
               <button

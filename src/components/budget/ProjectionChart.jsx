@@ -25,7 +25,7 @@ export default function ProjectionChart({ projection, selectedKey, onSelect }) {
         <span><i className="bud-swatch phase-pre" aria-hidden="true" /> Pre-job</span>
         <span><i className="bud-swatch phase-phase1" aria-hidden="true" /> Contract</span>
         <span><i className="bud-swatch phase-phase2" aria-hidden="true" /> Salary</span>
-        <span className="bud-legend-muted">· click a bar to expand</span>
+        <span className="bud-legend-muted">, click a bar to expand</span>
       </div>
       <div className="bud-chart-bars">
         {projection.map(m => {

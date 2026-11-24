@@ -70,7 +70,7 @@ export default function SearchModal({ onClose }) {
                       <span className="row-title">{h.title}</span>
                       <span className="row-sub">
                         {formatDate(h.date)}
-                        {h.snippet && ` · ${h.snippet}`}
+                        {h.snippet && `, ${h.snippet}`}
                       </span>
                     </span>
                   </button>

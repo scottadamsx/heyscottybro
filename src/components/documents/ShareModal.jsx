@@ -135,10 +135,10 @@ export default function ShareModal({ doc, onClose }) {
                   <span className="share-url">
                     {buildShareUrl(sh.token)}
                   </span>
-                  {sh.shared_with_email && <span className="doc-share-email">→ {sh.shared_with_email}</span>}
+                  {sh.shared_with_email && <span className="doc-share-email">{sh.shared_with_email}</span>}
                   <span className="doc-card-meta">
                     {sh.expires_at ? `Expires ${preferredDisplayDate(new Date(sh.expires_at))}` : "No expiry"}
-                    {" · "}{sh.access_count || 0} view{(sh.access_count || 0) !== 1 ? "s" : ""}
+                    {", "}{sh.access_count || 0} view{(sh.access_count || 0) !== 1 ? "s" : ""}
                   </span>
                 </div>
                 <div className="doc-share-actions">

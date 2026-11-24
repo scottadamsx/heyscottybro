@@ -193,7 +193,7 @@ export default function DashboardPage() {
   ].sort((a, b) => a.date.localeCompare(b.date) || String(a.time || "99").localeCompare(String(b.time || "99"))).slice(0, 5);
   const whenLabel = (it) => {
     const day = it.date === todayStr ? "Today" : it.date === addDaysStr(todayStr, 1) ? "Tomorrow" : shortDow(it.date);
-    return it.time ? `${day} · ${formatTime12(it.time)}` : day;
+    return it.time ? `${day}, ${formatTime12(it.time)}` : day;
   };
 
   // ── Spaces panel ──
@@ -252,7 +252,7 @@ export default function DashboardPage() {
         </div>
       </Item>
 
-      {/* ── Primary dashboard: schedule · next, summary · habits, spending · week ── */}
+      {/* ── Primary dashboard: schedule, next, summary, habits, spending, week ── */}
       <div className="today-dashboard-grid">
       <Item className="today-schedule-panel" aria-labelledby="today-schedule-title">
         <div className="today-schedule-head">
@@ -262,7 +262,7 @@ export default function DashboardPage() {
               {todaySchedule.timed.length > 0
                 ? `${todaySchedule.timed.length} timed ${todaySchedule.timed.length === 1 ? "commitment" : "commitments"}`
                 : "No timed commitments"}
-              {todaySchedule.allDay.length > 0 ? ` · ${todaySchedule.allDay.length} all day or anytime` : ""}
+              {todaySchedule.allDay.length > 0 ? `, ${todaySchedule.allDay.length} all day or anytime` : ""}
             </p>
           </div>
           <Link to={`/admin/planner?date=${todayStr}`} className="btn btn-sm btn-secondary-sm">
@@ -362,7 +362,7 @@ export default function DashboardPage() {
           </Link>
           <Link to="/admin/finance?tab=transactions" className="kpi">
             <span className="kpi-head">
-              <span className="kpi-label">Spent · 7 days</span>
+              <span className="kpi-label">Spent, 7 days</span>
               {spendDelta !== null && spendDelta !== 0 && (
                 <span className={`kpi-flag ${spendDelta > 0 ? "tone-bad" : "tone-good"}`}>
                   <i className={`fa-solid ${spendDelta > 0 ? "fa-arrow-up" : "fa-arrow-down"}`} aria-hidden="true" />
@@ -397,7 +397,7 @@ export default function DashboardPage() {
       <Item className="today-section activity today-dashboard-spending">
         <div className="section-head">
           <h2 className="section-title">Spending</h2>
-          <span className="section-meta">{formatMoney(rangeTotal)} in {range} days · excludes bills</span>
+          <span className="section-meta">{formatMoney(rangeTotal)} in {range} days, excludes bills</span>
           <div className="segmented" role="radiogroup" aria-label="Range">
             {[7, 30].map((n) => (
               <button key={n} type="button" role="radio" aria-checked={range === n} className={`segmented-opt${range === n ? " active" : ""}`} onClick={() => setRange(n)}>{n} days</button>
@@ -476,7 +476,7 @@ export default function DashboardPage() {
                   <div className="db-list-item" key={`${b.id}-${b.due}`}>
                     <div className="db-list-item-content">
                       <div className="db-list-item-title">{b.name}</div>
-                      <div className="db-list-item-subtitle">{formatDisplayDate(b.due)}{b.paid ? " · paid" : b.autoPay ? " · auto-pay" : ""}</div>
+                      <div className="db-list-item-subtitle">{formatDisplayDate(b.due)}{b.paid ? ", paid" : b.autoPay ? ", auto-pay" : ""}</div>
                     </div>
                     <span className={`bill-amt${b.paid ? " is-paid" : ""}`}>{formatMoney(b.amount)}</span>
                   </div>
@@ -499,8 +499,8 @@ export default function DashboardPage() {
                     <div className="db-list-item-content">
                       <div className="db-list-item-title act-title">{describeAction(a)}</div>
                       <div className="db-list-item-subtitle">
-                        <span className="act-agent">{a.agent_id}</span> · <span title={preferredDisplayDateTime(new Date(a.created_at))}>{actionTime(a.created_at)}</span>
-                        {isErr && <> · <span className="act-err">failed</span></>}
+                        <span className="act-agent">{a.agent_id}</span>, <span title={preferredDisplayDateTime(new Date(a.created_at))}>{actionTime(a.created_at)}</span>
+                        {isErr && <>, <span className="act-err">failed</span></>}
                       </div>
                       {a.error && <div className="act-error" title={a.error}>{a.error}</div>}
                     </div>
@@ -547,7 +547,7 @@ export default function DashboardPage() {
               {weekByDay.map((d) => (
                 <div className="day-section" key={d.ds}>
                   <div className="day-section-head">
-                    <span>{weekdayLabel(d.ds)}{d.ds === todayStr ? " · Today" : ""}</span>
+                    <span>{weekdayLabel(d.ds)}{d.ds === todayStr ? ", Today" : ""}</span>
                     <span className="day-count">{d.items.length}</span>
                   </div>
                   {d.items.length === 0 && <p className="day-empty">Nothing due</p>}

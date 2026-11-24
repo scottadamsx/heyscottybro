@@ -24,7 +24,6 @@ import {
   Search,
   Send,
   Settings,
-  Sparkles,
   StickyNote,
   Sun,
   TrendingDown,
@@ -33,7 +32,7 @@ import {
   X,
 } from 'lucide-react'
 
-export { ArrowLeft, Check, CircleHelp, Gift, Moon, Pause, Play, Plug, Search, Send, Settings, Sparkles, Sun, X }
+export { ArrowLeft, Check, CircleHelp, Gift, Moon, Pause, Play, Plug, Search, Send, Settings, Sun, X }
 
 export const KIND_ICON = {
   Hangout: Coffee,

@@ -12,7 +12,6 @@ import Badge, { DaysBadge } from './ui/Badge.jsx'
 import Empty from './ui/Empty.jsx'
 import PersonRow from './views/PersonRow.jsx'
 import IntentList from './person/IntentList.jsx'
-import { Sparkles } from './ui/icons.js'
 
 const SYNC = {
   saved: ['success', 'Saved'],
@@ -40,7 +39,7 @@ function QuickActions() {
         </Button>
         {ai.available && (
           <Button onClick={() => open('interview')}>
-            <Sparkles size={16} aria-hidden /> Orbit
+            Orbit
           </Button>
         )}
       </div>
@@ -60,7 +59,7 @@ function Drifting() {
       {drifting.length ? (
         <ul className="rows">
           {drifting.slice(0, 8).map((id) => (
-            <PersonRow key={id} id={id} sub={`${RINGS[byPerson[id].ring]} · every ~${byPerson[id].cadence}d`} badge={<DaysBadge a={byPerson[id]} />}>
+            <PersonRow key={id} id={id} sub={`${RINGS[byPerson[id].ring]}, every ~${byPerson[id].cadence}d`} badge={<DaysBadge a={byPerson[id]} />}>
               <Button size="sm" variant="ghost" onClick={() => open('sayHi', { id })}>
                 Say hi
               </Button>
@@ -97,7 +96,7 @@ function Birthdays() {
               <PersonRow
                 key={id}
                 id={id}
-                sub={`${formatDate(b.date, { month: 'short', day: 'numeric' })}${b.turning != null ? ` · turns ${b.turning}` : ''}${budget ? ` · ${formatCents(budget)}` : ''}`}
+                sub={`${formatDate(b.date, { month: 'short', day: 'numeric' })}${b.turning != null ? `, turns ${b.turning}` : ''}${budget ? `, ${formatCents(budget)}` : ''}`}
                 badge={<Badge tone={b.days <= 7 ? 'warn' : 'neutral'}>{b.days === 0 ? 'today' : `${b.days}d`}</Badge>}
               />
             )

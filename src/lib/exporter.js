@@ -57,7 +57,7 @@ export function downloadMarkdown(md, filename) {
 }
 
 export function markdownToPdfDownload(md, { title = "Export", filename } = {}) {
-  const blob = markdownToPdfBlob(md, { title, footer: `heyscottybro · ${preferredDisplayDateTime(new Date())}` });
+  const blob = markdownToPdfBlob(md, { title, footer: `heyscottybro, ${preferredDisplayDateTime(new Date())}` });
   downloadBlob(blob, filename || `${slugify(title)}.pdf`);
 }
 

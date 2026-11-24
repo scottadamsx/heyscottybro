@@ -145,9 +145,9 @@ export default function WorkoutSessionPage() {
           <div>
             <h1 className="combined-page-title">{session.name}</h1>
             <p className="workout-sub">
-              {live ? <><span className="live-dot" aria-hidden="true" /> Live · </> : `${formatDisplayDate(toDateStr(new Date(session.startedAt)))} · `}
-              <span className="tabular">{clock(elapsed)}</span> · {session.sets.length} sets · {fmt(view.volume)} lb
-              {view.prCount > 0 && ` · ${view.prCount} new best${view.prCount === 1 ? "" : "s"}`}
+              {live ? <><span className="live-dot" aria-hidden="true" /> Live, </> : `${formatDisplayDate(toDateStr(new Date(session.startedAt)))}, `}
+              <span className="tabular">{clock(elapsed)}</span>, {session.sets.length} sets, {fmt(view.volume)} lb
+              {view.prCount > 0 && `, ${view.prCount} new best${view.prCount === 1 ? "" : "s"}`}
             </p>
           </div>
           <div className="workout-head-actions">
@@ -180,7 +180,7 @@ export default function WorkoutSessionPage() {
               <div className="exercise-head">
                 <div>
                   <h3 className="exercise-name">{ex.name}</h3>
-                  <p className="exercise-target">{ex.sets} × {ex.repMin === ex.repMax ? ex.repMin : `${ex.repMin}–${ex.repMax}`}{ex.restSec ? ` · rest ${clock(ex.restSec)}` : ""}{ex.note ? ` · ${ex.note}` : ""}</p>
+                  <p className="exercise-target">{ex.sets} × {ex.repMin === ex.repMax ? ex.repMin : `${ex.repMin}–${ex.repMax}`}{ex.restSec ? `, rest ${clock(ex.restSec)}` : ""}{ex.note ? `, ${ex.note}` : ""}</p>
                 </div>
                 <span className="exercise-count">{done.length}/{ex.sets}</span>
               </div>
@@ -195,7 +195,7 @@ export default function WorkoutSessionPage() {
               {last && <p className="exercise-last">Last time ({formatDisplayDate(toDateStr(new Date(last.startedAt)))}): {last.sets.map(setLabel).join(", ")}</p>}
               {suggestion.sessions.length > 0 && (
                 <button type="button" className="exercise-history-btn" onClick={() => setModal({ type: "history", item })}>
-                  History <span aria-label={`${suggestion.sessions.length} sessions`}>{suggestion.sessions.length}</span> · {suggestion.confidence} confidence
+                  History <span aria-label={`${suggestion.sessions.length} sessions`}>{suggestion.sessions.length}</span>, {suggestion.confidence} confidence
                 </button>
               )}
 
@@ -219,7 +219,7 @@ export default function WorkoutSessionPage() {
               {live && (
                 <button type="button" className={`btn ${remaining > 0 ? "btn-primary" : "btn-secondary"} set-log-btn`} onClick={() => setModal({ type: "log", item })}>
                   <i className="fa-solid fa-plus" aria-hidden="true" /> {remaining > 0 ? `Log set ${prefill.setNumber}` : "Extra set"}
-                  {prefill.weightLb != null && <span className="set-log-hint"> · {prefill.weightLb} lb × {prefill.reps}</span>}
+                  {prefill.weightLb != null && <span className="set-log-hint">, {prefill.weightLb} lb × {prefill.reps}</span>}
                 </button>
               )}
             </section>
@@ -234,7 +234,7 @@ export default function WorkoutSessionPage() {
       {rest && (
         <div className="rest-bar" role="status" aria-live="polite">
           <i className="fa-solid fa-hourglass-half" aria-hidden="true" />
-          <span>Rest <strong className="tabular">{clock((rest.until - now) / 1000)}</strong> · then {rest.exercise}</span>
+          <span>Rest <strong className="tabular">{clock((rest.until - now) / 1000)}</strong>, then {rest.exercise}</span>
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => setRest((r) => r && { ...r, until: r.until + 30000 })}>+30s</button>
           <button type="button" className="btn btn-primary btn-sm" onClick={() => setRest(null)}>Skip</button>
         </div>
@@ -308,14 +308,14 @@ function ProgressionHistoryModal({ item, onClose }) {
       <p className={`exercise-suggest kind-${suggestion.kind}`}>
         <strong>{suggestion.weightLb == null ? "Pick a weight" : `${suggestion.weightLb} lb × ${suggestion.reps}`}</strong>
         <span>{suggestion.reason}</span>
-        <span>{suggestion.confidence[0].toUpperCase() + suggestion.confidence.slice(1)} confidence · using {suggestion.sessions.length} session{suggestion.sessions.length === 1 ? "" : "s"}</span>
+        <span>{suggestion.confidence[0].toUpperCase() + suggestion.confidence.slice(1)} confidence, using {suggestion.sessions.length} session{suggestion.sessions.length === 1 ? "" : "s"}</span>
       </p>
       <div className="db-list progression-history-list">
         {suggestion.sessions.map((session) => (
           <div key={session.sessionId} className="db-list-item health-row">
             <div className="db-list-item-content">
-              <span className="db-list-item-title">{session.weightLb} lb · {session.reps.join(", ")} reps</span>
-              <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(session.startedAt)))} · {session.completedSets}/{ex.sets} working sets{session.averageRpe != null ? ` · avg RPE ${session.averageRpe}` : ""}</span>
+              <span className="db-list-item-title">{session.weightLb} lb, {session.reps.join(", ")} reps</span>
+              <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(session.startedAt)))}, {session.completedSets}/{ex.sets} working sets{session.averageRpe != null ? `, avg RPE ${session.averageRpe}` : ""}</span>
             </div>
             <span className="health-row-num">{session.bestE1rm}<small> est.</small></span>
           </div>

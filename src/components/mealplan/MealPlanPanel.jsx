@@ -201,10 +201,10 @@ export default function MealPlanPanel({ profileId }) {
         </div>
         <p className="field-hint">
           Prices: {wk.priceImport
-            ? <>{storeName} · captured {formatDisplayDate(String(wk.priceImport.captured_at).slice(0, 10))}{stale && <span className="health-tag tone-warn"> Prices may be stale</span>}</>
+            ? <>{storeName}, captured {formatDisplayDate(String(wk.priceImport.captured_at).slice(0, 10))}{stale && <span className="health-tag tone-warn"> Prices may be stale</span>}</>
             : "no price snapshot imported yet (Money tab, Grocery week). Costs stay unpriced until one is."}
-          {" · "}Coverage: {weekCost.pricedLineCount} of {weekCost.requiredLineCount} lines priced
-          {weekCost.coverageStatus === "partial" && weekCost.unpricedNames.length > 0 && <> · Unpriced: {weekCost.unpricedNames.join(", ")}</>}
+          {", "}Coverage: {weekCost.pricedLineCount} of {weekCost.requiredLineCount} lines priced
+          {weekCost.coverageStatus === "partial" && weekCost.unpricedNames.length > 0 && <>, Unpriced: {weekCost.unpricedNames.join(", ")}</>}
         </p>
         {wk.stores.length > 1 && (
           <Field label="Price store">
@@ -247,11 +247,11 @@ export default function MealPlanPanel({ profileId }) {
                     <div className="health-row-main">
                       <span className="db-list-item-title">{title}</span>
                       <span className="db-list-item-subtitle">
-                        {SLOT_LABEL[item.meal_slot] || item.meal_slot} · {item.servings} serving{item.servings === 1 ? "" : "s"}
-                        {item.eat_time ? ` · eats ${item.eat_time.slice(0, 5)}` : ""}
-                        {item.status === "planned" && cost ? ` · meal cost ${formatCents(cost.mealCostCents)} (${cost.pricedLineCount} of ${cost.requiredLineCount} lines priced)` : ""}
-                        {item.status === "cooked" ? " · Cooked, in the Food Log" : ""}
-                        {item.status === "intentional_skip" ? " · Day off on purpose" : ""}
+                        {SLOT_LABEL[item.meal_slot] || item.meal_slot}, {item.servings} serving{item.servings === 1 ? "" : "s"}
+                        {item.eat_time ? `, eats ${item.eat_time.slice(0, 5)}` : ""}
+                        {item.status === "planned" && cost ? `, meal cost ${formatCents(cost.mealCostCents)} (${cost.pricedLineCount} of ${cost.requiredLineCount} lines priced)` : ""}
+                        {item.status === "cooked" ? ", Cooked, in the Food Log" : ""}
+                        {item.status === "intentional_skip" ? ", Day off on purpose" : ""}
                       </span>
                     </div>
                     {item.status === "planned" && (
@@ -294,8 +294,8 @@ export default function MealPlanPanel({ profileId }) {
                   <span className="db-list-item-title">{line.name}</span>
                   <span className="db-list-item-subtitle">
                     Needs {fmtQty(line.requiredMilli, line.unitKind)}
-                    {line.product ? ` · ${line.product.product_name} · ${line.packages} × ${formatCents(line.packagePriceCents)}` : " · no confirmed product yet"}
-                    {state === "already_have" ? " · Already have it" : state === "purchased" ? " · Bought" : state === "unpriced" ? " · Unpriced" : ""}
+                    {line.product ? `, ${line.product.product_name}, ${line.packages} × ${formatCents(line.packagePriceCents)}` : ", no confirmed product yet"}
+                    {state === "already_have" ? ", Already have it" : state === "purchased" ? ", Bought" : state === "unpriced" ? ", Unpriced" : ""}
                   </span>
                 </div>
                 <span className="health-row-num">{line.purchaseCostCents != null ? formatCents(line.purchaseCostCents) : "—"}</span>
@@ -610,7 +610,7 @@ function MatchSection({ wk, addToast }) {
               <option value="">Choose a product…</option>
               {candidates(u.unitKind).map((p) => (
                 <option key={p.external_product_key} value={p.external_product_key}>
-                  {p.product_name} · {formatCents(p.package_price_cents)}
+                  {p.product_name}, {formatCents(p.package_price_cents)}
                 </option>
               ))}
             </select>
@@ -648,9 +648,9 @@ function RecipesSection({ recipes, onEdit, onNew, addToast, reload }) {
               <div className="health-row-main">
                 <span className="db-list-item-title">{r.title}{r.archived ? " (archived)" : ""}</span>
                 <span className="db-list-item-subtitle">
-                  Serves {r.servings} · {(r.lines || []).length} ingredients
-                  {review > 0 ? ` · ${review} need review` : ""}
-                  {(r.ingredients_schema_version || 1) < 2 ? " · converted from the old format, saving confirms it" : ""}
+                  Serves {r.servings}, {(r.lines || []).length} ingredients
+                  {review > 0 ? `, ${review} need review` : ""}
+                  {(r.ingredients_schema_version || 1) < 2 ? ", converted from the old format, saving confirms it" : ""}
                 </span>
               </div>
               <span className="mp-item-actions">

@@ -51,7 +51,7 @@ export const AGENTS = [
   {
     id: "elrond", name: "Elrond", title: "Research Agent", icon: "fa-book-open",
     color: "#22d3ee", kind: "api", model: AI_MODELS.smart, maxToolTurns: 16,
-    tagline: "Researches the web → files into the Brain",
+    tagline: "Researches the web and files it into the Brain",
     thinking: "Elrond consults the archives…",
     tools: only("library_catalog", "query", "web_fetch", "create_item", "update_item", "link_brain_nodes", "save_context", "list_context"),
     buildPrompt: buildResearchPrompt,

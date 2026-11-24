@@ -470,7 +470,7 @@ export default function ProjectsPage() {
 
   const eventWhen = (e) => {
     const range = e.end_date && e.end_date > e.date ? `${formatDisplayDate(e.date)} – ${formatDisplayDate(e.end_date)}` : formatDisplayDate(e.date);
-    const time = e.start_time ? ` · ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
+    const time = e.start_time ? `, ${formatTime12(e.start_time)}${e.end_time ? ` – ${formatTime12(e.end_time)}` : ""}` : "";
     return range + time;
   };
   const addEvent = async (values) => {

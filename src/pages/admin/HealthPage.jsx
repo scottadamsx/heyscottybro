@@ -162,7 +162,7 @@ export default function HealthPage() {
       {openSession && (
         <button type="button" className="health-live-banner" onClick={() => navigate(`/admin/health/workout/${openSession.id}`)}>
           <span className="live-dot" aria-hidden="true" />
-          <span><strong>{openSession.name}</strong> in progress · started {timeOf(openSession.startedAt)}</span>
+          <span><strong>{openSession.name}</strong> in progress, started {timeOf(openSession.startedAt)}</span>
           <i className="fa-solid fa-chevron-right" aria-hidden="true" />
         </button>
       )}
@@ -212,7 +212,7 @@ export default function HealthPage() {
                         );
                       })}
                     </ul>
-                    <p className="plan-card-meta">{p.exercises.length} exercises · {p.exercises.reduce((a, e) => a + e.sets, 0)} sets · weights from your history</p>
+                    <p className="plan-card-meta">{p.exercises.length} exercises, {p.exercises.reduce((a, e) => a + e.sets, 0)} sets, weights from your history</p>
                     <div className="plan-card-actions">
                       <button type="button" className="btn btn-primary btn-sm" onClick={() => startWorkout(p)} disabled={starting || Boolean(openSession)}>
                         <i className="fa-solid fa-play" aria-hidden="true" /> Start
@@ -241,7 +241,7 @@ export default function HealthPage() {
                     <button type="button" key={s.id} className="db-list-item health-row" onClick={() => navigate(`/admin/health/workout/${s.id}`)}>
                       <div className="db-list-item-content">
                         <span className="db-list-item-title">{s.name}</span>
-                        <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(s.startedAt)))} · {minutesBetween(s.startedAt, s.endedAt)} min · {sets.length} sets</span>
+                        <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(s.startedAt)))}, {minutesBetween(s.startedAt, s.endedAt)} min, {sets.length} sets</span>
                       </div>
                       <span className="health-row-num">{fmtInt(vol)} lb</span>
                       <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
@@ -262,7 +262,7 @@ export default function HealthPage() {
                   <button type="button" key={p.exercise} className="db-list-item health-row" onClick={() => setModal({ type: "lift", lift: p })}>
                     <div className="db-list-item-content">
                       <span className="db-list-item-title">{p.exercise}</span>
-                      <span className="db-list-item-subtitle">{p.sessions} session{p.sessions === 1 ? "" : "s"} · last {shortDay(p.lastDate)} · top {p.points.at(-1).topWeight} lb</span>
+                      <span className="db-list-item-subtitle">{p.sessions} session{p.sessions === 1 ? "" : "s"}, last {shortDay(p.lastDate)}, top {p.points.at(-1).topWeight} lb</span>
                     </div>
                     <span className="health-row-num">{p.best} <small>est. max</small></span>
                     <i className="fa-solid fa-chevron-right db-list-item-chevron" aria-hidden="true" />
@@ -291,9 +291,9 @@ export default function HealthPage() {
                       <span className="db-list-item-title">{exercise.name}</span>
                       <span className="db-list-item-subtitle">
                         {exercise.goal
-                          ? `Goal ${exercise.goal.weightLb} lb × ${exercise.goal.reps}${exercise.goalAchieved ? " · achieved" : exercise.estimatedProgress != null ? ` · ${exercise.estimatedProgress}% estimated progress` : ""}`
+                          ? `Goal ${exercise.goal.weightLb} lb × ${exercise.goal.reps}${exercise.goalAchieved ? ", achieved" : exercise.estimatedProgress != null ? `, ${exercise.estimatedProgress}% estimated progress` : ""}`
                           : "No performance goal yet"}
-                        {exercise.lastSet ? ` · last ${formatDisplayDate(toDateStr(new Date(exercise.lastSet.loggedAt || exercise.lastSet.startedAt)))}` : " · no sets logged"}
+                        {exercise.lastSet ? `, last ${formatDisplayDate(toDateStr(new Date(exercise.lastSet.loggedAt || exercise.lastSet.startedAt)))}` : ", no sets logged"}
                       </span>
                     </div>
                     <span className="health-row-num">
@@ -363,7 +363,7 @@ export default function HealthPage() {
                     <div key={w.id} className="db-list-item health-row">
                       <div className="db-list-item-content">
                         <span className="db-list-item-title">{w.weightLb} lb</span>
-                        <span className="db-list-item-subtitle">{formatDisplayDate(w.date)}{w.note ? ` · ${w.note}` : ""}</span>
+                        <span className="db-list-item-subtitle">{formatDisplayDate(w.date)}{w.note ? `, ${w.note}` : ""}</span>
                       </div>
                       {delta !== null && <span className={`health-delta ${delta <= 0 ? "is-down" : "is-up"}`}>{delta > 0 ? "+" : ""}{delta} lb</span>}
                       <button type="button" className="icon-btn" aria-label={`Delete weigh-in on ${w.date}`} onClick={async () => {
@@ -465,7 +465,7 @@ function ExerciseModal({ exercise, onClose, onSave }) {
               <div key={set.id} className="db-list-item health-row">
                 <div className="db-list-item-content">
                   <span className="db-list-item-title">{set.weightLb} lb × {set.reps}</span>
-                  <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(set.loggedAt || set.startedAt)))}{set.rpe != null ? ` · RPE ${set.rpe}` : ""}</span>
+                  <span className="db-list-item-subtitle">{formatDisplayDate(toDateStr(new Date(set.loggedAt || set.startedAt)))}{set.rpe != null ? `, RPE ${set.rpe}` : ""}</span>
                 </div>
                 <span className="health-row-num">{e1rm(Number(set.weightLb), Number(set.reps))}<small> est.</small></span>
               </div>
@@ -520,7 +520,7 @@ function Overview({ d, profile, data, today, onLogFood, onLogWeight, onGoals, se
         <button type="button" className="kpi" onClick={() => setTab("workouts")}>
           <span className="kpi-head"><span className="kpi-label">Workouts this week</span></span>
           <span className="kpi-value">{d.weekCount}</span>
-          <span className="kpi-sub">{d.lastSession ? `last ${shortDay(toDateStr(new Date(d.lastSession.startedAt)))} · ${d.lastSession.name}` : "None yet"}</span>
+          <span className="kpi-sub">{d.lastSession ? `last ${shortDay(toDateStr(new Date(d.lastSession.startedAt)))}, ${d.lastSession.name}` : "None yet"}</span>
         </button>
         <button type="button" className="kpi" onClick={() => setTab("food")}>
           <span className="kpi-head"><span className="kpi-label">Protein today</span></span>
@@ -561,17 +561,17 @@ function Overview({ d, profile, data, today, onLogFood, onLogWeight, onGoals, se
 
       <div className="health-grid">
         <section className="db-card">
-          <div className="db-card-header"><h3 className="db-card-title">Calories · 14 days</h3>{target && <span className="db-card-count">target {fmtInt(target)}</span>}</div>
+          <div className="db-card-header"><h3 className="db-card-title">Calories, 14 days</h3>{target && <span className="db-card-count">target {fmtInt(target)}</span>}</div>
           {d.calories14.some((c) => c.logged) ? (
             <LineChart ariaLabel="Calories per day" height={160} format={(v) => `${fmtInt(v)}`}
-              data={d.calories14.map((c, i) => ({ key: c.date, label: i % 3 === 1 ? shortDay(c.date) : "", title: `${formatDisplayDate(c.date)}${c.logged ? "" : " · nothing logged"}`, value: c.calories }))} />
+              data={d.calories14.map((c, i) => ({ key: c.date, label: i % 3 === 1 ? shortDay(c.date) : "", title: `${formatDisplayDate(c.date)}${c.logged ? "" : ", nothing logged"}`, value: c.calories }))} />
           ) : <p className="no-entries">Nothing logged in the last two weeks.</p>}
         </section>
         <section className="db-card">
-          <div className="db-card-header"><h3 className="db-card-title">Training volume · 8 weeks</h3></div>
+          <div className="db-card-header"><h3 className="db-card-title">Training volume, 8 weeks</h3></div>
           {d.volume.some((w) => w.volume > 0) ? (
             <LineChart ariaLabel="Weekly training volume" height={160} format={(v) => `${fmtInt(v)} lb`}
-              data={d.volume.map((w, i) => ({ key: w.week, label: i % 2 === 1 ? shortDay(w.week) : "", title: `Week of ${formatDisplayDate(w.week)} · ${w.sessions} workout${w.sessions === 1 ? "" : "s"}`, value: w.volume }))} />
+              data={d.volume.map((w, i) => ({ key: w.week, label: i % 2 === 1 ? shortDay(w.week) : "", title: `Week of ${formatDisplayDate(w.week)}, ${w.sessions} workout${w.sessions === 1 ? "" : "s"}`, value: w.volume }))} />
           ) : <p className="no-entries">Finish a workout to see your volume.</p>}
         </section>
       </div>
@@ -594,7 +594,7 @@ function FoodTab({ food, profile, today, d, onLog, onEdit, onDelete, onGoals }) 
         <div className="meter">
           <div className="meter-head">
             <span className="meter-name">Today</span>
-            <span className="meter-nums">{fmtInt(d.caloriesToday)} / {fmtInt(target)} kcal · {fmtInt(d.proteinToday)} g protein</span>
+            <span className="meter-nums">{fmtInt(d.caloriesToday)} / {fmtInt(target)} kcal, {fmtInt(d.proteinToday)} g protein</span>
           </div>
           <div className="meter-track"><div className="meter-fill health-meter-fill" style={{ width: `${pct}%` }} /></div>
         </div>
@@ -616,7 +616,7 @@ function FoodTab({ food, profile, today, d, onLog, onEdit, onDelete, onGoals }) 
                   <div key={f.id} className="db-list-item health-row">
                     <button type="button" className="health-row-main" onClick={() => onEdit(f)}>
                       <span className="db-list-item-title">{f.name}</span>
-                      <span className="db-list-item-subtitle">{MEAL_LABEL[meal]} · {fmtInt(f.protein_g || 0)} g protein · {fmtInt(f.carbs_g || 0)} g carbs · {fmtInt(f.fat_g || 0)} g fat{f.source === "ai" ? " · AI estimate" : ""}</span>
+                      <span className="db-list-item-subtitle">{MEAL_LABEL[meal]}, {fmtInt(f.protein_g || 0)} g protein, {fmtInt(f.carbs_g || 0)} g carbs, {fmtInt(f.fat_g || 0)} g fat{f.source === "ai" ? ", AI estimate" : ""}</span>
                     </button>
                     <span className="health-row-num">{fmtInt(f.calories)}</span>
                     <button type="button" className="icon-btn" aria-label={`Delete ${f.name}`} onClick={() => onDelete(f)}><i className="fa-solid fa-trash" /></button>
@@ -652,7 +652,7 @@ export function SleepTab({ sleep, sleepError, onLog, onEdit, onDelete }) {
                 <div className="db-list-item health-row">
                   <div className="db-list-item-content">
                     <span className="db-list-item-title">Last night</span>
-                    <span className="db-list-item-subtitle">{formatDisplayDate(summary.lastNight.date)} · {formatClock(summary.lastNight.bedTime)} to {formatClock(summary.lastNight.wakeTime)}</span>
+                    <span className="db-list-item-subtitle">{formatDisplayDate(summary.lastNight.date)}, {formatClock(summary.lastNight.bedTime)} to {formatClock(summary.lastNight.wakeTime)}</span>
                   </div>
                   <span className="health-row-num">{formatSleepDuration(summary.lastNight.durationMinutes)}</span>
                 </div>
@@ -676,7 +676,7 @@ export function SleepTab({ sleep, sleepError, onLog, onEdit, onDelete }) {
                   <div key={entry.id} className="db-list-item health-row">
                     <button type="button" className="health-row-main" onClick={() => onEdit(entry)}>
                       <span className="db-list-item-title">{formatDisplayDate(entry.date)}</span>
-                      <span className="db-list-item-subtitle">{formatClock(entry.bedTime)} to {formatClock(entry.wakeTime)}{entry.note ? ` · ${entry.note}` : ""}</span>
+                      <span className="db-list-item-subtitle">{formatClock(entry.bedTime)} to {formatClock(entry.wakeTime)}{entry.note ? `, ${entry.note}` : ""}</span>
                     </button>
                     <span className="health-row-num">{formatSleepDuration(entry.durationMinutes)}</span>
                     <button type="button" className="icon-btn" aria-label={`Delete sleep entry on ${entry.date}`} onClick={() => onDelete(entry)}><i className="fa-solid fa-trash" /></button>
@@ -697,14 +697,14 @@ function LiftModal({ lift, onClose }) {
       <p className="field-hint">Estimated 1-rep max per workout (Epley), from your heaviest sets.</p>
       {lift.points.length >= 2 ? (
         <LineChart zeroBased={false} ariaLabel={`${lift.exercise} progress`} height={180} format={(v) => `${Math.round(v)} lb`}
-          data={lift.points.map((p) => ({ key: p.date, label: shortDay(p.date), title: `${formatDisplayDate(p.date)} · top ${p.topWeight} lb`, value: p.best }))} />
+          data={lift.points.map((p) => ({ key: p.date, label: shortDay(p.date), title: `${formatDisplayDate(p.date)}, top ${p.topWeight} lb`, value: p.best }))} />
       ) : <p className="no-entries">One workout so far — progress shows after the next.</p>}
       <div className="db-list">
         {[...lift.points].reverse().map((p) => (
           <div key={p.date} className="db-list-item health-row">
             <div className="db-list-item-content">
               <span className="db-list-item-title">{formatDisplayDate(p.date)}</span>
-              <span className="db-list-item-subtitle">top {p.topWeight} lb · {fmtInt(p.volume)} lb volume</span>
+              <span className="db-list-item-subtitle">top {p.topWeight} lb, {fmtInt(p.volume)} lb volume</span>
             </div>
             <span className="health-row-num">{p.best}</span>
           </div>

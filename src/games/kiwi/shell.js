@@ -137,7 +137,7 @@ export function reward(usd) {
 }
 
 export function gameHead(title, sub, usd) {
-  return `<div class="k-label">Study Break</div><h1 class="k-title">${title}</h1><div class="k-sub">${sub} · earn <span class="reward">${reward(usd)}</span></div>`
+  return `<div class="k-label">Study Break</div><h1 class="k-title">${title}</h1><div class="k-sub">${sub}, earn <span class="reward">${reward(usd)}</span></div>`
     + `<hr class="k-hud-rule">`
     + `<div id="kbigscore" class="k-bigscore" style="display:none"><span id="kbs-now" class="k-bigscore-n">0</span><span id="kbs-hi" class="k-bigscore-hi"></span></div>`;
 }

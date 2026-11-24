@@ -97,7 +97,7 @@ export default function AccountabilitySummary({ title = "Accountability" }) {
                 <div className="db-list-item--clickable habit-row-main" role="button" tabIndex={0} onClick={() => navigate(`/admin/life?tab=habits&id=${t.id}`)} onKeyDown={(ev) => { if (ev.key === "Enter") navigate(`/admin/life?tab=habits&id=${t.id}`); }}>
                                     <div className="db-list-item-content">
                     <div className="db-list-item-title">{t.name}</div>
-                    <div className="db-list-item-subtitle">{missed ? <><span className="missed-tag">Missed</span> · today</> : <>{streakOf(t)} {streakUnit(t)}{t.mode === "count" && c > 0 ? ` · ${c} today` : ""}</>}</div>
+                    <div className="db-list-item-subtitle">{missed ? <><span className="missed-tag">Missed</span>, today</> : <>{streakOf(t)} {streakUnit(t)}{t.mode === "count" && c > 0 ? `, ${c} today` : ""}</>}</div>
                   </div>
                 </div>
                 <div className="habit-row-actions">

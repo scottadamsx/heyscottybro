@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ease } from "../lib/motion";
 import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const FEATURES = [
@@ -20,14 +19,14 @@ export default function Never86Page() {
       {/* Hero */}
       <header className="lp-subhero">
         <span className="lp-kicker">cat never86/README</span>
-        <h1 className="lp-subhero-title">NEVER<em>86</em></h1>
+        <h1 className="lp-subhero-title">NEVER86</h1>
         <p className="lp-subhero-sub">
           A restaurant management platform built for independents who are tired of being
           boxed in by cookie-cutter POS tools. Built for the floor, not the boardroom.
         </p>
         <div className="lp-subhero-cta">
           <a href="https://never86.ca" target="_blank" rel="noreferrer" className="pill pill-dark">
-            visit never86.ca <i className="fa-solid fa-arrow-up-right-from-square" />
+            visit never86.ca
           </a>
           <Link to="/" className="pill pill-ghost"><i className="fa-solid fa-arrow-left" /> back home</Link>
         </div>
@@ -36,8 +35,6 @@ export default function Never86Page() {
       {/* Hero image */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <motion.div
-          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7, ease: ease.out }}
           style={{ borderRadius: "var(--t-r)", overflow: "hidden", border: "1px solid var(--t-line-br)", boxShadow: "0 40px 90px -50px #000" }}
         >
           <img src="/images/never86_website_concept.jpg" alt="NEVER86 dashboard" width={1400} height={933} decoding="async" fetchpriority="high" style={{ width: "100%", height: "auto", display: "block" }} />
@@ -70,10 +67,8 @@ export default function Never86Page() {
           <h2 className="lp-h2">Built for the floor</h2>
         </Reveal>
         <div className="lp-feature-grid">
-          {FEATURES.map((f, i) => (
-            <motion.div className="lp-feature" key={f.title}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, ease: ease.out, delay: (i % 3) * 0.06 }}>
+          {FEATURES.map((f) => (
+            <motion.div className="lp-feature" key={f.title}>
               <div className="lp-feature-icon"><i className={`fa-solid ${f.icon}`} aria-hidden="true" /></div>
               <div className="lp-feature-title">{f.title}</div>
               <div className="lp-feature-desc">{f.desc}</div>
@@ -89,7 +84,7 @@ export default function Never86Page() {
             <h3>Ready to see it in action?</h3>
             <p>Head over to never86.ca to learn more and get in touch.</p>
             <a href="https://never86.ca" target="_blank" rel="noreferrer" className="pill pill-dark">
-              open never86.ca <i className="fa-solid fa-arrow-up-right-from-square" />
+              open never86.ca
             </a>
           </div>
         </Reveal>

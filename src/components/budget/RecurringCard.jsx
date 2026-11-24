@@ -27,7 +27,7 @@ export default function RecurringCard({ item, kind, categories, onUpdate, onDele
   const nextDue = () => {
     if (item.endDate && item.endDate < toDateStr(new Date())) return "Ended";
     const dueDay = item.dueDay ? Number(item.dueDay) : null;
-    if (!dueDay) return "Continuous · no set day";
+    if (!dueDay) return "Continuous, no set day";
     const now = new Date();
     let next = new Date(now.getFullYear(), now.getMonth(), dueDay);
     if (next < now) next = new Date(now.getFullYear(), now.getMonth() + 1, dueDay);

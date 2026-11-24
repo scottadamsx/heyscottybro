@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useOrbit } from '../../state/OrbitContext.jsx'
 import Button from '../ui/Button.jsx'
-import { Sparkles } from '../ui/icons.js'
 import { formatDate } from '../../lib/dates.js'
 
 /** Shared shell for AI-written sections: the action, the busy state and errors. */
@@ -30,7 +29,6 @@ export default function AiBlock({ title, has, at, run, children, emptyText, disa
         <h3 className="section-title">{title}</h3>
         {ai.available && (
           <Button size="sm" variant="ghost" onClick={go} disabled={busy || !!disabledReason} title={disabledReason}>
-            <Sparkles size={14} aria-hidden />
             {busy ? 'Writing…' : has ? 'Rewrite' : 'Write it'}
           </Button>
         )}

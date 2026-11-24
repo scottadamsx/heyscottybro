@@ -119,7 +119,7 @@ export function buildMealDesiredTasks(item, recipe) {
     name: `Cook ${title}`,
     date: cook.date,
     time: cook.time,
-    description: `${servings} serving${servings === 1 ? "" : "s"}${item.eat_time ? ` · Eating ${item.eat_time}` : ""} · From Meal Plan`,
+    description: `${servings} serving${servings === 1 ? "" : "s"}${item.eat_time ? `, Eating ${item.eat_time}` : ""}, From Meal Plan`,
     recurrence: "none",
     show_on_calendar: true,
     source_type: "meal_plan_item",
@@ -133,13 +133,13 @@ export function buildMealDesiredTasks(item, recipe) {
   const prepStart = prepStartFor(item, prep);
   if (prepStart) {
     if (prepStart.date === cook.date && prepStart.time === cook.time) {
-      if (prep.note) cookTask.description += ` · Prep: ${prep.note}`;
+      if (prep.note) cookTask.description += `, Prep: ${prep.note}`;
     } else {
       tasks.push({
         name: `Prep ${title}`,
         date: prepStart.date,
         time: prepStart.time,
-        description: `${prep.note ? `${prep.note} · ` : ""}From Meal Plan`,
+        description: `${prep.note ? `${prep.note}, ` : ""}From Meal Plan`,
         recurrence: "none",
         show_on_calendar: true,
         source_type: "meal_plan_item",
@@ -176,13 +176,13 @@ export function buildShoppingDesiredTask(plan, items, summary, now = new Date())
     }
   }
   const budgetPart = summary?.budgetCents != null
-    ? ` · Budget ${formatCents(summary.budgetCents)}`
-    : " · No grocery budget set";
+    ? `, Budget ${formatCents(summary.budgetCents)}`
+    : ", No grocery budget set";
   const task = {
     name: "Shop for the week's meals",
     date: due.date,
     time: due.time,
-    description: `${summary?.itemCount ?? 0} items · ${summary?.pricedCount ?? 0} priced · Planned spend ${formatCents(summary?.purchaseTotalCents)}${budgetPart} · From Meal Plan`,
+    description: `${summary?.itemCount ?? 0} items, ${summary?.pricedCount ?? 0} priced, Planned spend ${formatCents(summary?.purchaseTotalCents)}${budgetPart}, From Meal Plan`,
     recurrence: "none",
     show_on_calendar: true,
     source_type: "meal_plan_week",

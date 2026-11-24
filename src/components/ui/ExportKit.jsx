@@ -15,7 +15,7 @@ import {
  *   toRows?(): array | Promise       tabular rows -> enables CSV
  *   csvColumns?: [{key,label}]       optional CSV column ordering
  * }
- * Renders: Print · PDF · CSV (if rows) · Copy Markdown · Email me
+ * Renders: Print, PDF, CSV (if rows), Copy Markdown, Email me
  */
 export default function ExportKit({ exporter }) {
   const [open, setOpen] = useState(false);

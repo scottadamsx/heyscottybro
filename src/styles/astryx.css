@@ -242,10 +242,8 @@
 /* Mono micro-labels become chips (the scott site's MonoLabel, pill form). */
 .lp-kicker, .lp-eyebrow {
   font-family: var(--font-family-code);
-  font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
-  background: var(--color-accent-muted); color: var(--color-accent);
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--color-accent);
 }
 .lp-kicker::before, .lp-eyebrow::before { content: none; }
 

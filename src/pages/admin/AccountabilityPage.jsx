@@ -313,7 +313,7 @@ export default function AccountabilityPage() {
     if (isMissed(t, todayStr)) {
       return (
         <button type="button" className="btn btn-secondary-sm acc-missed" onClick={() => setMissed(t, false)} aria-label={`Undo missed for ${t.name}`}>
-          <i className="fa-solid fa-xmark" aria-hidden="true" /> Missed today · Undo
+          <i className="fa-solid fa-xmark" aria-hidden="true" /> Missed today, Undo
         </button>
       );
     }
@@ -411,7 +411,7 @@ export default function AccountabilityPage() {
                       className={`acc-hist-dot${isToday ? " today" : ""}${future ? " future" : ""}${on ? " on" : ""}`}
                       /* per-day intensity is data: the tracker colour at a count-scaled opacity */
                       style={{ opacity: future ? undefined : on ? opacity : undefined }}
-                      title={`${ds}${on ? ` · ${cnt > 1 ? cnt + "x" : "done"}` : ""}`}
+                      title={`${ds}${on ? `, ${cnt > 1 ? cnt + "x" : "done"}` : ""}`}
                     />
                   );
                 })}
@@ -522,7 +522,7 @@ export default function AccountabilityPage() {
 
               <div className="acc-week" aria-label="Last 7 days">
                 {st.week.map((w, i) => (
-                  <div key={i} className={`acc-day${w.ds === todayStr ? " is-today" : ""}`} title={`${formatDisplayDate(w.ds)}${w.on ? (t.mode === "count" ? ` · ${w.count}` : " · done") : w.missed ? " · missed" : ""}`}>
+                  <div key={i} className={`acc-day${w.ds === todayStr ? " is-today" : ""}`} title={`${formatDisplayDate(w.ds)}${w.on ? (t.mode === "count" ? `, ${w.count}` : ", done") : w.missed ? ", missed" : ""}`}>
                     <span className={`acc-dot${w.on ? " on" : ""}${w.missed && !w.on ? " missed" : ""}${t.mode === "count" ? " is-count" : ""}${w.ds === todayStr ? " today" : ""}`}>
                       {t.mode === "count" && w.count > 0 ? w.count : w.missed && !w.on ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : ""}
                     </span>

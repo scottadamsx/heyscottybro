@@ -198,7 +198,7 @@ export default function WeeklyTracker({
             {freeOver ? "-" : ""}{formatMoney(Math.abs(week.freeToSpend))}
           </div>
           <div className="bud-week-fun-sub">
-            <strong>{formatMoney(week.spent)}</strong> spent · <strong>{formatMoney(week.scheduledUnpaidTotal + week.commitmentTotal)}</strong> committed
+            <strong>{formatMoney(week.spent)}</strong> spent, <strong>{formatMoney(week.scheduledUnpaidTotal + week.commitmentTotal)}</strong> committed
           </div>
           {weekOffset === 0 && (
             <button type="button" className="btn accent bud-week-fun-btn" onClick={() => onQuickLog("Entertainment")}>
@@ -308,7 +308,7 @@ export default function WeeklyTracker({
                 <div className={`bud-tx-row ${signed < 0 ? "expense" : "income"}`} key={tx.id}>
                   <div className="bud-tx-main">
                     <div className="bud-tx-desc">{tx.description}</div>
-                    <div className="bud-tx-meta">{dayLabel} · {tx.category}{isFunCategory(tx.category) ? " (Fun)" : ""}</div>
+                    <div className="bud-tx-meta">{dayLabel}, {tx.category}{isFunCategory(tx.category) ? " (Fun)" : ""}</div>
                   </div>
                   <div className="bud-tx-amount">{signed < 0 ? "-" : "+"}{formatMoney(signed)}</div>
                   <div className="bud-tx-actions">
@@ -335,7 +335,7 @@ export default function WeeklyTracker({
                       {s.bill.name}
                       {s.fulfilled && <span className="bud-paid-badge"><i className="fa-solid fa-check" aria-hidden="true" /> paid</span>}
                     </div>
-                    <div className="bud-tx-meta">Due {dueLabel} · {s.bill.category || "Other"}</div>
+                    <div className="bud-tx-meta">Due {dueLabel}, {s.bill.category || "Other"}</div>
                   </div>
                   <div className="bud-tx-amount">-{formatMoney(s.bill.amount)}</div>
                   {!s.fulfilled && (
@@ -358,7 +358,7 @@ export default function WeeklyTracker({
                   <div className="bud-src-row commitment" key={e.id}>
                     <div className="bud-tx-main">
                       <div className="bud-tx-desc">{e.title}</div>
-                      <div className="bud-tx-meta">{dayLabel}{e.description ? ` · ${e.description}` : ""}</div>
+                      <div className="bud-tx-meta">{dayLabel}{e.description ? `, ${e.description}` : ""}</div>
                     </div>
                     <div className="bud-tx-amount">~{formatMoney(e.cost)}</div>
                   </div>
@@ -372,7 +372,7 @@ export default function WeeklyTracker({
             <div className="bud-week-later">
               <div className="bud-week-later-head">
                 <h4 className="bud-week-col-head">Coming up later this month ({week.laterThisMonth.length})</h4>
-                <span className="bud-muted bud-week-later-total">Total {formatMoney(week.laterTotal)} · pay early to log now</span>
+                <span className="bud-muted bud-week-later-total">Total {formatMoney(week.laterTotal)}, pay early to log now</span>
               </div>
               <div className="bud-week-later-list">
                 {week.laterThisMonth.map(s => {
@@ -381,7 +381,7 @@ export default function WeeklyTracker({
                     <div className="bud-src-row expense" key={`later-${s.bill.id}`}>
                       <div className="bud-tx-main">
                         <div className="bud-tx-desc">{s.bill.name}</div>
-                        <div className="bud-tx-meta">Due {dueLabel} · {s.bill.category || "Other"}</div>
+                        <div className="bud-tx-meta">Due {dueLabel}, {s.bill.category || "Other"}</div>
                       </div>
                       <div className="bud-tx-amount">-{formatMoney(s.bill.amount)}</div>
                       <button type="button" className="btn-mini accent" onClick={() => onLogBill(s.bill, toDateStr(new Date()))} title="Pay early">

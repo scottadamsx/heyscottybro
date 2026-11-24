@@ -54,12 +54,12 @@ function txChanged(a, b) {
 // `key` (not `id`) + `icon` so these feed the shared PageTabs component the
 // other portal pages use, keeping the Finance header consistent with them.
 const TABS = [
-  { key: "dashboard",    label: "Overview",       icon: "fa-gauge" },
-  { key: "transactions", label: "Transactions",   icon: "fa-list-ul" },
-  { key: "bills",        label: "Bills & Income", icon: "fa-file-invoice-dollar" },
-  { key: "receipts",     label: "Receipts",       icon: "fa-receipt" },
-  { key: "banker",       label: "Banker" },
-  { key: "tools",        label: "Tools",          icon: "fa-flask" },
+  { key: "dashboard",   label: "Overview",      icon: "fa-gauge" },
+  { key: "transactions", label: "Transactions",  icon: "fa-list-ul" },
+  { key: "bills",       label: "Bills & Income", icon: "fa-file-invoice-dollar" },
+  { key: "receipts",    label: "Receipts",      icon: "fa-receipt" },
+  { key: "banker",      label: "Banker" },
+  { key: "tools",       label: "Tools",         icon: "fa-flask" },
 ];
 
 export default function BudgetPage() {
@@ -347,8 +347,8 @@ export default function BudgetPage() {
               const fm = (v) => `$${Number(v || 0).toFixed(2)}`;
               const L = [`# Money report — ${formatDisplayDate(new Date())}`, ""];
               L.push(`- **Income this period:** ${fm(snap.incomeTotal)}`);
-              L.push(`- **Spent:** ${fm(snap.spent)} · **Bills obligation:** ${fm(snap.billsObligation)} (paid ${fm(snap.billsPaid)})`);
-              L.push(`- **Saved:** ${fm(snap.saved)} · **Remaining:** ${fm(snap.remaining)}`, "");
+              L.push(`- **Spent:** ${fm(snap.spent)}, **Bills obligation:** ${fm(snap.billsObligation)} (paid ${fm(snap.billsPaid)})`);
+              L.push(`- **Saved:** ${fm(snap.saved)}, **Remaining:** ${fm(snap.remaining)}`, "");
               L.push("## Transactions (this period)", "", "| Date | Description | Type | Category | Amount |", "|---|---|---|---|---|");
               (snap.periodTx || []).forEach((t) => L.push(`| ${formatDisplayDate(t.date)} | ${t.description} | ${t.type} | ${t.category || ""} | ${fm(t.amount)} |`));
               return L.join("\n");

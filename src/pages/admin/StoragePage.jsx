@@ -29,7 +29,7 @@ function QuotaBar({ label, icon, used, limit }) {
     <div className="storage-quota">
       <div className="storage-row-head">
         <span className="storage-quota-label"><i className={`fa-solid ${icon}`} aria-hidden="true" />{label}</span>
-        <span className="storage-num">{fmt(used)} / {fmt(limit)} · {pct.toFixed(1)}%</span>
+        <span className="storage-num">{fmt(used)} / {fmt(limit)}, {pct.toFixed(1)}%</span>
       </div>
       <div className={`fin-progress storage-bar tone-${tone}`}><span style={{ width: `${pct}%` }} /></div>
       {pct >= 75 && (
@@ -50,7 +50,7 @@ function ItemRow({ name, sub, bytes, maxBytes, totalBytes }) {
     <div className="storage-item">
       <div className="storage-row-head">
         <span className="storage-item-name">
-          <code>{name}</code>{sub ? <span className="storage-item-sub"> · {sub}</span> : null}
+          <code>{name}</code>{sub ? <span className="storage-item-sub">, {sub}</span> : null}
         </span>
         <span className="storage-num">
           {fmt(bytes)} <span className="storage-num-sub">({shareOfTotal.toFixed(0)}%)</span>

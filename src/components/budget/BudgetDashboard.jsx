@@ -200,7 +200,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         : txs.map(t => (
           <div key={t.id} className="bud-drill-row">
             <span className="bud-ellipsis bud-drill-desc">{t.description || t.category}</span>
-            <span className="bud-drill-meta">{preferredDisplayDate(t.date)} · <span className="bud-mono">{formatMoney(t.amount)}</span></span>
+            <span className="bud-drill-meta">{preferredDisplayDate(t.date)}, <span className="bud-mono">{formatMoney(t.amount)}</span></span>
           </div>
         ))}
     </div>
@@ -235,7 +235,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         <div>
           <h2 className="money-period-title">
             {periodLabel}
-            {periodOffset === 0 ? " · Current" : periodOffset === 1 ? " · Next" : periodOffset === -1 ? " · Previous" : ""}
+            {periodOffset === 0 ? ", Current" : periodOffset === 1 ? ", Next" : periodOffset === -1 ? ", Previous" : ""}
           </h2>
           <p className="money-period-sub">
             {period.fallback ? "No paydays set, so this is the calendar month. Add an income source in Bills & Income for pay-period analytics." : "Pay period: payday to the day before the next payday"}
@@ -267,12 +267,12 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         ))}
       </div>
 
-      {/* Feature panels: this period · this week */}
+      {/* Feature panels: this period, this week */}
       <div className="money-panels">
         <div className="money-panel panel-peach">
           <span className="money-panel-label">Remaining this period</span>
           <span className={`money-panel-value tone-${remainingTone}`}>{remaining < 0 ? "−" : ""}{formatMoneyAbs(remaining)}</span>
-          <span className="money-panel-sub">{formatMoney(incomeTotal)} in · {formatMoney(billsTotal)} bills · {formatMoney(spent)} spent</span>
+          <span className="money-panel-sub">{formatMoney(incomeTotal)} in, {formatMoney(billsTotal)} bills, {formatMoney(spent)} spent</span>
         </div>
         {currentWeek ? (
           <div className="money-panel panel-mint">
@@ -280,7 +280,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             <span className={`money-panel-value tone-${weekTone}`}>{currentWeek.remaining < 0 ? "−" : ""}{formatMoneyAbs(currentWeek.remaining)}</span>
             <span className="money-panel-sub">
               {formatMoney(currentWeek.spent)} spent of {formatMoney(currentWeek.allowance)}
-              {currentWeek.carryIn ? ` · ${currentWeek.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(currentWeek.carryIn)} rolled over` : ""}
+              {currentWeek.carryIn ? `, ${currentWeek.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(currentWeek.carryIn)} rolled over` : ""}
             </span>
             <div className="bud-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(weekPct)} aria-label="Weekly allowance used">
               <div className="bud-bar-fill" style={{ width: `${weekPct}%`, background: meterFill(weekPct, currentWeek.remaining < 0) }} />
@@ -368,7 +368,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
         <div className="db-card">
           <div className="db-card-header"><h3 className="db-card-title">Weekly allowance</h3></div>
           <p className="money-card-note">
-            {formatMoney(weekly.weeklyBase)} a week · {formatMoney(weekly.spendable)} spendable this period
+            {formatMoney(weekly.weeklyBase)} a week, {formatMoney(weekly.spendable)} spendable this period
             ({formatMoney(weekly.incomeForPlanning)} scheduled − {formatMoney(weekly.billsObligation)} bills − {formatMoney(weekly.savings)} savings)
           </p>
           {weekly.weeks.map(w => {
@@ -391,8 +391,8 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                 <div className="bud-bar"><div className="bud-bar-fill" style={{ width: `${pct}%`, background: meterFill(pct, over) }} /></div>
                 <div className="money-meter-foot">
                   {isFuture
-                    ? <span>{formatMoney(w.spent)} spent · rollover is added when this week starts</span>
-                    : <span>{formatMoney(w.spent)} spent of {formatMoney(w.allowance)}{w.carryIn ? ` · ${w.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(w.carryIn)} rolled over` : ""}</span>}
+                    ? <span>{formatMoney(w.spent)} spent, rollover is added when this week starts</span>
+                    : <span>{formatMoney(w.spent)} spent of {formatMoney(w.allowance)}{w.carryIn ? `, ${w.carryIn >= 0 ? "+" : "−"}${formatMoneyAbs(w.carryIn)} rolled over` : ""}</span>}
                 </div>
               </div>
             );
@@ -422,7 +422,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                   <i className={`fa-solid fa-chevron-${isOpen ? "down" : "right"} bud-chev`} aria-hidden="true" />
                   <div className="money-bill-main">
                     <div className="money-bill-name bud-ellipsis">{b.name}</div>
-                    <div className="money-bill-sub">Due {preferredDisplayDate(b.date)}{b.category ? ` · ${b.category}` : ""}</div>
+                    <div className="money-bill-sub">Due {preferredDisplayDate(b.date)}{b.category ? `, ${b.category}` : ""}</div>
                   </div>
                   <span className="money-bill-amt">{formatMoney(b.amount)}</span>
                   {b.paid
@@ -434,7 +434,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                 {isOpen && (
                   <div className="bud-drill money-bill-sub">
                     {b.paid
-                      ? <span className="money-drill-ok"><i className="fa-solid fa-check" aria-hidden="true" /> Paid {payTx ? `${preferredDisplayDate(payTx.date)} · ${formatMoney(payTx.amount)}${payTx.description ? ` · ${payTx.description}` : ""}` : "this period"}</span>
+                      ? <span className="money-drill-ok"><i className="fa-solid fa-check" aria-hidden="true" /> Paid {payTx ? `${preferredDisplayDate(payTx.date)}, ${formatMoney(payTx.amount)}${payTx.description ? `, ${payTx.description}` : ""}` : "this period"}</span>
                       : <span>Not paid yet. Due {preferredDisplayDate(b.date)}.</span>}
                   </div>
                 )}
@@ -466,7 +466,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                     {g.done
                       ? "Goal reached"
                       : g.periodsLeft > 0
-                        ? <><b>{formatMoney(g.perPeriod)}</b> a paycheque · {g.periodsLeft} left · by {g.targetDate}</>
+                        ? <><b>{formatMoney(g.perPeriod)}</b> a paycheque, {g.periodsLeft} left, by {g.targetDate}</>
                         : <>Set aside {formatMoney(g.remaining)}. Target date {g.targetDate || "not set"} {g.targetDate && g.targetDate < today ? "(past)" : "(no paydays before it)"}</>}
                   </span>
                   <span className="bud-actions">
@@ -490,7 +490,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
               <div key={cat} className="money-cat">
                 <div className="money-meter-head">
                   <span className="money-meter-name">{cat}</span>
-                  <span className="money-meter-nums">{formatMoney(amt)} · {Math.round(amt / totalSpent * 100)}%</span>
+                  <span className="money-meter-nums">{formatMoney(amt)}, {Math.round(amt / totalSpent * 100)}%</span>
                 </div>
                 <div className="bud-bar"><div className="bud-bar-fill" style={{ width: `${(amt / maxCat * 100).toFixed(1)}%`, background: `var(--chart-${(i % 5) + 1})` }} /></div>
               </div>
@@ -507,7 +507,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
               <div key={t.id} className="money-tx">
                 <div className="money-tx-main">
                   <div className="money-tx-name">{t.description}</div>
-                  <div className="money-tx-sub">{t.category} · {preferredDisplayDate(t.date)}</div>
+                  <div className="money-tx-sub">{t.category}, {preferredDisplayDate(t.date)}</div>
                 </div>
                 <span className={`money-tx-amt t-${t.type}`}>{t.type === "income" ? "+" : "−"}{formatMoneyAbs(t.amount)}</span>
               </div>
@@ -524,9 +524,9 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
             <div className="uik-modal money-dialog" role="dialog" aria-modal="true" aria-label={`${statDrill} transactions`} onClick={e => e.stopPropagation()}>
               <div className="uik-modal-head">
                 <div>
-                  <div className="bud-caps-label">{statDrill} · {periodLabel}</div>
+                  <div className="bud-caps-label">{statDrill}, {periodLabel}</div>
                   <div className={`money-dialog-total money-kpi-value${drillTone[statDrill] ? ` tone-${drillTone[statDrill]}` : ""}`}>
-                    {formatMoney(total)} <span className="money-dialog-count">· {txs.length} transaction{txs.length === 1 ? "" : "s"}</span>
+                    {formatMoney(total)} <span className="money-dialog-count">, {txs.length} transaction{txs.length === 1 ? "" : "s"}</span>
                   </div>
                 </div>
                 <button type="button" onClick={() => setStatDrill(null)} aria-label="Close" className="uik-modal-x"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
@@ -538,7 +538,7 @@ export default function BudgetDashboard({ config, transactions, periodOffset, se
                     <div key={t.id} className="money-tx">
                       <div className="money-tx-main">
                         <div className="money-tx-name">{t.description || t.category || "—"}</div>
-                        <div className="money-tx-sub">{preferredDisplayDate(t.date)}{t.category ? ` · ${t.category}` : ""}{(t.is_bill || t.fulfills_recurring_id) ? " · bill" : ""}</div>
+                        <div className="money-tx-sub">{preferredDisplayDate(t.date)}{t.category ? `, ${t.category}` : ""}{(t.is_bill || t.fulfills_recurring_id) ? ", bill" : ""}</div>
                       </div>
                       <span className="money-tx-amt">{formatMoney(t.amount)}</span>
                     </div>

@@ -92,7 +92,7 @@ export default function TaskPanelContent({
           <dt>Due</dt>
           <dd className={isOverdue(task) ? "task-overdue" : undefined}>
             {task.date ? formatDisplayDate(task.date) : "No due date"}
-            {task.time ? ` · ${formatTime12(String(task.time).slice(0, 5))}` : ""}
+            {task.time ? `, ${formatTime12(String(task.time).slice(0, 5))}` : ""}
           </dd>
         </div>
         <div className="task-detail-row">
@@ -151,7 +151,7 @@ export default function TaskPanelContent({
             <div className="db-list-item" key={f.id}>
               <div className="db-list-item-content">
                 <div className="db-list-item-title">{f.name}</div>
-                <div className="db-list-item-subtitle">{f.date ? formatDisplayDate(f.date) : "No date"}{f.time ? ` · ${formatTime12(String(f.time).slice(0, 5))}` : ""}</div>
+                <div className="db-list-item-subtitle">{f.date ? formatDisplayDate(f.date) : "No date"}{f.time ? `, ${formatTime12(String(f.time).slice(0, 5))}` : ""}</div>
               </div>
               <StatusDot status={getStatus(f)} />
             </div>

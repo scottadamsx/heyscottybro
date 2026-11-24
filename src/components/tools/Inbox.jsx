@@ -180,7 +180,7 @@ export default function Inbox() {
                   <i className={`${chOf(m.channel).prefix} ${chOf(m.channel).icon} inbox-ch-icon`} aria-hidden="true" />
                   <span className="inbox-item-main">
                     <span className="inbox-item-title">{!m.read && <span className="visually-hidden">Unread: </span>}{m.subject || m.sender || "(message)"}</span>
-                    <span className="inbox-item-sub">{m.sender ? `${m.sender} · ` : ""}{m.body.slice(0, 80).replace(/\s+/g, " ")}…</span>
+                    <span className="inbox-item-sub">{m.sender ? `${m.sender}, ` : ""}{m.body.slice(0, 80).replace(/\s+/g, " ")}…</span>
                   </span>
                   <span className={`inbox-status s-${m.status}`}>{STATUS_LABEL[m.status] || m.status}</span>
                 </button>

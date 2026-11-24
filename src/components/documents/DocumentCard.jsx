@@ -65,7 +65,7 @@ export default function DocumentCard({ doc, onView, onShare, onDelete, onUpdate 
           </div>
         )}
         <div className="doc-card-meta">
-          {formatBytes(doc.size_bytes)} · {preferredDisplayDate(new Date(doc.created_at))}
+          {formatBytes(doc.size_bytes)}, {preferredDisplayDate(new Date(doc.created_at))}
         </div>
         <UpdatedMeta at={doc.updated_at} createdAt={doc.created_at} />
         {doc.description && <div className="doc-card-desc">{doc.description}</div>}

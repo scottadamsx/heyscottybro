@@ -231,7 +231,7 @@ export default function BrainPage() {
             </Suspense>
 
             <div className="brain-legend">
-              <span>{graph.nodes.length} notes · {graph.links.length} links · drag to orbit · pinch to zoom · tap a node</span>
+              <span>{graph.nodes.length} notes, {graph.links.length} links, drag to orbit, pinch to zoom, tap a node</span>
               <span className="brain-legend-types">
                 {Object.keys(TYPE_COLOR).map((t) => (
                   <span key={t} className="brain-legend-type"><span className="brain-legend-dot" style={{ background: typeColor(colors, t) }} aria-hidden="true" />{t}</span>
@@ -314,7 +314,7 @@ function AgentTools({ query, setQuery }) {
                 </span>
                 <div className="brain-agent-id">
                   <div className="brain-agent-name">{agent.name}</div>
-                  <div className="brain-agent-title">{agent.title} · {modelLabel(agent.model)}</div>
+                  <div className="brain-agent-title">{agent.title}, {modelLabel(agent.model)}</div>
                 </div>
               </div>
               {agent.tagline && <p className="brain-agent-tagline">{agent.tagline}</p>}
@@ -513,7 +513,7 @@ function NodeGraphModal({ node, data, colors, mobile, onClose, onOpenInGraph }) 
         </div>
 
         <div className="brain-modal-foot">
-          <span className="brain-modal-hint">{neighbourCount} connection{neighbourCount === 1 ? "" : "s"} · tap a node to explore</span>
+          <span className="brain-modal-hint">{neighbourCount} connection{neighbourCount === 1 ? "" : "s"}, tap a node to explore</span>
           <div className="brain-modal-actions">
             <a className="btn btn-sm btn-secondary-sm" href={`/admin/read/${String(center.slug).split("/").map(encodeURIComponent).join("/")}`}>
               <i className="fa-solid fa-book-open" aria-hidden="true" /> Open note

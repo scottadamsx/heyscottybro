@@ -15,7 +15,7 @@ import InterviewDrawer from './InterviewDrawer.jsx'
 
 /**
  * Log a hangout, plan one, or edit an event.
- * props: eventId (edit) · people · date · kind · title · status · plan (default to a week out)
+ * props: eventId (edit), people, date, kind, title, status, plan (default to a week out)
  */
 export default function LogModal({ eventId, onClose, mode, ...prefill }) {
   const { people, events, saveEvent, ai } = useOrbit()
@@ -136,7 +136,7 @@ export default function LogModal({ eventId, onClose, mode, ...prefill }) {
         <div className="stack">
           <p>
             <strong>{form.title || form.kind}</strong>
-            {form.date && <> · {formatDate(form.date)}</>}
+            {form.date && <>, {formatDate(form.date)}</>}
           </p>
           {dupEvent && (
             <div className="notice notice-warn" role="alert">

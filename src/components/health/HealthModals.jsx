@@ -49,7 +49,7 @@ export function FoodModal({ initial, defaultDate, profileId, onClose, onSave, ti
       setF((x) => ({
         ...x,
         name: out.name || x.name,
-        description: [describe.trim(), out.source ? `Source: ${out.source}` : ""].filter(Boolean).join(" · "),
+        description: [describe.trim(), out.source ? `Source: ${out.source}` : ""].filter(Boolean).join(", "),
         meal_type: out.meal_type && MEALS.includes(out.meal_type) ? out.meal_type : x.meal_type,
         calories: String(out.calories), protein_g: String(out.protein_g), carbs_g: String(out.carbs_g), fat_g: String(out.fat_g),
         items: out.items || [], source: "ai",

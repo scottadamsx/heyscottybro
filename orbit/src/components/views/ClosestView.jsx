@@ -22,10 +22,10 @@ export default function ClosestView() {
             id={id}
             sub={
               <>
-                {RINGS[byPerson[id].ring]} · {s.this90} this 90d
-                {s.avgGap != null && ` · every ~${s.avgGap}d`}
-                {s.topKind && ` · usually ${s.topKind}`}
-                {top && <span className="work-hint"> · {top.text}</span>}
+                {RINGS[byPerson[id].ring]}, {s.this90} this 90d
+                {s.avgGap != null && `, every ~${s.avgGap}d`}
+                {s.topKind && `, usually ${s.topKind}`}
+                {top && <span className="work-hint">, {top.text}</span>}
               </>
             }
             badge={<TrendMark trend={s.trend} label={`Seeing them ${s.trend === 'flat' ? 'about the same' : s.trend === 'up' ? 'more' : 'less'} than the 90 days before`} />}

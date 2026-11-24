@@ -85,7 +85,7 @@ export default function PdfViewer({ fileUrl, blob, title = "Document", filename 
                 <i className="fa-solid fa-chevron-left" aria-hidden="true" />
               </button>
               <span className="pdfv-pageno" aria-live="polite">{numPages ? `${pageNumber} / ${numPages}` : "—"}</span>
-              <button type="button" className="pdfv-btn" onClick={goNext} disabled={!numPages || pageNumber >= numPages} title="Next page (→)" aria-label="Next page">
+              <button type="button" className="pdfv-btn" onClick={goNext} disabled={!numPages || pageNumber >= numPages} title="Next page" aria-label="Next page">
                 <i className="fa-solid fa-chevron-right" aria-hidden="true" />
               </button>
             </div>

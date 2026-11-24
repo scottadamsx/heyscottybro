@@ -52,8 +52,8 @@ function TaskCard({ task, projects, showProject, onOpen, onComplete, onMove }) {
         )}
         {task.date && (
           <span className={overdue ? "p2-due is-overdue" : "p2-due"}>
-            {formatDisplayDate(task.date)}{task.time ? ` · ${formatTime12(String(task.time).slice(0, 5))}` : ""}
-            {overdue ? " · Overdue" : ""}
+            {formatDisplayDate(task.date)}{task.time ? `, ${formatTime12(String(task.time).slice(0, 5))}` : ""}
+            {overdue ? ", Overdue" : ""}
           </span>
         )}
         {task.recurrence && task.recurrence !== "none" && (

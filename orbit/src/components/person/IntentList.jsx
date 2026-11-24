@@ -47,11 +47,11 @@ export default function IntentList({ id, intents, showOwner = false }) {
             <span>
               {i.kind === 'gift' && <Gift size={14} className="inline-icon" aria-label="Gift idea:" />}
               {i.text}
-              {i.amount ? <span className="muted"> · {formatCents(i.amount)}</span> : null}
+              {i.amount ? <span className="muted">, {formatCents(i.amount)}</span> : null}
               {i.due && !i.done ? (
-                <span className={i.due < today() ? 'overdue-text' : 'muted'}> · {i.due < today() ? 'overdue, ' : 'by '}{formatDate(i.due, { month: 'short', day: 'numeric' })}</span>
+                <span className={i.due < today() ? 'overdue-text' : 'muted'}>, {i.due < today() ? 'overdue, ' : 'by '}{formatDate(i.due, { month: 'short', day: 'numeric' })}</span>
               ) : null}
-              {showOwner && <span className="muted"> · {people[pid]?.name}</span>}
+              {showOwner && <span className="muted">, {people[pid]?.name}</span>}
             </span>
           </label>
           {!showOwner && (

@@ -338,7 +338,7 @@
 .lp-guide-section strong { color: var(--t-fg); font-weight: 600; }
 .lp-guide-section code { font-family: var(--mono); font-size: 0.86em; background: var(--t-elev-2); border: 1px solid var(--t-line); border-radius: 5px; padding: 0.1em 0.4em; color: var(--t-green); }
 .lp-guide-callout {
-  border: 1px solid var(--t-green-dim); border-left-width: 3px; border-radius: var(--t-r-sm);
+  border: 1px solid var(--t-green-dim); border-radius: var(--t-r-sm);
   background: var(--t-green-soft); padding: 1rem 1.2rem; margin: 0 0 1.2rem;
   color: var(--t-fg-soft); font-size: 0.94rem;
 }

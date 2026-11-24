@@ -46,7 +46,7 @@ export default function StatsTab({ id }) {
       </dl>
       <p className="meta-line">
         <TrendMark trend={s.trend} />
-        Seeing them {TREND_LABEL[s.trend]} the 90 days before · <DaysBadge a={a} />
+        Seeing them {TREND_LABEL[s.trend]} the 90 days before, <DaysBadge a={a} />
       </p>
       <dl className="facts-dl">
         <dt>Usually</dt>
@@ -54,14 +54,14 @@ export default function StatsTab({ id }) {
         <dt>Ring</dt>
         <dd>
           {RINGS[a.ring]}
-          {a.cadence && ` · aim for every ~${a.cadence} days`}
-          {clusterOf[id] && ` · ${clusterOf[id].name} (${clusterOf[id].strengthLabel})`}
+          {a.cadence && `, aim for every ~${a.cadence} days`}
+          {clusterOf[id] && `, ${clusterOf[id].name} (${clusterOf[id].strengthLabel})`}
         </dd>
         <dt>Gift budget</dt>
         <dd>
           {a.ring > 2
             ? 'None at this ring'
-            : `${formatCents(giftBudget(settings, 'xmas', a.ring))} Christmas · ${formatCents(giftBudget(settings, 'bday', a.ring))} birthday`}
+            : `${formatCents(giftBudget(settings, 'xmas', a.ring))} Christmas, ${formatCents(giftBudget(settings, 'bday', a.ring))} birthday`}
         </dd>
       </dl>
       <section className="section">

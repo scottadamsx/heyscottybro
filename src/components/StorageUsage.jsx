@@ -23,7 +23,7 @@ function Bar({ label, used, limit }) {
     <div className="meter">
       <div className="meter-head">
         <span className="meter-name">{label}</span>
-        <span className="meter-nums">{fmt(used)} / {fmt(limit)} · {pct.toFixed(0)}%</span>
+        <span className="meter-nums">{fmt(used)} / {fmt(limit)}, {pct.toFixed(0)}%</span>
       </div>
       <div className="meter-track" role="progressbar" aria-label={`${label} used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)}>
         <div className="meter-fill" style={{ width: `${pct}%`, background: color }} />
@@ -103,7 +103,7 @@ export default function StorageUsage() {
               <div className="db-list">
                 {buckets.map((b) => (
                   <div className="db-list-item is-compact" key={b.name}>
-                    <div className="db-list-item-title code-name">{b.name} <span className="meter-nums">· {b.files} file{b.files === 1 ? "" : "s"}</span></div>
+                    <div className="db-list-item-title code-name">{b.name} <span className="meter-nums">, {b.files} file{b.files === 1 ? "" : "s"}</span></div>
                     <div className="meter-nums">{fmt(b.bytes)}</div>
                   </div>
                 ))}

@@ -5,7 +5,7 @@
 .tools-card {
   display: flex; flex-direction: column; gap: 0.4rem; text-align: left;
   padding: 1rem; background: var(--bg-card); border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--tool, var(--accent)); border-radius: 0.6rem; cursor: pointer;
+  border-radius: 0.6rem; cursor: pointer;
   transition: transform .1s, border-color .15s, box-shadow .15s;
 }
 .tools-card:hover { transform: translateY(-2px); border-color: var(--border-primary); box-shadow: var(--shadow-card); }

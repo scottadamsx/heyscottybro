@@ -75,7 +75,7 @@ function BinCard({ item, onUpdate, onDelete }) {
 
         {item.kind === "text" && <p className="bin-preview">{excerpt(item.body, 220) || "Empty text space."}</p>}
         {item.kind === "file" && (
-          <p className="bin-preview">{item.file_name}{item.file_size != null ? ` · ${formatBytes(item.file_size)}` : ""}</p>
+          <p className="bin-preview">{item.file_name}{item.file_size != null ? `, ${formatBytes(item.file_size)}` : ""}</p>
         )}
         {item.kind === "link" && <p className="bin-preview bin-link-preview">{linkUrl}</p>}
 

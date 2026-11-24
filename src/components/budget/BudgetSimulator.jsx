@@ -177,7 +177,7 @@ export default function BudgetSimulator({ config, simulations, setSimulations, t
         </div>
         <p className="money-card-note">
           {rows.length > 0
-            ? <>{startDate} → {endDate} · starting from {formatMoney(parseFloat(startBal) || 0)}</>
+            ? <>{startDate} → {endDate}, starting from {formatMoney(parseFloat(startBal) || 0)}</>
             : "Project your balance forward from your bills and income, or from how you actually spend."}
         </p>
 

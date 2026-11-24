@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ease } from "../lib/motion";
 import { ScrollProgress, Reveal } from "../components/Reveal";
 
 const FEATURES = [
   { icon: "fa-person-hiking", title: "Group Hikes", desc: "Weekly organized hikes across Newfoundland's most stunning trails." },
-  { icon: "fa-leaf", title: "Local Community", desc: "Real people, real connections, real adventures in St. John's." },
+  { icon: "fa-leaf", title: "Local Community", desc: "People, connections, and adventures in St. John's." },
   { icon: "fa-shirt", title: "Exclusive Merch", desc: "Custom-designed activewear and accessories for members." },
   { icon: "fa-handshake", title: "Local Partnerships", desc: "Collaborating with local businesses to support the community." },
   { icon: "fa-camera", title: "Adventure Content", desc: "Photos, stories, and memories from every trail we conquer." },
@@ -39,7 +38,7 @@ export default function SJHCPage() {
       {/* Hero */}
       <header className="lp-subhero">
         <span className="lp-kicker">cat hike-club/README</span>
-        <h1 className="lp-subhero-title">St. John&apos;s <em>Hike Club</em></h1>
+        <h1 className="lp-subhero-title">St. John&apos;s Hike Club</h1>
         <p className="lp-subhero-sub">
           More than a walking group — it&apos;s a community movement. We explore Newfoundland&apos;s
           most stunning trails, host group hikes, design exclusive merch, and partner with
@@ -47,7 +46,7 @@ export default function SJHCPage() {
         </p>
         <div className="lp-subhero-cta">
           <a href="https://stjohnshikeclub.com" target="_blank" rel="noreferrer" className="pill pill-dark">
-            visit stjohnshikeclub.com <i className="fa-solid fa-arrow-up-right-from-square" />
+            visit stjohnshikeclub.com
           </a>
           <Link to="/" className="pill pill-ghost"><i className="fa-solid fa-arrow-left" /> back home</Link>
         </div>
@@ -59,10 +58,7 @@ export default function SJHCPage() {
           {/* First row sits in the opening viewport: load it straight away. */}
           {PHOTOS.map((p, i) => (
             <motion.img key={p.src} src={p.src} alt={p.alt} width={p.w} height={p.h} decoding="async"
-              loading={i < 2 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : undefined}
-              // The opening row is the page's largest paint: show it at once instead of fading in.
-              initial={i < 2 ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out, delay: i * 0.06 }} />
+              loading={i < 2 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : undefined} />
           ))}
         </div>
       </section>
@@ -93,10 +89,8 @@ export default function SJHCPage() {
           <h2 className="lp-h2">More than a hike</h2>
         </Reveal>
         <div className="lp-feature-grid">
-          {FEATURES.map((f, i) => (
-            <motion.div className="lp-feature" key={f.title}
-              initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.45, ease: ease.out, delay: (i % 3) * 0.06 }}>
+          {FEATURES.map((f) => (
+            <motion.div className="lp-feature" key={f.title}>
               <div className="lp-feature-icon"><i className={`fa-solid ${f.icon}`} aria-hidden="true" /></div>
               <div className="lp-feature-title">{f.title}</div>
               <div className="lp-feature-desc">{f.desc}</div>
@@ -108,8 +102,7 @@ export default function SJHCPage() {
       {/* More photos */}
       <section className="lp-section" style={{ paddingTop: 0 }}>
         <div className="lp-photos" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(320px, 100%), 1fr))" }}>
-          <motion.img src="/images/hikeclub.JPG" alt="Hike Club" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }}
-            initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: ease.out }} />
+          <motion.img src="/images/hikeclub.JPG" alt="Hike Club" width={1200} height={800} loading="lazy" decoding="async" style={{ height: 300 }} />
         </div>
       </section>
 
@@ -136,7 +129,7 @@ export default function SJHCPage() {
             <h3>Ready to hit the trails?</h3>
             <p>Visit the full SJHC site to join hikes, see our schedule, and get in touch.</p>
             <a href="https://stjohnshikeclub.com" target="_blank" rel="noreferrer" className="pill pill-dark">
-              open stjohnshikeclub.com <i className="fa-solid fa-arrow-up-right-from-square" />
+              open stjohnshikeclub.com
             </a>
           </div>
         </Reveal>
