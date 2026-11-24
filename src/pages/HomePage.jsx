@@ -209,6 +209,7 @@ export default function HomePage() {
   return (
     <div className="xpd">
       <main className="xpd-desktop" id="main" tabIndex={-1}>
+        <h1 className="visually-hidden">heyScottyBro — Scott Adams, developer, founder and creator in St. John&apos;s, NL</h1>
         {/* Icons: the "side" column of every other project */}
         <nav className="xpd-icons" aria-label="Projects">
           {ICONS.map((p) => (
