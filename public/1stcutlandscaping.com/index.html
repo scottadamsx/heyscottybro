@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1st Cut Landscaping — Mount Pearl &amp; St. John's Lawn Care &amp; Snow Removal</title>
+    <meta name="description" content="Lawn care, landscaping, sodding, hedging, seasonal clean ups, and winter snow removal in Mount Pearl, St. John's, Paradise, and CBS. Located at 59A Smallwood Dr, Mount Pearl, NL.">
+    
+    <!-- Custom Architectural SVG Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='2' fill='%2316221C'/%3E%3Cpath d='M9 23V9h3v11h11v3H9z' fill='%239C5A3C'/%3E%3C/svg%3E">
+
+    <!-- Authoritative Grounded Font Pairing: Fraunces + DM Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        limestone: '#F5F3EE',
+                        paper: '#FFFFFF',
+                        spruce: '#16221C',
+                        spruceMid: '#213129',
+                        slateStone: '#4A534E',
+                        hairline: '#D5D0C5',
+                        copper: '#9C5A3C',
+                        copperDark: '#7F462C'
+                    },
+                    fontFamily: {
+                        serif: ['"Fraunces"', 'Georgia', 'serif'],
+                        sans: ['"DM Sans"', 'system-ui', 'sans-serif']
+                    },
+                    borderRadius: {
+                        arch: '2px'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html {
+            background-color: #F5F3EE;
+            color: #16221C;
+            font-family: 'DM Sans', system-ui, sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Editorial Page Switching */
+        .page-section {
+            display: none;
+        }
+        .page-section.is-active {
+            display: block;
+            animation: crispAppear 0.25s ease-out forwards;
+        }
+        @keyframes crispAppear {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Active Nav Indicator */
+        .nav-item.is-current {
+            color: #9C5A3C;
+            border-bottom: 2px solid #9C5A3C;
+        }
+
+        /* Clean Image Framing without Jumpy Hover Lifts */
+        .photo-frame img {
+            transition: opacity 0.3s ease;
+        }
+
+        /* Accessible Focus Rings */
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid #9C5A3C;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-limestone text-spruce selection:bg-spruce selection:text-paper">
+
+    <!-- =====================================================================
+         PERSISTENT HEADER BAR
+    ====================================================================== -->
+    <header class="sticky top-0 z-40 bg-limestone/95 backdrop-blur-sm border-b border-hairline">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between gap-4">
+            <!-- Wordmark & Location -->
+            <a href="#/home" onclick="routeTo('home'); return false;" class="flex items-baseline gap-3 group">
+                <span class="font-serif text-2xl sm:text-[26px] font-medium tracking-tight text-spruce">
+                    1st Cut Landscaping
+                </span>
+                <span class="hidden xl:inline-block text-xs text-slateStone border-l border-hairline pl-3">
+                    Mount Pearl &amp; St. John's, NL
+                </span>
+            </a>
+
+            <!-- Desktop Navigation (6 Pages) -->
+            <nav aria-label="Primary Navigation" class="hidden lg:flex items-center gap-7 text-sm font-medium text-spruce">
+                <a href="#/home" onclick="routeTo('home'); return false;" data-route="home" class="nav-item py-7 border-b-2 border-transparent hover:text-copper transition-colors">
+                    Home
+                </a>
+                <a href="#/services" onclick="routeTo('services'); return false;" data-route="services" class="nav-item py-7 border-b-2 border-transparent hover:text-copper transition-colors">
+                    Services
+                </a>
+                <a href="#/snow-clearing" onclick="routeTo('snow-clearing'); return false;" data-route="snow-clearing" class="nav-item py-7 border-b-2 border-transparent hover:text-copper transition-colors">
+                    Snow Clearing
+                </a>
+                <a href="#/projects" onclick="routeTo('projects'); return false;" data-route="projects" class="nav-item py-7 border-b-2 border-transparent hover:text-copper transition-colors">
+                    Projects
+                </a>
+                <a href="#/about" onclick="routeTo('about'); return false;" data-route="about" class="nav-item py-7 border-b-2 border-transparent hover:text-copper transition-colors">
+                    About
+                </a>
+            </nav>
+
+            <!-- Right Actions -->
+            <div class="flex items-center gap-3 sm:gap-5">
+                <a href="tel:+17096933690" class="hidden sm:inline-block text-sm font-medium text-spruce hover:text-copper transition-colors">
+                    (709) 693-3690
+                </a>
+
+                <a href="#/estimate" onclick="routeTo('estimate'); return false;" data-route="estimate" class="relative px-4 py-2.5 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                    <span>Online Estimate</span>
+                    <span id="header-scope-badge" class="hidden ml-1.5 px-1.5 py-0.5 text-[11px] bg-copper text-paper rounded-arch font-semibold">0</span>
+                </a>
+
+                <button type="button" id="mobile-menu-btn" onclick="toggleDrawer()" aria-expanded="false" aria-controls="mobile-drawer" aria-label="Open navigation menu" class="lg:hidden p-2 border border-hairline rounded-arch bg-paper text-spruce">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7h16M4 12h16M4 17h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Drawer -->
+        <div id="mobile-drawer" class="hidden lg:hidden bg-paper border-b border-hairline px-5 py-6 space-y-4">
+            <nav aria-label="Mobile Navigation" class="flex flex-col divide-y divide-hairline text-base font-medium text-spruce">
+                <a href="#/home" onclick="routeTo('home'); toggleDrawer(false); return false;" class="py-3 hover:text-copper">Home</a>
+                <a href="#/services" onclick="routeTo('services'); toggleDrawer(false); return false;" class="py-3 hover:text-copper">Services</a>
+                <a href="#/snow-clearing" onclick="routeTo('snow-clearing'); toggleDrawer(false); return false;" class="py-3 hover:text-copper">Snow Clearing</a>
+                <a href="#/projects" onclick="routeTo('projects'); toggleDrawer(false); return false;" class="py-3 hover:text-copper">Projects</a>
+                <a href="#/about" onclick="routeTo('about'); toggleDrawer(false); return false;" class="py-3 hover:text-copper">About</a>
+                <a href="#/estimate" onclick="routeTo('estimate'); toggleDrawer(false); return false;" class="py-3 text-copper font-semibold">Online Estimate</a>
+            </nav>
+            <div class="pt-3 border-t border-hairline text-xs text-slateStone space-y-1">
+                <p class="font-medium text-spruce">59A Smallwood Dr, Mount Pearl, NL A1N 1B2</p>
+                <p>Hours: Monday – Friday, 8:00 AM – 4:00 PM</p>
+                <p><a href="tel:+17096933690" class="text-copper font-medium">Call (709) 693-3690</a></p>
+            </div>
+        </div>
+    </header>
+
+    <!-- =====================================================================
+         MAIN PAGE VIEWPORT
+    ====================================================================== -->
+    <main class="flex-grow">
+
+        <!-- =================================================================
+             PAGE 1: HOME (#/home)
+        ================================================================== -->
+        <section id="view-home" class="page-section is-active" aria-labelledby="home-heading">
+            <!-- Asymmetric Editorial Spread -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-16 sm:pt-14 sm:pb-20 border-b border-hairline">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+                    <!-- Left Column: Plainspoken Headline, Scope & Direct Contact -->
+                    <div class="lg:col-span-6 space-y-6">
+                        <p class="text-xs font-medium text-copper">
+                            59A Smallwood Dr, Mount Pearl, NL A1N 1B2
+                        </p>
+
+                        <h1 id="home-heading" class="font-serif text-4xl sm:text-5xl lg:text-[52px] font-medium text-spruce leading-[1.08] tracking-tight">
+                            Lawn care, landscaping, and winter snow clearing across Mount Pearl and St. John's.
+                        </h1>
+
+                        <p class="text-base text-slateStone leading-relaxed max-w-[62ch]">
+                            We handle full-season property maintenance for homeowners and local commercial lots on the Northeast Avalon—from weekly grass cutting, steel edging, liming, and sod installation to spring clean ups, hedge pruning, and winter storm snow removal.
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-4 pt-1">
+                            <a href="#/estimate" onclick="routeTo('estimate'); return false;" class="px-6 py-3.5 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                                Request an online estimate
+                            </a>
+                            <a href="#/services" onclick="routeTo('services'); return false;" class="px-6 py-3.5 rounded-arch border border-spruce text-spruce text-sm font-medium hover:bg-paper transition-colors">
+                                View full service list
+                            </a>
+                        </div>
+
+                        <!-- Practical Dispatch Facts Table -->
+                        <dl class="pt-6 border-t border-hairline grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                            <div>
+                                <dt class="text-xs text-slateStone">Office &amp; dispatch hours</dt>
+                                <dd class="font-medium text-spruce mt-0.5">Monday – Friday, 8:00 AM – 4:00 PM</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs text-slateStone">Telephone &amp; email</dt>
+                                <dd class="font-medium text-spruce mt-0.5">
+                                    <a href="tel:+17096933690" class="hover:text-copper">(709) 693-3690</a>
+                                    <span class="text-hairline mx-1.5">|</span>
+                                    <a href="mailto:1stcut709@gmail.com" class="hover:text-copper">1stcut709@gmail.com</a>
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <!-- Right Column: Crisp Framed Architectural Photograph -->
+                    <div class="lg:col-span-6">
+                        <figure class="photo-frame bg-paper p-2.5 border border-hairline rounded-arch">
+                            <div class="aspect-[4/3] overflow-hidden bg-spruceMid">
+                                <img 
+                                    src="https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1400&q=85" 
+                                    onerror="this.src='https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80'"
+                                    alt="Freshly mowed residential lawn with edged garden borders" 
+                                    class="w-full h-full object-cover"
+                                />
+                            </div>
+                            <figcaption class="pt-2.5 px-1 flex items-center justify-between text-xs text-slateStone">
+                                <span>Weekly mowing, vertical curb edging, and bed maintenance</span>
+                                <span class="text-spruce font-medium">Mount Pearl &amp; St. John's</span>
+                            </figcaption>
+                        </figure>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Split-Screen Operational Switcher (Warm Grounds vs. Winter Snow) -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20 border-b border-hairline">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+                    <div>
+                        <h2 class="font-serif text-3xl sm:text-4xl font-medium text-spruce">
+                            Two operational seasons, one local crew
+                        </h2>
+                        <p class="text-sm sm:text-base text-slateStone mt-2 max-w-[62ch]">
+                            Switch between our warm-weather groundskeeping schedule and winter snow removal operations to see how we manage properties year-round.
+                        </p>
+                    </div>
+
+                    <!-- Functional Season Switcher -->
+                    <div role="tablist" aria-label="Operational Season Switcher" class="inline-flex border border-hairline rounded-arch bg-paper p-1 self-start">
+                        <button type="button" role="tab" aria-selected="true" id="tab-season-grounds" onclick="switchHomeSeason('grounds')" class="px-4 py-2 text-sm font-medium rounded-arch bg-spruce text-paper transition-colors">
+                            Spring &amp; Summer Grounds
+                        </button>
+                        <button type="button" role="tab" aria-selected="false" id="tab-season-winter" onclick="switchHomeSeason('winter')" class="px-4 py-2 text-sm font-medium rounded-arch text-spruce hover:text-copper transition-colors">
+                            Winter Snow Operations
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel A: Spring & Summer Grounds -->
+                <div id="panel-season-grounds" class="bg-paper border border-hairline rounded-arch p-6 sm:p-10">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <div class="lg:col-span-5 space-y-4">
+                            <span class="inline-block px-2.5 py-1 bg-limestone border border-hairline text-xs font-medium text-spruce rounded-arch">
+                                April through November
+                            </span>
+                            <h3 class="font-serif text-2xl sm:text-3xl font-medium text-spruce">
+                                Turf health, garden beds, and seasonal clean ups
+                            </h3>
+                            <p class="text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                Cool coastal springs and acidic soils on the Avalon require more than a quick mow. We start with spring power-raking and dolomitic lime applications, maintain clean weekly cuts through summer, and finish with autumn leaf collection.
+                            </p>
+                            <div class="pt-2">
+                                <a href="#/services" onclick="routeTo('services'); return false;" class="inline-block text-sm font-medium text-copper hover:text-copperDark underline underline-offset-4">
+                                    Browse all 16 lawn &amp; garden services &rarr;
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 border-t lg:border-t-0 lg:border-l border-hairline pt-6 lg:pt-0 lg:pl-8 text-sm">
+                            <div>
+                                <h4 class="font-medium text-spruce mb-2 pb-1.5 border-b border-hairline">Lawn &amp; Turf Work</h4>
+                                <ul class="space-y-1.5 text-slateStone">
+                                    <li>Grass cutting &amp; trimming</li>
+                                    <li>Vertical lawn edging</li>
+                                    <li>Sodding, seeding &amp; watering</li>
+                                    <li>Lawn liming, fertilizer &amp; weed control</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-spruce mb-2 pb-1.5 border-b border-hairline">Gardens &amp; Clean Ups</h4>
+                                <ul class="space-y-1.5 text-slateStone">
+                                    <li>Gardening, pruning &amp; hedging</li>
+                                    <li>Mulch installation &amp; tree planting</li>
+                                    <li>Spring &amp; fall property clean ups</li>
+                                    <li>Raking &amp; autumn leaf collection</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel B: Winter Snow Operations -->
+                <div id="panel-season-winter" class="hidden bg-spruce text-paper border border-spruce rounded-arch p-6 sm:p-10">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        <div class="lg:col-span-5 space-y-4">
+                            <span class="inline-block px-2.5 py-1 bg-spruceMid border border-paper/20 text-xs font-medium text-paper rounded-arch">
+                                December through April
+                            </span>
+                            <h3 class="font-serif text-2xl sm:text-3xl font-medium text-paper">
+                                Driveway plowing, walkway shoveling, and ridge clearing
+                            </h3>
+                            <p class="text-sm text-paper/80 leading-relaxed max-w-[62ch]">
+                                Dispatched directly from our Smallwood Drive depot during Avalon snowfalls. We clear residential driveways, front steps, and commercial parking lots, returning after city plows pass to cut back heavy end-of-driveway snow ridges.
+                            </p>
+                            <div class="pt-2">
+                                <a href="#/snow-clearing" onclick="routeTo('snow-clearing'); return false;" class="inline-block text-sm font-medium text-[#E0A88E] hover:text-paper underline underline-offset-4">
+                                    See winter snow clearing details &rarr;
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 border-t lg:border-t-0 lg:border-l border-paper/15 pt-6 lg:pt-0 lg:pl-8 text-sm">
+                            <div>
+                                <h4 class="font-medium text-paper mb-2 pb-1.5 border-b border-paper/15">Residential Routes</h4>
+                                <ul class="space-y-1.5 text-paper/80">
+                                    <li>Single &amp; double driveway clearing</li>
+                                    <li>Municipal plow-ridge removal</li>
+                                    <li>Front steps &amp; walkway shoveling</li>
+                                    <li>Pre-winter driveway edge staking</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-paper mb-2 pb-1.5 border-b border-paper/15">Commercial &amp; Enrollment</h4>
+                                <ul class="space-y-1.5 text-paper/80">
+                                    <li>Small business &amp; office lot clearing</li>
+                                    <li>Walkway &amp; entrance ice-control grit</li>
+                                    <li>Seasonal winter retainers</li>
+                                    <li>Per-push clearing (route permitting)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Northeast Avalon Service Route Index -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                    <div class="lg:col-span-5 space-y-4">
+                        <h2 class="font-serif text-3xl font-medium text-spruce">
+                            Northeast Avalon service routes
+                        </h2>
+                        <p class="text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                            Our crews operate daily routes out of 59A Smallwood Dr in Mount Pearl. Online estimates are available for properties in the following communities—we measure lot frontage and driveway dimensions directly from your street address.
+                        </p>
+                        <div class="pt-2 flex flex-wrap gap-4 text-sm">
+                            <a href="#/estimate" onclick="routeTo('estimate'); return false;" class="font-medium text-copper hover:text-copperDark underline underline-offset-4">
+                                Start an online estimate &rarr;
+                            </a>
+                            <a href="#/projects" onclick="routeTo('projects'); return false;" class="font-medium text-spruce hover:text-copper underline underline-offset-4">
+                                View local project notes &rarr;
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-7 border-t border-hairline divide-y divide-hairline text-sm">
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <span class="font-medium text-spruce">Mount Pearl (Base Depot)</span>
+                            <span class="text-slateStone">Smallwood Dr, Admiralty Wood, Donovan's, Park Ave, Topsail Rd</span>
+                        </div>
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <span class="font-medium text-spruce">St. John's</span>
+                            <span class="text-slateStone">Southlands, Kenmount Terrace, Cowan Heights, East End, West End</span>
+                        </div>
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <span class="font-medium text-spruce">Paradise</span>
+                            <span class="text-slateStone">Elizabeth Park, Evergreen Village, Karwood Estates, Three Island Pond</span>
+                        </div>
+                        <div class="py-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <span class="font-medium text-spruce">Conception Bay South</span>
+                            <span class="text-slateStone">Topsail, Chamberlains, Manuels, Long Pond, Foxtrap</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             PAGE 2: SERVICES (#/services)
+        ================================================================== -->
+        <section id="view-services" class="page-section" aria-labelledby="services-heading">
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-12 border-b border-hairline">
+                <nav aria-label="Breadcrumb" class="text-xs text-slateStone mb-5">
+                    <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-spruce">Home</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-spruce font-medium">Services</span>
+                </nav>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+                    <div class="lg:col-span-7 space-y-4">
+                        <h1 id="services-heading" class="font-serif text-4xl sm:text-5xl font-medium text-spruce leading-tight">
+                            Groundskeeping, lawn care, and garden services
+                        </h1>
+                        <p class="text-base text-slateStone leading-relaxed max-w-[62ch]">
+                            Select any individual service below to add it to your online estimate worksheet, or filter by category. Added items carry over automatically to the Estimate page.
+                        </p>
+                    </div>
+
+                    <div class="lg:col-span-5 lg:text-right">
+                        <a href="#/estimate" onclick="routeTo('estimate'); return false;" class="inline-block px-5 py-3 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                            Review estimate worksheet (<span id="services-page-count">0</span> selected) &rarr;
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Category Filter Bar -->
+                <div class="flex flex-wrap gap-2 mt-8 pt-6 border-t border-hairline" role="group" aria-label="Filter services by discipline">
+                    <button type="button" onclick="setServiceFilter('all')" data-srv-filter="all" class="srv-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-spruce text-paper border border-spruce">
+                        All Services (17)
+                    </button>
+                    <button type="button" onclick="setServiceFilter('turf')" data-srv-filter="turf" class="srv-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Turf &amp; Lawn Care (8)
+                    </button>
+                    <button type="button" onclick="setServiceFilter('gardens')" data-srv-filter="gardens" class="srv-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Gardens, Hedges &amp; Trees (5)
+                    </button>
+                    <button type="button" onclick="setServiceFilter('cleanups')" data-srv-filter="cleanups" class="srv-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Clean Ups &amp; Winter (4)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Specification Ledger (Clean Architectural Rows, Not Tinted Icon Cards) -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-12">
+                <div id="services-ledger" class="bg-paper border border-hairline rounded-arch divide-y divide-hairline">
+                    <!-- Rendered dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             PAGE 3: SNOW CLEARING (#/snow-clearing)
+        ================================================================== -->
+        <section id="view-snow-clearing" class="page-section" aria-labelledby="snow-heading">
+            <!-- Deep Spruce Winter Banner -->
+            <div class="bg-spruce text-paper border-b border-paper/15">
+                <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-16 sm:pt-14 sm:pb-20">
+                    <nav aria-label="Breadcrumb" class="text-xs text-paper/65 mb-6">
+                        <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-paper">Home</a>
+                        <span class="mx-2">/</span>
+                        <span class="text-paper font-medium">Snow Clearing</span>
+                    </nav>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                        <div class="lg:col-span-7 space-y-6">
+                            <h1 id="snow-heading" class="font-serif text-4xl sm:text-5xl font-medium text-paper leading-[1.08]">
+                                Winter snow clearing for driveways, walkways, and commercial lots.
+                            </h1>
+                            <p class="text-base text-paper/80 leading-relaxed max-w-[62ch]">
+                                Wet Atlantic storms, drifting snow across exposed subdivisions, and packed municipal plow ridges require dependable local dispatch. We run dedicated winter routes across Mount Pearl, St. John's, Paradise, and Conception Bay South.
+                            </p>
+                            <div class="flex flex-wrap items-center gap-4 pt-1">
+                                <button type="button" onclick="addServiceAndGoEstimate('Snow removal')" class="px-6 py-3.5 rounded-arch bg-copper text-paper text-sm font-medium hover:bg-copperDark transition-colors">
+                                    Request snow clearing estimate
+                                </button>
+                                <a href="tel:+17096933690" class="px-6 py-3.5 rounded-arch border border-paper/30 text-paper text-sm font-medium hover:border-paper transition-colors">
+                                    Call (709) 693-3690
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-5">
+                            <figure class="bg-spruceMid p-2.5 border border-paper/15 rounded-arch">
+                                <div class="aspect-[4/3] overflow-hidden">
+                                    <img 
+                                        src="https://images.unsplash.com/photo-1516912481808-3406841bd33c?auto=format&fit=crop&w=1400&q=85" 
+                                        onerror="this.src='https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=1400&q=80'"
+                                        alt="Cleared residential driveway and front walkway after winter snowfall" 
+                                        class="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <figcaption class="pt-2.5 px-1 text-xs text-paper/75">
+                                    Full driveway clearing and walkway shoveling dispatched from Mount Pearl
+                                </figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practical Winter Operational Breakdown -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16 space-y-16">
+                <!-- Coverage Specifications -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-paper border border-hairline rounded-arch p-7 space-y-4">
+                        <h2 class="font-serif text-2xl font-medium text-spruce">
+                            Residential driveways and walkways
+                        </h2>
+                        <p class="text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                            Suitable for single-car, double-car, and corner-lot residential properties in Mount Pearl, Southlands, Kenmount Terrace, Paradise, and CBS.
+                        </p>
+                        <ul class="space-y-2 text-sm text-spruce border-t border-hairline pt-4">
+                            <li>Full-width driveway clearing with surface-safe edges</li>
+                            <li>Return clean-up after municipal street plows pass</li>
+                            <li>Hand-shoveling of front steps, landings, and main walkways</li>
+                            <li>Pre-season driveway boundary staking before ground freeze</li>
+                        </ul>
+                        <div class="pt-2">
+                            <button type="button" onclick="addServiceAndGoEstimate('Snow removal', 'Standard suburban lot')" class="text-sm font-medium text-copper hover:text-copperDark underline underline-offset-4">
+                                Estimate a residential driveway &rarr;
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-paper border border-hairline rounded-arch p-7 space-y-4">
+                        <h2 class="font-serif text-2xl font-medium text-spruce">
+                            Small business and commercial lots
+                        </h2>
+                        <p class="text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                            Scheduled clearing for storefronts, professional offices, and multi-unit properties requiring safe morning access for staff and visitors.
+                        </p>
+                        <ul class="space-y-2 text-sm text-spruce border-t border-hairline pt-4">
+                            <li>Priority pre-opening parking lot clearing</li>
+                            <li>Sidewalk, entrance apron, and accessibility ramp clearing</li>
+                            <li>Salt and traction grit application upon request</li>
+                            <li>Consistent billing and route priority throughout winter</li>
+                        </ul>
+                        <div class="pt-2">
+                            <button type="button" onclick="addServiceAndGoEstimate('Snow removal', 'Commercial property')" class="text-sm font-medium text-copper hover:text-copperDark underline underline-offset-4">
+                                Estimate a commercial lot &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seasonal Retainer vs. Per-Push Comparison Table -->
+                <div class="space-y-4">
+                    <h2 class="font-serif text-3xl font-medium text-spruce">
+                        Seasonal contracts vs. per-push clearing
+                    </h2>
+                    <p class="text-sm text-slateStone max-w-[62ch]">
+                        We cap seasonal route enrollment each autumn so every contract customer receives timely clearing during heavy Avalon snowfalls.
+                    </p>
+
+                    <div class="overflow-x-auto bg-paper border border-hairline rounded-arch">
+                        <table class="w-full text-left border-collapse min-w-[600px] text-sm">
+                            <thead>
+                                <tr class="border-b border-hairline bg-limestone">
+                                    <th class="p-4 font-medium text-spruce">Operational detail</th>
+                                    <th class="p-4 font-medium text-spruce">Seasonal Winter Contract</th>
+                                    <th class="p-4 font-medium text-spruce">Per-Push / On-Call Clearing</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-hairline text-slateStone">
+                                <tr>
+                                    <td class="p-4 font-medium text-spruce">Dispatch trigger</td>
+                                    <td class="p-4">Automatic dispatch once accumulation reaches 5 cm</td>
+                                    <td class="p-4">Dispatched after priority contract routes conclude</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium text-spruce">City plow ridge return</td>
+                                    <td class="p-4">Included after municipal street clearing</td>
+                                    <td class="p-4">Billed per return visit</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium text-spruce">Pre-winter marker stakes</td>
+                                    <td class="p-4">Installed in November prior to freeze-up</td>
+                                    <td class="p-4">Client-marked or optional add-on</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium text-spruce">Billing structure</td>
+                                    <td class="p-4">Fixed seasonal rate regardless of storm count</td>
+                                    <td class="p-4">Billed per individual storm visit</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             PAGE 4: PROJECTS (#/projects)
+        ================================================================== -->
+        <section id="view-projects" class="page-section" aria-labelledby="projects-heading">
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-12 border-b border-hairline">
+                <nav aria-label="Breadcrumb" class="text-xs text-slateStone mb-5">
+                    <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-spruce">Home</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-spruce font-medium">Projects</span>
+                </nav>
+
+                <div class="max-w-3xl space-y-4">
+                    <h1 id="projects-heading" class="font-serif text-4xl sm:text-5xl font-medium text-spruce leading-tight">
+                        Recent properties and field notes
+                    </h1>
+                    <p class="text-base text-slateStone leading-relaxed max-w-[62ch]">
+                        Examples of lawn installations, soil liming recoveries, cedar hedge shaping, seasonal clean ups, and winter clearing across Mount Pearl, St. John's, Paradise, and Conception Bay South.
+                    </p>
+                </div>
+
+                <!-- Project Category Filter -->
+                <div class="flex flex-wrap gap-2 mt-8 pt-6 border-t border-hairline" role="group" aria-label="Filter projects">
+                    <button type="button" onclick="setProjectFilter('all')" data-proj-filter="all" class="proj-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-spruce text-paper border border-spruce">
+                        All Work (5)
+                    </button>
+                    <button type="button" onclick="setProjectFilter('turf')" data-proj-filter="turf" class="proj-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Turf &amp; Sodding
+                    </button>
+                    <button type="button" onclick="setProjectFilter('gardens')" data-proj-filter="gardens" class="proj-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Hedging, Mulch &amp; Trees
+                    </button>
+                    <button type="button" onclick="setProjectFilter('cleanups')" data-proj-filter="cleanups" class="proj-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Seasonal Clean Ups
+                    </button>
+                    <button type="button" onclick="setProjectFilter('winter')" data-proj-filter="winter" class="proj-filter-btn px-4 py-2 rounded-arch text-sm font-medium bg-paper text-spruce border border-hairline hover:border-spruce">
+                        Winter Snow
+                    </button>
+                </div>
+            </div>
+
+            <!-- Asymmetric Editorial Portfolio List -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-12">
+                <div id="projects-list" class="space-y-10">
+                    <!-- Rendered dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             PAGE 5: ABOUT (#/about)
+        ================================================================== -->
+        <section id="view-about" class="page-section" aria-labelledby="about-heading">
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-16 border-b border-hairline">
+                <nav aria-label="Breadcrumb" class="text-xs text-slateStone mb-5">
+                    <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-spruce">Home</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-spruce font-medium">About</span>
+                </nav>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                    <div class="lg:col-span-6 space-y-5">
+                        <h1 id="about-heading" class="font-serif text-4xl sm:text-5xl font-medium text-spruce leading-tight">
+                            Local groundskeeping out of Mount Pearl
+                        </h1>
+                        <p class="text-base text-slateStone leading-relaxed max-w-[62ch]">
+                            1st Cut Landscaping operates from 59A Smallwood Dr in Mount Pearl, NL. We provide reliable, scheduled lawn care, garden maintenance, seasonal clean ups, and winter snow clearing for residential homeowners and local businesses across the Northeast Avalon.
+                        </p>
+                        <p class="text-sm sm:text-base text-slateStone leading-relaxed max-w-[62ch]">
+                            Newfoundland properties face specific seasonal demands: heavy spring thatch after freeze-thaw cycles, acidic soil that requires dolomitic liming, wind exposure on newly planted trees, and wet snowfalls that pack tightly at the end of driveways. Our crews equip for all four seasons so property owners can rely on one local contact year-round.
+                        </p>
+
+                        <div class="pt-3 flex flex-wrap gap-4">
+                            <a href="#/estimate" onclick="routeTo('estimate'); return false;" class="px-6 py-3 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                                Request an online estimate
+                            </a>
+                            <a href="tel:+17096933690" class="px-6 py-3 rounded-arch border border-spruce text-spruce text-sm font-medium hover:bg-paper transition-colors">
+                                Call (709) 693-3690
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-6 space-y-6">
+                        <figure class="bg-paper p-2.5 border border-hairline rounded-arch">
+                            <div class="aspect-[16/10] overflow-hidden bg-spruceMid">
+                                <img 
+                                    src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1400&q=85" 
+                                    onerror="this.src='https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1400&q=80'"
+                                    alt="Trimmed cedar hedges and maintained residential garden beds" 
+                                    class="w-full h-full object-cover"
+                                />
+                            </div>
+                        </figure>
+
+                        <!-- Direct Business Profile Box -->
+                        <div class="bg-paper border border-hairline rounded-arch p-6 space-y-3 text-sm">
+                            <h2 class="font-serif text-xl font-medium text-spruce">Office &amp; Dispatch Details</h2>
+                            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slateStone">
+                                <div>
+                                    <dt class="text-xs">Address</dt>
+                                    <dd class="text-spruce font-medium">59A Smallwood Dr, Mount Pearl, NL A1N 1B2</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs">Office Hours</dt>
+                                    <dd class="text-spruce font-medium">Monday – Friday, 8:00 AM – 4:00 PM</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs">Phone</dt>
+                                    <dd class="text-spruce font-medium"><a href="tel:+17096933690" class="hover:text-copper">(709) 693-3690</a></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-xs">Email</dt>
+                                    <dd class="text-spruce font-medium"><a href="mailto:1stcut709@gmail.com" class="hover:text-copper">1stcut709@gmail.com</a></dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practical Newfoundland Homeowner FAQs -->
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                    <div class="lg:col-span-4 space-y-3">
+                        <h2 class="font-serif text-3xl font-medium text-spruce">
+                            Common questions from local homeowners
+                        </h2>
+                        <p class="text-sm text-slateStone leading-relaxed">
+                            Practical answers regarding soil care, mowing schedules, online quoting, and winter snow clearing on the Avalon Peninsula.
+                        </p>
+                    </div>
+
+                    <div class="lg:col-span-8 divide-y divide-hairline border-t border-b border-hairline bg-paper rounded-arch">
+                        <div class="p-6">
+                            <button type="button" onclick="toggleFaqItem(this)" aria-expanded="true" class="w-full text-left flex items-center justify-between gap-4 font-serif text-xl font-medium text-spruce">
+                                <span>When is the best time to apply lime and fertilizer in Newfoundland?</span>
+                                <span class="faq-mark text-copper font-sans text-lg">−</span>
+                            </button>
+                            <div class="faq-answer mt-3 text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                Because coastal rainfall makes Avalon soils naturally acidic, moss tends to crowd out grass if soil pH drops too low. We apply pelletized dolomitic lime in spring after power-raking or in early autumn, followed by slow-release fertilizer once soil temperatures warm up in May.
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <button type="button" onclick="toggleFaqItem(this)" aria-expanded="false" class="w-full text-left flex items-center justify-between gap-4 font-serif text-xl font-medium text-spruce">
+                                <span>How do online estimates work if you haven't visited my yard yet?</span>
+                                <span class="faq-mark text-copper font-sans text-lg">+</span>
+                            </button>
+                            <div class="faq-answer hidden mt-3 text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                When you submit your street address and selected services on our Estimate page, we measure your turf area, driveway dimensions, and frontage using municipal parcel imagery. For straightforward lawn care, clean ups, and snow clearing, we send a written quote by email within one business day (Monday to Friday, 8:00 AM to 4:00 PM). If your project involves full sodding or heavy tree planting, we schedule a brief on-site check.
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <button type="button" onclick="toggleFaqItem(this)" aria-expanded="false" class="w-full text-left flex items-center justify-between gap-4 font-serif text-xl font-medium text-spruce">
+                                <span>Should I book weekly or bi-weekly grass cutting?</span>
+                                <span class="faq-mark text-copper font-sans text-lg">+</span>
+                            </button>
+                            <div class="faq-answer hidden mt-3 text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                During peak growth from late May through July, weekly cutting keeps grass healthy because we never remove more than one-third of the blade height at once. Bi-weekly cutting works well for shaded lots or drier stretches in August.
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <button type="button" onclick="toggleFaqItem(this)" aria-expanded="false" class="w-full text-left flex items-center justify-between gap-4 font-serif text-xl font-medium text-spruce">
+                                <span>Do you haul away leaves, branches, and hedge trimmings?</span>
+                                <span class="faq-mark text-copper font-sans text-lg">+</span>
+                            </button>
+                            <div class="faq-answer hidden mt-3 text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                Yes. All spring clean ups, autumn leaf collections, pruning, and hedge trimming include full collection and organic disposal unless you prefer yard waste bagged neatly at the curb for municipal collection.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             PAGE 6: ONLINE ESTIMATE (#/estimate)
+        ================================================================== -->
+        <section id="view-estimate" class="page-section" aria-labelledby="estimate-heading">
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-10 border-b border-hairline">
+                <nav aria-label="Breadcrumb" class="text-xs text-slateStone mb-5">
+                    <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-spruce">Home</a>
+                    <span class="mx-2">/</span>
+                    <span class="text-spruce font-medium">Online Estimate</span>
+                </nav>
+
+                <div class="max-w-3xl space-y-3">
+                    <h1 id="estimate-heading" class="font-serif text-4xl sm:text-5xl font-medium text-spruce leading-tight">
+                        Request an online estimate
+                    </h1>
+                    <p class="text-base text-slateStone leading-relaxed max-w-[62ch]">
+                        Check off the services you need and enter your property address. We review online estimate requests Monday through Friday, 8:00 AM to 4:00 PM, and reply with a clear written quote.
+                    </p>
+                </div>
+            </div>
+
+            <div class="max-w-6xl mx-auto px-5 sm:px-8 py-12">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                    <!-- Left 7 Columns: Estimate Builder Form -->
+                    <form id="estimate-builder-form" onsubmit="handleEstimateSubmit(event)" class="lg:col-span-7 bg-paper border border-hairline rounded-arch p-6 sm:p-8 space-y-8">
+                        <!-- 1. Community & Lot Size -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label for="est-municipality" class="block text-xs font-medium text-spruce mb-1.5">Municipality *</label>
+                                <select id="est-municipality" onchange="syncEstimatePreview()" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                    <option value="Mount Pearl">Mount Pearl</option>
+                                    <option value="St. John's">St. John's</option>
+                                    <option value="Paradise">Paradise</option>
+                                    <option value="Conception Bay South (CBS)">Conception Bay South (CBS)</option>
+                                    <option value="Surrounding Avalon Area">Surrounding Avalon Area</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="est-lot-type" class="block text-xs font-medium text-spruce mb-1.5">Property size *</label>
+                                <select id="est-lot-type" onchange="syncEstimatePreview()" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                    <option value="Townhouse / compact lot">Townhouse / compact lot</option>
+                                    <option value="Standard suburban lot" selected>Standard suburban lot</option>
+                                    <option value="Large corner or acreage lot">Large corner or acreage lot</option>
+                                    <option value="Commercial property">Commercial property</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 2. All 17 Services Checkboxes -->
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-medium text-spruce">Select services needed *</span>
+                                <button type="button" onclick="clearSelectedServices()" class="text-xs text-slateStone hover:text-copper underline">
+                                    Clear all
+                                </button>
+                            </div>
+
+                            <div id="estimate-checkbox-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-sm">
+                                <!-- Rendered via JS from masterServices array so all 17 services match 1:1 -->
+                            </div>
+                        </div>
+
+                        <!-- 3. Preferred Schedule -->
+                        <div>
+                            <label for="est-cadence" class="block text-xs font-medium text-spruce mb-1.5">Service frequency</label>
+                            <select id="est-cadence" onchange="syncEstimatePreview()" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                <option value="Weekly lawn care">Weekly lawn care</option>
+                                <option value="Bi-weekly lawn care">Bi-weekly lawn care</option>
+                                <option value="One-time seasonal project or clean up">One-time seasonal project or clean up</option>
+                                <option value="Winter snow clearing contract">Winter snow clearing contract</option>
+                                <option value="Year-round lawn care + winter snow">Year-round lawn care + winter snow</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. Contact & Address Fields -->
+                        <div class="pt-4 border-t border-hairline space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="est-name" class="block text-xs font-medium text-spruce mb-1.5">Your name *</label>
+                                    <input id="est-name" type="text" required oninput="syncEstimatePreview()" placeholder="Jordan Pike" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                </div>
+                                <div>
+                                    <label for="est-phone" class="block text-xs font-medium text-spruce mb-1.5">Phone number *</label>
+                                    <input id="est-phone" type="tel" required oninput="syncEstimatePreview()" placeholder="(709) 555-0192" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="est-email" class="block text-xs font-medium text-spruce mb-1.5">Email address *</label>
+                                    <input id="est-email" type="email" required oninput="syncEstimatePreview()" placeholder="jordan@example.ca" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                </div>
+                                <div>
+                                    <label for="est-address" class="block text-xs font-medium text-spruce mb-1.5">Street address (for lot measurement) *</label>
+                                    <input id="est-address" type="text" required oninput="syncEstimatePreview()" placeholder="14 Smallwood Dr, Mount Pearl" class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="est-notes" class="block text-xs font-medium text-spruce mb-1.5">Property notes (optional)</label>
+                                <textarea id="est-notes" rows="3" oninput="syncEstimatePreview()" placeholder="Backyard gate width, double driveway, cedar hedge length, or target date..." class="w-full px-3.5 py-2.5 bg-limestone border border-hairline rounded-arch text-sm text-spruce"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Submit & Copy Actions -->
+                        <div class="flex flex-wrap items-center gap-3 pt-2">
+                            <button type="submit" class="px-6 py-3.5 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                                Open pre-filled email to 1stcut709@gmail.com
+                            </button>
+                            <button type="button" onclick="copyEstimateBrief()" class="px-5 py-3.5 rounded-arch border border-spruce text-spruce text-sm font-medium hover:bg-limestone transition-colors">
+                                Copy estimate brief
+                            </button>
+                        </div>
+
+                        <!-- Status Feedback Banner -->
+                        <div id="estimate-status-msg" role="status" aria-live="polite" class="hidden p-4 rounded-arch bg-limestone border border-copper text-sm text-spruce"></div>
+                    </form>
+
+                    <!-- Right 5 Columns: Live Estimate Brief & Direct Contact -->
+                    <aside class="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
+                        <div class="bg-paper border border-hairline rounded-arch p-6 sm:p-7 space-y-5">
+                            <div class="flex items-center justify-between pb-3 border-b border-hairline">
+                                <h2 class="font-serif text-xl font-medium text-spruce">Estimate summary</h2>
+                                <span class="text-xs text-slateStone"><span id="summary-service-count">0</span> services</span>
+                            </div>
+
+                            <dl class="space-y-3 text-sm">
+                                <div class="flex justify-between gap-4">
+                                    <dt class="text-slateStone">Community</dt>
+                                    <dd id="summary-municipality" class="font-medium text-spruce text-right">Mount Pearl</dd>
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <dt class="text-slateStone">Property size</dt>
+                                    <dd id="summary-lot-type" class="font-medium text-spruce text-right">Standard suburban lot</dd>
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <dt class="text-slateStone">Schedule</dt>
+                                    <dd id="summary-cadence" class="font-medium text-spruce text-right">Weekly lawn care</dd>
+                                </div>
+                            </dl>
+
+                            <div class="pt-3 border-t border-hairline">
+                                <span class="text-xs text-slateStone block mb-2">Selected scope</span>
+                                <ul id="summary-service-list" class="space-y-1.5 text-sm text-spruce">
+                                    <li class="text-slateStone">No services checked yet.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="bg-spruce text-paper rounded-arch p-6 space-y-2.5 text-sm">
+                            <h3 class="font-serif text-lg font-medium">Prefer to call?</h3>
+                            <p class="text-paper/80 text-xs leading-relaxed">
+                                Reach our Mount Pearl office directly Monday through Friday between 8:00 AM and 4:00 PM.
+                            </p>
+                            <p class="pt-1 font-medium">
+                                <a href="tel:+17096933690" class="text-[#E0A88E] hover:underline">(709) 693-3690</a>
+                            </p>
+                            <p class="text-xs text-paper/75">
+                                59A Smallwood Dr, Mount Pearl, NL A1N 1B2
+                            </p>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =====================================================================
+         CONCISE EDITORIAL FOOTER (ZERO BLOAT, ZERO DEAD LINKS)
+    ====================================================================== -->
+    <footer class="bg-paper border-t border-hairline text-sm text-slateStone mt-auto">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pb-8 border-b border-hairline">
+                <div class="md:col-span-5 space-y-2">
+                    <div class="font-serif text-xl font-medium text-spruce">1st Cut Landscaping</div>
+                    <p>59A Smallwood Dr, Mount Pearl, NL A1N 1B2</p>
+                    <p>
+                        <a href="tel:+17096933690" class="text-spruce font-medium hover:text-copper">(709) 693-3690</a>
+                        <span class="mx-2 text-hairline">|</span>
+                        <a href="mailto:1stcut709@gmail.com" class="text-spruce font-medium hover:text-copper">1stcut709@gmail.com</a>
+                    </p>
+                    <p class="text-xs">Hours: Monday – Friday, 8:00 AM – 4:00 PM • Online estimates available</p>
+                </div>
+
+                <div class="md:col-span-4 space-y-2">
+                    <div class="text-xs font-medium text-spruce">Pages</div>
+                    <nav aria-label="Footer Navigation" class="grid grid-cols-2 gap-y-1.5 gap-x-4 text-sm">
+                        <a href="#/home" onclick="routeTo('home'); return false;" class="hover:text-copper">Home</a>
+                        <a href="#/projects" onclick="routeTo('projects'); return false;" class="hover:text-copper">Projects</a>
+                        <a href="#/services" onclick="routeTo('services'); return false;" class="hover:text-copper">Services</a>
+                        <a href="#/about" onclick="routeTo('about'); return false;" class="hover:text-copper">About</a>
+                        <a href="#/snow-clearing" onclick="routeTo('snow-clearing'); return false;" class="hover:text-copper">Snow Clearing</a>
+                        <a href="#/estimate" onclick="routeTo('estimate'); return false;" class="text-copper font-medium">Online Estimate</a>
+                    </nav>
+                </div>
+
+                <div class="md:col-span-3 space-y-2">
+                    <div class="text-xs font-medium text-spruce">Service Area</div>
+                    <p class="leading-relaxed">
+                        Mount Pearl, St. John's, Paradise, Conception Bay South, and surrounding Northeast Avalon communities.
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                <span>&copy; 2026 1st Cut Landscaping. Mount Pearl, Newfoundland and Labrador.</span>
+                <span>Lawn Care • Landscaping • Snow Removal</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- =====================================================================
+         ACCESSIBLE CASE STUDY DIALOG (PROJECTS PAGE)
+    ====================================================================== -->
+    <div id="case-study-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-project-title" class="hidden fixed inset-0 z-50 bg-spruce/75 p-4 sm:p-6 flex items-center justify-center">
+        <div class="bg-paper border border-hairline rounded-arch max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5">
+            <div class="flex items-start justify-between gap-4 border-b border-hairline pb-4">
+                <div>
+                    <span id="dialog-project-meta" class="text-xs text-copper font-medium block"></span>
+                    <h2 id="dialog-project-title" class="font-serif text-2xl sm:text-3xl font-medium text-spruce mt-1"></h2>
+                </div>
+                <button type="button" id="dialog-close-btn" onclick="closeCaseStudy()" aria-label="Close project details" class="px-3 py-1.5 border border-hairline rounded-arch text-xs font-medium text-spruce hover:bg-limestone">
+                    Close (Esc)
+                </button>
+            </div>
+            <div id="dialog-project-body" class="space-y-4 text-sm text-slateStone leading-relaxed"></div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         APPLICATION DATA, ROUTER & INTERACTIVE LOGIC
+    ====================================================================== -->
+    <script>
+        /* -------------------------------------------------------------------
+           1. COMPLETE SERVICE REGISTRY (ALL 17 SERVICES FROM BUSINESS PROFILE)
+        -------------------------------------------------------------------- */
+        const masterServices = [
+            // Turf & Lawn Care (8)
+            { name: 'Grass cutting', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'May – October', detail: 'Scheduled commercial mowing with sharp blades, string trimming along fences and foundations, and clipping blow-off from driveways and walkways.' },
+            { name: 'Lawn edging', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'May – October', detail: 'Vertical steel-blade edging along concrete sidewalks, paved driveways, and garden bed borders to establish crisp grass lines.' },
+            { name: 'Sodding', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'May – September', detail: 'Site grading, screened topsoil preparation, farm-fresh Newfoundland sod installation, seam rolling, and initial establishment watering.' },
+            { name: 'Seeding', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'Spring & Early Fall', detail: 'Bare-spot repair and full-lawn overseeding using cool-season turfgrass blends suited for coastal Avalon summers.' },
+            { name: 'Watering', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'New Installations & Dry Spells', detail: 'Scheduled root-zone watering for newly installed sod, seeded lawns, and newly planted shrubs or trees.' },
+            { name: 'Lawn liming', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'Spring & Autumn', detail: 'Pelletized dolomitic lime application to counteract acidic Newfoundland soil, reduce moss growth, and improve nutrient uptake.' },
+            { name: 'Fertilizer', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'Spring, Summer & Fall', detail: 'Calibrated slow-release granular fertilization for steady root development and late-autumn winterizer conditioning.' },
+            { name: 'Weed control', category: 'turf', categoryName: 'Turf & Lawn Care', season: 'May – September', detail: 'Targeted broadleaf weed suppression for dandelions, clover, and plantain across residential and commercial turf.' },
+
+            // Gardens, Hedges & Trees (5)
+            { name: 'Gardening', category: 'gardens', categoryName: 'Gardens, Hedges & Trees', season: 'May – October', detail: 'Perennial bed weeding, soil cultivation, seasonal border upkeep, and ongoing garden maintenance.' },
+            { name: 'Pruning', category: 'gardens', categoryName: 'Gardens, Hedges & Trees', season: 'Spring & Summer', detail: 'Selective hand pruning of ornamental shrubs, flowering bushes, and lower tree limbs for healthy structure and airflow.' },
+            { name: 'Hedging', category: 'gardens', categoryName: 'Gardens, Hedges & Trees', season: 'June – September', detail: 'Straight-line and tapered trimming of cedar and privet privacy hedges, including full clipping cleanup.' },
+            { name: 'Mulch', category: 'gardens', categoryName: 'Gardens, Hedges & Trees', season: 'May – October', detail: 'Delivery and installation of dark bark or cedar mulch at 2–3 inch depth to retain soil moisture and suppress bed weeds.' },
+            { name: 'Tree planting', category: 'gardens', categoryName: 'Gardens, Hedges & Trees', season: 'May – October', detail: 'Planting of wind-hardy ornamental and shade trees with amended backfill soil, root watering wells, and staking.' },
+
+            // Clean Ups & Winter (4)
+            { name: 'Clean ups', category: 'cleanups', categoryName: 'Clean Ups & Winter', season: 'Spring & Fall', detail: 'Full-yard seasonal recovery: winter gravel sweeping, dead branch removal, bed clearing, and organic debris haul-away.' },
+            { name: 'Raking', category: 'cleanups', categoryName: 'Clean Ups & Winter', season: 'April – May', detail: 'Spring power-raking and hand dethatching to lift matted winter grass and open the soil surface to air and water.' },
+            { name: 'Leaf collection', category: 'cleanups', categoryName: 'Clean Ups & Winter', season: 'October – November', detail: 'Thorough autumn leaf clearing across lawns, hedges, and window wells before winter freeze-up.' },
+            { name: 'Snow removal', category: 'cleanups', categoryName: 'Clean Ups & Winter', season: 'December – April', detail: 'Residential driveway snow clearing, municipal plow-ridge removal, walkway shoveling, and small commercial lot clearing.' }
+        ];
+
+        // Selected services state (shared between Services page and Online Estimate page)
+        const selectedServiceSet = new Set(['Grass cutting', 'Snow removal']);
+        let currentServiceFilter = 'all';
+
+        function renderServicesLedger() {
+            const container = document.getElementById('services-ledger');
+            if (!container) return;
+
+            const visible = currentServiceFilter === 'all'
+                ? masterServices
+                : masterServices.filter(s => s.category === currentServiceFilter);
+
+            container.innerHTML = visible.map(srv => {
+                const isAdded = selectedServiceSet.has(srv.name);
+                return `
+                    <div class="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="space-y-1.5 max-w-[62ch]">
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <h2 class="font-serif text-xl font-medium text-spruce">${srv.name}</h2>
+                                <span class="text-xs px-2 py-0.5 bg-limestone border border-hairline rounded-arch text-slateStone">
+                                    ${srv.categoryName}
+                                </span>
+                                <span class="text-xs text-slateStone">${srv.season}</span>
+                            </div>
+                            <p class="text-sm text-slateStone leading-relaxed">${srv.detail}</p>
+                        </div>
+
+                        <div class="flex-shrink-0">
+                            <button type="button" onclick="toggleServiceSelection('${srv.name}')" class="px-4 py-2 rounded-arch text-sm font-medium border transition-colors ${isAdded ? 'bg-copper text-paper border-copper' : 'bg-limestone text-spruce border-hairline hover:border-spruce'}">
+                                ${isAdded ? 'Added to estimate ✓' : '+ Add to estimate'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setServiceFilter(filterKey) {
+            currentServiceFilter = filterKey;
+            document.querySelectorAll('.srv-filter-btn').forEach(btn => {
+                const active = btn.dataset.srvFilter === filterKey;
+                btn.classList.toggle('bg-spruce', active);
+                btn.classList.toggle('text-paper', active);
+                btn.classList.toggle('border-spruce', active);
+                btn.classList.toggle('bg-paper', !active);
+                btn.classList.toggle('text-spruce', !active);
+                btn.classList.toggle('border-hairline', !active);
+            });
+            renderServicesLedger();
+        }
+
+        function toggleServiceSelection(serviceName) {
+            if (selectedServiceSet.has(serviceName)) {
+                selectedServiceSet.delete(serviceName);
+            } else {
+                selectedServiceSet.add(serviceName);
+            }
+            syncAllServiceUI();
+        }
+
+        function clearSelectedServices() {
+            selectedServiceSet.clear();
+            syncAllServiceUI();
+        }
+
+        function addServiceAndGoEstimate(serviceName, lotType = null) {
+            selectedServiceSet.add(serviceName);
+            if (lotType) {
+                const lotSelect = document.getElementById('est-lot-type');
+                if (lotSelect) lotSelect.value = lotType;
+            }
+            syncAllServiceUI();
+            routeTo('estimate');
+        }
+
+        function renderEstimateCheckboxes() {
+            const grid = document.getElementById('estimate-checkbox-grid');
+            if (!grid) return;
+
+            grid.innerHTML = masterServices.map(srv => {
+                const checked = selectedServiceSet.has(srv.name);
+                return `
+                    <label class="flex items-center gap-2.5 p-2.5 rounded-arch border cursor-pointer transition-colors ${checked ? 'bg-limestone border-spruce' : 'bg-paper border-hairline hover:border-slateStone'}">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleServiceSelection('${srv.name}')" class="accent-[#16221C] w-4 h-4">
+                        <span class="text-spruce font-medium">${srv.name}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function syncAllServiceUI() {
+            const count = selectedServiceSet.size;
+            const badge = document.getElementById('header-scope-badge');
+            if (badge) {
+                badge.textContent = count;
+                badge.classList.toggle('hidden', count === 0);
+            }
+            const srvCountEl = document.getElementById('services-page-count');
+            if (srvCountEl) srvCountEl.textContent = count;
+
+            renderServicesLedger();
+            renderEstimateCheckboxes();
+            syncEstimatePreview();
+        }
+
+        /* -------------------------------------------------------------------
+           2. HOME SEASON SWITCHER
+        -------------------------------------------------------------------- */
+        function switchHomeSeason(season) {
+            const isGrounds = season === 'grounds';
+            const tabGrounds = document.getElementById('tab-season-grounds');
+            const tabWinter = document.getElementById('tab-season-winter');
+            const panelGrounds = document.getElementById('panel-season-grounds');
+            const panelWinter = document.getElementById('panel-season-winter');
+
+            tabGrounds.setAttribute('aria-selected', String(isGrounds));
+            tabWinter.setAttribute('aria-selected', String(!isGrounds));
+
+            tabGrounds.classList.toggle('bg-spruce', isGrounds);
+            tabGrounds.classList.toggle('text-paper', isGrounds);
+            tabGrounds.classList.toggle('text-spruce', !isGrounds);
+
+            tabWinter.classList.toggle('bg-spruce', !isGrounds);
+            tabWinter.classList.toggle('text-paper', !isGrounds);
+            tabWinter.classList.toggle('text-spruce', isGrounds);
+
+            panelGrounds.classList.toggle('hidden', !isGrounds);
+            panelWinter.classList.toggle('hidden', isGrounds);
+        }
+
+        /* -------------------------------------------------------------------
+           3. PROJECTS PORTFOLIO & ACCESSIBLE MODAL
+        -------------------------------------------------------------------- */
+        const localProjects = [
+            {
+                id: 'admiralty-sod',
+                category: 'turf',
+                categoryLabel: 'Turf & Sodding',
+                location: 'Admiralty Wood, Mount Pearl',
+                title: 'Front and side lawn re-grading, liming, and fresh sod installation',
+                servicesUsed: ['Sodding', 'Lawn liming', 'Fertilizer', 'Lawn edging', 'Watering'],
+                image: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1200&q=85',
+                fallback: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+                summary: 'Removed moss-damaged turf, graded fresh screened topsoil, applied pelletized dolomitic lime, and laid new sod with steel-edged driveway borders.',
+                fieldNotes: 'Acidic soil had allowed moss to overtake the front slope. After stripping the old sod layer, we incorporated dolomitic lime into the topsoil base before rolling fresh sod and completing the first week of root-zone watering.'
+            },
+            {
+                id: 'southlands-hedging',
+                category: 'gardens',
+                categoryLabel: 'Hedging, Mulch & Trees',
+                location: 'Southlands, St. John\'s',
+                title: 'Perimeter cedar hedge shaping, bed weeding, and dark bark mulch',
+                servicesUsed: ['Hedging', 'Gardening', 'Mulch', 'Pruning'],
+                image: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1200&q=85',
+                fallback: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1200&q=80',
+                summary: 'Trimmed 110 linear feet of mature cedar hedging, cleared perennial beds, and installed 3 inches of dark bark mulch.',
+                fieldNotes: 'We shaped the cedar hedge with a slight upward taper so winter snow sheds off the sides rather than splitting upper branches. All trimmings were hauled away the same afternoon.'
+            },
+            {
+                id: 'kenmount-spring-cleanup',
+                category: 'cleanups',
+                categoryLabel: 'Seasonal Clean Ups',
+                location: 'Kenmount Terrace, St. John\'s',
+                title: 'Spring power-raking, winter grit recovery, and overseeding',
+                servicesUsed: ['Clean ups', 'Raking', 'Lawn liming', 'Seeding', 'Fertilizer'],
+                image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85',
+                fallback: 'https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&w=1200&q=80',
+                summary: 'Cleared winter sand and matted thatch in early May, balanced soil pH with lime, overseeded thin patches, and started weekly mowing.',
+                fieldNotes: 'Municipal winter sand along the front curb had smothered the boulevard grass. Power-raking lifted the dead thatch mat so overseeding could germinate cleanly by late May.'
+            },
+            {
+                id: 'paradise-tree-planting',
+                category: 'gardens',
+                categoryLabel: 'Hedging, Mulch & Trees',
+                location: 'Elizabeth Park, Paradise',
+                title: 'Wind-hardy ornamental tree planting and foundation bed edging',
+                servicesUsed: ['Tree planting', 'Mulch', 'Lawn edging', 'Watering'],
+                image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=85',
+                fallback: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1200&q=80',
+                summary: 'Planted four hardy ornamental trees along an exposed side yard, cut new spade bed edges, and finished with cedar mulch.',
+                fieldNotes: 'Because Paradise subdivisions experience steady westerly gusts, each tree was staked with wide soft ties and mulched in a wide ring to protect shallow roots.'
+            },
+            {
+                id: 'smallwood-winter-snow',
+                category: 'winter',
+                categoryLabel: 'Winter Snow',
+                location: 'Mount Pearl & East End St. John\'s',
+                title: 'Double paved driveway snow removal and city plow-ridge clearing',
+                servicesUsed: ['Snow removal'],
+                image: 'https://images.unsplash.com/photo-1516912481808-3406841bd33c?auto=format&fit=crop&w=1200&q=85',
+                fallback: 'https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=1200&q=80',
+                summary: 'Full-season snow clearing for residential driveways and front steps, including return visits after municipal plows pass.',
+                fieldNotes: 'Boundary stakes installed in November keep blade passes aligned with interlocking driveway borders throughout heavy January and February snowfalls.'
+            }
+        ];
+
+        let currentProjectFilter = 'all';
+        let lastFocusedTrigger = null;
+
+        function renderProjectsList() {
+            const container = document.getElementById('projects-list');
+            if (!container) return;
+
+            const list = currentProjectFilter === 'all'
+                ? localProjects
+                : localProjects.filter(p => p.category === currentProjectFilter);
+
+            container.innerHTML = list.map((proj, idx) => {
+                const isEven = idx % 2 === 1;
+                return `
+                    <article class="bg-paper border border-hairline rounded-arch p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        <div class="lg:col-span-5 ${isEven ? 'lg:order-2' : ''}">
+                            <div class="aspect-[16/10] overflow-hidden bg-spruceMid border border-hairline rounded-arch">
+                                <img src="${proj.image}" onerror="this.src='${proj.fallback}'" alt="${proj.title}" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-7 space-y-4 ${isEven ? 'lg:order-1' : ''}">
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span class="font-medium text-copper">${proj.location}</span>
+                                <span class="text-hairline">|</span>
+                                <span class="text-slateStone">${proj.categoryLabel}</span>
+                            </div>
+
+                            <h2 class="font-serif text-2xl sm:text-3xl font-medium text-spruce leading-snug">
+                                ${proj.title}
+                            </h2>
+
+                            <p class="text-sm text-slateStone leading-relaxed max-w-[62ch]">
+                                ${proj.summary}
+                            </p>
+
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                ${proj.servicesUsed.map(s => `
+                                    <span class="px-2.5 py-1 bg-limestone border border-hairline rounded-arch text-xs text-spruce">${s}</span>
+                                `).join('')}
+                            </div>
+
+                            <div class="pt-2 flex flex-wrap items-center gap-4">
+                                <button type="button" onclick="openCaseStudy('${proj.id}', this)" class="px-4 py-2 rounded-arch border border-spruce text-spruce text-sm font-medium hover:bg-spruce hover:text-paper transition-colors">
+                                    Read field notes
+                                </button>
+                                <button type="button" onclick="loadProjectServicesToEstimate('${proj.id}')" class="text-sm font-medium text-copper hover:text-copperDark underline underline-offset-4">
+                                    Add these services to estimate &rarr;
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function setProjectFilter(filterKey) {
+            currentProjectFilter = filterKey;
+            document.querySelectorAll('.proj-filter-btn').forEach(btn => {
+                const active = btn.dataset.projFilter === filterKey;
+                btn.classList.toggle('bg-spruce', active);
+                btn.classList.toggle('text-paper', active);
+                btn.classList.toggle('border-spruce', active);
+                btn.classList.toggle('bg-paper', !active);
+                btn.classList.toggle('text-spruce', !active);
+                btn.classList.toggle('border-hairline', !active);
+            });
+            renderProjectsList();
+        }
+
+        function loadProjectServicesToEstimate(projectId) {
+            const proj = localProjects.find(p => p.id === projectId);
+            if (!proj) return;
+            proj.servicesUsed.forEach(s => selectedServiceSet.add(s));
+            syncAllServiceUI();
+            routeTo('estimate');
+        }
+
+        function openCaseStudy(projectId, triggerEl) {
+            const proj = localProjects.find(p => p.id === projectId);
+            if (!proj) return;
+            lastFocusedTrigger = triggerEl || document.activeElement;
+
+            document.getElementById('dialog-project-meta').textContent = `${proj.location} — ${proj.categoryLabel}`;
+            document.getElementById('dialog-project-title').textContent = proj.title;
+            document.getElementById('dialog-project-body').innerHTML = `
+                <div class="aspect-[16/9] overflow-hidden border border-hairline rounded-arch bg-spruceMid">
+                    <img src="${proj.image}" onerror="this.src='${proj.fallback}'" alt="${proj.title}" class="w-full h-full object-cover">
+                </div>
+                <p><strong class="text-spruce font-medium">Summary:</strong> ${proj.summary}</p>
+                <p><strong class="text-spruce font-medium">Field Execution Notes:</strong> ${proj.fieldNotes}</p>
+                <div class="pt-2">
+                    <button type="button" onclick="closeCaseStudy(); loadProjectServicesToEstimate('${proj.id}');" class="px-5 py-2.5 rounded-arch bg-spruce text-paper text-sm font-medium hover:bg-copper transition-colors">
+                        Request an estimate with these services &rarr;
+                    </button>
+                </div>
+            `;
+
+            const dialog = document.getElementById('case-study-dialog');
+            dialog.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            document.getElementById('dialog-close-btn').focus();
+        }
+
+        function closeCaseStudy() {
+            const dialog = document.getElementById('case-study-dialog');
+            if (dialog.classList.contains('hidden')) return;
+            dialog.classList.add('hidden');
+            document.body.style.overflow = '';
+            if (lastFocusedTrigger && typeof lastFocusedTrigger.focus === 'function') {
+                lastFocusedTrigger.focus();
+            }
+        }
+
+        document.getElementById('case-study-dialog').addEventListener('click', (e) => {
+            if (e.target.id === 'case-study-dialog') {
+                closeCaseStudy();
+            }
+        });
+
+        /* -------------------------------------------------------------------
+           4. ONLINE ESTIMATE LIVE SUMMARY, MAILTO & CLIPBOARD COPY
+        -------------------------------------------------------------------- */
+        function buildFormattedEstimateText() {
+            const municipality = document.getElementById('est-municipality')?.value || 'Mount Pearl';
+            const lotType = document.getElementById('est-lot-type')?.value || 'Standard suburban lot';
+            const cadence = document.getElementById('est-cadence')?.value || 'Weekly lawn care';
+            const name = document.getElementById('est-name')?.value.trim() || '(Not entered)';
+            const phone = document.getElementById('est-phone')?.value.trim() || '(Not entered)';
+            const email = document.getElementById('est-email')?.value.trim() || '(Not entered)';
+            const address = document.getElementById('est-address')?.value.trim() || '(Not entered)';
+            const notes = document.getElementById('est-notes')?.value.trim() || 'None';
+            const services = selectedServiceSet.size > 0
+                ? Array.from(selectedServiceSet).join(', ')
+                : 'General property estimate';
+
+            return [
+                '1st Cut Landscaping — Online Estimate Request',
+                '----------------------------------------------',
+                `Name: ${name}`,
+                `Phone: ${phone}`,
+                `Email: ${email}`,
+                `Community: ${municipality}`,
+                `Street Address: ${address}`,
+                `Property Size: ${lotType}`,
+                `Frequency: ${cadence}`,
+                `Services Requested: ${services}`,
+                `Notes: ${notes}`
+            ].join('\n');
+        }
+
+        function syncEstimatePreview() {
+            const mun = document.getElementById('est-municipality');
+            const lot = document.getElementById('est-lot-type');
+            const cad = document.getElementById('est-cadence');
+            if (!mun || !lot || !cad) return;
+
+            document.getElementById('summary-municipality').textContent = mun.value;
+            document.getElementById('summary-lot-type').textContent = lot.value;
+            document.getElementById('summary-cadence').textContent = cad.value;
+            document.getElementById('summary-service-count').textContent = selectedServiceSet.size;
+
+            const listEl = document.getElementById('summary-service-list');
+            if (selectedServiceSet.size === 0) {
+                listEl.innerHTML = '<li class="text-slateStone">No services checked yet.</li>';
+            } else {
+                listEl.innerHTML = Array.from(selectedServiceSet).map(name => `
+                    <li class="flex items-center justify-between gap-2">
+                        <span>${name}</span>
+                        <button type="button" onclick="toggleServiceSelection('${name}')" class="text-xs text-slateStone hover:text-copper">Remove</button>
+                    </li>
+                `).join('');
+            }
+        }
+
+        function handleEstimateSubmit(e) {
+            e.preventDefault();
+            const statusEl = document.getElementById('estimate-status-msg');
+            if (selectedServiceSet.size === 0) {
+                statusEl.textContent = 'Please check at least one service above before sending your estimate request.';
+                statusEl.classList.remove('hidden');
+                return;
+            }
+
+            const name = document.getElementById('est-name').value.trim();
+            const municipality = document.getElementById('est-municipality').value;
+            const brief = buildFormattedEstimateText();
+            const subject = encodeURIComponent(`Online Estimate Request — ${name} (${municipality})`);
+            const body = encodeURIComponent(brief);
+
+            statusEl.innerHTML = `Your estimate brief is formatted and opening in your email client addressed to <strong>1stcut709@gmail.com</strong>. You can also call <strong>(709) 693-3690</strong> Monday–Friday, 8:00 AM–4:00 PM.`;
+            statusEl.classList.remove('hidden');
+
+            window.location.href = `mailto:1stcut709@gmail.com?subject=${subject}&body=${body}`;
+        }
+
+        function copyEstimateBrief() {
+            const brief = buildFormattedEstimateText();
+            const statusEl = document.getElementById('estimate-status-msg');
+            const textarea = document.createElement('textarea');
+            textarea.value = brief;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                statusEl.textContent = 'Estimate brief copied to your clipboard. You can paste it directly into an email to 1stcut709@gmail.com.';
+            } catch (err) {
+                statusEl.textContent = 'Unable to copy automatically. Please email 1stcut709@gmail.com or call (709) 693-3690.';
+            }
+            document.body.removeChild(textarea);
+            statusEl.classList.remove('hidden');
+        }
+
+        /* -------------------------------------------------------------------
+           5. FAQ ACCORDION & MOBILE DRAWER
+        -------------------------------------------------------------------- */
+        function toggleFaqItem(btn) {
+            const expanded = btn.getAttribute('aria-expanded') === 'true';
+            btn.setAttribute('aria-expanded', String(!expanded));
+            btn.nextElementSibling.classList.toggle('hidden', expanded);
+            btn.querySelector('.faq-mark').textContent = expanded ? '+' : '−';
+        }
+
+        function toggleDrawer(forceState) {
+            const drawer = document.getElementById('mobile-drawer');
+            const btn = document.getElementById('mobile-menu-btn');
+            const shouldOpen = typeof forceState === 'boolean' ? forceState : drawer.classList.contains('hidden');
+            drawer.classList.toggle('hidden', !shouldOpen);
+            btn.setAttribute('aria-expanded', String(shouldOpen));
+        }
+
+        /* -------------------------------------------------------------------
+           6. 6-PAGE HASH ROUTER & DYNAMIC PAGE TITLES
+        -------------------------------------------------------------------- */
+        const routes = {
+            'home': '1st Cut Landscaping — Mount Pearl & St. John\'s Lawn Care & Snow Removal',
+            'services': 'Services — 1st Cut Landscaping (Mount Pearl & St. John\'s, NL)',
+            'snow-clearing': 'Winter Snow Clearing — 1st Cut Landscaping (Mount Pearl & St. John\'s, NL)',
+            'projects': 'Projects & Field Notes — 1st Cut Landscaping',
+            'about': 'About — 1st Cut Landscaping (59A Smallwood Dr, Mount Pearl, NL)',
+            'estimate': 'Online Estimate — 1st Cut Landscaping'
+        };
+
+        function routeTo(pageKey, pushHistory = true) {
+            const target = routes[pageKey] ? pageKey : 'home';
+
+            document.querySelectorAll('.page-section').forEach(sec => {
+                sec.classList.toggle('is-active', sec.id === `view-${target}`);
+            });
+
+            document.querySelectorAll('[data-route]').forEach(link => {
+                link.classList.toggle('is-current', link.dataset.route === target);
+            });
+
+            document.title = routes[target];
+
+            if (pushHistory) {
+                const nextHash = `#/${target}`;
+                if (window.location.hash !== nextHash) {
+                    window.history.pushState({ page: target }, '', nextHash);
+                }
+            }
+
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+
+        function syncRouteFromHash() {
+            const cleaned = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+            const pageKey = routes[cleaned] ? cleaned : 'home';
+            if (!window.location.hash) {
+                window.history.replaceState({ page: 'home' }, '', '#/home');
+            }
+            routeTo(pageKey, false);
+        }
+
+        window.addEventListener('hashchange', syncRouteFromHash);
+        window.addEventListener('popstate', syncRouteFromHash);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCaseStudy();
+                toggleDrawer(false);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            syncAllServiceUI();
+            renderProjectsList();
+            syncRouteFromHash();
+        });
+    </script>
+</body>
+</html>
