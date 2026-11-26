@@ -271,6 +271,7 @@ export default function RemindersPage() {
           <button type="button" className="btn-mini" onClick={() => setTaskModal(r)} title="Edit task">
             <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
           </button>
+          <span className="task-row-done-slot">
           {futureOccurrence && !flash ? (
             <button type="button" className="btn-mini" disabled={busy} onClick={() => handleComplete(r, { early: true })} title={`Complete the ${formatDisplayDate(r.next)} occurrence ahead of time`}>
               {busy
@@ -286,6 +287,7 @@ export default function RemindersPage() {
                   : "Done"}
             </button>
           )}
+          </span>
           <button type="button" className="icon-x sm" onClick={() => handleDelete(r.id)} aria-label={`Delete ${r.name}`}>
             <i className="fa-solid fa-xmark" aria-hidden="true" />
           </button>

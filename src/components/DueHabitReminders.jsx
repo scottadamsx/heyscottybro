@@ -35,10 +35,13 @@ export default function DueHabitReminders({ rows, missedRows = [], busyId, onDon
                 Missed it
               </button>
             )}
-            <button type="button" className="btn-sm btn-complete" disabled={Boolean(busyId)} aria-busy={busyId === tracker.id || undefined}
-              aria-label={`Mark ${tracker.name} done today`} onClick={() => onDone(tracker)}>
-              {busyId === tracker.id ? "Saving…" : "Done"}
-            </button>
+            <span className="task-row-done-slot">
+              <button type="button" className="btn-sm btn-complete" disabled={Boolean(busyId)} aria-busy={busyId === tracker.id || undefined}
+                aria-label={`Mark ${tracker.name} done today`} onClick={() => onDone(tracker)}>
+                {busyId === tracker.id ? "Saving…" : "Done"}
+              </button>
+            </span>
+            <span className="task-row-x-slot" aria-hidden="true" />
           </div>
         </div>
       ))}

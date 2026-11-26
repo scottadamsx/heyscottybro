@@ -141,6 +141,12 @@
   border-radius: var(--radius-full); vertical-align: 1px;
 }
 .task-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
+/* Done / Do early always occupies the same fixed column on every row, so the
+   completion buttons line up down the list no matter which secondary buttons
+   a row carries. Habit rows reserve the delete-button slot as a spacer. */
+.task-row-done-slot { flex: 0 0 108px; display: flex; }
+.task-row-done-slot > button { flex: 1; justify-content: center; }
+.task-row-x-slot { flex: 0 0 28px; }
 .task-row.is-done .task-row-title { color: var(--text-secondary); text-decoration: line-through; }
 /* BUG-102: the brief solid done state after a completion saves, so one click
    is visibly enough. */
