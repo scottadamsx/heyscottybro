@@ -114,3 +114,9 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 - Lazy-load recovery, HTML-response diagnostics, service-worker navigation fallback, and generated screenshot storage keys now have deterministic regressions.
 - Agent tool calls now save accepted turns and balanced per-action checkpoints before further side effects, refresh account authorization before every model request, and keep successful replies visible when only terminal persistence needs retry.
 - Generic Frodo memory demonstrations now avoid volunteering access, location, health, financial, relationship, identity, legal, and private-schedule details.
+
+## 2026-11-26
+
+### Changed
+
+- Tasks & reminders is grouped by when work lands: "Due today" holds today's habits and today's tasks together, and "Coming up" holds everything dated later. Habit rows carry a small "Habit" tag so they never read as tasks.

@@ -7,8 +7,8 @@ import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../contexts/ToastContext";
 import { loadAccountability, logHabitDone, logHabitMissed, unlogHabitMissed } from "../../api/accountabilityApi";
-import { dueHabits, missedHabits } from "../../utils/habitSchedule";
-import DueHabitReminders from "../../components/DueHabitReminders";
+import { dueHabits, missedHabits, nextHabitDueDate } from "../../utils/habitSchedule";
+import DueHabitReminders, { UpcomingHabitRow } from "../../components/DueHabitReminders";
 import RescheduleSheet from "../../components/RescheduleSheet";
 import { ShowMore } from "../../components/ui";
 import { usePaged } from "../../hooks/usePaged";
@@ -81,6 +81,16 @@ export default function RemindersPage() {
 
   const habitRows = useMemo(() => habits ? dueHabits(habits, todayStr) : [], [habits, todayStr]);
   const missedRows = useMemo(() => habits ? missedHabits(habits, todayStr) : [], [habits, todayStr]);
+  // Habits not due today, with their next cadence day, for "Coming up".
+  const upcomingHabits = useMemo(() => {
+    if (!habits) return [];
+    const settled = new Set([...habitRows, ...missedRows].map((r) => r.tracker.id));
+    return (habits.trackers || [])
+      .filter((t) => !settled.has(t.id))
+      .map((tracker) => ({ tracker, next: nextHabitDueDate(habits, tracker, todayStr) }))
+      .filter((r) => r.next && r.next > todayStr)
+      .sort((a, b) => a.next.localeCompare(b.next) || (a.tracker.name || "").localeCompare(b.tracker.name || ""));
+  }, [habits, habitRows, missedRows, todayStr]);
   // "Missed it": cross today's habit out (not done, no streak) and undo it.
   const setHabitMissed = async (tracker, missed) => {
     if (habitSaving) return;
@@ -117,6 +127,18 @@ export default function RemindersPage() {
     .map((r) => ({ ...r, next: nextOccurrence(r, todayStr) }))
     .sort((a, b) => String(a.next || a.date).localeCompare(String(b.next || b.date))), [filtered, todayStr]);
   const noDate = useMemo(() => filtered.filter((r) => !r.completed && !r.date), [filtered]);
+  // The list is grouped by when work lands, not by kind: "Due today" holds
+  // today's (and overdue) tasks beside today's habits, "Coming up" holds
+  // everything dated later, habits and tasks interleaved by date.
+  const dueTodayTasks = useMemo(() => active.filter((r) => (r.next || r.date) <= todayStr), [active, todayStr]);
+  const comingUpTasks = useMemo(() => active.filter((r) => (r.next || r.date) > todayStr), [active, todayStr]);
+  const showHabits = filter === "all" && !loadErrors.some((error) => error.startsWith("habits ("));
+  const habitsPending = showHabits && !habits;
+  const dueTodayCount = (showHabits && habits ? habitRows.length + missedRows.length : 0) + dueTodayTasks.length;
+  const comingUp = useMemo(() => [
+    ...comingUpTasks.map((r) => ({ kind: "task", date: r.next || r.date, task: r })),
+    ...(showHabits ? upcomingHabits.map((r) => ({ kind: "habit", date: r.next, habit: r })) : []),
+  ].sort((a, b) => a.date.localeCompare(b.date)), [comingUpTasks, upcomingHabits, showHabits]);
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
   const donePage = usePaged(completed, 30, filter);
 
@@ -315,16 +337,35 @@ export default function RemindersPage() {
 
       <div className="tasks-layout">
         <div className="tasks-list">
-          {filter === "all" && !loadErrors.some((error) => error.startsWith("habits (")) && (habits
-            ? <DueHabitReminders rows={habitRows} missedRows={missedRows} busyId={habitSaving} onDone={completeHabit}
-                onMiss={(t) => setHabitMissed(t, true)} onUnmiss={(t) => setHabitMissed(t, false)}
-                onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
-            : <SkeletonList rows={2} label="Loading due habits" />)}
           {!loaded ? <PageSkeleton variant="tasks" label="Loading tasks" header={false} page={false} /> : (<>
-          <section className="db-card" aria-label="Active tasks">
-            <div className="db-card-header"><h3 className="db-card-title">Active ({active.length})</h3></div>
-            {active.length === 0 && <p className="no-entries">No active tasks. All clear.</p>}
-            {active.length > 0 && <div className="db-list task-list">{active.map(renderTask)}</div>}
+          <section className="db-card" aria-label="Due today">
+            <div className="db-card-header"><h3 className="db-card-title">Due today{habitsPending ? "" : ` (${dueTodayCount})`}</h3></div>
+            {habitsPending && <SkeletonList rows={2} label="Loading due habits" />}
+            {!habitsPending && dueTodayCount === 0 && <p className="no-entries">Nothing due today. All clear.</p>}
+            {dueTodayCount > 0 && (
+              <div className="db-list task-list">
+                {showHabits && habits && (
+                  <DueHabitReminders rows={habitRows} missedRows={missedRows} busyId={habitSaving} onDone={completeHabit}
+                    onMiss={(t) => setHabitMissed(t, true)} onUnmiss={(t) => setHabitMissed(t, false)}
+                    onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />
+                )}
+                {dueTodayTasks.map(renderTask)}
+              </div>
+            )}
+          </section>
+
+          <section className="db-card" aria-label="Coming up">
+            <div className="db-card-header"><h3 className="db-card-title">Coming up ({comingUp.length})</h3></div>
+            {comingUp.length === 0 && <p className="no-entries">Nothing coming up.</p>}
+            {comingUp.length > 0 && (
+              <div className="db-list task-list">
+                {comingUp.map((item) => item.kind === "task"
+                  ? renderTask(item.task)
+                  : <UpcomingHabitRow key={`habit-${item.habit.tracker.id}`} tracker={item.habit.tracker}
+                      label={`Due ${formatDisplayDate(item.habit.next)}`}
+                      onEdit={(id) => navigate(`/admin/life?tab=habits&id=${encodeURIComponent(id)}`)} />)}
+              </div>
+            )}
           </section>
 
           <section className="db-card" aria-label="Tasks with no due date">
