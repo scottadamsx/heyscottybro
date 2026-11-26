@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loadDocLinks, attachDoc, attachFile, detachDoc, setDocRead } from "../../api/docLinksApi";
+import { loadDocLinks, attachDoc, attachExistingDocument, attachFile, detachDoc, setDocRead } from "../../api/docLinksApi";
 import DocumentViewer from "../documents/DocumentViewer";
 import { loadBrain } from "../../api/brainApi";
+import { loadDocuments } from "../../api/documentsApi";
 import { useToast } from "../../contexts/ToastContext";
 import "./doclinks.css";
 import { SkeletonList } from "../Skeleton";
@@ -35,6 +36,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   const [open, setOpen] = useState(!compact);
   const [picking, setPicking] = useState(false);
   const [nodes, setNodes] = useState(null); // brain nodes for the picker (lazy)
+  const [docs, setDocs] = useState(null); // vault documents for the picker (lazy)
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [viewing, setViewing] = useState(null); // file doc open in the viewer modal
@@ -80,6 +82,10 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       try { const b = await loadBrain(); setNodes(b.nodes || []); }
       catch { setNodes([]); }
     }
+    if (docs === null) {
+      try { setDocs(await loadDocuments()); }
+      catch { setDocs([]); }
+    }
   }
 
   const linkedSlugs = useMemo(() => new Set(links.map((l) => l.node_slug)), [links]);
@@ -90,6 +96,17 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
       .filter((n) => !q || n.title?.toLowerCase().includes(q) || n.slug?.toLowerCase().includes(q))
       .slice(0, 30);
   }, [nodes, query, linkedSlugs]);
+
+  // The picker must see the vault too: a document filed in Documents is
+  // linkable here directly, with no re-upload and no duplicate.
+  const linkedDocIds = useMemo(() => new Set(links.map((l) => l.document_id).filter(Boolean)), [links]);
+  const docCandidates = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (docs || [])
+      .filter((d) => !linkedDocIds.has(d.id))
+      .filter((d) => !q || d.name?.toLowerCase().includes(q))
+      .slice(0, 30);
+  }, [docs, query, linkedDocIds]);
 
   // Files: drop, paste, or pick. Uploaded as Documents and linked here.
   const [dragOver, setDragOver] = useState(false);
@@ -118,6 +135,14 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
   async function attach(slug) {
     try {
       await attachDoc(entityType, entityId, slug);
+      setPicking(false);
+      refresh();
+    } catch (e) { addToast(e.message || "Could not attach", "error"); }
+  }
+
+  async function attachDocument(doc) {
+    try {
+      await attachExistingDocument(entityType, entityId, doc);
       setPicking(false);
       refresh();
     } catch (e) { addToast(e.message || "Could not attach", "error"); }
@@ -179,7 +204,7 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
               <button type="button" className="btn-secondary-sm" onClick={refresh}>Retry</button>
             </div>
           )}
-          {!loading && !loadError && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a Brain note.</p>}
+          {!loading && !loadError && links.length === 0 && uploading === 0 && <p className="no-entries doclinks-empty">No documents linked yet. Drop a screenshot here, paste one, or attach a document.</p>}
           {uploading > 0 && <p className="no-entries doclinks-empty"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Uploading {uploading} file{uploading === 1 ? "" : "s"}…</p>}
 
           {links.map((l) => (
@@ -215,10 +240,18 @@ export default function DocLinks({ entityType, entityId, title = "Linked documen
             <span className="doclinks-hint">or drop / paste a screenshot</span>
             {picking && (
               <div className="doclinks-picker">
-                <input autoFocus aria-label="Search your Brain" placeholder="Search your Brain…" value={query} onChange={(e) => setQuery(e.target.value)} />
+                <input autoFocus aria-label="Search documents and notes" placeholder="Search documents and notes…" value={query} onChange={(e) => setQuery(e.target.value)} />
                 <div className="doclinks-picker-list">
-                  {nodes === null && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading Brain…</p>}
-                  {nodes !== null && candidates.length === 0 && <p className="no-entries">No matching documents.</p>}
+                  {(nodes === null || docs === null) && <p className="no-entries"><i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Loading…</p>}
+                  {nodes !== null && docs !== null && candidates.length === 0 && docCandidates.length === 0 && <p className="no-entries">No matching documents.</p>}
+                  {docCandidates.length > 0 && candidates.length > 0 && <p className="doclinks-group">Documents</p>}
+                  {docCandidates.map((d) => (
+                    <button type="button" key={d.id} className="doclinks-cand" onClick={() => attachDocument(d)}>
+                      <i className={`fa-solid ${icon(d.mime_type?.startsWith("image/") ? "image" : "file")}`} aria-hidden="true" />
+                      <span className="doclinks-name">{d.name}</span>
+                    </button>
+                  ))}
+                  {docCandidates.length > 0 && candidates.length > 0 && <p className="doclinks-group">Brain notes</p>}
                   {candidates.map((n) => (
                     <button type="button" key={n.slug} className="doclinks-cand" onClick={() => attach(n.slug)}>
                       <i className={`fa-solid ${icon(n.type)}`} aria-hidden="true" />

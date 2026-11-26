@@ -145,6 +145,31 @@ export async function attachDoc(entityType, entityId, nodeSlug) {
   return data;
 }
 
+/**
+ * Link an EXISTING vault Document to a host item (no re-upload, so no
+ * duplicate document). Idempotent: returns the existing link when the
+ * document is already linked to this host.
+ */
+export async function attachExistingDocument(entityType, entityId, document) {
+  const userId = await uid();
+  const { data: existing, error: findErr } = await supabase
+    .from("doc_links")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("entity_type", entityType)
+    .eq("entity_id", asId(entityId))
+    .eq("document_id", document.id)
+    .maybeSingle();
+  if (findErr) throw findErr;
+  if (existing) return { ...existing, node_title: document.name, node_type: document.mime_type?.startsWith("image/") ? "image" : "file", document };
+  const { data, error } = await supabase
+    .from("doc_links")
+    .insert({ user_id: userId, entity_type: entityType, entity_id: asId(entityId), document_id: document.id })
+    .select().single();
+  if (error) throw error;
+  return { ...data, node_title: document.name, node_type: document.mime_type?.startsWith("image/") ? "image" : "file", document };
+}
+
 export async function detachDoc(id) {
   const { error } = await supabase.from("doc_links").delete().eq("id", id);
   if (error) throw error;
