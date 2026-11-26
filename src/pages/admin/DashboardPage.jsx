@@ -18,6 +18,7 @@ import { canReschedule, dayBlocks, hasEnded, missedToday, overdueReminders, plan
 import { useToast } from "../../contexts/ToastContext";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
+import { WeightTodayCard, HabitWeekCard } from "../../components/TodayWidgets";
 import StorageUsage from "../../components/StorageUsage";
 import { Stagger, Item } from "../../components/motion/Stagger";
 import { memoLast } from "../../utils/memoLast";
@@ -457,6 +458,14 @@ export default function DashboardPage() {
             <span className="space-cta-go" aria-hidden="true"><i className="fa-solid fa-chevron-right" /></span>
           </Link>
         </div>
+      </Item>
+
+      <Item className="today-section today-dashboard-weight">
+        <WeightTodayCard />
+      </Item>
+
+      <Item className="today-section today-dashboard-habitweek">
+        <HabitWeekCard />
       </Item>
 
       </div>
