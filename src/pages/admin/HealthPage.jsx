@@ -669,6 +669,17 @@ export function SleepTab({ sleep, sleepError, onLog, onEdit, onDelete }) {
             )}
           </section>
           <section className="db-card">
+            <div className="db-card-header"><h3 className="db-card-title">Trend</h3><span className="db-card-count">last 14 nights</span></div>
+            {sleep.filter((e) => Number(e.durationMinutes) > 0).length >= 2 ? (
+              <LineChart zeroBased={false} ariaLabel="Sleep duration per night" height={180}
+                format={(v) => formatSleepDuration(v)}
+                data={sleep.slice(0, 14).filter((e) => Number(e.durationMinutes) > 0).reverse()
+                  .map((e) => ({ key: e.date, label: shortDay(e.date), title: formatDisplayDate(e.date), value: e.durationMinutes }))} />
+            ) : (
+              <p className="no-entries">Log one more night to see your trend.</p>
+            )}
+          </section>
+          <section className="db-card">
             <div className="db-card-header"><h3 className="db-card-title">Nights</h3><span className="db-card-count">{sleep.length}</span></div>
             {sleep.length === 0 ? <p className="no-entries">No sleep logged yet.</p> : (
               <div className="db-list">

@@ -18,7 +18,7 @@ import { canReschedule, dayBlocks, hasEnded, missedToday, overdueReminders, plan
 import { useToast } from "../../contexts/ToastContext";
 import ConnectionStatus from "../../components/ConnectionStatus";
 import AccountabilitySummary from "../../components/AccountabilitySummary";
-import { WeightTodayCard, HabitWeekCard } from "../../components/TodayWidgets";
+import { WeightTodayCard, HabitWeekCard, SleepTodayCard } from "../../components/TodayWidgets";
 import StorageUsage from "../../components/StorageUsage";
 import { Stagger, Item } from "../../components/motion/Stagger";
 import { memoLast } from "../../utils/memoLast";
@@ -462,6 +462,10 @@ export default function DashboardPage() {
 
       <Item className="today-section today-dashboard-weight">
         <WeightTodayCard />
+      </Item>
+
+      <Item className="today-section today-dashboard-sleep">
+        <SleepTodayCard />
       </Item>
 
       <Item className="today-section today-dashboard-habitweek">

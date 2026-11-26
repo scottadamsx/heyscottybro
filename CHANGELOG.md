@@ -120,3 +120,12 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 ### Changed
 
 - Tasks & reminders is grouped by when work lands: "Due today" holds today's habits and today's tasks together, and "Coming up" holds everything dated later. Habit rows carry a small "Habit" tag so they never read as tasks.
+
+### Added
+
+- Sleep shows as a line chart: a Sleep card on the Today page (last night plus the last 14 nights) and a Trend chart on the Sleep tab.
+
+### Fixed
+
+- The "Attach document" picker on tasks and other items now searches your Documents as well as Brain notes, so a filed document can be linked where it belongs.
+- Done buttons on Tasks & reminders line up in one column on every row.

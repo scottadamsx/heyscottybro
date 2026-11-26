@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LineChart from "./ui/LineChart";
 import { SkeletonCard, SkeletonList } from "./Skeleton";
-import { loadProfile, loadWeights } from "../api/healthApi";
+import { loadProfile, loadWeights, loadSleep } from "../api/healthApi";
+import { formatSleepDuration } from "../utils/sleep";
 import { loadAccountability } from "../api/accountabilityApi";
 import { onDataChange } from "../utils/dataEvents";
 import { formatDisplayDate, toDateStr } from "../utils/plannerUtils";
@@ -72,6 +73,66 @@ export function WeightTodayCard() {
             />
           ) : (
             <p className="no-entries">Log one more weigh-in to see your trend.</p>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+// ── Sleep: last night's duration as headline, last 14 nights as a line ──────
+
+export function SleepTodayCard() {
+  const [state, setState] = useState({ status: "loading", entries: [], error: null });
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  const load = useCallback(async () => {
+    try {
+      const profile = await loadProfile();
+      const entries = await loadSleep(profile.id);
+      if (mounted.current) setState({ status: "ready", entries, error: null });
+    } catch (err) {
+      if (mounted.current) setState((s) => ({ ...s, status: "error", error: err?.message || "Couldn't load your sleep log." }));
+    }
+  }, []);
+  useEffect(() => { load(); return onDataChange("health", load); }, [load]);
+
+  const { entries } = state;
+  const latest = entries[0] || null;
+  const chart = entries.slice(0, 14).filter((e) => Number(e.durationMinutes) > 0).reverse();
+
+  return (
+    <>
+      <div className="section-head">
+        <h2 className="section-title">Sleep</h2>
+        <span className="section-meta">Goal 8h a night</span>
+        <Link to="/admin/health?tab=sleep" className="link-more">Sleep <i className="fa-solid fa-chevron-right" aria-hidden="true" /></Link>
+      </div>
+      {state.status === "loading" ? (
+        <SkeletonCard lines={3} heading={false} />
+      ) : state.status === "error" ? (
+        <div className="load-error" role="alert">
+          <p className="load-error-msg">{state.error}</p>
+          <button type="button" className="btn-sm" onClick={load}>Retry</button>
+        </div>
+      ) : !latest ? (
+        <p className="no-entries">No sleep logged yet. <Link to="/admin/health?tab=sleep">Log last night</Link> and the trend shows up here.</p>
+      ) : (
+        <>
+          <div className="today-weight-headline">
+            <span className="today-weight-value">{formatSleepDuration(latest.durationMinutes)}</span>
+            <span className="today-weight-date">{formatDisplayDate(latest.date)}</span>
+          </div>
+          {chart.length >= 2 ? (
+            <LineChart
+              zeroBased={false}
+              ariaLabel="Sleep duration per night"
+              format={(v) => formatSleepDuration(v)}
+              data={chart.map((e) => ({ key: e.date, label: dayLabel(e.date), title: formatDisplayDate(e.date), value: e.durationMinutes }))}
+            />
+          ) : (
+            <p className="no-entries">Log one more night to see your trend.</p>
           )}
         </>
       )}
