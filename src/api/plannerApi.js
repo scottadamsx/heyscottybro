@@ -13,7 +13,7 @@ import { isNetworkError } from "../utils/networkError";
 import { cachedRead, invalidateReads } from "./_cache";
 import { supabase, getAuthHeaders } from "../utils/supabase";
 import { local } from "../utils/localStore";
-import { toDateStr, nextOccurrence } from "../utils/plannerUtils";
+import { toDateStr, nextOccurrence, isEarlyCompletion, formatDisplayDate } from "../utils/plannerUtils";
 import { emitDataChange } from "../utils/dataEvents";
 import { uid, getUserId, genId } from "./_base";
 import { AI_MODELS } from "../config/aiModels";
@@ -247,6 +247,12 @@ export async function newReminders(list) {
     "reminders.insert",
   );
   emitDataChange("reminders");
+  for (const row of result) {
+    if (row?.id) {
+      const { user_id: _userId, ...after } = row;
+      await recordReminderHistory({ reminderId: row.id, action: "created", summary: "Created", before: {}, after });
+    }
+  }
   return result;
 }
 
@@ -270,13 +276,145 @@ export async function newFollowUpReminder(task, { name, date, time } = {}) {
   });
 }
 
+/* ── Reminder action history (BUG-102) ──────────
+   Every create, edit, completion and delete of a reminder is recorded with
+   before/after snapshots so any change can be reverted from the task's
+   History section. Recording is best-effort: a missing reminder_history
+   table (migration not yet run) never blocks the change itself. */
+const REMINDER_HISTORY_MIGRATION = "supabase/migrations/2026-11-26-reminder-history.sql";
+let _historyUnavailable = false;
+let _missingHistoryWarned = false;
+function warnMissingHistoryTable() {
+  if (_missingHistoryWarned) return;
+  _missingHistoryWarned = true;
+  console.warn(`[plannerApi] reminder_history table is missing — run ${REMINDER_HISTORY_MIGRATION}. Reminder history is unavailable until then.`);
+}
+
+async function recordReminderHistory({ reminderId, action, summary, before = {}, after = {} }) {
+  if (_historyUnavailable) return false;
+  try {
+    if (isLocalMode()) {
+      local.insert("reminder_history", { reminder_id: reminderId, action, summary, before, after, reverted_at: null });
+      return true;
+    }
+    const userId = await uid();
+    const { error } = await supabase.from("reminder_history").insert({ user_id: userId, reminder_id: reminderId, action, summary, before, after });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    if (!isLocalMode() && isMissingTable(err, "reminder_history")) {
+      _historyUnavailable = true;
+      warnMissingHistoryTable();
+    } else {
+      console.warn("[plannerApi] reminder history was not recorded:", err?.message || err);
+    }
+    return false;
+  }
+}
+
+/** A reminder's recorded changes, newest first. `unavailable` means the
+ *  history table doesn't exist yet (migration not run) — not an error. */
+export async function loadReminderHistory(reminderId) {
+  if (isLocalMode()) {
+    const entries = local.list("reminder_history")
+      .filter((e) => String(e.reminder_id) === String(reminderId))
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    return { entries, unavailable: false };
+  }
+  if (_historyUnavailable) return { entries: [], unavailable: true };
+  try {
+    const userId = await uid();
+    const { data, error } = await supabase.from("reminder_history").select("*")
+      .eq("user_id", userId).eq("reminder_id", reminderId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return { entries: data ?? [], unavailable: false };
+  } catch (err) {
+    if (isMissingTable(err, "reminder_history")) {
+      _historyUnavailable = true;
+      warnMissingHistoryTable();
+      return { entries: [], unavailable: true };
+    }
+    throw new Error(`Supabase reminder_history.select: ${err?.message || err}`, { cause: err });
+  }
+}
+
+/**
+ * Revert one history entry: restore its before snapshot. Only the newest
+ * unreverted entry for a reminder can be reverted, so a chain of changes
+ * (for example accidental repeat completions) unwinds in order.
+ */
+export async function revertReminderHistory(entryId) {
+  let entry = null;
+  if (isLocalMode()) {
+    entry = local.list("reminder_history").find((e) => String(e.id) === String(entryId)) || null;
+  } else {
+    const { data, error } = await supabase.from("reminder_history").select("*").eq("id", entryId).maybeSingle();
+    if (error) {
+      if (isMissingTable(error, "reminder_history")) { _historyUnavailable = true; warnMissingHistoryTable(); throw new Error("Reminder history is not turned on yet (the reminder_history migration has not been run)."); }
+      throw error;
+    }
+    entry = data;
+  }
+  if (!entry) throw new Error("That history entry no longer exists.");
+  if (entry.reverted_at) throw new Error("That change has already been reverted.");
+  const { entries } = await loadReminderHistory(entry.reminder_id);
+  const newestOpen = entries.find((e) => !e.reverted_at);
+  if (!newestOpen || String(newestOpen.id) !== String(entry.id)) {
+    throw new Error("Only the most recent change can be reverted. Revert the newer changes first.");
+  }
+  const reminderId = entry.reminder_id;
+  const before = entry.before || {};
+  await op(
+    async () => {
+      if (entry.action === "created") {
+        const { error } = await supabase.from("reminders").delete().eq("id", reminderId);
+        if (error) throw error;
+      } else if (entry.action === "deleted") {
+        const { error } = await supabase.from("reminders").insert(before);
+        if (error) throw error;
+      } else if (Object.keys(before).length) {
+        const { error } = await supabase.from("reminders").update(before).eq("id", reminderId);
+        if (error) throw error;
+      }
+    },
+    () => {
+      if (entry.action === "created") local.remove("reminders", reminderId);
+      else if (entry.action === "deleted") local.insert("reminders", before);
+      else if (Object.keys(before).length) local.update("reminders", reminderId, before);
+    },
+    "reminders.revert",
+  );
+  const revertedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    local.update("reminder_history", entry.id, { reverted_at: revertedAt });
+  } else {
+    const { error } = await supabase.from("reminder_history").update({ reverted_at: revertedAt }).eq("id", entry.id);
+    if (error) throw error;
+  }
+  emitDataChange("reminders");
+  return { ...entry, reverted_at: revertedAt };
+}
+
+const HISTORY_FIELD_LABELS = { name: "name", date: "due date", time: "time", description: "notes", recurrence: "repeat", recur_until: "repeat end", recur_times: "repeat count", project_id: "project", show_on_calendar: "calendar visibility", priority: "priority", status: "status", completed: "completion", completed_date: "completion", duration_min: "duration", event_id: "linked event", course_id: "course" };
+function editedSummary(before, patch) {
+  if (patch.completed === false && before?.completed) return "Reopened";
+  if (patch.completed === true && !before?.completed) return "Marked done";
+  const labels = [...new Set(Object.keys(patch).map((k) => HISTORY_FIELD_LABELS[k] || k))];
+  return `Edited ${labels.join(", ")}`;
+}
+
 /**
  * Complete a task. One-time tasks flip `completed`. Recurring tasks are
  * completed PER OCCURRENCE: `completed_date` advances to `occurrenceDate`
  * (default today) and the series stays open until its last occurrence is done.
  * Returns the patch that was applied ({ completed, completed_date }).
+ *
+ * BUG-102: a recurring occurrence dated after today is refused unless the
+ * caller passes { early: true } — completing early must be the deliberate
+ * Do early action, never the result of repeat-clicking Done.
  */
-export async function completeReminder(id, occurrenceDate) {
+export async function completeReminder(id, occurrenceDate, opts = {}) {
   // Local calendar day — toISOString() would give the UTC day.
   const today = toDateStr(new Date());
   const patchFor = (row) => {
@@ -288,10 +426,21 @@ export async function completeReminder(id, occurrenceDate) {
     const next = nextOccurrence({ ...row, completed: false, completed_date }, today);
     return { completed: next == null, completed_date };
   };
+  let before = null;
+  let meta = null;
+  const guard = (row) => {
+    const target = occurrenceDate || today;
+    if (!opts.early && isEarlyCompletion(row, target, today)) {
+      throw new Error(`That occurrence is not due until ${formatDisplayDate(target)}. Use Do early to complete it ahead of time.`);
+    }
+    before = { completed: !!row?.completed, completed_date: row?.completed_date ?? null };
+    meta = { recurring: !!(row?.recurrence && row.recurrence !== "none"), target };
+  };
   const patch = await op(
     async () => {
-      const { data: row, error } = await supabase.from("reminders").select("id, date, recurrence, completed_date, recur_until, recur_times").eq("id", id).single();
+      const { data: row, error } = await supabase.from("reminders").select("id, date, recurrence, completed, completed_date, recur_until, recur_times").eq("id", id).single();
       if (error) throw error;
+      guard(row);
       const p = patchFor(row);
       const { error: e2 } = await supabase.from("reminders").update(p).eq("id", id);
       if (e2) throw e2;
@@ -299,6 +448,7 @@ export async function completeReminder(id, occurrenceDate) {
     },
     () => {
       const row = local.list("reminders").find((r) => String(r.id) === String(id));
+      guard(row);
       const p = patchFor(row);
       local.update("reminders", id, p);
       return p;
@@ -306,6 +456,12 @@ export async function completeReminder(id, occurrenceDate) {
     "reminders.complete",
   );
   emitDataChange("reminders");
+  if (before && meta) {
+    const summary = !meta.recurring
+      ? "Marked done"
+      : `${opts.early ? "Completed early: " : "Completed "}the ${formatDisplayDate(meta.target)} occurrence`;
+    await recordReminderHistory({ reminderId: id, action: opts.early ? "completed_early" : "completed", summary, before, after: patch });
+  }
   return patch;
 }
 
@@ -322,6 +478,22 @@ export async function updateReminder(id, fields, opts = {}) {
   // { generated: true } (or set managed_state themselves) and never detach.
   const detachCheck = !opts.generated && patch.managed_state === undefined
     && ["name", "date", "time"].some((k) => fields[k] !== undefined);
+  // BUG-102: snapshot the current values of the fields being changed, so the
+  // edit is recorded in the reminder's history and can be reverted. A failed
+  // snapshot never blocks the edit itself.
+  let historyBefore = null;
+  if (Object.keys(patch).length) {
+    const keys = [...new Set([...Object.keys(patch), ...(detachCheck ? ["managed_state"] : [])])];
+    try {
+      let row = null;
+      if (isLocalMode()) row = local.list("reminders").find((r) => String(r.id) === String(id)) || null;
+      else {
+        const { data, error: readErr } = await supabase.from("reminders").select(keys.join(",")).eq("id", id).maybeSingle();
+        if (!readErr) row = data;
+      }
+      if (row) historyBefore = Object.fromEntries(keys.map((k) => [k, row[k] ?? null]));
+    } catch { historyBefore = null; }
+  }
   // Returns { dropped: [...] } when a column the DB doesn't have yet had to be
   // left out (the rest of the edit still saved) — the caller must tell Scott.
   let dropped = [];
@@ -374,17 +546,39 @@ export async function updateReminder(id, fields, opts = {}) {
     },
     "reminders.update",
   );
+  if (historyBefore) {
+    // `after` reflects what actually saved: drop any column the DB rejected.
+    const after = { ...patch };
+    for (const d of dropped) {
+      if (d === "provenance") for (const c of ["source_type", "source_id", "source_key", "generator", "generated_hash", "managed_state"]) delete after[c];
+      else delete after[d];
+    }
+    await recordReminderHistory({ reminderId: id, action: "edited", summary: editedSummary(historyBefore, after), before: historyBefore, after });
+  }
   emitDataChange("reminders");
   return { dropped };
 }
 
 export async function deleteReminder(id) {
+  // BUG-102: snapshot the row first so the deletion is recorded (and can be
+  // reverted by re-inserting the snapshot).
+  let historyBefore = null;
+  try {
+    if (isLocalMode()) historyBefore = local.list("reminders").find((r) => String(r.id) === String(id)) || null;
+    else {
+      const { data, error: readErr } = await supabase.from("reminders").select("*").eq("id", id).maybeSingle();
+      if (!readErr) historyBefore = data;
+    }
+  } catch { historyBefore = null; }
   await op(
     async () => { const { error } = await supabase.from("reminders").delete().eq("id", id); if (error) throw error; },
     () => local.remove("reminders", id),
     "reminders.delete",
   );
   emitDataChange("reminders");
+  if (historyBefore) {
+    await recordReminderHistory({ reminderId: id, action: "deleted", summary: "Deleted", before: historyBefore, after: {} });
+  }
 }
 
 /* ── Journal ─────────────────────────────────── */

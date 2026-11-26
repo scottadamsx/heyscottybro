@@ -153,6 +153,19 @@ export function nextOccurrence(reminder, todayStr = toDateStr(new Date())) {
 }
 
 /**
+ * True when completing `occurrenceDate` for this reminder would tick off an
+ * occurrence that is not due yet (the BUG-102 guard). Only a recurring series
+ * can be completed "early": a one-time task marked Done is simply done,
+ * whenever it happens. Done flows must refuse an early completion unless the
+ * user deliberately chose the separate Do early action.
+ */
+export function isEarlyCompletion(reminder, occurrenceDate, todayStr = toDateStr(new Date())) {
+  if (!reminder || !occurrenceDate) return false;
+  const recur = reminder.recurrence || "none";
+  return recur !== "none" && occurrenceDate > todayStr;
+}
+
+/**
  * All reminder occurrences that fall on a single local calendar day, deduped by
  * id. Use this for the Dashboard "Today" view so the count always matches the
  * same-day reminders in the full list (no slice() silently dropping items, and

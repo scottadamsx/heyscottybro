@@ -142,6 +142,10 @@
 }
 .task-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
 .task-row.is-done .task-row-title { color: var(--text-secondary); text-decoration: line-through; }
+/* BUG-102: the brief solid done state after a completion saves, so one click
+   is visibly enough. */
+.admin-shell .btn-complete.is-done-flash { background: var(--green); border-color: transparent; color: #fff; }
+.admin-shell .btn-complete:disabled, .admin-shell .btn-mini:disabled { opacity: 0.65; cursor: default; }
 
 /* Repeat limits (task modal) */
 .admin-shell .recur-limit-row { gap: var(--space-sm); }

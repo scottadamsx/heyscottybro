@@ -19,6 +19,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Reminder Done button (BUG-102): Done now visibly responds on the first click (saving state, then a done check), and repeat clicks can no longer complete future occurrences of a repeating reminder. Completing a future occurrence is a separate Do early button, and every change to a task is recorded in a History section on the task page, where the most recent change can be reverted (restoring the previous last done and next due). History recording starts once the reminder history database update is run.
 - Habits now keep to their schedules (BUG-101): a habit set for Sundays only, or every few days, appears on the Today page and in Reminders only on its days, no longer nags as "overdue" on the days in between, and its streak counts the days it was actually due, so off days cannot break it. Habits created by asking Frodo now keep the schedule you asked for instead of silently becoming daily.
 - Journal dictation now recovers visibly if the browser never starts microphone recognition, instead of leaving Save stuck disabled.
 - Saving a journal entry now starts the Orbit people/context review automatically when the service is ready; profile changes still require your explicit approval.

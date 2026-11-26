@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { loadReminders, newReminder, completeReminder, updateReminder, deleteReminder, loadProjects, loadEvents } from "../../api/plannerApi";
 import { formatDisplayDate, toDateStr, nextOccurrence, formatTime12 } from "../../utils/plannerUtils";
@@ -27,6 +27,12 @@ export default function RemindersPage() {
   const [list, setList] = useState([]);
   const [habits, setHabits] = useState(null);
   const [habitSaving, setHabitSaving] = useState(null);
+  // BUG-102: Done feedback — the row whose completion is saving, and the row
+  // flashing its visible done state just after a save lands.
+  const [completingId, setCompletingId] = useState(null);
+  const [justDoneId, setJustDoneId] = useState(null);
+  const doneTimer = useRef(null);
+  useEffect(() => () => { if (doneTimer.current) window.clearTimeout(doneTimer.current); }, []);
   const [projects, setProjects] = useState([]);
   // The task modal: null (closed) | { id: null } (new) | the row being edited.
   const [taskModal, setTaskModal] = useState(null);
@@ -114,20 +120,33 @@ export default function RemindersPage() {
   const completed = useMemo(() => filtered.filter((r) => r.completed), [filtered]);
   const donePage = usePaged(completed, 30, filter);
 
-  const handleComplete = async (r) => {
+  const handleComplete = async (r, { early = false } = {}) => {
+    if (completingId) return;
     const recurring = r.recurrence && r.recurrence !== "none";
     const occurrence = recurring ? (r.next || todayStr) : todayStr;
+    // BUG-102: Done never completes a future occurrence. That is the separate
+    // Do early action (and completeReminder refuses it without the flag too).
+    if (!early && recurring && occurrence > todayStr) return;
+    setCompletingId(r.id);
     // Optimistic: one-time → done; recurring → that occurrence done, series stays.
     setList((prev) => prev.map((x) => x.id === r.id
       ? (recurring ? { ...x, completed_date: occurrence } : { ...x, completed: true, completed_date: occurrence })
       : x));
     try {
-      const patch = await completeReminder(r.id, occurrence);
+      const patch = await completeReminder(r.id, occurrence, { early });
       setList((prev) => prev.map((x) => x.id === r.id ? { ...x, ...patch } : x));
+      // Visible done state: the button flashes a check before the row settles,
+      // so one click is obviously enough.
+      setJustDoneId(r.id);
+      if (doneTimer.current) window.clearTimeout(doneTimer.current);
+      doneTimer.current = window.setTimeout(() => setJustDoneId(null), 2500);
+      addToast(recurring && !patch.completed
+        ? `${r.name} done for ${formatDisplayDate(occurrence)}.`
+        : `${r.name} completed.`, "success");
     } catch (err) {
       addToast(`Couldn't complete task: ${err?.message || "unknown error"}`, "error");
       await load();
-    }
+    } finally { setCompletingId(null); }
   };
 
   const handleUncomplete = async (id) => {
@@ -179,6 +198,11 @@ export default function RemindersPage() {
 
   const renderTask = (r) => {
     const overdue = r.next && r.next < todayStr;
+    const busy = completingId === r.id;
+    const flash = justDoneId === r.id && !busy;
+    // A recurring task whose pending occurrence is still ahead gets Do early
+    // instead of Done (BUG-102); during the done flash the Done state shows.
+    const futureOccurrence = !!(r.recurrence && r.recurrence !== "none" && r.next && r.next > todayStr);
     const action = reminderActionForName(r.name);
     const actionUrl = action && r.next <= todayStr ? reminderActionUrl(action, r.id, r.next || todayStr) : null;
     // Display-only formatting: the stored time stays "HH:MM" (QF-4).
@@ -225,9 +249,21 @@ export default function RemindersPage() {
           <button type="button" className="btn-mini" onClick={() => setTaskModal(r)} title="Edit task">
             <i className="fa-solid fa-pen" aria-hidden="true" /> Edit
           </button>
-          <button type="button" className="btn-sm btn-complete" onClick={() => handleComplete(r)}>
-            Done
-          </button>
+          {futureOccurrence && !flash ? (
+            <button type="button" className="btn-mini" disabled={busy} onClick={() => handleComplete(r, { early: true })} title={`Complete the ${formatDisplayDate(r.next)} occurrence ahead of time`}>
+              {busy
+                ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> Saving…</>
+                : <><i className="fa-solid fa-forward" aria-hidden="true" /> Do early</>}
+            </button>
+          ) : (
+            <button type="button" className={`btn-sm btn-complete${flash ? " is-done-flash" : ""}`} disabled={busy} onClick={() => handleComplete(r)}>
+              {busy
+                ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> Saving…</>
+                : flash
+                  ? <><i className="fa-solid fa-check" aria-hidden="true" /> Done</>
+                  : "Done"}
+            </button>
+          )}
           <button type="button" className="icon-x sm" onClick={() => handleDelete(r.id)} aria-label={`Delete ${r.name}`}>
             <i className="fa-solid fa-xmark" aria-hidden="true" />
           </button>

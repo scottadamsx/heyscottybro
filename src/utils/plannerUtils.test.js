@@ -2,7 +2,7 @@
 // Run with: node src/utils/plannerUtils.test.js
 // (No test framework — plain assertions, same style as budgetProjection.test.js.)
 
-import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange, expandEvents, nextOccurrence, addDaysStr } from "./plannerUtils.js";
+import { expandReminders, remindersForDay, toDateStr, parseDate, getWeekRange, expandEvents, nextOccurrence, addDaysStr, isEarlyCompletion } from "./plannerUtils.js";
 
 let passed = 0;
 let failed = 0;
@@ -206,6 +206,25 @@ test("nextOccurrence: exhausted series returns null", () => {
 test("addDaysStr does local calendar arithmetic across month ends", () => {
   assert(addDaysStr("2026-01-31", 1) === "2026-02-01", "Jan 31 + 1");
   assert(addDaysStr("2026-03-01", -1) === "2026-02-28", "Mar 1 - 1");
+});
+
+test("isEarlyCompletion: BUG-102 guard — future occurrences of a series only", () => {
+  const daily = { date: "2026-11-17", recurrence: "daily", completed_date: "2026-11-16" };
+  const today = "2026-11-17";
+  // Today's pending occurrence completes normally; the next one is early.
+  const pending = nextOccurrence(daily, today);
+  assert(pending === "2026-11-17", `pending is today, got ${pending}`);
+  assert(isEarlyCompletion(daily, pending, today) === false, "due-today occurrence is not early");
+  assert(isEarlyCompletion(daily, "2026-11-18", today) === true, "tomorrow's occurrence is early");
+  // After today's is ticked off, the pending occurrence becomes tomorrow's —
+  // exactly the state a repeat Done click must not complete.
+  const after = { ...daily, completed_date: "2026-11-17" };
+  assert(nextOccurrence(after, today) === "2026-11-18", "next rolls to tomorrow");
+  assert(isEarlyCompletion(after, nextOccurrence(after, today), today) === true, "repeat click would be early");
+  // Overdue occurrences are never "early"; one-time tasks never are.
+  assert(isEarlyCompletion(daily, "2026-11-15", today) === false, "missed occurrence is not early");
+  assert(isEarlyCompletion({ date: "2026-12-25", recurrence: "none" }, "2026-12-25", today) === false, "one-time task is never early");
+  assert(isEarlyCompletion(daily, null, today) === false, "no date, no guard");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

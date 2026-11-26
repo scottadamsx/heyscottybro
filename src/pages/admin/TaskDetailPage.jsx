@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder } from "../../api/plannerApi";
+import { loadReminders, loadProjects, updateReminder, completeReminder, deleteReminder, loadReminderHistory, revertReminderHistory } from "../../api/plannerApi";
 import DocLinks from "../../components/docs/DocLinks";
 import CopyTaskButton from "../../components/CopyTaskButton";
 import LinkifiedText from "../../components/LinkifiedText";
 import { formatDisplayDate, toDateStr, formatTime12, nextOccurrence } from "../../utils/plannerUtils";
+import { formatDisplayDateTime } from "../../utils/dates";
 import TaskFormModal, { taskToForm } from "../../components/TaskFormModal";
 import { onDataChange } from "../../utils/dataEvents";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -20,6 +21,11 @@ export default function TaskDetailPage() {
 
   const [task, setTask] = useState(null);
   const [projects, setProjects] = useState([]);
+  // BUG-102: action history for this task, and the in-flight states for the
+  // Done / Do early and Revert actions (visible feedback, no repeat clicks).
+  const [history, setHistory] = useState({ entries: [], unavailable: false });
+  const [completing, setCompleting] = useState(false);
+  const [revertingId, setRevertingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false); // the Edit task modal
   // "Failed to load" and "not found" are different states: a failed load must
@@ -36,7 +42,7 @@ export default function TaskDetailPage() {
   const load = async () => {
     const seq = ++loadSeq.current;
     setLoadError(null);
-    const [remRes, projRes] = await Promise.allSettled([loadReminders(), loadProjects()]);
+    const [remRes, projRes, histRes] = await Promise.allSettled([loadReminders(), loadProjects(), loadReminderHistory(id)]);
     if (loadSeq.current !== seq) return; // superseded by a newer load
     if (remRes.status === "rejected") {
       console.error("[task] failed to load tasks", remRes.reason);
@@ -50,6 +56,13 @@ export default function TaskDetailPage() {
       setLoadError(`projects: ${projRes.reason?.message || projRes.reason}`);
     } else {
       setProjects(projRes.value);
+    }
+    if (histRes.status === "fulfilled") {
+      setHistory(histRes.value);
+    } else {
+      // History failing must not blank the task itself (QF-3).
+      console.error("[task] failed to load history", histRes.reason);
+      setHistory({ entries: [], unavailable: false });
     }
     setTask(remRes.value.find((r) => String(r.id) === String(id)) || null);
     setLoading(false);
@@ -77,19 +90,36 @@ export default function TaskDetailPage() {
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (early = false) => {
+    if (completing) return;
     const recurring = task.recurrence && task.recurrence !== "none";
     // Recurring: tick off the pending occurrence (which may be a missed one),
     // not "today" — the series then shows its next date.
     const occurrence = recurring ? (nextOccurrence(task, todayStr) || todayStr) : todayStr;
+    // BUG-102: Done never completes a future occurrence; that is the separate
+    // Do early action (and completeReminder refuses it without the flag too).
+    if (!early && recurring && occurrence > todayStr) return;
+    setCompleting(true);
     setTask((prev) => (recurring ? { ...prev, completed_date: occurrence } : { ...prev, completed: true, completed_date: occurrence }));
     try {
-      const patch = await completeReminder(id, occurrence);
+      const patch = await completeReminder(id, occurrence, { early });
       setTask((prev) => ({ ...prev, ...patch }));
     } catch (err) {
       setLoadError(`Couldn't complete: ${err?.message || err}`);
       await load();
-    }
+    } finally { setCompleting(false); }
+  };
+
+  const handleRevert = async (entry) => {
+    if (!(await confirm(`Revert this change? ${entry.summary || entry.action}`, { title: "Revert change", confirmLabel: "Revert" }))) return;
+    setRevertingId(entry.id);
+    try {
+      await revertReminderHistory(entry.id);
+      await load();
+    } catch (err) {
+      setLoadError(`Couldn't revert: ${err?.message || err}`);
+      await load();
+    } finally { setRevertingId(null); }
   };
 
   const handleReopen = async () => {
@@ -195,7 +225,17 @@ export default function TaskDetailPage() {
           <button type="button" className="btn-secondary-sm" onClick={() => setEditing(true)}><i className="fa-solid fa-pen" aria-hidden="true" /> Edit</button>
           {task.completed
             ? <button type="button" className="btn-secondary-sm" onClick={handleReopen}><i className="fa-solid fa-rotate-left" aria-hidden="true" /> Reopen</button>
-            : <button type="button" className="btn-sm btn-complete" onClick={handleComplete}><i className="fa-solid fa-check" aria-hidden="true" /> Done</button>}
+            : isRecurring && next && next > todayStr
+              ? <button type="button" className="btn-secondary-sm" disabled={completing} onClick={() => handleComplete(true)} title={`Complete the ${formatDisplayDate(next)} occurrence ahead of time`}>
+                  {completing
+                    ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> Saving…</>
+                    : <><i className="fa-solid fa-forward" aria-hidden="true" /> Do early</>}
+                </button>
+              : <button type="button" className="btn-sm btn-complete" disabled={completing} onClick={() => handleComplete(false)}>
+                  {completing
+                    ? <><i className="fa-solid fa-circle-notch fa-spin" aria-hidden="true" /> Saving…</>
+                    : <><i className="fa-solid fa-check" aria-hidden="true" /> Done</>}
+                </button>}
         </div>
       </section>
 
@@ -269,6 +309,39 @@ export default function TaskDetailPage() {
       <section className="db-card" aria-label="Documents">
         <div className="db-card-header"><h3 className="db-card-title">Documents</h3></div>
         <DocLinks entityType="reminder" entityId={task.id} title="Linked documents" />
+      </section>
+
+      <section className="db-card" aria-label="History">
+        <div className="db-card-header">
+          <h3 className="db-card-title">{history.unavailable ? "History" : `History (${history.entries.length})`}</h3>
+        </div>
+        {history.unavailable ? (
+          <p className="no-entries">History is not turned on yet. Changes start recording once the reminder history database update is run.</p>
+        ) : history.entries.length === 0 ? (
+          <p className="no-entries">No changes recorded yet.</p>
+        ) : (
+          <div className="db-list">
+            {history.entries.map((e) => {
+              const newestOpen = history.entries.find((x) => !x.reverted_at);
+              const canRevert = !e.reverted_at && newestOpen && String(newestOpen.id) === String(e.id);
+              return (
+                <div className="db-list-item" key={e.id}>
+                  <span className="db-list-item-content">
+                    <span className="db-list-item-title">{e.summary || e.action}</span>
+                    <span className="db-list-item-subtitle">
+                      {formatDisplayDateTime(e.created_at)}{e.reverted_at ? " · Reverted" : ""}
+                    </span>
+                  </span>
+                  {canRevert && (
+                    <button type="button" className="btn-mini" disabled={revertingId === e.id} onClick={() => handleRevert(e)}>
+                      <i className="fa-solid fa-rotate-left" aria-hidden="true" /> {revertingId === e.id ? "Reverting…" : "Revert"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="db-card task-detail-danger" aria-label="Delete this task">
