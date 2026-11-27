@@ -99,7 +99,9 @@ export default function InterviewDrawer({ about, onClose, onManual, sourceHostEv
         const event = eventTitle ? `the calendar event “${eventTitle}” on ${eventDate || 'the scheduled date'}` : 'a hangout I want to log'
         const attendees = eventPeople.map((id) => people[id]?.name).filter(Boolean)
         send(`I want to log ${event} in Orbit.${attendees.length ? ` Start with ${attendees.join(' and ')} as the people I named; confirm whether anyone else was there.` : ''} Ask me who was there and what happened. Keep the supplied title and date, do not guess attendees, and ask before logging if any required detail is missing.`)
-      } else send(`Let's talk about ${people[about].name}.`)
+      } else if (about && people[about]) {
+        send(`Let's talk about ${people[about].name}.`)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [about])

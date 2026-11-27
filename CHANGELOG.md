@@ -19,6 +19,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Log a hangout no longer blanks the page (BUG-104): opening it in Orbit with the assistant on crashed before the form could appear; it now opens the assistant drawer (or manual entry) normally.
 - People pickers can add someone new (BUG-103): in Log a hangout, type a name that is not in Orbit yet and an "Add new person" chip creates and selects them on the spot; the Planner event form's people search offers the same, so a new face at an event no longer blocks logging it.
 
 - Reminder Done button (BUG-102): Done now visibly responds on the first click (saving state, then a done check), and repeat clicks can no longer complete future occurrences of a repeating reminder. Completing a future occurrence is a separate Do early button, and every change to a task is recorded in a History section on the task page, where the most recent change can be reverted (restoring the previous last done and next due). History recording starts once the reminder history database update is run.
