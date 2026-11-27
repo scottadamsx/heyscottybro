@@ -717,3 +717,10 @@ Deployment note for BUG-081 (same day): Scott approved the push; local history w
 - Fix (one branch): the person kickoff sends only when `about && people[about]`; a plain open shows the drawer's log-a-hangout intro and "Use manual entry" reaches the BUG-103 picker, verified end to end in the harness (create + select a new person from the modal).
 - Mobile verification (Scott's new standing rule, 2026-11-27): Playwright at 390×844, sheet full width, filter input and Add new person chip fully visible, no overflow. Screenshot: `~/workspace/bug104-logmodal-mobile.png`.
 - Validation: production build passes; `orbitLogPrefill`, `attendees`, `peopleCore` suites pass; ESLint clean on InterviewDrawer.jsx. Live verification on the deployed build is with the parent job report.
+
+## 2026-11-27 — BUG-105: Tasks page mobile row-action layout
+
+- Scott's phone screenshot showed the Tasks & reminders habit rows with "Schedule" and "Missed it" crushed into circles, labels colliding, and "Fit it in" clipped on the overdue task card.
+- Root cause: `.task-row-actions` is a nowrap, non-shrinking flex group about 318px at max-content holding shrinkable nowrap pills; in a card narrower than that the group cannot render validly (Chrome overflows it past the card, iOS Safari compresses the pills to the 44px coarse-pointer minimum and spills their labels).
+- Fix: at ≤640px, `.task-row-actions` (plan.css) and `.habit-row-actions` (system.css, the Today page sweep target) wrap with `max-width: 100%`, and their children get `flex-shrink: 0`, so pills keep natural widths and wrap to a second right-aligned line. Desktop and the Nov 26 Done column are unchanged.
+- Verification: harness with real CSS and verbatim markup at 390px emulation. Before: 318px group in a 266px row, Done pill and delete × outside the card at a 300px card width. After: group 242px, all labels inside their pills, Done buttons aligned at x=345 on the standard 390px card, desktop 1280px unchanged. Screenshots: `~/workspace/bug105-tasks-mobile-before.png`, `~/workspace/bug105-tasks-mobile-after.png`. Production build passes. Live verification on the deployed build is with the parent job report.

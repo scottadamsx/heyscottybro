@@ -643,6 +643,12 @@
    so a habit never reads as a task. */
 .admin-shell .habit-tag { display: inline-flex; align-items: center; height: 16px; padding: 0 6px; border-radius: var(--radius-full); background: var(--bg-raised); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); vertical-align: 2px; }
 .admin-shell .habit-row-actions { display: flex; align-items: center; gap: var(--space-xs); flex-shrink: 0; }
+/* BUG-105: same protection as the task rows (plan.css) — on narrow screens
+   the Today-page habit actions wrap instead of crushing their pills. */
+@media (max-width: 640px) {
+  .admin-shell .habit-row-actions { flex-wrap: wrap; justify-content: flex-end; row-gap: var(--space-xs); max-width: 100%; }
+  .admin-shell .habit-row-actions > * { flex-shrink: 0; }
+}
 
 .admin-shell .db-subhead { display: flex; align-items: center; gap: var(--space-xs); margin: var(--space-md) 0 var(--space-xs); font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); text-transform: none; letter-spacing: 0; }
 .admin-shell .db-subhead:first-child { margin-top: 0; }

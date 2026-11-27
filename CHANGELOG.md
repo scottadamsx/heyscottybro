@@ -19,6 +19,7 @@ User-visible product changes are recorded here. Internal work appears in `docs/d
 
 ### Fixed
 
+- Task and habit row buttons no longer crush on narrow screens (BUG-105): on phones the Schedule / Missed it / Fit it in pills could be squeezed into circles with their labels spilling out; the action buttons now keep their natural pill widths and wrap onto a second line when a card is too narrow.
 - Log a hangout no longer blanks the page (BUG-104): opening it in Orbit with the assistant on crashed before the form could appear; it now opens the assistant drawer (or manual entry) normally.
 - People pickers can add someone new (BUG-103): in Log a hangout, type a name that is not in Orbit yet and an "Add new person" chip creates and selects them on the spot; the Planner event form's people search offers the same, so a new face at an event no longer blocks logging it.
 

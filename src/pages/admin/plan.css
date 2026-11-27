@@ -160,6 +160,15 @@
   .admin-shell .task-row { flex-wrap: wrap; row-gap: var(--space-xs); }
   .admin-shell .task-row .db-list-item-content { flex: 1 1 100%; }
   .task-row-actions { margin-left: auto; }
+  /* BUG-105: the actions group's max-content (Schedule + Missed it + the
+     108px Done slot + delete slot ≈ 318px) is wider than a narrow card's
+     inner row, and the pills are shrinkable nowrap flex items, so engines
+     either overflow the group or crush the pills to the 44px touch minimum
+     and spill their labels (Scott's 2026-11-27 screenshot: "Schedule" and
+     "Missed it" as circles with colliding text). Wrap the group instead and
+     keep every control at its natural width. */
+  .task-row-actions { flex-wrap: wrap; justify-content: flex-end; row-gap: var(--space-xs); max-width: 100%; }
+  .task-row-actions > * { flex-shrink: 0; }
 }
 
 
