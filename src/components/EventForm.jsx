@@ -20,7 +20,7 @@ import TimePicker from "./TimePicker";
 import { FormModal } from "./ui";
 import { loadEventDraftingStatus, requestEventDraft } from "../api/eventDrafting";
 import { useEventDraftingEnabled } from "../utils/settings";
-import { loadPeople } from "../api/peopleApi";
+import { loadPeople, createPerson } from "../api/peopleApi";
 import { loadEventPeople } from "../api/plannerApi";
 import { normalizeAttendeeIds, peopleById, resolveAttendees, personColor, personInitials } from "../lib/attendees";
 
@@ -57,6 +57,8 @@ export default function EventForm({
   const [people, setPeople] = useState(null); // null = still loading
   const [peopleFailed, setPeopleFailed] = useState(false);
   const [personQuery, setPersonQuery] = useState("");
+  const [addingPerson, setAddingPerson] = useState(false);
+  const [personError, setPersonError] = useState("");
   const [projectId, setProjectId] = useState(lockProject || initial.project_id || "");
   const [eventTypeId, setEventTypeId] = useState(initial.event_type_id || "");
   const [busy, setBusy] = useState(false);
@@ -113,6 +115,23 @@ export default function EventForm({
     } catch (err) {
       setDraftNotice(err?.message || "Couldn't draft the event. Your description is still here.");
     } finally { setDrafting(false); }
+  };
+
+  // Someone new at the event: create them in Orbit (its own API, same
+  // defaults as the Add people form) and link them here in one step.
+  const addNewPerson = async () => {
+    const name = personQuery.trim();
+    if (!name || addingPerson) return;
+    setAddingPerson(true); setPersonError("");
+    try {
+      const created = await createPerson({ name, group: "friends" });
+      setPeople((prev) => [...(prev || []), created]);
+      setPeopleTouched(true);
+      setAttendees((prev) => normalizeAttendeeIds([...prev, created.id]));
+      setPersonQuery("");
+    } catch (err) {
+      setPersonError(err.message || "That person could not be added. Try again.");
+    } finally { setAddingPerson(false); }
   };
 
   const theDate = fixedDate || date;
@@ -193,21 +212,34 @@ export default function EventForm({
         ) : (
           <>
             <input placeholder="Search people to add" value={personQuery} onChange={(e) => setPersonQuery(e.target.value)} aria-label="Search people to add" />
+            {personError && <p className="error-message" role="alert">{personError}</p>}
             {personQuery.trim() && (() => {
               const q = personQuery.trim().toLowerCase();
+              const exact = (people || []).some((p) => String(p.name || "").trim().toLowerCase() === q);
               const matches = (people || []).filter((p) => !attendees.includes(String(p.id)) && String(p.name || "").toLowerCase().includes(q)).slice(0, 6);
-              return matches.length > 0 ? (
-                <div className="event-people-results" role="listbox" aria-label="People matching your search">
-                  {matches.map((p) => (
-                    <button type="button" className="event-people-option" key={p.id} onClick={() => { setPeopleTouched(true); setAttendees((prev) => normalizeAttendeeIds([...prev, p.id])); setPersonQuery(""); }}>
-                      <span className="attendee-dot" style={{ background: personColor(p.id) }} aria-hidden="true">{personInitials(p.name)}</span>
-                      <span className="event-people-option-name">{p.name}</span>
-                      {p.group && <span className="event-people-option-group">{p.group}</span>}
+              return (
+                <>
+                  {matches.length > 0 && (
+                    <div className="event-people-results" role="listbox" aria-label="People matching your search">
+                      {matches.map((p) => (
+                        <button type="button" className="event-people-option" key={p.id} onClick={() => { setPeopleTouched(true); setAttendees((prev) => normalizeAttendeeIds([...prev, p.id])); setPersonQuery(""); }}>
+                          <span className="attendee-dot" style={{ background: personColor(p.id) }} aria-hidden="true">{personInitials(p.name)}</span>
+                          <span className="event-people-option-name">{p.name}</span>
+                          {p.group && <span className="event-people-option-group">{p.group}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!exact && (
+                    <button type="button" className="event-people-option" onClick={addNewPerson} disabled={addingPerson}>
+                      <span className="attendee-dot" aria-hidden="true">+</span>
+                      <span className="event-people-option-name">{addingPerson ? "Adding…" : `Add new person: ${personQuery.trim()}`}</span>
                     </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="field-hint">No one in Orbit matches. Typing a name here never creates a link on its own.</p>
+                  )}
+                  {matches.length === 0 && exact && (
+                    <p className="field-hint">Already linked above.</p>
+                  )}
+                </>
               );
             })()}
           </>

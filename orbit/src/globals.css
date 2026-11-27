@@ -591,6 +591,8 @@ body.no-scroll { overflow: hidden; }
 .chip[aria-pressed='true'] { background: var(--color-brand-50); border: 2px solid var(--color-brand-400); padding: 0 11px; color: var(--color-brand-700); }
 .chip:disabled { opacity: 0.5; cursor: not-allowed; }
 .chip-missing { cursor: default; color: var(--color-ink-soft); }
+.people-filter { font-size: 16px; margin-bottom: 8px; }
+.chip-add { border-style: dashed; color: var(--color-brand-700); }
 .tabs {
   display: flex;
   gap: 4px;
