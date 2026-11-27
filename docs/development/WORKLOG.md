@@ -2,6 +2,16 @@
 
 Append-only record of completed workspace changes. Git remains the line-level history; this log explains intent and outcome in plain language.
 
+## 2026-11-27
+
+### BUG-103 — People pickers can add a new person inline
+
+- Scott reported that Orbit's "Log a hangout" modal lists only existing people, so a hangout with someone new could not be logged ("there's no option to add a new person this is a big flaw").
+- `PeoplePicker` now always shows its filter input (16px) and, when the typed name has no exact-name match in Orbit, a dashed "+ Add new person: <name>" chip. Clicking it saves the person with the same `savePerson` document and defaults as the Add people form (group `friends`, empty fields) and selects them for the hangout without leaving the modal; a duplicate rejection shows inline.
+- Class sweep: the Planner event form's people search had the same gap (its empty state said typing never creates a link). It now offers "Add new person: <name>" with no exact match, creating the person through `peopleApi.createPerson` and linking them to the event. GroupsView is not a picker (it opens LogModal prefilled); tasks have no person attach; InterviewDrawer resolves people through the assistant. No other pickers found.
+- Validation: production build passes, ESLint clean on the touched host file, `orbitLogPrefill` (7), `attendees` (7) and `peopleCore` (9) suites pass. Commit d6f6594 pushed to main; the deployed bundles were checked and contain both new flows (PeoplePage and PlannerPage chunks carry the "Add new person" actions and the new filter placeholder).
+- Remaining: the interactive end-to-end proof in the signed-in app (create "Test Person Delete Me" from the modal, cancel without saving, delete the person, confirm the people count is restored, before/after screenshots, completion-record PDF in HQ Documents) runs as a browser task from the main session; this environment has no live browser.
+
 ## 2026-09-28
 
 ### Documentation-first workspace foundation

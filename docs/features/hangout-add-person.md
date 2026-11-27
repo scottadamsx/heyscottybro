@@ -1,7 +1,7 @@
 # Add a new person from the people pickers
 
 Status: approved by Scott's direct report, 2026-11-27 ("there's no option to add a new person this is a big flaw").
-Work steps: [x] inspect pickers · [x] pseudocode · [x] implement · [x] build/test · [ ] push · [ ] live verify · [ ] records
+Work steps: [x] inspect pickers · [x] pseudocode · [x] implement · [x] build/test · [x] push · [~] live verify (bundle confirmed; interactive proof via main-session browser task) · [x] records
 
 ## Problem
 
