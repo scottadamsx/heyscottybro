@@ -2,6 +2,13 @@
 
 Append-only record of completed workspace changes. Git remains the line-level history; this log explains intent and outcome in plain language.
 
+## 2026-11-28 — BUG-106: Tasks page row actions spill past the card in Safari
+
+- Scott's desktop screenshot (Mac app, wide window) showed every Tasks & reminders row with its Done pill crossing the card's right border and the delete × outside the card.
+- Root cause: a WebKit intrinsic-sizing bug. The Done/delete slots sized themselves by flex-basis only (`flex: 0 0 108px` / `0 0 28px`); WebKit ignores a flex item's basis when measuring the parent group's max-content, so `.task-row-actions` was measured about 70px too narrow, kept that width (flex-shrink: 0), and its buttons spilled past the card. Chromium counts the basis, so Chrome checks never showed it.
+- Fix: the slots in plan.css now carry a definite width with `flex: none` (`width: 108px` / `width: 28px`), which both engines count in intrinsic sizing. The Nov 26 fixed Done column and the BUG-105 phone wrap are unchanged. Today page habit rows were swept and measure clean in WebKit (no fixed-basis slots there).
+- Verification: WebKit harness with the real CSS and verbatim markup at Scott's 1710px window, 1500px and 390px. Before: Done +29.4px, × +18.4px past the card edge on desktop. After: 0px overflow everywhere, Done slot exactly 108px, × back to 28px, groups flush with the row edge; Chromium 0px before and after. Screenshots: `~/workspace/bug106-tasks-desktop-before.png`, `~/workspace/bug106-tasks-desktop-after.png`, `~/workspace/bug106-tasks-mobile-before.png`, `~/workspace/bug106-tasks-mobile-after.png`. Habit/task suites 30/30, full `npm test` and production build pass. Live verification on the deployed build is with the parent job report.
+
 ## 2026-11-27
 
 ### BUG-103 — People pickers can add a new person inline

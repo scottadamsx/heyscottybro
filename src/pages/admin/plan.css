@@ -144,9 +144,19 @@
 /* Done / Do early always occupies the same fixed column on every row, so the
    completion buttons line up down the list no matter which secondary buttons
    a row carries. Habit rows reserve the delete-button slot as a spacer. */
-.task-row-done-slot { flex: 0 0 108px; display: flex; }
+/* BUG-106: the slots carry a definite width, not only a flex-basis.
+   WebKit's intrinsic sizing of the actions group counts a flex item at its
+   content width and ignores its flex-basis, so in Safari the group was
+   measured about 70px too narrow; as a flex-shrink: 0 item it kept that
+   width and its buttons spilled past the card's right edge (Scott's
+   2026-11-28 desktop screenshot: Done pills crossing the card border, the
+   delete × outside entirely). Chromium counts the basis, so it never
+   showed there. A width contributes to intrinsic sizing in both engines,
+   and flex: none keeps the slot from shrinking, so the fixed Done column
+   above is unchanged. */
+.task-row-done-slot { flex: none; width: 108px; display: flex; }
 .task-row-done-slot > button { flex: 1; justify-content: center; }
-.task-row-x-slot { flex: 0 0 28px; }
+.task-row-x-slot { flex: none; width: 28px; }
 .task-row.is-done .task-row-title { color: var(--text-secondary); text-decoration: line-through; }
 /* BUG-102: the brief solid done state after a completion saves, so one click
    is visibly enough. */
